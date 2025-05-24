@@ -31,6 +31,10 @@ export default function LoginPage() {
         const session = await getSession()
         if (session?.user?.role === "ADMIN") {
           router.push("/admin")
+        } else if (session?.user?.role === "DISTRIBUTOR") {
+          router.push("/distributor")
+        } else if (session?.user?.role === "LOCATION") {
+          router.push("/location")
         } else if (session?.user?.role === "SELLER") {
           router.push("/seller")
         }

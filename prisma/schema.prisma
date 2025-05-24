@@ -15,9 +15,13 @@ model User {
   email     String   @unique
   password  String
   name      String?
-  role      String   @default("SELLER") // ADMIN or SELLER
+  role      String   @default("SELLER") // ADMIN, DISTRIBUTOR, LOCATION, or SELLER
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Hierarchy relationships
+  locationId     String?   // For SELLER role only
+  distributorId  String?   // For LOCATION role only
 
   // For NextAuth
   accounts Account[]
@@ -26,6 +30,13 @@ model User {
   // User relationships
   qrCodes QRCode[]
   sellerConfigs QRConfig[] @relation("SellerConfig")
+  
+  // Hierarchy navigation
+  location     Location?    @relation("LocationSellers", fields: [locationId], references: [id])
+  
+  // Reverse relationships (only for users who ARE distributors/locations)
+  distributorProfile Distributor? @relation("DistributorUser")
+  locationProfile    Location?    @relation("LocationUser")
 
   @@map("users")
 }
@@ -106,6 +117,7 @@ model QRCode {
   sellerId    String
   guests      Int       @default(2)
   days        Int       @default(3)
+  cost        Float     @default(0.0) // Cost of this QR code
   expiresAt   DateTime
   isActive    Boolean   @default(true)
   landingUrl  String?   // Generated landing page URL
@@ -127,4 +139,30 @@ model QRScan {
   qrCode QRCode @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
 
   @@map("qr_scans")
+}
+
+model Distributor {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  user      User       @relation("DistributorUser", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String     @unique
+  locations Location[] @relation("DistributorLocations")
+}
+
+model Location {
+  id           String   @id @default(cuid())
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  distributorId String
+  
+  // Relationships
+  user         User        @relation("LocationUser", fields: [userId], references: [id], onDelete: Cascade)
+  userId       String      @unique
+  distributor  Distributor @relation("DistributorLocations", fields: [distributorId], references: [id], onDelete: Cascade)
+  sellers      User[]      @relation("LocationSellers")
 }

@@ -62,6 +62,10 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string || ""
       }
       return session
+    },
+    async signIn({ user }) {
+      // Allow all sign-ins - redirect handled on frontend
+      return true
     }
   },
   pages: {

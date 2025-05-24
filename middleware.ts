@@ -24,6 +24,20 @@ export default withAuth(
       }
     }
 
+    // Distributor routes - only distributors can access
+    if (pathname.startsWith("/distributor")) {
+      if (token?.role !== "DISTRIBUTOR") {
+        return NextResponse.redirect(new URL("/auth/login", req.url))
+      }
+    }
+
+    // Location routes - only locations can access
+    if (pathname.startsWith("/location")) {
+      if (token?.role !== "LOCATION") {
+        return NextResponse.redirect(new URL("/auth/login", req.url))
+      }
+    }
+
     // Seller routes - only sellers can access
     if (pathname.startsWith("/seller")) {
       if (token?.role !== "SELLER") {
