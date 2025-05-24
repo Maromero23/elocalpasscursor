@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("SELLER") // ADMIN or SELLER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // For NextAuth
+  accounts Account[]
+  sessions Session[]
+
+  // User relationships
+  qrCodes QRCode[]
+  sellerConfigs QRConfig[] @relation("SellerConfig")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+model QRConfig {
+  id            String   @id @default(cuid())
+  
+  // Each configuration belongs to exactly one seller
+  sellerId      String   @unique // One-to-one relationship
+  
+  // Button 1: Send Method
+  sendMethod    String   @default("URL") // "URL" or "APP"
+  
+  // Button 2: Landing Page Required?
+  landingPageRequired Boolean @default(true) // Yes/No
+  
+  // Button 3: Allow Custom Guests/Days?
+  allowCustomGuestsDays Boolean @default(false) // Yes/No
+  defaultGuests Int      @default(2) // Default if custom not allowed
+  defaultDays   Int      @default(3) // Default if custom not allowed
+  
+  // Button 4: Pricing Type
+  pricingType   String   @default("FIXED") // "FIXED", "VARIABLE", "FREE"
+  fixedPrice    Float?   // Only for fixed pricing
+  
+  // Button 5: Send Rebuy Email?
+  sendRebuyEmail Boolean @default(false) // Yes/No
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  seller        User     @relation("SellerConfig", fields: [sellerId], references: [id], onDelete: Cascade)
+}
+
+model QRCode {
+  id          String    @id @default(cuid())
+  code        String    @unique // The actual QR code value
+  sellerId    String
+  guests      Int       @default(2)
+  days        Int       @default(3)
+  expiresAt   DateTime
+  isActive    Boolean   @default(true)
+  landingUrl  String?   // Generated landing page URL
+  createdAt   DateTime  @default(now())
+  
+  seller User @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  scans  QRScan[]
+
+  @@map("qr_codes")
+}
+
+model QRScan {
+  id         String   @id @default(cuid())
+  qrCodeId   String
+  scannedAt  DateTime @default(now())
+  location   String?  // GPS coordinates or location name
+  business   String?  // Business where it was scanned
+  
+  qrCode QRCode @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@map("qr_scans")
+}
