@@ -7,9 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:push": "prisma db push",
+    "db:push": "echo '🚫 BLOCKED: Use db:push-confirmed only with explicit approval' && exit 1",
+    "db:push-confirmed": "prisma db push",
+    "db:reset": "echo '🚫 BLOCKED: Use db:reset-confirmed only with explicit approval' && exit 1", 
+    "db:reset-confirmed": "prisma migrate reset",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:status": "prisma migrate status"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

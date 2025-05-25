@@ -11,6 +11,7 @@ const getNavItems = (userRole: string) => {
       { href: "/admin", label: "Dashboard", icon: Building2 },
       { href: "/admin/distributors", label: "Distributors", icon: Users },
       { href: "/admin/locations", label: "Locations", icon: MapPin },
+      { href: "/admin/sellers", label: "Sellers", icon: Users },
       { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
     ]
   }
@@ -25,11 +26,11 @@ export default function AdminPage() {
     <ProtectedRoute allowedRoles={["ADMIN"]}>
       <div className="min-h-screen bg-gray-100">
         {/* Navigation */}
-        <nav className="bg-white shadow-sm">
+        <nav className="bg-orange-400 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center space-x-8">
-                <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+                <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
                 <div className="flex space-x-4">
                   {navItems.map((item) => {
                     const Icon = item.icon
@@ -37,7 +38,7 @@ export default function AdminPage() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-orange-100 hover:text-white hover:bg-orange-500"
                       >
                         <Icon className="w-4 h-4 mr-2" />
                         {item.label}
@@ -47,10 +48,10 @@ export default function AdminPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">Welcome, {session?.user?.name}</span>
+                <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                 >
                   Sign Out
                 </button>
@@ -162,12 +163,25 @@ export default function AdminPage() {
                   href="/admin/locations"
                   className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
                 >
-                  <div className="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg mb-4 group-hover:bg-orange-200 transition-colors">
-                    <MapPin className="w-6 h-6 text-orange-600" />
+                  <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg mb-4 group-hover:bg-gray-200 transition-colors">
+                    <MapPin className="w-6 h-6 text-gray-600" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Location Management</h3>
                   <p className="text-sm text-gray-600">
                     Oversee all locations and their assigned managers and sellers
+                  </p>
+                </Link>
+
+                <Link
+                  href="/admin/sellers"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                >
+                  <div className="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg mb-4 group-hover:bg-orange-200 transition-colors">
+                    <Users className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Sellers</h3>
+                  <p className="text-sm text-gray-600">
+                    Create seller accounts and configure their QR code settings
                   </p>
                 </Link>
 

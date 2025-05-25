@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "../../../../auth/[...nextauth]/route"
-import { prisma } from "../../../../../../lib/prisma"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
+import { PrismaClient } from "@prisma/client"
+
+declare global {
+  var prisma: PrismaClient | undefined
+}
+
+const prisma = global.prisma || new PrismaClient()
+if (process.env.NODE_ENV === "development") global.prisma = prisma
 
 export async function PATCH(
   request: NextRequest,
@@ -16,27 +23,27 @@ export async function PATCH(
 
     const { id } = params
 
-    // Get current seller status
-    const seller = await prisma.user.findUnique({
-      where: { id }
-    })
+    // Get current seller status using raw query
+    const seller = await prisma.$queryRaw`
+      SELECT id, name, isActive, role FROM User WHERE id = ${id} AND role = 'SELLER'
+    `
 
-    if (!seller) {
+    if (!seller || (seller as any[]).length === 0) {
       return NextResponse.json({ error: "Seller not found" }, { status: 404 })
     }
 
-    const newStatus = !seller.isActive
+    const currentSeller = (seller as any[])[0]
+    const newStatus = !currentSeller.isActive
 
-    // Update seller status
-    await prisma.user.update({
-      where: { id },
-      data: { isActive: newStatus }
-    })
+    // Update only the individual seller (no cascading)
+    await prisma.$executeRaw`
+      UPDATE User SET isActive = ${newStatus} WHERE id = ${id}
+    `
 
     return NextResponse.json({ 
       success: true, 
       isActive: newStatus,
-      message: `Seller ${newStatus ? 'activated' : 'deactivated'}` 
+      message: `Seller ${newStatus ? 'activated' : 'deactivated'} successfully`
     })
 
   } catch (error) {

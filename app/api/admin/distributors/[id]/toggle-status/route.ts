@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "../../../../auth/[...nextauth]/route"
-import { prisma } from "../../../../../../lib/prisma"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
+import { PrismaClient } from "@prisma/client"
+
+declare global {
+  var prisma: PrismaClient | undefined
+}
+
+const prisma = global.prisma || new PrismaClient()
+if (process.env.NODE_ENV === "development") global.prisma = prisma
 
 export async function PATCH(
   request: NextRequest,
@@ -16,63 +23,61 @@ export async function PATCH(
 
     const { id } = params
 
-    // Get current distributor status
-    const distributor = await prisma.distributor.findUnique({
-      where: { id },
-      include: {
-        locations: {
-          include: {
-            sellers: true
-          }
-        }
-      }
-    })
+    // Get current distributor status using raw query to avoid model issues
+    const distributor = await prisma.$queryRaw`
+      SELECT id, name, isActive, userId FROM Distributor WHERE id = ${id}
+    `
 
-    if (!distributor) {
+    if (!distributor || (distributor as any[]).length === 0) {
       return NextResponse.json({ error: "Distributor not found" }, { status: 404 })
     }
 
-    const newStatus = !distributor.isActive
+    const currentDistributor = (distributor as any[])[0]
+    const newStatus = !currentDistributor.isActive
 
-    // Update distributor and cascade to all locations and sellers
+    // Update distributor and cascade using raw SQL to avoid model issues
     await prisma.$transaction(async (tx) => {
-      // Update distributor status
-      await tx.distributor.update({
-        where: { id },
-        data: { isActive: newStatus }
-      })
+      // Update distributor
+      await tx.$executeRaw`
+        UPDATE Distributor SET isActive = ${newStatus} WHERE id = ${id}
+      `
+      
+      // Update distributor's user
+      await tx.$executeRaw`
+        UPDATE User SET isActive = ${newStatus} WHERE id = ${currentDistributor.userId}
+      `
 
-      // Update all locations under this distributor
-      const locationIds = distributor.locations.map(loc => loc.id)
-      if (locationIds.length > 0) {
-        await tx.location.updateMany({
-          where: { id: { in: locationIds } },
-          data: { isActive: newStatus }
-        })
+      // Get all locations for this distributor
+      const locations = await tx.$queryRaw`
+        SELECT id, userId FROM Location WHERE distributorId = ${id}
+      `
+
+      // Update all locations and their users
+      for (const location of locations as any[]) {
+        await tx.$executeRaw`
+          UPDATE Location SET isActive = ${newStatus} WHERE id = ${location.id}
+        `
+        await tx.$executeRaw`
+          UPDATE User SET isActive = ${newStatus} WHERE id = ${location.userId}
+        `
+
+        // Get all sellers for this location and update them
+        const sellers = await tx.$queryRaw`
+          SELECT id FROM User WHERE locationId = ${location.id} AND role = 'SELLER'
+        `
+        
+        for (const seller of sellers as any[]) {
+          await tx.$executeRaw`
+            UPDATE User SET isActive = ${newStatus} WHERE id = ${seller.id}
+          `
+        }
       }
-
-      // Update all sellers under these locations
-      const sellerIds = distributor.locations.flatMap(loc => 
-        loc.sellers.map(seller => seller.id)
-      )
-      if (sellerIds.length > 0) {
-        await tx.user.updateMany({
-          where: { id: { in: sellerIds } },
-          data: { isActive: newStatus }
-        })
-      }
-
-      // Also update the distributor's user account
-      await tx.user.update({
-        where: { id: distributor.userId },
-        data: { isActive: newStatus }
-      })
     })
 
     return NextResponse.json({ 
       success: true, 
       isActive: newStatus,
-      message: `Distributor and all related locations and sellers ${newStatus ? 'activated' : 'deactivated'}` 
+      message: `Distributor ${newStatus ? 'activated' : 'deactivated'} successfully with all related locations and sellers`
     })
 
   } catch (error) {
