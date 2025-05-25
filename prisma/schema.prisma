@@ -13,6 +13,7 @@ model User {
   password           String
   name               String?
   role               String       @default("SELLER")
+  isActive           Boolean      @default(true)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
   locationId         String?
@@ -113,6 +114,7 @@ model QRScan {
 model Distributor {
   id            String     @id @default(cuid())
   name          String
+  isActive      Boolean    @default(true)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   userId        String     @unique
@@ -127,10 +129,15 @@ model Distributor {
 model Location {
   id            String      @id @default(cuid())
   name          String
+  isActive      Boolean     @default(true)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   distributorId String
   userId        String      @unique
+  contactPerson String?
+  email         String?
+  notes         String?
+  telephone     String?
   distributor   Distributor @relation("DistributorLocations", fields: [distributorId], references: [id], onDelete: Cascade)
   user          User        @relation("LocationUser", fields: [userId], references: [id], onDelete: Cascade)
   sellers       User[]      @relation("LocationSellers")

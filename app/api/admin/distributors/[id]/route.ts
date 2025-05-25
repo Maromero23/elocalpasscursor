@@ -17,7 +17,13 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const distributor = await prisma.distributor.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        contactPerson: true,
+        email: true,
+        telephone: true,
+        notes: true,
         user: {
           select: {
             id: true,
@@ -28,14 +34,38 @@ export async function GET(request: Request, { params }: { params: { id: string }
           }
         },
         locations: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            contactPerson: true,
+            email: true,
+            telephone: true,
+            notes: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                createdAt: true
+              }
+            },
             sellers: {
               where: { role: "SELLER" },
               select: {
                 id: true,
                 name: true,
                 email: true,
-                role: true
+                role: true,
+                createdAt: true,
+                sellerConfigs: {
+                  select: {
+                    sendMethod: true,
+                    defaultGuests: true,
+                    defaultDays: true,
+                    fixedPrice: true
+                  }
+                }
               }
             },
             _count: {
@@ -118,7 +148,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       const updatedDistributor = await tx.distributor.update({
         where: { id },
         data: { name, contactPerson, email: alternativeEmail, telephone, notes },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          contactPerson: true,
+          email: true,
+          telephone: true,
+          notes: true,
           user: {
             select: {
               id: true,

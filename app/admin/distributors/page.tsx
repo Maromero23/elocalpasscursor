@@ -4,16 +4,18 @@ import React, { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../../components/auth/protected-route"
 import Link from "next/link"
-import { MapPin, Building2, Users, ChevronRight, ChevronDown, Edit2, Save, X, Plus } from "lucide-react"
+import { MapPin, Building2, Users, ChevronRight, ChevronDown, Edit2, Save, X, Plus, Settings, Trash2, User, Mail, Phone } from "lucide-react"
 
 interface Distributor {
   id: string
   name: string
+  isActive: boolean
   user: {
     id: string
     name: string
     email: string
     role: string
+    isActive: boolean
     createdAt: string
   }
   _count: {
@@ -24,6 +26,7 @@ interface Distributor {
 interface DistributorDetails {
   id: string
   name: string
+  isActive: boolean
   contactPerson?: string
   email?: string
   telephone?: string
@@ -33,20 +36,42 @@ interface DistributorDetails {
     name: string
     email: string
     role: string
+    isActive: boolean
     createdAt: string
   }
   locations: {
     id: string
     name: string
-    sellers: {
+    isActive: boolean
+    createdAt: string
+    contactPerson: string | null
+    email: string | null
+    telephone: string | null
+    notes: string | null
+    user: {
       id: string
-      name: string
-      email: string
-      role: string
-    }[]
+      name: string | null
+      email: string | null
+      isActive: boolean
+      createdAt: string
+    } | null
     _count: {
       sellers: number
     }
+    sellers: {
+      id: string
+      name: string | null
+      email: string | null
+      isActive: boolean
+      role: string
+      createdAt: string
+      sellerConfigs: {
+        sendMethod: string
+        defaultGuests: number
+        defaultDays: number
+        fixedPrice: number
+      } | null
+    }[]
   }[]
   _count: {
     locations: number
@@ -71,17 +96,27 @@ export default function DistributorsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [expandedDistributor, setExpandedDistributor] = useState<string | null>(null)
+  const [expandedLocation, setExpandedLocation] = useState<string | null>(null)
+  const [selectedSeller, setSelectedSeller] = useState<string | null>(null)
   const [distributorDetails, setDistributorDetails] = useState<{ [key: string]: DistributorDetails }>({})
   const [loadingDetails, setLoadingDetails] = useState<{ [key: string]: boolean }>({})
   
   // Edit mode states
   const [editingDistributor, setEditingDistributor] = useState<string | null>(null)
+  const [editingLocation, setEditingLocation] = useState<string | null>(null)
   const [editFormData, setEditFormData] = useState({
     name: "",
     contactPerson: "",
     email: "",
     password: "",
     alternativeEmail: "",
+    telephone: "",
+    notes: ""
+  })
+  const [locationEditFormData, setLocationEditFormData] = useState({
+    name: "",
+    contactPerson: "",
+    email: "",
     telephone: "",
     notes: ""
   })
@@ -107,7 +142,16 @@ export default function DistributorsPage() {
   const [sellerFormData, setSellerFormData] = useState({
     name: "",
     email: "",
-    password: ""
+    password: "",
+    // QR Configuration
+    sendMethod: "URL",
+    landingPageRequired: true,
+    allowCustomGuestsDays: false,
+    defaultGuests: 2,
+    defaultDays: 3,
+    pricingType: "FIXED",
+    fixedPrice: 0,
+    sendRebuyEmail: false
   })
   
   const [isCreatingLocation, setIsCreatingLocation] = useState(false)
@@ -144,20 +188,46 @@ export default function DistributorsPage() {
       if (response.ok) {
         const data = await response.json()
         setDistributorDetails(prev => ({ ...prev, [distributorId]: data }))
+      } else {
+        setError("Failed to fetch distributor details")
       }
     } catch (error) {
-      console.error("Error fetching distributor details:", error)
+      setError("Error fetching distributor details")
     } finally {
       setLoadingDetails(prev => ({ ...prev, [distributorId]: false }))
     }
   }
 
-  const handleDistributorClick = (distributorId: string) => {
+  const handleDistributorClick = async (distributorId: string) => {
     if (expandedDistributor === distributorId) {
       setExpandedDistributor(null)
+      setExpandedLocation(null)
+      setSelectedSeller(null)
     } else {
       setExpandedDistributor(distributorId)
-      fetchDistributorDetails(distributorId)
+      setExpandedLocation(null)
+      setSelectedSeller(null)
+      if (!distributorDetails[distributorId]) {
+        await fetchDistributorDetails(distributorId)
+      }
+    }
+  }
+
+  const handleLocationClick = (locationId: string) => {
+    if (expandedLocation === locationId) {
+      setExpandedLocation(null)
+      setSelectedSeller(null)
+    } else {
+      setExpandedLocation(locationId)
+      setSelectedSeller(null)
+    }
+  }
+
+  const handleSellerClick = (sellerId: string) => {
+    if (selectedSeller === sellerId) {
+      setSelectedSeller(null)
+    } else {
+      setSelectedSeller(sellerId)
     }
   }
 
@@ -228,6 +298,69 @@ export default function DistributorsPage() {
     }
   }
 
+  // Location edit handlers
+  const handleEditLocationClick = (location: any, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingLocation(location.id)
+    
+    // Pre-populate form with current location data
+    setLocationEditFormData({
+      name: location.name,
+      contactPerson: location.contactPerson || location.user?.name || "",
+      email: location.email || location.user?.email || "",
+      telephone: location.telephone || "",
+      notes: location.notes || ""
+    })
+  }
+
+  const handleCancelLocationEdit = () => {
+    setEditingLocation(null)
+    setLocationEditFormData({
+      name: "",
+      contactPerson: "",
+      email: "",
+      telephone: "",
+      notes: ""
+    })
+  }
+
+  const handleSaveLocationEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingLocation) return
+
+    setIsUpdating(true)
+    try {
+      const response = await fetch(`/api/admin/locations/${editingLocation}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(locationEditFormData),
+      })
+
+      if (response.ok) {
+        // Refresh the distributors list and details
+        await fetchDistributors()
+        // Refresh the specific distributor details that contains this location
+        const distributorId = Object.keys(distributorDetails).find(distId => 
+          distributorDetails[distId]?.locations?.some(loc => loc.id === editingLocation)
+        )
+        if (distributorId) {
+          await fetchDistributorDetails(distributorId)
+        }
+        setEditingLocation(null)
+      } else {
+        const errorData = await response.json()
+        alert(`Error: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error("Error updating location:", error)
+      alert("Failed to update location")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   const handleCreateLocation = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedDistributorId) return
@@ -282,7 +415,7 @@ export default function DistributorsPage() {
 
       if (response.ok) {
         // Reset form and close modal
-        setSellerFormData({ name: "", email: "", password: "" })
+        setSellerFormData({ name: "", email: "", password: "", sendMethod: "URL", landingPageRequired: true, allowCustomGuestsDays: false, defaultGuests: 2, defaultDays: 3, pricingType: "FIXED", fixedPrice: 0, sendRebuyEmail: false })
         setShowSellerModal(false)
         setSelectedLocationId(null)
         setSelectedDistributorId(null)
@@ -300,6 +433,86 @@ export default function DistributorsPage() {
       setError("Network error occurred")
     } finally {
       setIsCreatingSeller(false)
+    }
+  }
+
+  // Status toggle handlers
+  const toggleDistributorStatus = async (distributorId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      const response = await fetch(`/api/admin/distributors/${distributorId}/toggle-status`, {
+        method: "PATCH",
+      })
+
+      if (response.ok) {
+        await fetchDistributors()
+        // Refresh details if expanded
+        if (distributorDetails[distributorId]) {
+          await fetchDistributorDetails(distributorId)
+        }
+      } else {
+        const errorData = await response.json()
+        alert(`Error: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error("Error toggling distributor status:", error)
+      alert("Failed to toggle distributor status")
+    }
+  }
+
+  const toggleLocationStatus = async (locationId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      const response = await fetch(`/api/admin/locations/${locationId}/toggle-status`, {
+        method: "PATCH",
+      })
+
+      if (response.ok) {
+        // Refresh the distributors list and details
+        await fetchDistributors()
+        // Refresh the specific distributor details that contains this location
+        const distributorId = Object.keys(distributorDetails).find(distId => 
+          distributorDetails[distId]?.locations?.some(loc => loc.id === locationId)
+        )
+        if (distributorId) {
+          await fetchDistributorDetails(distributorId)
+        }
+      } else {
+        const errorData = await response.json()
+        alert(`Error: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error("Error toggling location status:", error)
+      alert("Failed to toggle location status")
+    }
+  }
+
+  const toggleSellerStatus = async (sellerId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      const response = await fetch(`/api/admin/sellers/${sellerId}/toggle-status`, {
+        method: "PATCH",
+      })
+
+      if (response.ok) {
+        // Refresh the distributors list and details
+        await fetchDistributors()
+        // Refresh the specific distributor details that contains this seller's location
+        const distributorId = Object.keys(distributorDetails).find(distId => 
+          distributorDetails[distId]?.locations?.some(loc => 
+            loc.sellers.some(seller => seller.id === sellerId)
+          )
+        )
+        if (distributorId) {
+          await fetchDistributorDetails(distributorId)
+        }
+      } else {
+        const errorData = await response.json()
+        alert(`Error: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error("Error toggling seller status:", error)
+      alert("Failed to toggle seller status")
     }
   }
 
@@ -415,7 +628,7 @@ export default function DistributorsPage() {
                         <React.Fragment key={distributor.id}>
                           <tr 
                             key={distributor.id} 
-                            className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors cursor-pointer`}
+                            className={`hover:bg-gray-50 cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                             onClick={() => handleDistributorClick(distributor.id)}
                           >
                             <td className="px-4 py-4 whitespace-nowrap">
@@ -428,7 +641,7 @@ export default function DistributorsPage() {
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-8 w-8">
                                   <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Building2 className="h-4 w-4 text-blue-600" />
+                                    <Building2 className="h-4 w-4" />
                                   </div>
                                 </div>
                                 <div className="ml-3">
@@ -458,7 +671,7 @@ export default function DistributorsPage() {
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium text-gray-900">
-                                  {distributor._count.locations} location{distributor._count.locations !== 1 ? 's' : ''}
+                                  {distributorDetails[distributor.id]?._count?.locations} location{distributorDetails[distributor.id]?._count?.locations !== 1 ? 's' : ''}
                                 </span>
                                 <div className="text-blue-600 hover:text-blue-800">
                                   {expandedDistributor === distributor.id ? (
@@ -470,10 +683,13 @@ export default function DistributorsPage() {
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <div className="w-1.5 h-1.5 bg-green-600 rounded-full mr-1.5"></div>
-                                Active
-                              </span>
+                              <button 
+                                onClick={(e) => toggleDistributorStatus(distributor.id, e)}
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${distributor.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                              >
+                                <div className={`w-1.5 h-1.5 ${distributor.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
+                                {distributor.isActive ? 'Active' : 'Inactive'}
+                              </button>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <div className="flex items-center space-x-2">
@@ -483,8 +699,11 @@ export default function DistributorsPage() {
                                 >
                                   <Edit2 className="h-4 w-4" />
                                 </button>
-                                <button className="text-gray-400 hover:text-gray-600">
-                                  <span className="sr-only">More options</span>
+                                <button
+                                  onClick={(e) => toggleDistributorStatus(distributor.id, e)}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  <span className="sr-only">Toggle Status</span>
                                   <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                                   </svg>
@@ -633,85 +852,372 @@ export default function DistributorsPage() {
                             </tr>
                           )}
 
-                          {/* Expanded Details Row */}
-                          {expandedDistributor === distributor.id && editingDistributor !== distributor.id && (
+                          {/* Locations Dropdown */}
+                          {expandedDistributor === distributor.id && (
                             <tr>
-                              <td colSpan={8} className="px-0 py-0">
-                                <div className="bg-gray-50 border-l-4 border-gray-300">
+                              <td colSpan={8} className="bg-orange-50 border-t">
+                                <div className="px-4 py-3">
                                   {loadingDetails[distributor.id] ? (
-                                    <div className="p-6 text-center">
-                                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                                      <p className="text-sm text-gray-500 mt-2">Loading details...</p>
+                                    <div className="text-center py-6">
+                                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 mx-auto"></div>
+                                      <p className="text-sm text-gray-500 mt-2">Loading locations...</p>
                                     </div>
                                   ) : distributorDetails[distributor.id] ? (
-                                    <div className="p-6">
-                                      <div className="flex items-center justify-between mb-4">
-                                        <h4 className="text-md font-semibold text-gray-900">
-                                          Locations & Sellers
+                                    <>
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                                          <Building2 className="w-4 h-4 text-orange-600 mr-2" />
+                                          Locations ({distributorDetails[distributor.id]?._count?.locations || 0})
                                         </h4>
                                         <button
-                                          onClick={() => {
+                                          onClick={(e) => {
+                                            e.stopPropagation();
                                             setSelectedDistributorId(distributor.id);
                                             setShowLocationModal(true);
                                           }}
-                                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                                          className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-orange-600 hover:bg-orange-700"
                                         >
                                           <Plus className="w-3 h-3 mr-1" />
                                           Add Location
                                         </button>
                                       </div>
-                                      {distributorDetails[distributor.id].locations.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                          {distributorDetails[distributor.id].locations.map((location) => (
-                                            <div key={location.id} className="bg-white rounded-lg border border-gray-200 p-4">
-                                              <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center">
-                                                  <MapPin className="w-4 h-4 text-orange-600 mr-2" />
-                                                  <span className="font-medium text-gray-900 text-sm">
-                                                    {location.name}
-                                                  </span>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                                    {location._count.sellers} Sellers
-                                                  </span>
-                                                  <button
-                                                    onClick={() => {
-                                                      setSelectedLocationId(location.id);
-                                                      setSelectedDistributorId(distributor.id);
-                                                      setShowSellerModal(true);
+                                      
+                                      {distributorDetails[distributor.id].locations && distributorDetails[distributor.id].locations.length > 0 ? (
+                                        <div className="bg-white rounded-lg border border-orange-200 overflow-hidden">
+                                          <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-orange-100">
+                                              <tr>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Location Name</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Contact Person</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telephone</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sellers</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                              {distributorDetails[distributor.id].locations.map((location) => (
+                                                <React.Fragment key={location.id}>
+                                                  <tr 
+                                                    className="hover:bg-orange-50 cursor-pointer"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleLocationClick(location.id);
                                                     }}
-                                                    className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                                                   >
-                                                    <Plus className="w-3 h-3 mr-1" />
-                                                    Add Seller
-                                                  </button>
-                                                </div>
-                                              </div>
-                                              {location.sellers.length > 0 && (
-                                                <div className="mt-2">
-                                                  <div className="text-xs text-gray-600 mb-1">Sellers:</div>
-                                                  <div className="space-y-1">
-                                                    {location.sellers.map((seller) => (
-                                                      <div
-                                                        key={seller.id}
-                                                        className="text-xs text-gray-700 bg-gray-50 rounded px-2 py-1"
-                                                      >
-                                                        {seller.name} ({seller.email})
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                      <div className="flex items-center">
+                                                        <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+                                                          <span className="text-sm font-medium text-orange-600">
+                                                            {location.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                                          </span>
+                                                        </div>
+                                                        <div className="text-sm font-medium text-gray-900">{location.name}</div>
                                                       </div>
-                                                    ))}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
-                                          ))}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                      {location.contactPerson || location.user?.name || '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                      {location.email || location.user?.email || '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                      {location.telephone || '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                        {location._count.sellers} seller{location._count.sellers !== 1 ? 's' : ''}
+                                                      </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                      <button 
+                                                        onClick={(e) => toggleLocationStatus(location.id, e)}
+                                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${location.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                                                      >
+                                                        <div className={`w-1.5 h-1.5 ${location.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
+                                                        {location.isActive ? 'Active' : 'Inactive'}
+                                                      </button>
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                                      <div className="flex items-center justify-end space-x-2">
+                                                        <button
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEditLocationClick(location, e);
+                                                          }}
+                                                          className="text-orange-600 hover:text-orange-800 p-1"
+                                                          title="Edit Location"
+                                                        >
+                                                          <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleLocationClick(location.id);
+                                                          }}
+                                                          className="text-orange-600 hover:text-orange-800 p-1"
+                                                          title="View Sellers"
+                                                        >
+                                                          {expandedLocation === location.id ? (
+                                                            <ChevronDown className="h-4 w-4" />
+                                                          ) : (
+                                                            <ChevronRight className="h-4 w-4" />
+                                                          )}
+                                                        </button>
+                                                        <button
+                                                          onClick={(e) => toggleLocationStatus(location.id, e)}
+                                                          className="text-gray-400 hover:text-gray-600"
+                                                        >
+                                                          <span className="sr-only">Toggle Status</span>
+                                                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                                          </svg>
+                                                        </button>
+                                                      </div>
+                                                    </td>
+                                                  </tr>
+
+                                                  {/* Location Edit Form */}
+                                                  {editingLocation === location.id && (
+                                                    <tr>
+                                                      <td colSpan={7} className="px-0 py-0">
+                                                        <div className="bg-orange-50 border-l-4 border-orange-400">
+                                                          <form onSubmit={handleSaveLocationEdit} className="p-6">
+                                                            <div className="flex items-center justify-between mb-4">
+                                                              <h4 className="text-md font-semibold text-gray-900">Edit Location</h4>
+                                                              <button
+                                                                type="button"
+                                                                onClick={handleCancelLocationEdit}
+                                                                className="text-gray-400 hover:text-gray-600"
+                                                              >
+                                                                <X className="w-5 h-5" />
+                                                              </button>
+                                                            </div>
+                                                            
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                              <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                  Location Name *
+                                                                </label>
+                                                                <input
+                                                                  type="text"
+                                                                  value={locationEditFormData.name}
+                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                  required
+                                                                />
+                                                              </div>
+
+                                                              <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                  Contact Person
+                                                                </label>
+                                                                <input
+                                                                  type="text"
+                                                                  value={locationEditFormData.contactPerson}
+                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
+                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                />
+                                                              </div>
+
+                                                              <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                  Email
+                                                                </label>
+                                                                <input
+                                                                  type="email"
+                                                                  value={locationEditFormData.email}
+                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                />
+                                                              </div>
+
+                                                              <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                  Telephone
+                                                                </label>
+                                                                <input
+                                                                  type="tel"
+                                                                  value={locationEditFormData.telephone}
+                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, telephone: e.target.value }))}
+                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                />
+                                                              </div>
+                                                            </div>
+
+                                                            <div className="mt-4">
+                                                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Notes
+                                                              </label>
+                                                              <textarea
+                                                                value={locationEditFormData.notes}
+                                                                onChange={(e) => setLocationEditFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                                                rows={3}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                placeholder="Additional notes..."
+                                                              />
+                                                            </div>
+
+                                                            <div className="flex justify-end space-x-3 mt-6">
+                                                              <button
+                                                                type="button"
+                                                                onClick={handleCancelLocationEdit}
+                                                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                                                              >
+                                                                Cancel
+                                                              </button>
+                                                              <button
+                                                                type="submit"
+                                                                disabled={isUpdating}
+                                                                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md hover:bg-orange-700 disabled:opacity-50"
+                                                              >
+                                                                {isUpdating ? "Updating..." : "Update Location"}
+                                                              </button>
+                                                            </div>
+                                                          </form>
+                                                        </div>
+                                                      </td>
+                                                    </tr>
+                                                  )}
+
+                                                  {/* Sellers Dropdown */}
+                                                  {expandedLocation === location.id && (
+                                                    <tr>
+                                                      <td colSpan={7} className="bg-green-50 border-t">
+                                                        <div className="px-4 py-3">
+                                                          <div className="flex items-center justify-between mb-3">
+                                                            <h5 className="text-sm font-semibold text-gray-900 flex items-center">
+                                                              <Users className="w-4 h-4 text-green-600 mr-2" />
+                                                              Sellers ({location.sellers.length})
+                                                            </h5>
+                                                            <button
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedLocationId(location.id);
+                                                                setShowSellerModal(true);
+                                                              }}
+                                                              className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700"
+                                                            >
+                                                              <Plus className="w-3 h-3 mr-1" />
+                                                              Add Seller
+                                                            </button>
+                                                          </div>
+                                                          
+                                                          {location.sellers.length > 0 ? (
+                                                            <div className="bg-white rounded-lg border border-green-200 overflow-hidden">
+                                                              <table className="min-w-full divide-y divide-gray-200">
+                                                                <thead className="bg-green-100">
+                                                                  <tr>
+                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Seller Name</th>
+                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Contact Person</th>
+                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telephone</th>
+                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Config</th>
+                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                                                  </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-gray-200">
+                                                                  {location.sellers.map((seller) => (
+                                                                    <tr key={seller.id} className="hover:bg-green-50">
+                                                                      <td className="px-4 py-3 whitespace-nowrap">
+                                                                        <div className="flex items-center">
+                                                                          <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                                                            <span className="text-sm font-medium text-green-600">
+                                                                              {seller.name ? seller.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'S'}
+                                                                            </span>
+                                                                          </div>
+                                                                          <div className="text-sm font-medium text-gray-900">{seller.name || 'Unnamed Seller'}</div>
+                                                                        </div>
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                                        {seller.name}
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                                        {seller.email}
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                                        —
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap">
+                                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                                          seller.sellerConfigs 
+                                                                            ? 'bg-blue-100 text-blue-800' 
+                                                                            : 'bg-gray-100 text-gray-800'
+                                                                        }`}>
+                                                                          {seller.sellerConfigs ? 'Configured' : 'Pending Setup'}
+                                                                        </span>
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap">
+                                                                        <button 
+                                                                          onClick={(e) => toggleSellerStatus(seller.id, e)}
+                                                                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${seller.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                                                                        >
+                                                                          <div className={`w-1.5 h-1.5 ${seller.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
+                                                                          {seller.isActive ? 'Active' : 'Inactive'}
+                                                                        </button>
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                                                        <div className="flex items-center justify-end space-x-2">
+                                                                          <button
+                                                                            onClick={(e) => {
+                                                                              e.stopPropagation();
+                                                                              console.log('Edit seller:', seller.id);
+                                                                            }}
+                                                                            className="text-green-600 hover:text-green-800 p-1"
+                                                                            title="Edit Seller"
+                                                                          >
+                                                                            <Edit2 className="w-4 h-4" />
+                                                                          </button>
+                                                                          <button
+                                                                            onClick={(e) => {
+                                                                              e.stopPropagation();
+                                                                              console.log('Configure seller:', seller.id);
+                                                                            }}
+                                                                            className="text-blue-600 hover:text-blue-800 p-1"
+                                                                            title="Configure Seller"
+                                                                          >
+                                                                            <Settings className="w-4 h-4" />
+                                                                          </button>
+                                                                          <button
+                                                                            onClick={(e) => toggleSellerStatus(seller.id, e)}
+                                                                            className="text-gray-400 hover:text-gray-600"
+                                                                          >
+                                                                            <span className="sr-only">Toggle Status</span>
+                                                                            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                                                            </svg>
+                                                                          </button>
+                                                                        </div>
+                                                                      </td>
+                                                                    </tr>
+                                                                  ))}
+                                                                </tbody>
+                                                              </table>
+                                                            </div>
+                                                          ) : (
+                                                            <div className="text-center py-4 text-gray-500 text-sm">
+                                                              No sellers found for this location.
+                                                            </div>
+                                                          )}
+                                                        </div>
+                                                      </td>
+                                                    </tr>
+                                                  )}
+                                                </React.Fragment>
+                                              ))}
+                                            </tbody>
+                                          </table>
                                         </div>
                                       ) : (
-                                        <p className="text-gray-500 text-sm">No locations found for this distributor.</p>
+                                        <div className="text-center py-4 text-gray-500 text-sm">
+                                          No locations found for this distributor.
+                                        </div>
                                       )}
-                                    </div>
+                                    </>
                                   ) : (
-                                    <div className="p-6 text-center">
+                                    <div className="text-center py-4">
                                       <p className="text-red-500 text-sm">Failed to load details</p>
                                     </div>
                                   )}
@@ -886,46 +1392,172 @@ export default function DistributorsPage() {
                   </div>
                   
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Seller Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={sellerFormData.name}
-                        onChange={(e) => setSellerFormData(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                        required
-                        placeholder="Enter seller name"
-                      />
+                    {/* Seller Details Section */}
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="text-md font-semibold text-gray-800 mb-3">👤 Seller Details</div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Seller Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={sellerFormData.name}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                            placeholder="Enter seller name"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email *
+                          </label>
+                          <input
+                            type="email"
+                            value={sellerFormData.email}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                            placeholder="seller@example.com"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Password *
+                          </label>
+                          <input
+                            type="password"
+                            value={sellerFormData.password}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, password: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                            placeholder="Password for seller account"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    
+
+                    {/* QR Configuration Section */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email *
-                      </label>
-                      <input
-                        type="email"
-                        value={sellerFormData.email}
-                        onChange={(e) => setSellerFormData(prev => ({ ...prev, email: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                        required
-                        placeholder="seller@example.com"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Password *
-                      </label>
-                      <input
-                        type="password"
-                        value={sellerFormData.password}
-                        onChange={(e) => setSellerFormData(prev => ({ ...prev, password: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                        required
-                        placeholder="Password for seller account"
-                      />
+                      <div className="text-md font-semibold text-gray-800 mb-3">⚙️ QR Configuration</div>
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Send Method *
+                          </label>
+                          <select
+                            value={sellerFormData.sendMethod}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, sendMethod: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                          >
+                            <option value="URL">URL</option>
+                            <option value="QR Code">QR Code</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Landing Page Required *
+                          </label>
+                          <select
+                            value={sellerFormData.landingPageRequired.toString()}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, landingPageRequired: e.target.value === 'true' }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                          >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Allow Custom Guests Days *
+                          </label>
+                          <select
+                            value={sellerFormData.allowCustomGuestsDays.toString()}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, allowCustomGuestsDays: e.target.value === 'true' }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                          >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Default Guests *
+                          </label>
+                          <input
+                            type="number"
+                            value={sellerFormData.defaultGuests}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, defaultGuests: parseInt(e.target.value) }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Default Days *
+                          </label>
+                          <input
+                            type="number"
+                            value={sellerFormData.defaultDays}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, defaultDays: parseInt(e.target.value) }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Pricing Type *
+                          </label>
+                          <select
+                            value={sellerFormData.pricingType}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, pricingType: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                          >
+                            <option value="FIXED">Fixed</option>
+                            <option value="PER_GUEST">Per Guest</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Fixed Price *
+                          </label>
+                          <input
+                            type="number"
+                            value={sellerFormData.fixedPrice}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, fixedPrice: parseFloat(e.target.value) }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Send Rebuy Email *
+                          </label>
+                          <select
+                            value={sellerFormData.sendRebuyEmail.toString()}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, sendRebuyEmail: e.target.value === 'true' }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                            required
+                          >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -951,7 +1583,7 @@ export default function DistributorsPage() {
                       setShowSellerModal(false)
                       setSelectedLocationId(null)
                       setSelectedDistributorId(null)
-                      setSellerFormData({ name: "", email: "", password: "" })
+                      setSellerFormData({ name: "", email: "", password: "", sendMethod: "URL", landingPageRequired: true, allowCustomGuestsDays: false, defaultGuests: 2, defaultDays: 3, pricingType: "FIXED", fixedPrice: 0, sendRebuyEmail: false })
                     }}
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >
