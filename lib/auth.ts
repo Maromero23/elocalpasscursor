@@ -1,11 +1,9 @@
 import CredentialsProvider from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@next-auth/prisma-adapter"
-import { prisma } from "./prisma"
+import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { NextAuthOptions } from "next-auth"
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -14,34 +12,54 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        console.log('🔍 AUTH DEBUG: Starting authorization...')
+        
         if (!credentials?.email || !credentials?.password) {
+          console.log('❌ AUTH DEBUG: Missing email or password')
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
+        console.log('📧 AUTH DEBUG: Looking for user:', credentials.email)
+
+        try {
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email
+            }
+          })
+
+          console.log('🔍 AUTH DEBUG: Prisma query completed')
+          console.log('👤 AUTH DEBUG: User result:', user ? 'Found' : 'Not found')
+
+          if (!user) {
+            console.log('❌ AUTH DEBUG: User not found')
+            return null
           }
-        })
 
-        if (!user) {
+          console.log('✅ AUTH DEBUG: User found:', user.email, 'Role:', user.role)
+
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          )
+
+          console.log('🔑 AUTH DEBUG: Password valid:', isPasswordValid)
+
+          if (!isPasswordValid) {
+            console.log('❌ AUTH DEBUG: Invalid password')
+            return null
+          }
+
+          console.log('✅ AUTH DEBUG: Returning user object')
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          }
+        } catch (error) {
+          console.error('💥 AUTH DEBUG: Error during authorization:', error)
           return null
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
         }
       }
     })

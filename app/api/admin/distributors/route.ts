@@ -1,21 +1,45 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
-import type { Prisma } from "@prisma/client"
+
+// Use global Prisma instance
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
+}
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: ['query'],
+  })
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 // GET /api/admin/distributors - Get all distributors
 export async function GET() {
   try {
+    console.log('🔍 GET /api/admin/distributors called')
     const session = await getServerSession(authOptions)
     
     if (!session || session.user.role !== "ADMIN") {
+      console.log('❌ Unauthorized access attempt')
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    console.log('✅ Admin access confirmed, fetching distributors...')
+    
+    // Try a simple query first to isolate the issue
     const distributors = await prisma.distributor.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        contactPerson: true,
+        email: true,
+        telephone: true,
+        createdAt: true,
+        updatedAt: true,
         user: {
           select: {
             id: true,
@@ -24,11 +48,6 @@ export async function GET() {
             role: true,
             createdAt: true
           }
-        },
-        _count: {
-          select: {
-            locations: true
-          }
         }
       },
       orderBy: {
@@ -36,6 +55,7 @@ export async function GET() {
       }
     })
 
+    console.log('✅ Successfully fetched', distributors.length, 'distributors')
     return NextResponse.json(distributors)
   } catch (error) {
     console.error("Error fetching distributors:", error)
@@ -44,7 +64,7 @@ export async function GET() {
 }
 
 // POST /api/admin/distributors - Create new distributor
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
