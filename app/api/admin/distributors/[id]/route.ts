@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { authOptions } from "../../../auth/[...nextauth]/route"
-import { prisma } from "../../../../../lib/prisma"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
 // GET /api/admin/distributors/[id] - Get distributor details with locations and sellers
@@ -29,7 +29,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         },
         locations: {
           include: {
-            users: {
+            sellers: {
               where: { role: "SELLER" },
               select: {
                 id: true,
@@ -40,7 +40,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
             },
             _count: {
               select: {
-                users: true
+                sellers: true
               }
             }
           }
@@ -74,7 +74,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     const body = await request.json()
-    const { name, email, password } = body
+    const { name, email, password, contactPerson, alternativeEmail, telephone, notes } = body
     const { id } = params
 
     if (!name || !email) {
@@ -117,7 +117,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       // Update distributor
       const updatedDistributor = await tx.distributor.update({
         where: { id },
-        data: { name },
+        data: { name, contactPerson, email: alternativeEmail, telephone, notes },
         include: {
           user: {
             select: {
@@ -164,7 +164,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         user: true,
         locations: {
           include: {
-            users: true
+            sellers: true
           }
         }
       }

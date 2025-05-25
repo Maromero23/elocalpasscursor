@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "../../../../../lib/auth"
-import { prisma } from "../../../../../lib/prisma"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
 // GET /api/admin/qr-config/sellers - Fetch all sellers with their QR configurations
 export async function GET(request: NextRequest) {

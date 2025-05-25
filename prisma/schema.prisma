@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,32 +8,22 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  role      String   @default("SELLER") // ADMIN, DISTRIBUTOR, LOCATION, or SELLER
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Hierarchy relationships
-  locationId     String?   // For SELLER role only
-  distributorId  String?   // For LOCATION role only
-
-  // For NextAuth
-  accounts Account[]
-  sessions Session[]
-
-  // User relationships
-  qrCodes QRCode[]
-  sellerConfigs QRConfig[] @relation("SellerConfig")
-  
-  // Hierarchy navigation
-  location     Location?    @relation("LocationSellers", fields: [locationId], references: [id])
-  
-  // Reverse relationships (only for users who ARE distributors/locations)
+  id                 String       @id @default(cuid())
+  email              String       @unique
+  password           String
+  name               String?
+  role               String       @default("SELLER")
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  locationId         String?
+  distributorId      String?
   distributorProfile Distributor? @relation("DistributorUser")
   locationProfile    Location?    @relation("LocationUser")
+  sellerConfigs      QRConfig?    @relation("SellerConfig")
+  accounts           Account[]
+  qrCodes            QRCode[]
+  sessions           Session[]
+  location           Location?    @relation("LocationSellers", fields: [locationId], references: [id])
 
   @@map("users")
 }
@@ -54,8 +41,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -81,88 +67,71 @@ model VerificationToken {
 }
 
 model QRConfig {
-  id            String   @id @default(cuid())
-  
-  // Each configuration belongs to exactly one seller
-  sellerId      String   @unique // One-to-one relationship
-  
-  // Button 1: Send Method
-  sendMethod    String   @default("URL") // "URL" or "APP"
-  
-  // Button 2: Landing Page Required?
-  landingPageRequired Boolean @default(true) // Yes/No
-  
-  // Button 3: Allow Custom Guests/Days?
-  allowCustomGuestsDays Boolean @default(false) // Yes/No
-  defaultGuests Int      @default(2) // Default if custom not allowed
-  defaultDays   Int      @default(3) // Default if custom not allowed
-  
-  // Button 4: Pricing Type
-  pricingType   String   @default("FIXED") // "FIXED", "VARIABLE", "FREE"
-  fixedPrice    Float?   // Only for fixed pricing
-  
-  // Button 5: Send Rebuy Email?
-  sendRebuyEmail Boolean @default(false) // Yes/No
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  // Relations
-  seller        User     @relation("SellerConfig", fields: [sellerId], references: [id], onDelete: Cascade)
+  id                    String   @id @default(cuid())
+  sellerId              String   @unique
+  sendMethod            String   @default("URL")
+  landingPageRequired   Boolean  @default(true)
+  allowCustomGuestsDays Boolean  @default(false)
+  defaultGuests         Int      @default(2)
+  defaultDays           Int      @default(3)
+  pricingType           String   @default("FIXED")
+  fixedPrice            Float?
+  sendRebuyEmail        Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  seller                User     @relation("SellerConfig", fields: [sellerId], references: [id], onDelete: Cascade)
 }
 
 model QRCode {
-  id          String    @id @default(cuid())
-  code        String    @unique // The actual QR code value
-  sellerId    String
-  guests      Int       @default(2)
-  days        Int       @default(3)
-  cost        Float     @default(0.0) // Cost of this QR code
-  expiresAt   DateTime
-  isActive    Boolean   @default(true)
-  landingUrl  String?   // Generated landing page URL
-  createdAt   DateTime  @default(now())
-  
-  seller User @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  scans  QRScan[]
+  id         String   @id @default(cuid())
+  code       String   @unique
+  sellerId   String
+  guests     Int      @default(2)
+  days       Int      @default(3)
+  cost       Float    @default(0.0)
+  expiresAt  DateTime
+  isActive   Boolean  @default(true)
+  landingUrl String?
+  createdAt  DateTime @default(now())
+  seller     User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  scans      QRScan[]
 
   @@map("qr_codes")
 }
 
 model QRScan {
-  id         String   @id @default(cuid())
-  qrCodeId   String
-  scannedAt  DateTime @default(now())
-  location   String?  // GPS coordinates or location name
-  business   String?  // Business where it was scanned
-  
-  qrCode QRCode @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  qrCodeId  String
+  scannedAt DateTime @default(now())
+  location  String?
+  business  String?
+  qrCode    QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
 
   @@map("qr_scans")
 }
 
 model Distributor {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relationships
-  user      User       @relation("DistributorUser", fields: [userId], references: [id], onDelete: Cascade)
-  userId    String     @unique
-  locations Location[] @relation("DistributorLocations")
+  id            String     @id @default(cuid())
+  name          String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  userId        String     @unique
+  contactPerson String?
+  email         String?
+  notes         String?
+  telephone     String?
+  user          User       @relation("DistributorUser", fields: [userId], references: [id], onDelete: Cascade)
+  locations     Location[] @relation("DistributorLocations")
 }
 
 model Location {
-  id           String   @id @default(cuid())
-  name         String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String      @id @default(cuid())
+  name          String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   distributorId String
-  
-  // Relationships
-  user         User        @relation("LocationUser", fields: [userId], references: [id], onDelete: Cascade)
-  userId       String      @unique
-  distributor  Distributor @relation("DistributorLocations", fields: [distributorId], references: [id], onDelete: Cascade)
-  sellers      User[]      @relation("LocationSellers")
+  userId        String      @unique
+  distributor   Distributor @relation("DistributorLocations", fields: [distributorId], references: [id], onDelete: Cascade)
+  user          User        @relation("LocationUser", fields: [userId], references: [id], onDelete: Cascade)
+  sellers       User[]      @relation("LocationSellers")
 }

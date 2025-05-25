@@ -26,8 +26,12 @@ export default function CreateDistributorPage() {
   const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     name: "",
+    contactPerson: "",
     email: "",
-    password: ""
+    password: "",
+    alternativeEmail: "",
+    telephone: "",
+    notes: ""
   })
 
   const navItems = getNavItems(session?.user?.role || "")
@@ -59,7 +63,7 @@ export default function CreateDistributorPage() {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
@@ -144,8 +148,23 @@ export default function CreateDistributorPage() {
                 </div>
 
                 <div>
+                  <label htmlFor="contactPerson" className="block text-sm font-medium text-gray-700">
+                    Contact Person
+                  </label>
+                  <input
+                    type="text"
+                    id="contactPerson"
+                    name="contactPerson"
+                    value={formData.contactPerson}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter contact person"
+                  />
+                </div>
+
+                <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email Address
+                    Primary Email (for login)
                   </label>
                   <input
                     type="email"
@@ -155,8 +174,26 @@ export default function CreateDistributorPage() {
                     value={formData.email}
                     onChange={handleChange}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter email address"
+                    placeholder="Enter primary email address"
                   />
+                </div>
+
+                <div>
+                  <label htmlFor="alternativeEmail" className="block text-sm font-medium text-gray-700">
+                    Alternative Contact Email <span className="text-gray-500 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="alternativeEmail"
+                    name="alternativeEmail"
+                    value={formData.alternativeEmail}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Leave blank to use primary email for contact"
+                  />
+                  <p className="mt-1 text-sm text-gray-600">
+                    If left blank, we'll use the primary email for both login and contact purposes.
+                  </p>
                 </div>
 
                 <div>
@@ -172,6 +209,36 @@ export default function CreateDistributorPage() {
                     onChange={handleChange}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter password"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="telephone" className="block text-sm font-medium text-gray-700">
+                    Telephone
+                  </label>
+                  <input
+                    type="tel"
+                    id="telephone"
+                    name="telephone"
+                    value={formData.telephone}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter telephone number"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                    Notes
+                  </label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    rows={4}
+                    value={formData.notes}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter any notes about this distributor..."
                   />
                 </div>
 

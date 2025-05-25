@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "../../auth/[...nextauth]/route"
-import { prisma } from "../../../../lib/prisma"
+import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import type { Prisma } from "@prisma/client"
 
 // GET /api/admin/distributors - Get all distributors
 export async function GET() {
@@ -51,40 +52,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { name, email, password } = body
+    const { name, email, password, contactPerson, alternativeEmail, telephone, notes } = await request.json()
 
     if (!name || !email || !password) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
-
-    // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
-
-    if (existingUser) {
-      return NextResponse.json({ error: "Email already in use" }, { status: 400 })
+      return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 })
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Create user and distributor in transaction
-    const distributor = await prisma.$transaction(async (tx) => {
+    // Create user and distributor in a transaction
+    const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           name,
           email,
           password: hashedPassword,
-          role: "DISTRIBUTOR"
-        }
+          role: "DISTRIBUTOR",
+        },
       })
 
-      const newDistributor = await tx.distributor.create({
+      const distributor = await tx.distributor.create({
         data: {
           name,
-          userId: user.id
+          contactPerson,
+          email: alternativeEmail || email, // Use alternative email if provided, otherwise use primary email
+          telephone: telephone || null,
+          notes,
+          userId: user.id,
         },
         include: {
           user: {
@@ -93,21 +88,17 @@ export async function POST(request: Request) {
               name: true,
               email: true,
               role: true,
-              createdAt: true
-            }
+              createdAt: true,
+            },
           },
-          _count: {
-            select: {
-              locations: true
-            }
-          }
-        }
+          locations: true,
+        },
       })
 
-      return newDistributor
+      return distributor
     })
 
-    return NextResponse.json(distributor, { status: 201 })
+    return NextResponse.json(result, { status: 201 })
   } catch (error) {
     console.error("Error creating distributor:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
