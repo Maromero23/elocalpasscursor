@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../../components/auth/protected-route"
 import Link from "next/link"
-import { MapPin, Building2, Users, ChevronRight, ChevronDown, Edit2, Save, X, Plus, Settings, Trash2, User, Mail, Phone } from "lucide-react"
+import { MapPin, Building2, Users, ChevronRight, ChevronDown, Edit2, Save, X, Plus, Settings, Trash2, User, Mail, Phone, QrCode, ArrowUpDown, ArrowUp, ArrowDown, Filter, Eye, EyeOff } from "lucide-react"
 
 interface Distributor {
   id: string
@@ -84,7 +84,8 @@ const getNavItems = (userRole: string) => {
       { href: "/admin", label: "Dashboard", icon: Building2 },
       { href: "/admin/distributors", label: "Distributors", icon: Users },
       { href: "/admin/locations", label: "Locations", icon: MapPin },
-      { href: "/admin/qr-config", label: "QR Config", icon: Building2 },
+      { href: "/admin/sellers", label: "Sellers", icon: Users },
+      { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
     ]
   }
   return []
@@ -100,6 +101,8 @@ export default function DistributorsPage() {
   const [selectedSeller, setSelectedSeller] = useState<string | null>(null)
   const [distributorDetails, setDistributorDetails] = useState<{ [key: string]: DistributorDetails }>({})
   const [loadingDetails, setLoadingDetails] = useState<{ [key: string]: boolean }>({})
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc') // Default A to Z
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all') // Default show all
   
   // Edit mode states
   const [editingDistributor, setEditingDistributor] = useState<string | null>(null)
@@ -179,8 +182,8 @@ export default function DistributorsPage() {
     }
   }
 
-  const fetchDistributorDetails = async (distributorId: string) => {
-    if (distributorDetails[distributorId]) return // Already fetched
+  const fetchDistributorDetails = async (distributorId: string, forceRefresh: boolean = false) => {
+    if (distributorDetails[distributorId] && !forceRefresh) return // Already fetched, unless forcing refresh
 
     setLoadingDetails(prev => ({ ...prev, [distributorId]: true }))
     try {
@@ -438,83 +441,228 @@ export default function DistributorsPage() {
 
   // Status toggle handlers
   const toggleDistributorStatus = async (distributorId: string, e: React.MouseEvent) => {
+    console.log("🔥 DISTRIBUTOR TOGGLE CLICKED:", distributorId)
     e.stopPropagation()
     try {
+      console.log("🚀 Making API call to:", `/api/admin/distributors/${distributorId}/toggle-status`)
       const response = await fetch(`/api/admin/distributors/${distributorId}/toggle-status`, {
         method: "PATCH",
       })
 
       if (response.ok) {
+        const result = await response.json()
+        console.log("✅ Distributor toggle response OK - New status:", result.isActive)
+        
+        // Force immediate refresh of all data
+        console.log("🔄 Refreshing distributors list...")
         await fetchDistributors()
-        // Refresh details if expanded
-        if (distributorDetails[distributorId]) {
-          await fetchDistributorDetails(distributorId)
+        
+        // Force refresh the specific distributor details (bypass cache)
+        console.log("🔄 Refreshing distributor details for:", distributorId)
+        await fetchDistributorDetails(distributorId, true)
+        
+        // Also refresh all other expanded distributors to ensure UI consistency
+        const expandedIds = Object.keys(distributorDetails)
+        for (const id of expandedIds) {
+          if (id !== distributorId) {
+            console.log("🔄 Refreshing additional distributor:", id)
+            await fetchDistributorDetails(id, true)
+          }
         }
+        
+        console.log("✅ All distributor data refreshed successfully")
       } else {
         const errorData = await response.json()
-        alert(`Error: ${errorData.error}`)
+        console.error("❌ Distributor toggle failed:", errorData)
+        setError(`Failed to toggle distributor status: ${errorData.error}`)
       }
     } catch (error) {
-      console.error("Error toggling distributor status:", error)
-      alert("Failed to toggle distributor status")
+      console.error("💥 Distributor toggle error:", error)
+      setError("Error toggling distributor status")
     }
   }
 
   const toggleLocationStatus = async (locationId: string, e: React.MouseEvent) => {
+    console.log("🔥 LOCATION TOGGLE CLICKED:", locationId)
     e.stopPropagation()
+    
+    // Find the distributor that contains this location
+    const distributorId = Object.keys(distributorDetails).find(distId => 
+      distributorDetails[distId]?.locations?.some(loc => loc.id === locationId)
+    )
+    
+    if (distributorId) {
+      const distributor = distributors.find(d => d.id === distributorId)
+      const location = distributorDetails[distributorId]?.locations?.find(loc => loc.id === locationId)
+      
+      // 🔒 HIERARCHICAL LOCK: If distributor is inactive, can't activate location
+      if (distributor && !distributor.isActive && location && !location.isActive) {
+        console.log("🔒 BLOCKED: Cannot activate location - distributor is inactive")
+        setError("Cannot activate location: distributor must be active first")
+        return
+      }
+    }
+    
     try {
+      console.log("🚀 Making API call to:", `/api/admin/locations/${locationId}/toggle-status`)
       const response = await fetch(`/api/admin/locations/${locationId}/toggle-status`, {
         method: "PATCH",
       })
 
       if (response.ok) {
-        // Refresh the distributors list and details
+        console.log("✅ Location toggle response OK")
+        const result = await response.json()
+        console.log("✅ Location toggle response OK - New status:", result.isActive)
+        
+        // Force immediate refresh of all data
+        console.log("🔄 Refreshing distributors list...")
         await fetchDistributors()
-        // Refresh the specific distributor details that contains this location
+        
+        // Find and refresh the specific distributor details that contains this location
         const distributorId = Object.keys(distributorDetails).find(distId => 
           distributorDetails[distId]?.locations?.some(loc => loc.id === locationId)
         )
+        
         if (distributorId) {
-          await fetchDistributorDetails(distributorId)
+          console.log("🔄 Refreshing distributor details for:", distributorId)
+          await fetchDistributorDetails(distributorId, true)
         }
+        
+        // Also refresh all expanded distributors to ensure UI consistency
+        const expandedIds = Object.keys(distributorDetails)
+        for (const id of expandedIds) {
+          if (id !== distributorId) {
+            console.log("🔄 Refreshing additional distributor:", id)
+            await fetchDistributorDetails(id, true)
+          }
+        }
+        
+        console.log("✅ All data refreshed successfully")
       } else {
         const errorData = await response.json()
-        alert(`Error: ${errorData.error}`)
+        console.error("❌ Location toggle failed:", errorData)
+        setError(`Failed to toggle location status: ${errorData.error}`)
       }
     } catch (error) {
-      console.error("Error toggling location status:", error)
-      alert("Failed to toggle location status")
+      console.error("💥 Location toggle error:", error)
+      setError("Error toggling location status")
     }
   }
 
   const toggleSellerStatus = async (sellerId: string, e: React.MouseEvent) => {
+    console.log("🔥 SELLER TOGGLE CLICKED:", sellerId)
     e.stopPropagation()
+    
+    // Find the distributor and location that contains this seller
+    let distributorId: string | undefined
+    let locationId: string | undefined
+    let distributor: any
+    let location: any
+    let seller: any
+    
+    for (const distId of Object.keys(distributorDetails)) {
+      const distDetails = distributorDetails[distId]
+      if (distDetails?.locations) {
+        for (const loc of distDetails.locations) {
+          const foundSeller = loc.sellers.find(s => s.id === sellerId)
+          if (foundSeller) {
+            distributorId = distId
+            locationId = loc.id
+            distributor = distributors.find(d => d.id === distId)
+            location = loc
+            seller = foundSeller
+            break
+          }
+        }
+        if (distributorId) break
+      }
+    }
+    
+    if (distributorId && locationId && distributor && location && seller) {
+      // 🔒 HIERARCHICAL LOCK: If distributor is inactive, can't activate seller
+      if (!distributor.isActive && !seller.isActive) {
+        console.log("🔒 BLOCKED: Cannot activate seller - distributor is inactive")
+        setError("Cannot activate seller: distributor must be active first")
+        return
+      }
+      
+      // 🔒 HIERARCHICAL LOCK: If location is inactive, can't activate seller
+      if (!location.isActive && !seller.isActive) {
+        console.log("🔒 BLOCKED: Cannot activate seller - location is inactive")
+        setError("Cannot activate seller: location must be active first")
+        return
+      }
+    }
+    
     try {
+      console.log("🚀 Making API call to:", `/api/admin/sellers/${sellerId}/toggle-status`)
       const response = await fetch(`/api/admin/sellers/${sellerId}/toggle-status`, {
         method: "PATCH",
       })
 
       if (response.ok) {
-        // Refresh the distributors list and details
+        const result = await response.json()
+        console.log("✅ Seller toggle response OK - New status:", result.isActive)
+        
+        // Force immediate refresh of all data
+        console.log("🔄 Refreshing distributors list...")
         await fetchDistributors()
-        // Refresh the specific distributor details that contains this seller's location
+        
+        // Find and force refresh the specific distributor details that contains this seller's location
         const distributorId = Object.keys(distributorDetails).find(distId => 
           distributorDetails[distId]?.locations?.some(loc => 
             loc.sellers.some(seller => seller.id === sellerId)
           )
         )
+        
         if (distributorId) {
-          await fetchDistributorDetails(distributorId)
+          console.log("🔄 Force refreshing distributor details for:", distributorId)
+          await fetchDistributorDetails(distributorId, true)
         }
+        
+        // Also refresh all other expanded distributors to ensure UI consistency
+        const expandedIds = Object.keys(distributorDetails)
+        for (const id of expandedIds) {
+          if (id !== distributorId) {
+            console.log("🔄 Refreshing additional distributor:", id)
+            await fetchDistributorDetails(id, true)
+          }
+        }
+        
+        console.log("✅ All seller data refreshed successfully")
       } else {
         const errorData = await response.json()
-        alert(`Error: ${errorData.error}`)
+        console.error("❌ Seller toggle failed:", errorData)
+        setError(`Failed to toggle seller status: ${errorData.error}`)
       }
     } catch (error) {
-      console.error("Error toggling seller status:", error)
-      alert("Failed to toggle seller status")
+      console.error("💥 Seller toggle error:", error)
+      setError("Error toggling seller status")
     }
   }
+
+  // Sorting functions
+  const handleSort = () => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+  }
+
+  const handleStatusFilter = () => {
+    if (statusFilter === 'all') {
+      setStatusFilter('active')
+    } else if (statusFilter === 'active') {
+      setStatusFilter('inactive')
+    } else {
+      setStatusFilter('all')
+    }
+  }
+
+  const sortedDistributors = [...distributors].sort((a, b) => {
+    if (sortOrder === 'asc') {
+      return a.name.localeCompare(b.name)
+    } else {
+      return b.name.localeCompare(a.name)
+    }
+  })
 
   if (loading) {
     return (
@@ -530,11 +678,11 @@ export default function DistributorsPage() {
     <ProtectedRoute allowedRoles={["ADMIN"]}>
       <div className="min-h-screen bg-gray-100">
         {/* Navigation */}
-        <nav className="bg-white shadow-sm">
+        <nav className="bg-orange-400 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center space-x-8">
-                <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+                <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
                 <div className="flex space-x-4">
                   {navItems.map((item) => {
                     const Icon = item.icon
@@ -542,7 +690,7 @@ export default function DistributorsPage() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-orange-100 hover:text-white hover:bg-orange-500"
                       >
                         <Icon className="w-4 h-4 mr-2" />
                         {item.label}
@@ -552,7 +700,7 @@ export default function DistributorsPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">Welcome, {session?.user?.name}</span>
+                <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
@@ -601,7 +749,17 @@ export default function DistributorsPage() {
                           />
                         </th>
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Distributor Name
+                          <button 
+                            onClick={handleSort}
+                            className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
+                          >
+                            <span>Distributor Name</span>
+                            {sortOrder === 'asc' ? (
+                              <ArrowUp className="h-3 w-3" />
+                            ) : (
+                              <ArrowDown className="h-3 w-3" />
+                            )}
+                          </button>
                         </th>
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Contact Person
@@ -616,7 +774,22 @@ export default function DistributorsPage() {
                           Locations
                         </th>
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
+                          <button 
+                            onClick={handleStatusFilter}
+                            className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
+                          >
+                            <span>Status</span>
+                            {statusFilter === 'all' ? (
+                              <Filter className="h-3 w-3" />
+                            ) : statusFilter === 'active' ? (
+                              <Eye className="h-3 w-3 text-green-600" />
+                            ) : (
+                              <EyeOff className="h-3 w-3 text-red-600" />
+                            )}
+                            <span className="text-xs ml-1">
+                              ({statusFilter === 'all' ? 'All' : statusFilter === 'active' ? 'Active' : 'Inactive'})
+                            </span>
+                          </button>
                         </th>
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                           Actions
@@ -624,7 +797,12 @@ export default function DistributorsPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {distributors.map((distributor, index) => (
+                      {sortedDistributors.filter(distributor => {
+                        if (statusFilter === 'all') return true
+                        if (statusFilter === 'active') return distributor.isActive
+                        if (statusFilter === 'inactive') return !distributor.isActive
+                        return true
+                      }).map((distributor, index) => (
                         <React.Fragment key={distributor.id}>
                           <tr 
                             key={distributor.id} 
@@ -932,7 +1110,10 @@ export default function DistributorsPage() {
                                                     </td>
                                                     <td className="px-4 py-3 whitespace-nowrap">
                                                       <button 
-                                                        onClick={(e) => toggleLocationStatus(location.id, e)}
+                                                        onClick={(e) => {
+                                                          console.log("🔥 LOCATION BUTTON CLICKED! ID:", location.id, "Current Status:", location.isActive)
+                                                          toggleLocationStatus(location.id, e)
+                                                        }}
                                                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${location.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                                                       >
                                                         <div className={`w-1.5 h-1.5 ${location.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>

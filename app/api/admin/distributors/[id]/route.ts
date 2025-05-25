@@ -15,82 +15,146 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const { id } = params
 
-    const distributor = await prisma.distributor.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        contactPerson: true,
-        email: true,
-        telephone: true,
-        notes: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true
-          }
-        },
-        locations: {
-          select: {
-            id: true,
-            name: true,
-            createdAt: true,
-            contactPerson: true,
-            email: true,
-            telephone: true,
-            notes: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                createdAt: true
-              }
-            },
-            sellers: {
-              where: { role: "SELLER" },
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
-                createdAt: true,
-                sellerConfigs: {
-                  select: {
-                    sendMethod: true,
-                    defaultGuests: true,
-                    defaultDays: true,
-                    fixedPrice: true
-                  }
-                }
-              }
-            },
-            _count: {
-              select: {
-                sellers: true
-              }
-            }
-          }
-        },
-        _count: {
-          select: {
-            locations: true
-          }
-        }
-      }
-    })
+    // Get distributor details with raw SQL
+    const distributorData = await prisma.$queryRaw`
+      SELECT 
+        d.id,
+        d.name,
+        d.contactPerson,
+        d.email,
+        d.telephone,
+        d.notes,
+        d.isActive,
+        d.createdAt,
+        d.updatedAt,
+        u.id as userId,
+        u.name as userName,
+        u.email as userEmail,
+        u.role as userRole,
+        u.isActive as userIsActive,
+        u.createdAt as userCreatedAt
+      FROM Distributor d
+      LEFT JOIN users u ON d.userId = u.id
+      WHERE d.id = ${id}
+    `
 
-    if (!distributor) {
+    if (!distributorData || (distributorData as any[]).length === 0) {
       return NextResponse.json({ error: "Distributor not found" }, { status: 404 })
     }
 
-    return NextResponse.json(distributor)
+    const distRow = (distributorData as any[])[0]
+
+    // Get locations with their sellers
+    const locationsData = await prisma.$queryRaw`
+      SELECT 
+        l.id,
+        l.name,
+        l.contactPerson,
+        l.email,
+        l.telephone,
+        l.notes,
+        l.isActive,
+        l.createdAt,
+        l.updatedAt,
+        lu.id as locationUserId,
+        lu.name as locationUserName,
+        lu.email as locationUserEmail,
+        lu.isActive as locationUserIsActive,
+        lu.createdAt as locationUserCreatedAt
+      FROM Location l
+      LEFT JOIN users lu ON l.userId = lu.id
+      WHERE l.distributorId = ${id}
+      ORDER BY l.createdAt DESC
+    `
+
+    // Get sellers for these locations
+    const sellersData = await prisma.$queryRaw`
+      SELECT 
+        s.id,
+        s.name,
+        s.email,
+        s.role,
+        s.isActive,
+        s.createdAt,
+        s.locationId
+      FROM users s
+      WHERE s.locationId IN (
+        SELECT l.id FROM Location l WHERE l.distributorId = ${id}
+      ) AND s.role = 'SELLER'
+      ORDER BY s.createdAt DESC
+    `
+
+    // Group sellers by location
+    const sellersByLocation = (sellersData as any[]).reduce((acc: any, seller: any) => {
+      if (!acc[seller.locationId]) {
+        acc[seller.locationId] = []
+      }
+      acc[seller.locationId].push({
+        id: seller.id,
+        name: seller.name,
+        email: seller.email,
+        role: seller.role,
+        isActive: Boolean(seller.isActive),
+        createdAt: seller.createdAt,
+        sellerConfigs: [] // TODO: Add seller configs if needed
+      })
+      return acc
+    }, {})
+
+    // Format locations with their sellers
+    const formattedLocations = (locationsData as any[]).map((location: any) => ({
+      id: location.id,
+      name: location.name,
+      contactPerson: location.contactPerson,
+      email: location.email,
+      telephone: location.telephone,
+      notes: location.notes,
+      isActive: Boolean(location.isActive),
+      createdAt: location.createdAt,
+      updatedAt: location.updatedAt,
+      user: {
+        id: location.locationUserId,
+        name: location.locationUserName,
+        email: location.locationUserEmail,
+        isActive: Boolean(location.locationUserIsActive),
+        createdAt: location.locationUserCreatedAt
+      },
+      sellers: sellersByLocation[location.id] || [],
+      _count: {
+        sellers: (sellersByLocation[location.id] || []).length
+      }
+    }))
+
+    // Format final distributor object
+    const formattedDistributor = {
+      id: distRow.id,
+      name: distRow.name,
+      contactPerson: distRow.contactPerson,
+      email: distRow.email,
+      telephone: distRow.telephone,
+      notes: distRow.notes,
+      isActive: Boolean(distRow.isActive),
+      createdAt: distRow.createdAt,
+      updatedAt: distRow.updatedAt,
+      user: {
+        id: distRow.userId,
+        name: distRow.userName,
+        email: distRow.userEmail,
+        role: distRow.userRole,
+        isActive: Boolean(distRow.userIsActive),
+        createdAt: distRow.userCreatedAt
+      },
+      locations: formattedLocations,
+      _count: {
+        locations: formattedLocations.length
+      }
+    }
+
+    return NextResponse.json(formattedDistributor)
+
   } catch (error) {
-    console.error("Error fetching distributor:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error fetching distributor details:", error)
+    return NextResponse.json({ error: "Failed to fetch distributor details" }, { status: 500 })
   }
 }
 

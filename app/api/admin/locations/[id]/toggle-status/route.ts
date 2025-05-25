@@ -14,26 +14,34 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  console.log("🔥 LOCATION TOGGLE API CALLED:", params.id)
+  
   try {
     const session = await getServerSession(authOptions)
-
-    if (!session || session.user?.role !== "ADMIN") {
+    
+    if (!session || session.user.role !== "ADMIN") {
+      console.log("❌ Unauthorized access to location toggle")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { id } = params
+    console.log("✅ Location toggle authorized for:", id)
+
+    const prisma = new PrismaClient()
 
     // Get current location status using raw query
     const location = await prisma.$queryRaw`
-      SELECT id, name, isActive, userId, distributorId FROM Location WHERE id = ${id}
-    `
+      SELECT isActive FROM Location WHERE id = ${id}
+    ` as any[]
 
-    if (!location || (location as any[]).length === 0) {
+    if (!location || location.length === 0) {
+      console.log("❌ Location not found")
       return NextResponse.json({ error: "Location not found" }, { status: 404 })
     }
 
-    const currentLocation = (location as any[])[0]
+    const currentLocation = location[0]
     const newStatus = !currentLocation.isActive
+    console.log("🔄 Toggling location from", currentLocation.isActive, "to", newStatus)
 
     // Update location and cascade to sellers only (don't affect distributor)
     await prisma.$transaction(async (tx) => {
@@ -41,24 +49,30 @@ export async function PATCH(
       await tx.$executeRaw`
         UPDATE Location SET isActive = ${newStatus} WHERE id = ${id}
       `
+      console.log("✅ Location updated")
       
       // Update location's user
       await tx.$executeRaw`
-        UPDATE User SET isActive = ${newStatus} WHERE id = ${currentLocation.userId}
+        UPDATE users SET isActive = ${newStatus} WHERE id = (SELECT userId FROM Location WHERE id = ${id})
       `
+      console.log("✅ Location user updated")
 
       // Get all sellers for this location and update them
       const sellers = await tx.$queryRaw`
-        SELECT id FROM User WHERE locationId = ${id} AND role = 'SELLER'
+        SELECT id FROM users WHERE locationId = ${id} AND role = 'SELLER'
       `
+      
+      console.log("📋 Found", (sellers as any[]).length, "sellers to update")
       
       for (const seller of sellers as any[]) {
         await tx.$executeRaw`
-          UPDATE User SET isActive = ${newStatus} WHERE id = ${seller.id}
+          UPDATE users SET isActive = ${newStatus} WHERE id = ${seller.id}
         `
       }
+      console.log("✅ All sellers updated")
     })
 
+    console.log("🎉 Location toggle completed successfully")
     return NextResponse.json({ 
       success: true, 
       isActive: newStatus,
@@ -66,7 +80,7 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error("Toggle location status error:", error)
+    console.error("💥 Toggle location status error:", error)
     return NextResponse.json(
       { error: "Failed to toggle location status" },
       { status: 500 }

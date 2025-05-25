@@ -35,7 +35,7 @@ export async function PATCH(
     const currentDistributor = (distributor as any[])[0]
     const newStatus = !currentDistributor.isActive
 
-    // Update distributor and cascade using raw SQL to avoid model issues
+    // Update distributor and cascade to all locations and sellers
     await prisma.$transaction(async (tx) => {
       // Update distributor
       await tx.$executeRaw`
@@ -44,31 +44,33 @@ export async function PATCH(
       
       // Update distributor's user
       await tx.$executeRaw`
-        UPDATE User SET isActive = ${newStatus} WHERE id = ${currentDistributor.userId}
+        UPDATE users SET isActive = ${newStatus} WHERE id = ${currentDistributor.userId}
       `
 
-      // Get all locations for this distributor
+      // Get all locations for this distributor and update them
       const locations = await tx.$queryRaw`
         SELECT id, userId FROM Location WHERE distributorId = ${id}
       `
-
-      // Update all locations and their users
+      
       for (const location of locations as any[]) {
+        // Update location
         await tx.$executeRaw`
           UPDATE Location SET isActive = ${newStatus} WHERE id = ${location.id}
         `
+        
+        // Update location's user
         await tx.$executeRaw`
-          UPDATE User SET isActive = ${newStatus} WHERE id = ${location.userId}
+          UPDATE users SET isActive = ${newStatus} WHERE id = ${location.userId}
         `
 
         // Get all sellers for this location and update them
         const sellers = await tx.$queryRaw`
-          SELECT id FROM User WHERE locationId = ${location.id} AND role = 'SELLER'
+          SELECT id FROM users WHERE locationId = ${location.id} AND role = 'SELLER'
         `
         
         for (const seller of sellers as any[]) {
           await tx.$executeRaw`
-            UPDATE User SET isActive = ${newStatus} WHERE id = ${seller.id}
+            UPDATE users SET isActive = ${newStatus} WHERE id = ${seller.id}
           `
         }
       }

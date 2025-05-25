@@ -1,8 +1,23 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../../components/auth/protected-route"
+import Link from "next/link"
+import { Building2, Users, MapPin, QrCode } from "lucide-react"
+
+const getNavItems = (userRole: string) => {
+  if (userRole === "ADMIN") {
+    return [
+      { href: "/admin", label: "Dashboard", icon: Building2 },
+      { href: "/admin/distributors", label: "Distributors", icon: Users },
+      { href: "/admin/locations", label: "Locations", icon: MapPin },
+      { href: "/admin/sellers", label: "Sellers", icon: Users },
+      { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
+    ]
+  }
+  return []
+}
 
 interface Seller {
   id: string
@@ -14,6 +29,7 @@ interface Seller {
 
 export default function SellersManagement() {
   const { data: session } = useSession()
+  const navItems = getNavItems(session?.user?.role || "")
   const [sellers, setSellers] = useState<Seller[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -110,20 +126,40 @@ export default function SellersManagement() {
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
       <div className="min-h-screen bg-gray-100">
-        <nav className="bg-white shadow-sm">
+        <nav className="bg-orange-400 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
-              <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Seller Management
-                </h1>
+              <div className="flex items-center space-x-8">
+                <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
+                <div className="flex space-x-4">
+                  {navItems.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-orange-100 hover:text-white hover:bg-orange-500"
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {item.label}
+                      </Link>
+                    )
+                  })}
+                </div>
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => setShowCreateForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium mr-2"
                 >
                   Create New Seller
+                </button>
+                <button
+                  onClick={() => signOut()}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Sign Out
                 </button>
               </div>
             </div>

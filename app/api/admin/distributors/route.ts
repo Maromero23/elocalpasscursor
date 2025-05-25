@@ -30,36 +30,57 @@ export async function GET() {
 
     console.log('✅ Admin access confirmed, fetching distributors...')
     
-    // Try a simple query first to isolate the issue
-    const distributors = await prisma.distributor.findMany({
-      select: {
-        id: true,
-        name: true,
-        contactPerson: true,
-        email: true,
-        telephone: true,
-        createdAt: true,
-        updatedAt: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    // Use raw SQL to avoid Prisma model issues
+    const distributors = await prisma.$queryRaw`
+      SELECT 
+        d.id,
+        d.name,
+        d.contactPerson,
+        d.email,
+        d.telephone,
+        d.isActive,
+        d.createdAt,
+        d.updatedAt,
+        u.id as userId,
+        u.name as userName,
+        u.email as userEmail,
+        u.role as userRole,
+        u.isActive as userIsActive,
+        u.createdAt as userCreatedAt
+      FROM Distributor d
+      LEFT JOIN users u ON d.userId = u.id
+      ORDER BY d.createdAt DESC
+    `
 
-    console.log('✅ Successfully fetched', distributors.length, 'distributors')
-    return NextResponse.json(distributors)
+    // Transform the result to match the expected structure
+    const formattedDistributors = (distributors as any[]).map(row => ({
+      id: row.id,
+      name: row.name,
+      contactPerson: row.contactPerson,
+      email: row.email,
+      telephone: row.telephone,
+      isActive: Boolean(row.isActive),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      user: {
+        id: row.userId,
+        name: row.userName,
+        email: row.userEmail,
+        role: row.userRole,
+        isActive: Boolean(row.userIsActive),
+        createdAt: row.userCreatedAt
+      }
+    }))
+
+    console.log(`✅ Successfully fetched ${formattedDistributors.length} distributors`)
+    return NextResponse.json(formattedDistributors)
+
   } catch (error) {
-    console.error("Error fetching distributors:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('❌ Error fetching distributors:', error)
+    return NextResponse.json(
+      { error: "Failed to fetch distributors" },
+      { status: 500 }
+    )
   }
 }
 
@@ -83,39 +104,21 @@ export async function POST(request: NextRequest) {
 
     // Create user and distributor in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          name,
-          email,
-          password: hashedPassword,
-          role: "DISTRIBUTOR",
-        },
-      })
+      // Create user with raw SQL
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substring(7)}`
+      await tx.$executeRaw`
+        INSERT INTO users (id, name, email, password, role, isActive, createdAt, updatedAt)
+        VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, 'DISTRIBUTOR', 1, datetime('now'), datetime('now'))
+      `
 
-      const distributor = await tx.distributor.create({
-        data: {
-          name,
-          contactPerson,
-          email: alternativeEmail || email, // Use alternative email if provided, otherwise use primary email
-          telephone: telephone || null,
-          notes,
-          userId: user.id,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-              createdAt: true,
-            },
-          },
-          locations: true,
-        },
-      })
+      // Create distributor with raw SQL
+      const distributorId = `dist_${Date.now()}_${Math.random().toString(36).substring(7)}`
+      await tx.$executeRaw`
+        INSERT INTO Distributor (id, name, contactPerson, email, telephone, notes, userId, isActive, createdAt, updatedAt)
+        VALUES (${distributorId}, ${name}, ${contactPerson || null}, ${alternativeEmail || email}, ${telephone || null}, ${notes || null}, ${userId}, 1, datetime('now'), datetime('now'))
+      `
 
-      return distributor
+      return { distributorId, userId }
     })
 
     return NextResponse.json(result, { status: 201 })

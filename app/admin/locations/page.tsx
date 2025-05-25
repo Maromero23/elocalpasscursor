@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../../components/auth/protected-route"
 import Link from "next/link"
-import { MapPin, Building2, Users, Search, Filter } from "lucide-react"
+import { MapPin, Building2, Users, Search, Filter, QrCode } from "lucide-react"
 
 interface Location {
   id: string
@@ -35,7 +35,8 @@ const getNavItems = (userRole: string) => {
       { href: "/admin", label: "Dashboard", icon: Building2 },
       { href: "/admin/distributors", label: "Distributors", icon: Users },
       { href: "/admin/locations", label: "Locations", icon: MapPin },
-      { href: "/admin/qr-config", label: "QR Config", icon: Building2 },
+      { href: "/admin/sellers", label: "Sellers", icon: Users },
+      { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
     ]
   }
   return []
@@ -114,11 +115,11 @@ export default function LocationsPage() {
     <ProtectedRoute allowedRoles={["ADMIN"]}>
       <div className="min-h-screen bg-gray-100">
         {/* Navigation */}
-        <nav className="bg-white shadow-sm">
+        <nav className="bg-orange-400 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center space-x-8">
-                <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+                <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
                 <div className="flex space-x-4">
                   {navItems.map((item) => {
                     const Icon = item.icon
@@ -126,7 +127,7 @@ export default function LocationsPage() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-orange-100 hover:text-white hover:bg-orange-500"
                       >
                         <Icon className="w-4 h-4 mr-2" />
                         {item.label}
@@ -136,7 +137,7 @@ export default function LocationsPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">Welcome, {session?.user?.name}</span>
+                <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"

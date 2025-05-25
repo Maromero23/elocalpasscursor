@@ -13,26 +13,54 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const sellers = await prisma.user.findMany({
-      where: {
-        role: "SELLER"
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
-      orderBy: {
-        createdAt: "desc"
-      }
-    })
+    // Use raw SQL to get sellers with location and distributor info including isActive
+    const sellers = await prisma.$queryRaw`
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.role,
+        u.isActive,
+        u.createdAt,
+        u.locationId,
+        l.id as locationId,
+        l.name as locationName,
+        l.isActive as locationIsActive,
+        d.id as distributorId,
+        d.name as distributorName,
+        d.isActive as distributorIsActive
+      FROM users u
+      LEFT JOIN Location l ON u.locationId = l.id
+      LEFT JOIN Distributor d ON l.distributorId = d.id
+      WHERE u.role = 'SELLER'
+      ORDER BY u.createdAt DESC
+    `
 
-    return NextResponse.json(sellers)
+    // Transform the result to match expected structure
+    const formattedSellers = (sellers as any[]).map(row => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      role: row.role,
+      isActive: Boolean(row.isActive),
+      createdAt: row.createdAt,
+      locationId: row.locationId,
+      location: row.locationId ? {
+        id: row.locationId,
+        name: row.locationName,
+        isActive: Boolean(row.locationIsActive),
+        distributor: row.distributorId ? {
+          id: row.distributorId,
+          name: row.distributorName,
+          isActive: Boolean(row.distributorIsActive)
+        } : null
+      } : null
+    }))
+
+    return NextResponse.json(formattedSellers)
   } catch (error) {
     console.error("Error fetching sellers:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch sellers" }, { status: 500 })
   }
 }
 

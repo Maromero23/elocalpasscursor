@@ -25,7 +25,7 @@ export async function PATCH(
 
     // Get current seller status using raw query
     const seller = await prisma.$queryRaw`
-      SELECT id, name, isActive, role FROM User WHERE id = ${id} AND role = 'SELLER'
+      SELECT id, name, isActive, role FROM users WHERE id = ${id} AND role = 'SELLER'
     `
 
     if (!seller || (seller as any[]).length === 0) {
@@ -37,7 +37,7 @@ export async function PATCH(
 
     // Update only the individual seller (no cascading)
     await prisma.$executeRaw`
-      UPDATE User SET isActive = ${newStatus} WHERE id = ${id}
+      UPDATE users SET isActive = ${newStatus} WHERE id = ${id}
     `
 
     return NextResponse.json({ 
