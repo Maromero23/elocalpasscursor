@@ -1,0 +1,17 @@
+{
+  "id": "default",
+  "button1AllowCustomGuestsDays": false,
+  "button1DefaultGuests": 2,
+  "button1DefaultDays": 3,
+  "button1MaxGuests": 10,
+  "button1MaxDays": 30,
+  "button2PricingType": "FIXED",
+  "button2FixedPrice": 0,
+  "button2IncludeTax": false,
+  "button2TaxPercentage": 0,
+  "button3SendMethod": "URL",
+  "button4LandingPageRequired": true,
+  "button5SendRebuyEmail": false,
+  "createdAt": "2025-05-25T20:51:30.664Z",
+  "updatedAt": "2025-05-25T20:53:16.575Z"
+}

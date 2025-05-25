@@ -1,34 +1,38 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
-import { redirect } from 'next/navigation'
+import { Building2, Users, MapPin, QrCode, Settings, Save, Eye, Plus, Edit3, Palette } from 'lucide-react'
 import { ProtectedRoute } from '../../../components/auth/protected-route'
 import Link from 'next/link'
-import { Building2, Users, MapPin, QrCode } from 'lucide-react'
 
-interface Seller {
+// Configuration interfaces
+interface QRButtonConfig {
   id: string
-  name: string
-  email: string
-  role: string
+  buttonNumber: 1 | 2 | 3 | 4 | 5
+  isActive: boolean
+  settings: any
 }
 
-interface QRConfig {
-  id: string
-  sellerId: string
-  sendMethod: string
-  landingPageRequired: boolean
-  allowCustomGuestsDays: boolean
-  defaultGuests: number
-  defaultDays: number
-  pricingType: string
-  fixedPrice?: number
-  sendRebuyEmail: boolean
-}
-
-interface SellerWithConfig extends Seller {
-  qrConfig?: QRConfig
+interface QRGlobalConfig {
+  id?: string
+  button1AllowCustomGuestsDays: boolean
+  button1DefaultGuests: number
+  button1DefaultDays: number
+  button1MaxGuests: number
+  button1MaxDays: number
+  button2PricingType: 'FIXED' | 'VARIABLE' | 'FREE'
+  button2FixedPrice?: number
+  button2VariableBasePrice: number
+  button2VariableGuestIncrease: number
+  button2VariableDayIncrease: number
+  button2VariableCommission: number
+  button2IncludeTax: boolean
+  button2TaxPercentage: number
+  button3SendMethod: 'URL' | 'APP'
+  button4LandingPageRequired: boolean
+  button5SendRebuyEmail: boolean
 }
 
 const getNavItems = (userRole: string) => {
@@ -45,148 +49,83 @@ const getNavItems = (userRole: string) => {
 }
 
 export default function QRConfigPage() {
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
+  const router = useRouter()
   const navItems = getNavItems(session?.user?.role || "")
-  const [sellers, setSellers] = useState<SellerWithConfig[]>([])
-  const [showModal, setShowModal] = useState(false)
-  const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null)
-  const [editingConfig, setEditingConfig] = useState<QRConfig | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  // Form state
-  const [formData, setFormData] = useState({
-    sendMethod: 'URL',
-    landingPageRequired: true,
-    allowCustomGuestsDays: false,
-    defaultGuests: 2,
-    defaultDays: 3,
-    pricingType: 'FIXED',
-    fixedPrice: 0,
-    sendRebuyEmail: false
+  // State for global configuration
+  const [globalConfig, setGlobalConfig] = useState<QRGlobalConfig>({
+    button1AllowCustomGuestsDays: false,
+    button1DefaultGuests: 2,
+    button1DefaultDays: 3,
+    button1MaxGuests: 10,
+    button1MaxDays: 30,
+    button2PricingType: 'FIXED',
+    button2FixedPrice: 0,
+    button2VariableBasePrice: 0,
+    button2VariableGuestIncrease: 0,
+    button2VariableDayIncrease: 0,
+    button2VariableCommission: 0,
+    button2IncludeTax: false,
+    button2TaxPercentage: 0,
+    button3SendMethod: 'URL',
+    button4LandingPageRequired: true,
+    button5SendRebuyEmail: false
   })
 
+  const [loading, setLoading] = useState(false)
+  const [activeButton, setActiveButton] = useState<number>(1)
+  const [saveStatus, setSaveStatus] = useState<string>('')
+  const [savedButtons, setSavedButtons] = useState<Set<number>>(new Set())
+
+  // Load existing configuration
   useEffect(() => {
-    if (session?.user?.role === 'ADMIN') {
-      fetchSellers()
-    }
-  }, [session])
+    fetchGlobalConfig()
+  }, [])
 
-  if (status === 'loading') return <div>Loading...</div>
-  if (!session || session.user.role !== 'ADMIN') {
-    redirect('/auth/login')
-    return null
-  }
-
-  const fetchSellers = async () => {
+  const fetchGlobalConfig = async () => {
     try {
-      const response = await fetch('/api/admin/qr-config/sellers')
-      
+      const response = await fetch('/api/admin/qr-global-config', {
+        credentials: 'include'
+      })
       if (response.ok) {
         const data = await response.json()
-        setSellers(data)
+        if (data) {
+          setGlobalConfig(data)
+        }
       } else {
-        const errorData = await response.json()
-        console.error('API Error:', errorData)
+        console.error('Failed to fetch config:', response.status)
       }
     } catch (error) {
-      console.error('Error fetching sellers:', error)
-    } finally {
-      setLoading(false)
+      console.error('Error fetching config:', error)
     }
   }
 
-  const openCreateModal = (seller: Seller) => {
-    setSelectedSeller(seller)
-    setEditingConfig(null)
-    setFormData({
-      sendMethod: 'URL',
-      landingPageRequired: true,
-      allowCustomGuestsDays: false,
-      defaultGuests: 2,
-      defaultDays: 3,
-      pricingType: 'FIXED',
-      fixedPrice: 0,
-      sendRebuyEmail: false
-    })
-    setShowModal(true)
-  }
-
-  const openEditModal = (seller: SellerWithConfig) => {
-    if (!seller.qrConfig) return
-    
-    setSelectedSeller(seller)
-    setEditingConfig(seller.qrConfig)
-    setFormData({
-      sendMethod: seller.qrConfig.sendMethod,
-      landingPageRequired: seller.qrConfig.landingPageRequired,
-      allowCustomGuestsDays: seller.qrConfig.allowCustomGuestsDays,
-      defaultGuests: seller.qrConfig.defaultGuests,
-      defaultDays: seller.qrConfig.defaultDays,
-      pricingType: seller.qrConfig.pricingType,
-      fixedPrice: seller.qrConfig.fixedPrice || 0,
-      sendRebuyEmail: seller.qrConfig.sendRebuyEmail
-    })
-    setShowModal(true)
-  }
-
-  const closeModal = () => {
-    setShowModal(false)
-    setSelectedSeller(null)
-    setEditingConfig(null)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedSeller) return
-    
+  const saveGlobalConfig = async (buttonNumber: number, config?: QRGlobalConfig) => {
+    setLoading(true)
     try {
-      const url = editingConfig 
-        ? `/api/admin/qr-config/${editingConfig.id}`
-        : '/api/admin/qr-config'
-      
-      const method = editingConfig ? 'PUT' : 'POST'
-      
-      const response = await fetch(url, {
-        method,
+      const response = await fetch('/api/admin/qr-global-config', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sellerId: selectedSeller.id,
-          ...formData
-        })
+        credentials: 'include',
+        body: JSON.stringify(config || globalConfig)
       })
 
       if (response.ok) {
-        await fetchSellers()
-        closeModal()
-      } else {
-        const error = await response.json()
-        alert(error.error || 'An error occurred')
+        setSavedButtons(prev => new Set(prev).add(buttonNumber))
+        setSaveStatus(`Button ${buttonNumber} saved!`)
+        setTimeout(() => setSaveStatus(''), 2000)
       }
     } catch (error) {
-      alert('Network error occurred')
+      console.error('Error saving config:', error)
     }
+    setLoading(false)
   }
 
-  const deleteConfig = async (seller: SellerWithConfig) => {
-    if (!seller.qrConfig) return
-    if (!confirm(`Are you sure you want to delete the configuration for "${seller.name}"?`)) return
-
-    try {
-      const response = await fetch(`/api/admin/qr-config/${seller.qrConfig.id}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        await fetchSellers()
-      }
-    } catch (error) {
-      alert('Error deleting configuration')
-    }
+  const updateConfig = (updates: Partial<QRGlobalConfig>) => {
+    const updatedConfig = { ...globalConfig, ...updates }
+    setGlobalConfig(updatedConfig)
   }
-
-  // Separate sellers into assigned and unassigned
-  const assignedSellers = sellers.filter(seller => seller.qrConfig)
-  const unassignedSellers = sellers.filter(seller => !seller.qrConfig)
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
@@ -199,14 +138,14 @@ export default function QRConfigPage() {
                 <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
                 <div className="flex space-x-4">
                   {navItems.map((item) => {
-                    const Icon = item.icon
+                    const IconComponent = item.icon
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-orange-100 hover:text-white hover:bg-orange-500"
+                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-orange-500 transition-colors"
                       >
-                        <Icon className="w-4 h-4 mr-2" />
+                        <IconComponent className="h-4 w-4 mr-2" />
                         {item.label}
                       </Link>
                     )
@@ -214,10 +153,10 @@ export default function QRConfigPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
+                <span className="text-white">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                   Sign Out
                 </button>
@@ -229,369 +168,733 @@ export default function QRConfigPage() {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
-            <div className="min-h-screen bg-gray-50 py-8">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Header */}
-                <div className="bg-white shadow rounded-lg p-6 mb-8">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h1 className="text-3xl font-bold text-gray-900">Seller QR Configurations</h1>
-                      <p className="mt-2 text-gray-600">Create and manage QR configurations for each seller</p>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      <span className="font-medium">{assignedSellers.length}</span> configured • 
-                      <span className="font-medium text-orange-600 ml-1">{unassignedSellers.length}</span> pending
-                    </div>
-                  </div>
+            {/* Header */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">QR Configuration System</h1>
+                  <p className="mt-2 text-gray-600">Configure the 5-button QR generation system for all sellers</p>
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Unassigned Sellers */}
-                  <div className="bg-white shadow rounded-lg overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 bg-orange-50">
-                      <h2 className="text-lg font-medium text-orange-900">
-                        🔶 Unassigned Sellers ({unassignedSellers.length})
-                      </h2>
-                      <p className="text-sm text-orange-700">Sellers without QR configurations</p>
-                    </div>
-                    
-                    {loading ? (
-                      <div className="p-6 text-center">Loading sellers...</div>
-                    ) : unassignedSellers.length === 0 ? (
-                      <div className="p-6 text-center text-gray-500">
-                        All sellers have been configured! 🎉
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-gray-200">
-                        {unassignedSellers.map((seller) => (
-                          <div key={seller.id} className="p-6">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h3 className="text-lg font-medium text-gray-900">{seller.name}</h3>
-                                <p className="text-sm text-gray-500">{seller.email}</p>
-                              </div>
-                              <button
-                                onClick={() => openCreateModal(seller)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
-                              >
-                                Create Configuration
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Assigned Sellers */}
-                  <div className="bg-white shadow rounded-lg overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 bg-green-50">
-                      <h2 className="text-lg font-medium text-green-900">
-                        ✅ Configured Sellers ({assignedSellers.length})
-                      </h2>
-                      <p className="text-sm text-green-700">Sellers with active QR configurations</p>
-                    </div>
-                    
-                    {assignedSellers.length === 0 ? (
-                      <div className="p-6 text-center text-gray-500">
-                        No sellers configured yet. Start by creating configurations for unassigned sellers.
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-gray-200">
-                        {assignedSellers.map((seller) => (
-                          <div key={seller.id} className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <div>
-                                <h3 className="text-lg font-medium text-gray-900">{seller.name}</h3>
-                                <p className="text-sm text-gray-500">{seller.email}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => openEditModal(seller)}
-                                  className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 text-sm rounded"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => deleteConfig(seller)}
-                                  className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 text-sm rounded"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </div>
-                            
-                            {/* Configuration Preview */}
-                            {seller.qrConfig && (
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div className="p-2 bg-gray-50 rounded">
-                                  <p className="font-medium text-gray-700">Send Method</p>
-                                  <p className="text-gray-900">{seller.qrConfig.sendMethod}</p>
-                                </div>
-                                <div className="p-2 bg-gray-50 rounded">
-                                  <p className="font-medium text-gray-700">Landing Page</p>
-                                  <p className="text-gray-900">{seller.qrConfig.landingPageRequired ? 'Required' : 'Not Required'}</p>
-                                </div>
-                                <div className="p-2 bg-gray-50 rounded">
-                                  <p className="font-medium text-gray-700">Custom G/D</p>
-                                  <p className="text-gray-900">{seller.qrConfig.allowCustomGuestsDays ? 'Allowed' : `${seller.qrConfig.defaultGuests}G/${seller.qrConfig.defaultDays}D`}</p>
-                                </div>
-                                <div className="p-2 bg-gray-50 rounded">
-                                  <p className="font-medium text-gray-700">Pricing</p>
-                                  <p className="text-gray-900">{seller.qrConfig.pricingType === 'FIXED' ? `$${seller.qrConfig.fixedPrice}` : seller.qrConfig.pricingType}</p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Modal */}
-                {showModal && selectedSeller && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
-                      <div className="p-6">
-                        <div className="flex justify-between items-center mb-6">
-                          <div>
-                            <h3 className="text-lg font-medium text-gray-900">
-                              {editingConfig ? 'Edit Configuration' : 'Create Configuration'}
-                            </h3>
-                            <p className="text-sm text-gray-500">For: {selectedSeller.name}</p>
-                          </div>
-                          <button
-                            onClick={closeModal}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            ✕
-                          </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                          {/* Button 1: Send Method */}
-                          <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
-                            <h4 className="font-medium text-blue-900 mb-3">🔘 Button 1: Send Method</h4>
-                            <div className="space-y-2">
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="sendMethod"
-                                  value="URL"
-                                  checked={formData.sendMethod === 'URL'}
-                                  onChange={(e) => setFormData({ ...formData, sendMethod: e.target.value })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">URL (Generates a unique landing page link for the guest)</span>
-                              </label>
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="sendMethod"
-                                  value="APP"
-                                  checked={formData.sendMethod === 'APP'}
-                                  onChange={(e) => setFormData({ ...formData, sendMethod: e.target.value })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">APP (One-click trigger inside the app)</span>
-                              </label>
-                            </div>
-                          </div>
-
-                          {/* Button 2: Landing Page Required */}
-                          <div className="p-4 border border-green-200 rounded-lg bg-green-50">
-                            <h4 className="font-medium text-green-900 mb-3">🔘 Button 2: Landing Page Required?</h4>
-                            <div className="space-y-2">
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="landingPageRequired"
-                                  value="true"
-                                  checked={formData.landingPageRequired === true}
-                                  onChange={() => setFormData({ ...formData, landingPageRequired: true })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">Yes (a custom landing page is generated per QR)</span>
-                              </label>
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="landingPageRequired"
-                                  value="false"
-                                  checked={formData.landingPageRequired === false}
-                                  onChange={() => setFormData({ ...formData, landingPageRequired: false })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">No (QR is sent directly without a landing page)</span>
-                              </label>
-                            </div>
-                          </div>
-
-                          {/* Button 3: Allow Custom Guests/Days */}
-                          <div className="p-4 border border-purple-200 rounded-lg bg-purple-50">
-                            <h4 className="font-medium text-purple-900 mb-3">🔘 Button 3: Allow Custom Guests/Days?</h4>
-                            <div className="space-y-2">
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="allowCustomGuestsDays"
-                                  value="true"
-                                  checked={formData.allowCustomGuestsDays === true}
-                                  onChange={() => setFormData({ ...formData, allowCustomGuestsDays: true })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">Yes (Seller can choose number of guests and days)</span>
-                              </label>
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="allowCustomGuestsDays"
-                                  value="false"
-                                  checked={formData.allowCustomGuestsDays === false}
-                                  onChange={() => setFormData({ ...formData, allowCustomGuestsDays: false })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">No (Admin provides default values)</span>
-                              </label>
-                            </div>
-                            
-                            {!formData.allowCustomGuestsDays && (
-                              <div className="mt-4 grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Default Guests</label>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={formData.defaultGuests || ''}
-                                    onChange={(e) => setFormData({ ...formData, defaultGuests: parseInt(e.target.value) || 2 })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">Default Days</label>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={formData.defaultDays || ''}
-                                    onChange={(e) => setFormData({ ...formData, defaultDays: parseInt(e.target.value) || 3 })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Button 4: Pricing Type */}
-                          <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
-                            <h4 className="font-medium text-yellow-900 mb-3">🔘 Button 4: Pricing Type</h4>
-                            <div className="space-y-2">
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="pricingType"
-                                  value="FIXED"
-                                  checked={formData.pricingType === 'FIXED'}
-                                  onChange={(e) => setFormData({ ...formData, pricingType: e.target.value })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">Fixed price (set by Admin)</span>
-                              </label>
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="pricingType"
-                                  value="VARIABLE"
-                                  checked={formData.pricingType === 'VARIABLE'}
-                                  onChange={(e) => setFormData({ ...formData, pricingType: e.target.value })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">Variable price (calculated using number of guests × days)</span>
-                              </label>
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="pricingType"
-                                  value="FREE"
-                                  checked={formData.pricingType === 'FREE'}
-                                  onChange={(e) => setFormData({ ...formData, pricingType: e.target.value })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">Free</span>
-                              </label>
-                            </div>
-                            
-                            {formData.pricingType === 'FIXED' && (
-                              <div className="mt-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Fixed Price ($)</label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={formData.fixedPrice || ''}
-                                  onChange={(e) => setFormData({ ...formData, fixedPrice: parseFloat(e.target.value) || 0 })}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-                                />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Button 5: Send Rebuy Email */}
-                          <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                            <h4 className="font-medium text-red-900 mb-3">🔘 Button 5: Send Rebuy Email?</h4>
-                            <div className="space-y-2">
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="sendRebuyEmail"
-                                  value="true"
-                                  checked={formData.sendRebuyEmail === true}
-                                  onChange={() => setFormData({ ...formData, sendRebuyEmail: true })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">Yes (System will automatically send a follow-up email 12 hours before QR expires)</span>
-                              </label>
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="sendRebuyEmail"
-                                  value="false"
-                                  checked={formData.sendRebuyEmail === false}
-                                  onChange={() => setFormData({ ...formData, sendRebuyEmail: false })}
-                                  className="mr-2"
-                                />
-                                <span className="text-gray-900">No</span>
-                              </label>
-                            </div>
-                            {formData.sendRebuyEmail && (
-                              <p className="mt-2 text-sm text-gray-600">
-                                The email includes a special discount for buying an Elocalpass online, personalized with the Seller's info
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Submit Buttons */}
-                          <div className="flex justify-end gap-3 pt-6">
-                            <button
-                              type="button"
-                              onClick={closeModal}
-                              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="submit"
-                              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
-                            >
-                              {editingConfig ? 'Update Configuration' : 'Create Configuration'}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <button
+                  onClick={() => {
+                    // Save all configurations individually
+                    for (let i = 1; i <= 5; i++) {
+                      saveGlobalConfig(i)
+                    }
+                  }}
+                  disabled={loading}
+                  className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                    'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  <Save className="h-5 w-5 mr-2" />
+                  {loading ? 'Saving...' : 'Save All Configuration'}
+                </button>
               </div>
+            </div>
+
+            {/* Button Navigation */}
+            <div className="mb-8">
+              <div className="flex space-x-2 bg-white p-2 rounded-lg shadow-sm">
+                {[
+                  { num: 1, title: "Personalized?" },
+                  { num: 2, title: "Pricing Type" },
+                  { num: 3, title: "Send Method" },
+                  { num: 4, title: "Landing Page?" },
+                  { num: 5, title: "Rebuy Email?" }
+                ].map((button) => (
+                  <button
+                    key={button.num}
+                    onClick={() => setActiveButton(button.num)}
+                    className={`flex-1 py-3 px-4 rounded-md font-medium transition-colors ${
+                      activeButton === button.num 
+                        ? 'bg-orange-500 text-white' 
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {button.title}
+                  </button>
+                ))}
+              </div>
+
+              {/* Progress Tracker */}
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Configuration Progress</h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { 
+                      num: 1, 
+                      title: "Personalized?", 
+                      value: globalConfig.button1AllowCustomGuestsDays 
+                        ? `Yes: Max ${globalConfig.button1MaxGuests} guests, ${globalConfig.button1MaxDays} days`
+                        : `No: Default ${globalConfig.button1DefaultGuests} guests, ${globalConfig.button1DefaultDays} days`
+                    },
+                    { 
+                      num: 2, 
+                      title: "Pricing Type", 
+                      value: globalConfig.button2PricingType === 'FIXED' 
+                        ? `Fixed: $${globalConfig.button2FixedPrice}${globalConfig.button2IncludeTax ? ` +${globalConfig.button2TaxPercentage}% tax` : ''}`
+                        : globalConfig.button2PricingType === 'VARIABLE'
+                        ? `Variable: Base $${globalConfig.button2VariableBasePrice} +$${globalConfig.button2VariableGuestIncrease}/guest +$${globalConfig.button2VariableDayIncrease}/day${globalConfig.button2VariableCommission > 0 ? ` +${globalConfig.button2VariableCommission}% commission` : ''}${globalConfig.button2IncludeTax ? ` +${globalConfig.button2TaxPercentage}% tax` : ''}`
+                        : 'Free'
+                    },
+                    { 
+                      num: 3, 
+                      title: "Send Method", 
+                      value: globalConfig.button3SendMethod === 'URL' 
+                        ? "URL: Landing page link"
+                        : "APP: Dashboard trigger"
+                    },
+                    { 
+                      num: 4, 
+                      title: "Landing Page?", 
+                      value: globalConfig.button4LandingPageRequired ? "Required" : "Not Required" 
+                    },
+                    { 
+                      num: 5, 
+                      title: "Rebuy Email?", 
+                      value: globalConfig.button5SendRebuyEmail ? "Yes: 12hrs before expiry" : "No follow-up" 
+                    }
+                  ].map((button) => (
+                    <div
+                      key={button.num}
+                      className={`p-2 rounded text-xs text-center ${
+                        savedButtons.has(button.num) ? 'bg-green-100 text-green-600 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'
+                      }`}
+                    >
+                      <div className="font-medium">{button.title}</div>
+                      {savedButtons.has(button.num) ? (
+                        <div className="text-xs mt-1 leading-tight">{button.value}</div>
+                      ) : (
+                        <div className="text-xs mt-1 text-gray-500">Need to choose</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Configuration Panels */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              {/* Button 1: Personalized? */}
+              {activeButton === 1 && (
+                <div className="space-y-6">
+                  <div className="border-l-4 border-purple-500 pl-4">
+                    <h2 className="text-xl font-semibold text-gray-900">Button 1: Personalized?</h2>
+                    <p className="text-gray-600 mt-1">Control whether sellers can customize guest count and validity days</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={globalConfig.button1AllowCustomGuestsDays === true}
+                        onChange={() => updateConfig({ button1AllowCustomGuestsDays: true })}
+                        className="mt-1 h-4 w-4 text-purple-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">Yes</span>
+                        <p className="text-sm text-gray-600">Seller can choose number of guests and days</p>
+                      </div>
+                    </label>
+
+                    {globalConfig.button1AllowCustomGuestsDays === true && (
+                      <div className="ml-7 mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h4 className="font-medium text-blue-900 mb-2">Maximum Limits for Sellers</h4>
+                        <p className="text-sm text-blue-800 mb-4">
+                          Set the maximum values that sellers can choose. Sellers will be able to select between 1 and these maximum values.
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-blue-800">Maximum Guests</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={globalConfig.button1MaxGuests}
+                              onChange={(e) => updateConfig({ button1MaxGuests: parseInt(e.target.value) })}
+                              className="mt-1 block w-full px-3 py-2 border border-blue-300 rounded-md"
+                            />
+                            <p className="text-xs text-blue-600 mt-1">Sellers can choose 1 to {globalConfig.button1MaxGuests} guests</p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-blue-800">Maximum Days</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={globalConfig.button1MaxDays}
+                              onChange={(e) => updateConfig({ button1MaxDays: parseInt(e.target.value) })}
+                              className="mt-1 block w-full px-3 py-2 border border-blue-300 rounded-md"
+                            />
+                            <p className="text-xs text-blue-600 mt-1">Sellers can choose 1 to {globalConfig.button1MaxDays} days</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={globalConfig.button1AllowCustomGuestsDays === false}
+                        onChange={() => updateConfig({ button1AllowCustomGuestsDays: false })}
+                        className="mt-1 h-4 w-4 text-purple-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">No</span>
+                        <p className="text-sm text-gray-600">Admin provides default values</p>
+                      </div>
+                    </label>
+
+                    {globalConfig.button1AllowCustomGuestsDays === false && (
+                      <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+                        <h4 className="font-medium text-purple-900 mb-2">Default Settings</h4>
+                        <p className="text-sm text-purple-800 mb-4">
+                          These values will be automatically applied to all QR codes since sellers cannot customize.
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-purple-800">Default Guests</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={globalConfig.button1DefaultGuests}
+                              onChange={(e) => updateConfig({ button1DefaultGuests: parseInt(e.target.value) })}
+                              className="mt-1 block w-full px-3 py-2 border border-purple-300 rounded-md"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-purple-800">Default Days</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={globalConfig.button1DefaultDays}
+                              onChange={(e) => updateConfig({ button1DefaultDays: parseInt(e.target.value) })}
+                              className="mt-1 block w-full px-3 py-2 border border-purple-300 rounded-md"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => saveGlobalConfig(1)}
+                    disabled={loading}
+                    className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                      'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    <Save className="h-5 w-5 mr-2" />
+                    {loading ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              )}
+
+              {/* Button 2: Pricing Type */}
+              {activeButton === 2 && (
+                <div className="space-y-6">
+                  <div className="border-l-4 border-yellow-500 pl-4">
+                    <h2 className="text-xl font-semibold text-gray-900">Button 2: Pricing Type</h2>
+                    <p className="text-gray-600 mt-1">Configure how QR codes are priced</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={globalConfig.button2PricingType === 'FIXED'}
+                        onChange={() => updateConfig({ button2PricingType: 'FIXED' })}
+                        className="mt-1 h-4 w-4 text-yellow-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">Fixed price (set by Admin)</span>
+                        <p className="text-sm text-gray-600">Same price regardless of guests or days</p>
+                      </div>
+                    </label>
+
+                    {globalConfig.button2PricingType === 'FIXED' && (
+                      <div className="ml-7 p-4 bg-yellow-50 rounded-lg">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Base Price ($)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={globalConfig.button2FixedPrice || ''}
+                          onChange={(e) => updateConfig({ button2FixedPrice: parseFloat(e.target.value) || 0 })}
+                          className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                          placeholder="0.00"
+                        />
+                        <div className="mt-4">
+                          <label className="flex items-center space-x-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={globalConfig.button2IncludeTax}
+                              onChange={(e) => updateConfig({ button2IncludeTax: e.target.checked })}
+                              className="form-checkbox h-4 w-4 text-yellow-600 rounded focus:ring-yellow-500 border-gray-300"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Include Tax</span>
+                          </label>
+                          {globalConfig.button2IncludeTax && (
+                            <div className="mt-2 ml-7">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Tax Percentage (%)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                value={globalConfig.button2TaxPercentage || ''}
+                                onChange={(e) => updateConfig({ button2TaxPercentage: parseFloat(e.target.value) || 0 })}
+                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                placeholder="0.00"
+                              />
+                              <p className="text-sm text-gray-600 mt-1">Tax percentage to add to final price</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={globalConfig.button2PricingType === 'VARIABLE'}
+                        onChange={() => updateConfig({ button2PricingType: 'VARIABLE' })}
+                        className="mt-1 h-4 w-4 text-yellow-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">Variable price</span>
+                        <p className="text-sm text-gray-600">Calculated using number of guests × days</p>
+                      </div>
+                    </label>
+
+                    {globalConfig.button2PricingType === 'VARIABLE' && (
+                      <div className="ml-7 p-4 bg-yellow-50 rounded-lg">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Left side - Configuration inputs */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Base Price ($)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={globalConfig.button2VariableBasePrice || ''}
+                              onChange={(e) => updateConfig({ button2VariableBasePrice: parseFloat(e.target.value) || 0 })}
+                              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                              placeholder="0.00"
+                            />
+                            <div className="mt-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Guest Increase ($)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={globalConfig.button2VariableGuestIncrease || ''}
+                                onChange={(e) => updateConfig({ button2VariableGuestIncrease: parseFloat(e.target.value) || 0 })}
+                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                placeholder="0.00"
+                              />
+                              <p className="text-sm text-gray-600 mt-1">Price increase per guest</p>
+                            </div>
+                            <div className="mt-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Day Increase ($)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={globalConfig.button2VariableDayIncrease || ''}
+                                onChange={(e) => updateConfig({ button2VariableDayIncrease: parseFloat(e.target.value) || 0 })}
+                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                placeholder="0.00"
+                              />
+                              <p className="text-sm text-gray-600 mt-1">Price increase per day</p>
+                            </div>
+                            <div className="mt-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Commission (%)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                value={globalConfig.button2VariableCommission || ''}
+                                onChange={(e) => updateConfig({ button2VariableCommission: parseFloat(e.target.value) || 0 })}
+                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                placeholder="0.00"
+                              />
+                              <p className="text-sm text-gray-600 mt-1">Commission percentage for variable pricing</p>
+                            </div>
+                            <div className="mt-4">
+                              <label className="flex items-center space-x-3 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={globalConfig.button2IncludeTax}
+                                  onChange={(e) => updateConfig({ button2IncludeTax: e.target.checked })}
+                                  className="form-checkbox h-4 w-4 text-yellow-600 rounded focus:ring-yellow-500 border-gray-300"
+                                />
+                                <span className="text-sm font-medium text-gray-700">Include Tax</span>
+                              </label>
+                              {globalConfig.button2IncludeTax && (
+                                <div className="mt-2 ml-7">
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Tax Percentage (%)</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    value={globalConfig.button2TaxPercentage || ''}
+                                    onChange={(e) => updateConfig({ button2TaxPercentage: parseFloat(e.target.value) || 0 })}
+                                    className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    placeholder="0.00"
+                                  />
+                                  <p className="text-sm text-gray-600 mt-1">Tax percentage to add to final price</p>
+                                </div>
+                              )}
+                            </div>
+                            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                              <h4 className="text-sm font-medium text-blue-800 mb-2">💡 Pricing Formula</h4>
+                              <div className="text-xs text-blue-700 space-y-1">
+                                <p><strong>Base Price:</strong> Base + (Guests × Guest Increase) + (Days × Day Increase)</p>
+                                <p><strong>With Commission:</strong> Base Price + (Base Price × Commission %)</p>
+                                <p><strong>Final Price:</strong> (Base Price + Commission) + ((Base Price + Commission) × Tax %)</p>
+                                <p className="text-xs text-gray-600">Limits: Max 10 guests, Max 7 days</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right side - Pricing matrix table */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-3">📊 Pricing Matrix Preview</h4>
+                            <div className="w-full max-w-none">
+                              <table className="w-full text-xs border border-gray-300 rounded-lg bg-white table-fixed">
+                                <thead>
+                                  <tr className="bg-gray-800 text-white">
+                                    <th className="w-16 px-1 py-1 border-b border-gray-300 text-left font-bold text-xs">Days\Guests</th>
+                                    {Array.from({ length: 10 }, (_, i) => i + 1).map(guests => (
+                                      <th key={guests} className="w-12 px-1 py-1 border-b border-l border-gray-300 text-center font-bold text-xs">
+                                        {guests}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {Array.from({ length: 7 }, (_, i) => i + 1).map(days => (
+                                    <tr key={days} className="hover:bg-gray-50">
+                                      <td className="px-1 py-1 border-b border-gray-300 font-bold bg-gray-100 text-gray-800 text-xs">
+                                        {days} day{days > 1 ? 's' : ''}
+                                      </td>
+                                      {Array.from({ length: 10 }, (_, i) => i + 1).map(guests => {
+                                        const basePrice = globalConfig.button2VariableBasePrice + 
+                                                    (guests * globalConfig.button2VariableGuestIncrease) + 
+                                                    (days * globalConfig.button2VariableDayIncrease);
+                                        const commission = basePrice * (globalConfig.button2VariableCommission / 100);
+                                        const priceWithCommission = basePrice + commission;
+                                        const tax = globalConfig.button2IncludeTax ? (priceWithCommission * (globalConfig.button2TaxPercentage / 100)) : 0;
+                                        const finalPrice = priceWithCommission + tax;
+                                        return (
+                                          <td key={guests} className="px-1 py-1 border-b border-l border-gray-300 text-center text-green-700 font-medium text-xs">
+                                            ${finalPrice.toFixed(0)}
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="text-xs text-gray-600 mt-2">
+                              💡 Updates in real-time as you adjust pricing above
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={globalConfig.button2PricingType === 'FREE'}
+                        onChange={() => updateConfig({ button2PricingType: 'FREE' })}
+                        className="mt-1 h-4 w-4 text-yellow-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">Free</span>
+                        <p className="text-sm text-gray-600">No charge for QR codes</p>
+                      </div>
+                    </label>
+
+                    {globalConfig.button2PricingType === 'FREE' && (
+                      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">✓</span>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-green-800">Free QR Codes</h3>
+                            <p className="text-green-700">Distributors and sellers will not be charged anything for QR code generation.</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 text-sm text-green-600">
+                          <p><strong>Benefits:</strong></p>
+                          <ul className="list-disc list-inside mt-1 space-y-1">
+                            <li>No cost to sellers for QR creation</li>
+                            <li>Unlimited QR generation</li>
+                            <li>Perfect for promotional campaigns</li>
+                            <li>No payment processing required</li>
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => saveGlobalConfig(2)}
+                    disabled={loading}
+                    className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                      'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    <Save className="h-5 w-5 mr-2" />
+                    {loading ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              )}
+
+              {/* Button 3: Send Method */}
+              {activeButton === 3 && (
+                <div className="space-y-6">
+                  <div className="border-l-4 border-blue-500 pl-4">
+                    <h2 className="text-xl font-semibold text-gray-900">Button 3: Send Method</h2>
+                    <p className="text-gray-600 mt-1">Choose how QR codes are delivered to guests</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className={`p-6 border-2 rounded-lg cursor-pointer transition-colors ${
+                      globalConfig.button3SendMethod === 'URL' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                      onClick={() => updateConfig({ button3SendMethod: 'URL' })}
+                    >
+                      <div className="flex items-center space-x-3 mb-3">
+                        <input
+                          type="radio"
+                          checked={globalConfig.button3SendMethod === 'URL'}
+                          onChange={() => updateConfig({ button3SendMethod: 'URL' })}
+                          className="h-4 w-4 text-blue-600"
+                        />
+                        <h3 className="text-lg font-semibold text-gray-900">URL (Landing Page)</h3>
+                      </div>
+                      <p className="text-gray-600 mb-3">
+                        Generates a unique landing page link for the guest
+                      </p>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-green-600">✓</span>
+                          <span>Custom landing page design</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-green-600">✓</span>
+                          <span>Guest enters details on webpage</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-green-600">✓</span>
+                          <span>Fully branded experience</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={`p-6 border-2 rounded-lg cursor-pointer transition-colors ${
+                      globalConfig.button3SendMethod === 'APP' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                      onClick={() => updateConfig({ button3SendMethod: 'APP' })}
+                    >
+                      <div className="flex items-center space-x-3 mb-3">
+                        <input
+                          type="radio"
+                          checked={globalConfig.button3SendMethod === 'APP'}
+                          onChange={() => updateConfig({ button3SendMethod: 'APP' })}
+                          className="h-4 w-4 text-blue-600"
+                        />
+                        <h3 className="text-lg font-semibold text-gray-900">APP (One-Click)</h3>
+                      </div>
+                      <p className="text-gray-600 mb-3">
+                        One-click trigger inside the seller dashboard
+                      </p>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>Instant QR generation</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>QR sent via email</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>Welcome email included</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {globalConfig.button3SendMethod === 'URL' && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                      <h4 className="font-medium text-blue-900 mb-2">Landing Page System</h4>
+                      <p className="text-sm text-blue-800">
+                        When URL method is selected, each QR code will generate a unique landing page where guests can enter their details. 
+                        This landing page will be customizable per seller/location.
+                      </p>
+                      <button 
+                        onClick={() => router.push('/admin/landing-templates')}
+                        className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                      >
+                        Configure Landing Page Templates →
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => saveGlobalConfig(3)}
+                    disabled={loading}
+                    className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                      'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    <Save className="h-5 w-5 mr-2" />
+                    {loading ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              )}
+
+              {/* Button 4: Landing Page Required */}
+              {activeButton === 4 && (
+                <div className="space-y-6">
+                  <div className="border-l-4 border-green-500 pl-4">
+                    <h2 className="text-xl font-semibold text-gray-900">Button 4: Landing Page Required?</h2>
+                    <p className="text-gray-600 mt-1">Determine if a custom landing page should be generated per QR</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={globalConfig.button4LandingPageRequired === true}
+                        onChange={() => updateConfig({ button4LandingPageRequired: true })}
+                        className="mt-1 h-4 w-4 text-green-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">Yes</span>
+                        <p className="text-sm text-gray-600">Custom landing page generated per QR</p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={globalConfig.button4LandingPageRequired === false}
+                        onChange={() => updateConfig({ button4LandingPageRequired: false })}
+                        className="mt-1 h-4 w-4 text-green-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">No</span>
+                        <p className="text-sm text-gray-600">QR sent directly without landing page</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {globalConfig.button4LandingPageRequired && (
+                    <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                      <h4 className="font-medium text-green-900 mb-2">Landing Page Features</h4>
+                      <div className="space-y-2 text-sm text-green-800">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-green-600">✓</span>
+                          <span>Personalized greeting for each guest</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-green-600">✓</span>
+                          <span>Location and seller information</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-green-600">✓</span>
+                          <span>Pass validity details</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-green-600">✓</span>
+                          <span>Custom branding per location</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => saveGlobalConfig(4)}
+                    disabled={loading}
+                    className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                      'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    <Save className="h-5 w-5 mr-2" />
+                    {loading ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              )}
+
+              {/* Button 5: Send Rebuy Email */}
+              {activeButton === 5 && (
+                <div className="space-y-6">
+                  <div className="border-l-4 border-red-500 pl-4">
+                    <h2 className="text-xl font-semibold text-gray-900">Button 5: Send Rebuy Email?</h2>
+                    <p className="text-gray-600 mt-1">Automatically send follow-up emails before QR expiration</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={globalConfig.button5SendRebuyEmail === true}
+                        onChange={() => updateConfig({ button5SendRebuyEmail: true })}
+                        className="mt-1 h-4 w-4 text-red-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">Yes</span>
+                        <p className="text-sm text-gray-600">System will automatically send a follow-up email 12 hours before QR expires</p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={globalConfig.button5SendRebuyEmail === false}
+                        onChange={() => updateConfig({ button5SendRebuyEmail: false })}
+                        className="mt-1 h-4 w-4 text-red-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">No</span>
+                        <p className="text-sm text-gray-600">No follow-up emails will be sent</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {globalConfig.button5SendRebuyEmail && (
+                    <div className="mt-6 p-4 bg-red-50 rounded-lg">
+                      <h4 className="font-medium text-red-900 mb-2">Rebuy Email System</h4>
+                      <p className="text-sm text-red-800">
+                        When enabled, the system will automatically send a follow-up email 12 hours before each QR code expires, 
+                        encouraging guests to purchase a new QR code for continued access.
+                      </p>
+                      <button className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">
+                        Configure Email Templates →
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => saveGlobalConfig(5)}
+                    disabled={loading}
+                    className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                      'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    <Save className="h-5 w-5 mr-2" />
+                    {loading ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -13,6 +13,7 @@ model User {
   password           String
   name               String?
   role               String       @default("SELLER")
+  isActive           Boolean      @default(true)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
   locationId         String?
@@ -82,19 +83,78 @@ model QRConfig {
   seller                User     @relation("SellerConfig", fields: [sellerId], references: [id], onDelete: Cascade)
 }
 
+model QRGlobalConfig {
+  id                           String   @id @default(cuid())
+  button1AllowCustomGuestsDays Boolean  @default(false)
+  button1DefaultGuests         Int      @default(2)
+  button1DefaultDays           Int      @default(3)
+  button1MaxGuests             Int      @default(10)
+  button1MaxDays               Int      @default(30)
+  button2PricingType           String   @default("FIXED")
+  button2FixedPrice            Float?   @default(0)
+  button2VariableBasePrice     Float    @default(10)
+  button2VariableGuestIncrease Float    @default(5)
+  button2VariableDayIncrease   Float    @default(3)
+  button2VariableCommission    Float    @default(0)
+  button2IncludeTax            Boolean  @default(false)
+  button2TaxPercentage         Float    @default(0)
+  button3SendMethod            String   @default("URL")
+  button4LandingPageRequired   Boolean  @default(true)
+  button5SendRebuyEmail        Boolean  @default(false)
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  @@map("QRGlobalConfig")
+}
+
+model LandingPageTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  logoUrl         String?
+  primaryColor    String   @default("#f97316")
+  secondaryColor  String   @default("#fb923c")
+  backgroundColor String   @default("#fef3f2")
+  headerText      String
+  descriptionText String
+  ctaButtonText   String
+  showPayPal      Boolean  @default(true)
+  showContactForm Boolean  @default(true)
+  customCSS       String?
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("landing_page_templates")
+}
+
+model LandingPageSubmission {
+  id              String   @id @default(cuid())
+  qrCodeId        String
+  clientName      String
+  email           String
+  phone           String?
+  guests          Int      @default(2)
+  specialRequests String?
+  submittedAt     DateTime @default(now())
+  qrCode          QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@map("landing_page_submissions")
+}
+
 model QRCode {
-  id         String   @id @default(cuid())
-  code       String   @unique
-  sellerId   String
-  guests     Int      @default(2)
-  days       Int      @default(3)
-  cost       Float    @default(0.0)
-  expiresAt  DateTime
-  isActive   Boolean  @default(true)
-  landingUrl String?
-  createdAt  DateTime @default(now())
-  seller     User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  scans      QRScan[]
+  id          String                  @id @default(cuid())
+  code        String                  @unique
+  sellerId    String
+  guests      Int                     @default(2)
+  days        Int                     @default(3)
+  cost        Float                   @default(0.0)
+  expiresAt   DateTime
+  isActive    Boolean                 @default(true)
+  landingUrl  String?
+  createdAt   DateTime                @default(now())
+  seller      User                    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  scans       QRScan[]
+  submissions LandingPageSubmission[]
 
   @@map("qr_codes")
 }
