@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
-import { Building2, Users, MapPin, QrCode, Settings, Save, Eye, Plus, Edit3, Palette } from 'lucide-react'
+import { Building2, Users, MapPin, QrCode, Settings, Eye, Plus, Edit3, Palette } from 'lucide-react'
 import { ProtectedRoute } from '../../../components/auth/protected-route'
 import Link from 'next/link'
 
@@ -33,6 +33,7 @@ interface QRGlobalConfig {
   button3SendMethod: 'URL' | 'APP'
   button4LandingPageRequired: boolean
   button5SendRebuyEmail: boolean
+  updatedAt: Date
 }
 
 const getNavItems = (userRole: string) => {
@@ -70,13 +71,80 @@ export default function QRConfigPage() {
     button2TaxPercentage: 0,
     button3SendMethod: 'URL',
     button4LandingPageRequired: true,
-    button5SendRebuyEmail: false
+    button5SendRebuyEmail: false,
+    updatedAt: new Date(),
   })
 
   const [loading, setLoading] = useState(false)
   const [activeButton, setActiveButton] = useState<number>(1)
   const [saveStatus, setSaveStatus] = useState<string>('')
-  const [savedButtons, setSavedButtons] = useState<Set<number>>(new Set())
+  const [isAutoSaving, setIsAutoSaving] = useState<boolean>(false)
+  const [configuredButtons, setConfiguredButtons] = useState<Set<number>>(new Set())
+
+  // Helper function to check if a button configuration has been actively modified
+  const isButtonConfigured = (buttonNum: number): boolean => {
+    return Array.from(configuredButtons).includes(buttonNum)
+  }
+
+  // Reset all configurations to defaults
+  const resetToDefaults = async () => {
+    const defaultConfig: QRGlobalConfig = {
+      id: globalConfig.id,
+      // Button 1 defaults
+      button1AllowCustomGuestsDays: false,
+      button1DefaultGuests: 2,
+      button1MaxGuests: 6,
+      button1DefaultDays: 7,
+      button1MaxDays: 10,
+      // Button 2 defaults  
+      button2PricingType: "FIXED",
+      button2FixedPrice: 0,
+      button2VariableBasePrice: 10,
+      button2VariableGuestIncrease: 5,
+      button2VariableDayIncrease: 3,
+      button2VariableCommission: 0,
+      button2IncludeTax: false,
+      button2TaxPercentage: 0,
+      // Button 3 defaults
+      button3SendMethod: "URL",
+      // Button 4 defaults
+      button4LandingPageRequired: true,
+      // Button 5 defaults
+      button5SendRebuyEmail: false,
+      updatedAt: new Date(),
+    }
+    
+    setGlobalConfig(defaultConfig)
+    setConfiguredButtons(new Set()) // Clear all configured buttons
+    
+    // Auto-save the reset configuration
+    setIsAutoSaving(true)
+    setSaveStatus('Resetting to defaults...')
+    
+    try {
+      const response = await fetch('/api/admin/qr-global-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(defaultConfig),
+      })
+
+      if (response.ok) {
+        setSaveStatus('✅ Reset to defaults')
+        setTimeout(() => setSaveStatus(''), 2000)
+      } else {
+        setSaveStatus('❌ Reset failed')
+        setTimeout(() => setSaveStatus(''), 3000)
+      }
+    } catch (error) {
+      console.error('Reset error:', error)
+      setSaveStatus('❌ Reset error')
+      setTimeout(() => setSaveStatus(''), 3000)
+    } finally {
+      setIsAutoSaving(false)
+    }
+  }
 
   // Load existing configuration
   useEffect(() => {
@@ -101,30 +169,37 @@ export default function QRConfigPage() {
     }
   }
 
-  const saveGlobalConfig = async (buttonNumber: number, config?: QRGlobalConfig) => {
-    setLoading(true)
+  const updateConfig = async (updates: Partial<QRGlobalConfig>) => {
+    const updatedConfig = { ...globalConfig, ...updates }
+    setGlobalConfig(updatedConfig)
+    
+    // Auto-save the configuration
+    setIsAutoSaving(true)
+    setSaveStatus('Auto-saving...')
+    
     try {
       const response = await fetch('/api/admin/qr-global-config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(config || globalConfig)
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedConfig),
       })
 
       if (response.ok) {
-        setSavedButtons(prev => new Set(prev).add(buttonNumber))
-        setSaveStatus(`Button ${buttonNumber} saved!`)
+        setSaveStatus('✅ Auto-saved successfully')
         setTimeout(() => setSaveStatus(''), 2000)
+      } else {
+        setSaveStatus('❌ Auto-save failed')
+        setTimeout(() => setSaveStatus(''), 3000)
       }
     } catch (error) {
-      console.error('Error saving config:', error)
+      console.error('Auto-save error:', error)
+      setSaveStatus('❌ Auto-save error')
+      setTimeout(() => setSaveStatus(''), 3000)
+    } finally {
+      setIsAutoSaving(false)
     }
-    setLoading(false)
-  }
-
-  const updateConfig = (updates: Partial<QRGlobalConfig>) => {
-    const updatedConfig = { ...globalConfig, ...updates }
-    setGlobalConfig(updatedConfig)
   }
 
   return (
@@ -175,21 +250,36 @@ export default function QRConfigPage() {
                   <h1 className="text-3xl font-bold text-gray-900">QR Configuration System</h1>
                   <p className="mt-2 text-gray-600">Configure the 5-button QR generation system for all sellers</p>
                 </div>
-                <button
-                  onClick={() => {
-                    // Save all configurations individually
-                    for (let i = 1; i <= 5; i++) {
-                      saveGlobalConfig(i)
-                    }
-                  }}
-                  disabled={loading}
-                  className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                    'bg-blue-600 hover:bg-blue-700 text-white'
-                  }`}
-                >
-                  <Save className="h-5 w-5 mr-2" />
-                  {loading ? 'Saving...' : 'Save All Configuration'}
-                </button>
+                <div className="flex items-center space-x-3">
+                  {/* Auto-save status indicator */}
+                  {saveStatus && (
+                    <div className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium ${
+                      saveStatus.includes('✅') 
+                        ? 'bg-green-100 text-green-800' 
+                        : saveStatus.includes('❌')
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {isAutoSaving && <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>}
+                      {saveStatus}
+                    </div>
+                  )}
+                  
+                  {/* Auto-save info */}
+                  <div className="text-sm text-gray-500">
+                    Auto-save enabled
+                  </div>
+                  
+                  {/* Reset to Defaults button */}
+                  <button
+                    onClick={resetToDefaults}
+                    disabled={isAutoSaving}
+                    className="flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Reset to Defaults
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -258,15 +348,18 @@ export default function QRConfigPage() {
                   ].map((button) => (
                     <div
                       key={button.num}
-                      className={`p-2 rounded text-xs text-center ${
-                        savedButtons.has(button.num) ? 'bg-green-100 text-green-600 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'
+                      className={`p-2 rounded text-xs text-center transition-colors ${
+                        isButtonConfigured(button.num) 
+                          ? 'bg-green-100 text-green-700 border border-green-200' 
+                          : 'bg-gray-100 text-gray-600 border border-gray-200'
                       }`}
                     >
                       <div className="font-medium">{button.title}</div>
-                      {savedButtons.has(button.num) ? (
-                        <div className="text-xs mt-1 leading-tight">{button.value}</div>
+                      <div className="text-xs mt-1 leading-tight">{button.value}</div>
+                      {isButtonConfigured(button.num) ? (
+                        <div className="text-green-600 text-xs mt-1">✓ Auto-saved</div>
                       ) : (
-                        <div className="text-xs mt-1 text-gray-500">Need to choose</div>
+                        <div className="text-gray-500 text-xs mt-1">Need to configure</div>
                       )}
                     </div>
                   ))}
@@ -289,7 +382,10 @@ export default function QRConfigPage() {
                       <input
                         type="radio"
                         checked={globalConfig.button1AllowCustomGuestsDays === true}
-                        onChange={() => updateConfig({ button1AllowCustomGuestsDays: true })}
+                        onChange={() => {
+                          updateConfig({ button1AllowCustomGuestsDays: true })
+                          setConfiguredButtons((prev) => new Set(prev).add(1))
+                        }}
                         className="mt-1 h-4 w-4 text-purple-600"
                       />
                       <div>
@@ -311,7 +407,10 @@ export default function QRConfigPage() {
                               type="number"
                               min="1"
                               value={globalConfig.button1MaxGuests}
-                              onChange={(e) => updateConfig({ button1MaxGuests: parseInt(e.target.value) })}
+                              onChange={(e) => {
+                                updateConfig({ button1MaxGuests: parseInt(e.target.value) })
+                                setConfiguredButtons((prev) => new Set(prev).add(1))
+                              }}
                               className="mt-1 block w-full px-3 py-2 border border-blue-300 rounded-md"
                             />
                             <p className="text-xs text-blue-600 mt-1">Sellers can choose 1 to {globalConfig.button1MaxGuests} guests</p>
@@ -322,7 +421,10 @@ export default function QRConfigPage() {
                               type="number"
                               min="1"
                               value={globalConfig.button1MaxDays}
-                              onChange={(e) => updateConfig({ button1MaxDays: parseInt(e.target.value) })}
+                              onChange={(e) => {
+                                updateConfig({ button1MaxDays: parseInt(e.target.value) })
+                                setConfiguredButtons((prev) => new Set(prev).add(1))
+                              }}
                               className="mt-1 block w-full px-3 py-2 border border-blue-300 rounded-md"
                             />
                             <p className="text-xs text-blue-600 mt-1">Sellers can choose 1 to {globalConfig.button1MaxDays} days</p>
@@ -335,7 +437,10 @@ export default function QRConfigPage() {
                       <input
                         type="radio"
                         checked={globalConfig.button1AllowCustomGuestsDays === false}
-                        onChange={() => updateConfig({ button1AllowCustomGuestsDays: false })}
+                        onChange={() => {
+                          updateConfig({ button1AllowCustomGuestsDays: false })
+                          setConfiguredButtons((prev) => new Set(prev).add(1))
+                        }}
                         className="mt-1 h-4 w-4 text-purple-600"
                       />
                       <div>
@@ -357,7 +462,10 @@ export default function QRConfigPage() {
                               type="number"
                               min="1"
                               value={globalConfig.button1DefaultGuests}
-                              onChange={(e) => updateConfig({ button1DefaultGuests: parseInt(e.target.value) })}
+                              onChange={(e) => {
+                                updateConfig({ button1DefaultGuests: parseInt(e.target.value) })
+                                setConfiguredButtons((prev) => new Set(prev).add(1))
+                              }}
                               className="mt-1 block w-full px-3 py-2 border border-purple-300 rounded-md"
                             />
                           </div>
@@ -367,7 +475,10 @@ export default function QRConfigPage() {
                               type="number"
                               min="1"
                               value={globalConfig.button1DefaultDays}
-                              onChange={(e) => updateConfig({ button1DefaultDays: parseInt(e.target.value) })}
+                              onChange={(e) => {
+                                updateConfig({ button1DefaultDays: parseInt(e.target.value) })
+                                setConfiguredButtons((prev) => new Set(prev).add(1))
+                              }}
                               className="mt-1 block w-full px-3 py-2 border border-purple-300 rounded-md"
                             />
                           </div>
@@ -375,16 +486,6 @@ export default function QRConfigPage() {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => saveGlobalConfig(1)}
-                    disabled={loading}
-                    className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                      'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                  >
-                    <Save className="h-5 w-5 mr-2" />
-                    {loading ? 'Saving...' : 'Save'}
-                  </button>
                 </div>
               )}
 
@@ -401,7 +502,10 @@ export default function QRConfigPage() {
                       <input
                         type="radio"
                         checked={globalConfig.button2PricingType === 'FIXED'}
-                        onChange={() => updateConfig({ button2PricingType: 'FIXED' })}
+                        onChange={() => {
+                          updateConfig({ button2PricingType: 'FIXED' })
+                          setConfiguredButtons((prev) => new Set(prev).add(2))
+                        }}
                         className="mt-1 h-4 w-4 text-yellow-600"
                       />
                       <div>
@@ -418,7 +522,10 @@ export default function QRConfigPage() {
                           min="0"
                           step="0.01"
                           value={globalConfig.button2FixedPrice || ''}
-                          onChange={(e) => updateConfig({ button2FixedPrice: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => {
+                            updateConfig({ button2FixedPrice: parseFloat(e.target.value) || 0 })
+                            setConfiguredButtons((prev) => new Set(prev).add(2))
+                          }}
                           className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                           placeholder="0.00"
                         />
@@ -427,7 +534,10 @@ export default function QRConfigPage() {
                             <input
                               type="checkbox"
                               checked={globalConfig.button2IncludeTax}
-                              onChange={(e) => updateConfig({ button2IncludeTax: e.target.checked })}
+                              onChange={(e) => {
+                                updateConfig({ button2IncludeTax: e.target.checked })
+                                setConfiguredButtons((prev) => new Set(prev).add(2))
+                              }}
                               className="form-checkbox h-4 w-4 text-yellow-600 rounded focus:ring-yellow-500 border-gray-300"
                             />
                             <span className="text-sm font-medium text-gray-700">Include Tax</span>
@@ -441,7 +551,10 @@ export default function QRConfigPage() {
                                 max="100"
                                 step="0.01"
                                 value={globalConfig.button2TaxPercentage || ''}
-                                onChange={(e) => updateConfig({ button2TaxPercentage: parseFloat(e.target.value) || 0 })}
+                                onChange={(e) => {
+                                  updateConfig({ button2TaxPercentage: parseFloat(e.target.value) || 0 })
+                                  setConfiguredButtons((prev) => new Set(prev).add(2))
+                                }}
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                 placeholder="0.00"
                               />
@@ -456,7 +569,10 @@ export default function QRConfigPage() {
                       <input
                         type="radio"
                         checked={globalConfig.button2PricingType === 'VARIABLE'}
-                        onChange={() => updateConfig({ button2PricingType: 'VARIABLE' })}
+                        onChange={() => {
+                          updateConfig({ button2PricingType: 'VARIABLE' })
+                          setConfiguredButtons((prev) => new Set(prev).add(2))
+                        }}
                         className="mt-1 h-4 w-4 text-yellow-600"
                       />
                       <div>
@@ -476,7 +592,10 @@ export default function QRConfigPage() {
                               min="0"
                               step="0.01"
                               value={globalConfig.button2VariableBasePrice || ''}
-                              onChange={(e) => updateConfig({ button2VariableBasePrice: parseFloat(e.target.value) || 0 })}
+                              onChange={(e) => {
+                                updateConfig({ button2VariableBasePrice: parseFloat(e.target.value) || 0 })
+                                setConfiguredButtons((prev) => new Set(prev).add(2))
+                              }}
                               className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                               placeholder="0.00"
                             />
@@ -487,7 +606,10 @@ export default function QRConfigPage() {
                                 min="0"
                                 step="0.01"
                                 value={globalConfig.button2VariableGuestIncrease || ''}
-                                onChange={(e) => updateConfig({ button2VariableGuestIncrease: parseFloat(e.target.value) || 0 })}
+                                onChange={(e) => {
+                                  updateConfig({ button2VariableGuestIncrease: parseFloat(e.target.value) || 0 })
+                                  setConfiguredButtons((prev) => new Set(prev).add(2))
+                                }}
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                 placeholder="0.00"
                               />
@@ -500,7 +622,10 @@ export default function QRConfigPage() {
                                 min="0"
                                 step="0.01"
                                 value={globalConfig.button2VariableDayIncrease || ''}
-                                onChange={(e) => updateConfig({ button2VariableDayIncrease: parseFloat(e.target.value) || 0 })}
+                                onChange={(e) => {
+                                  updateConfig({ button2VariableDayIncrease: parseFloat(e.target.value) || 0 })
+                                  setConfiguredButtons((prev) => new Set(prev).add(2))
+                                }}
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                 placeholder="0.00"
                               />
@@ -514,7 +639,10 @@ export default function QRConfigPage() {
                                 max="100"
                                 step="0.01"
                                 value={globalConfig.button2VariableCommission || ''}
-                                onChange={(e) => updateConfig({ button2VariableCommission: parseFloat(e.target.value) || 0 })}
+                                onChange={(e) => {
+                                  updateConfig({ button2VariableCommission: parseFloat(e.target.value) || 0 })
+                                  setConfiguredButtons((prev) => new Set(prev).add(2))
+                                }}
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                 placeholder="0.00"
                               />
@@ -525,7 +653,10 @@ export default function QRConfigPage() {
                                 <input
                                   type="checkbox"
                                   checked={globalConfig.button2IncludeTax}
-                                  onChange={(e) => updateConfig({ button2IncludeTax: e.target.checked })}
+                                  onChange={(e) => {
+                                    updateConfig({ button2IncludeTax: e.target.checked })
+                                    setConfiguredButtons((prev) => new Set(prev).add(2))
+                                  }}
                                   className="form-checkbox h-4 w-4 text-yellow-600 rounded focus:ring-yellow-500 border-gray-300"
                                 />
                                 <span className="text-sm font-medium text-gray-700">Include Tax</span>
@@ -539,7 +670,10 @@ export default function QRConfigPage() {
                                     max="100"
                                     step="0.01"
                                     value={globalConfig.button2TaxPercentage || ''}
-                                    onChange={(e) => updateConfig({ button2TaxPercentage: parseFloat(e.target.value) || 0 })}
+                                    onChange={(e) => {
+                                      updateConfig({ button2TaxPercentage: parseFloat(e.target.value) || 0 })
+                                      setConfiguredButtons((prev) => new Set(prev).add(2))
+                                    }}
                                     className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     placeholder="0.00"
                                   />
@@ -610,7 +744,10 @@ export default function QRConfigPage() {
                       <input
                         type="radio"
                         checked={globalConfig.button2PricingType === 'FREE'}
-                        onChange={() => updateConfig({ button2PricingType: 'FREE' })}
+                        onChange={() => {
+                          updateConfig({ button2PricingType: 'FREE' })
+                          setConfiguredButtons((prev) => new Set(prev).add(2))
+                        }}
                         className="mt-1 h-4 w-4 text-yellow-600"
                       />
                       <div>
@@ -642,16 +779,6 @@ export default function QRConfigPage() {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => saveGlobalConfig(2)}
-                    disabled={loading}
-                    className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                      'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                  >
-                    <Save className="h-5 w-5 mr-2" />
-                    {loading ? 'Saving...' : 'Save'}
-                  </button>
                 </div>
               )}
 
@@ -669,13 +796,19 @@ export default function QRConfigPage() {
                         ? 'border-blue-500 bg-blue-50' 
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
-                      onClick={() => updateConfig({ button3SendMethod: 'URL' })}
+                      onClick={() => {
+                        updateConfig({ button3SendMethod: 'URL' })
+                        setConfiguredButtons((prev) => new Set(prev).add(3))
+                      }}
                     >
                       <div className="flex items-center space-x-3 mb-3">
                         <input
                           type="radio"
                           checked={globalConfig.button3SendMethod === 'URL'}
-                          onChange={() => updateConfig({ button3SendMethod: 'URL' })}
+                          onChange={() => {
+                            updateConfig({ button3SendMethod: 'URL' })
+                            setConfiguredButtons((prev) => new Set(prev).add(3))
+                          }}
                           className="h-4 w-4 text-blue-600"
                         />
                         <h3 className="text-lg font-semibold text-gray-900">URL (Landing Page)</h3>
@@ -704,13 +837,19 @@ export default function QRConfigPage() {
                         ? 'border-blue-500 bg-blue-50' 
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
-                      onClick={() => updateConfig({ button3SendMethod: 'APP' })}
+                      onClick={() => {
+                        updateConfig({ button3SendMethod: 'APP' })
+                        setConfiguredButtons((prev) => new Set(prev).add(3))
+                      }}
                     >
                       <div className="flex items-center space-x-3 mb-3">
                         <input
                           type="radio"
                           checked={globalConfig.button3SendMethod === 'APP'}
-                          onChange={() => updateConfig({ button3SendMethod: 'APP' })}
+                          onChange={() => {
+                            updateConfig({ button3SendMethod: 'APP' })
+                            setConfiguredButtons((prev) => new Set(prev).add(3))
+                          }}
                           className="h-4 w-4 text-blue-600"
                         />
                         <h3 className="text-lg font-semibold text-gray-900">APP (One-Click)</h3>
@@ -750,16 +889,6 @@ export default function QRConfigPage() {
                       </button>
                     </div>
                   )}
-                  <button
-                    onClick={() => saveGlobalConfig(3)}
-                    disabled={loading}
-                    className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                      'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                  >
-                    <Save className="h-5 w-5 mr-2" />
-                    {loading ? 'Saving...' : 'Save'}
-                  </button>
                 </div>
               )}
 
@@ -776,7 +905,10 @@ export default function QRConfigPage() {
                       <input
                         type="radio"
                         checked={globalConfig.button4LandingPageRequired === true}
-                        onChange={() => updateConfig({ button4LandingPageRequired: true })}
+                        onChange={() => {
+                          updateConfig({ button4LandingPageRequired: true })
+                          setConfiguredButtons((prev) => new Set(prev).add(4))
+                        }}
                         className="mt-1 h-4 w-4 text-green-600"
                       />
                       <div>
@@ -789,7 +921,10 @@ export default function QRConfigPage() {
                       <input
                         type="radio"
                         checked={globalConfig.button4LandingPageRequired === false}
-                        onChange={() => updateConfig({ button4LandingPageRequired: false })}
+                        onChange={() => {
+                          updateConfig({ button4LandingPageRequired: false })
+                          setConfiguredButtons((prev) => new Set(prev).add(4))
+                        }}
                         className="mt-1 h-4 w-4 text-green-600"
                       />
                       <div>
@@ -822,16 +957,6 @@ export default function QRConfigPage() {
                       </div>
                     </div>
                   )}
-                  <button
-                    onClick={() => saveGlobalConfig(4)}
-                    disabled={loading}
-                    className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                      'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                  >
-                    <Save className="h-5 w-5 mr-2" />
-                    {loading ? 'Saving...' : 'Save'}
-                  </button>
                 </div>
               )}
 
@@ -848,7 +973,10 @@ export default function QRConfigPage() {
                       <input
                         type="radio"
                         checked={globalConfig.button5SendRebuyEmail === true}
-                        onChange={() => updateConfig({ button5SendRebuyEmail: true })}
+                        onChange={() => {
+                          updateConfig({ button5SendRebuyEmail: true })
+                          setConfiguredButtons((prev) => new Set(prev).add(5))
+                        }}
                         className="mt-1 h-4 w-4 text-red-600"
                       />
                       <div>
@@ -861,7 +989,10 @@ export default function QRConfigPage() {
                       <input
                         type="radio"
                         checked={globalConfig.button5SendRebuyEmail === false}
-                        onChange={() => updateConfig({ button5SendRebuyEmail: false })}
+                        onChange={() => {
+                          updateConfig({ button5SendRebuyEmail: false })
+                          setConfiguredButtons((prev) => new Set(prev).add(5))
+                        }}
                         className="mt-1 h-4 w-4 text-red-600"
                       />
                       <div>
@@ -883,16 +1014,6 @@ export default function QRConfigPage() {
                       </button>
                     </div>
                   )}
-                  <button
-                    onClick={() => saveGlobalConfig(5)}
-                    disabled={loading}
-                    className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                      'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                  >
-                    <Save className="h-5 w-5 mr-2" />
-                    {loading ? 'Saving...' : 'Save'}
-                  </button>
                 </div>
               )}
             </div>
