@@ -17,11 +17,21 @@ interface QRButtonConfig {
 
 interface QRGlobalConfig {
   id?: string
+  // OLD Button 1 fields (keep for backward compatibility)
   button1AllowCustomGuestsDays: boolean
   button1DefaultGuests: number
   button1DefaultDays: number
   button1MaxGuests: number
   button1MaxDays: number
+  
+  // NEW Button 1 fields (parallel system)
+  button1GuestsLocked: boolean          // ON = locked to default, OFF = flexible range
+  button1GuestsDefault: number          // Default value when locked
+  button1GuestsRangeMax: number         // Max range when flexible (1 to max)
+  button1DaysLocked: boolean            // ON = locked to default, OFF = flexible range  
+  button1DaysDefault: number            // Default value when locked
+  button1DaysRangeMax: number           // Max range when flexible (1 to max)
+  
   button2PricingType: 'FIXED' | 'VARIABLE' | 'FREE'
   button2FixedPrice?: number
   button2VariableBasePrice: number
@@ -61,6 +71,12 @@ export default function QRConfigPage() {
     button1DefaultDays: 3,
     button1MaxGuests: 10,
     button1MaxDays: 30,
+    button1GuestsLocked: false,
+    button1GuestsDefault: 2,
+    button1GuestsRangeMax: 10,
+    button1DaysLocked: false,
+    button1DaysDefault: 3,
+    button1DaysRangeMax: 30,
     button2PricingType: 'FIXED',
     button2FixedPrice: 0,
     button2VariableBasePrice: 0,
@@ -88,62 +104,39 @@ export default function QRConfigPage() {
 
   // Reset all configurations to defaults
   const resetToDefaults = async () => {
-    const defaultConfig: QRGlobalConfig = {
-      id: globalConfig.id,
-      // Button 1 defaults
+    const defaultConfig = {
+      // OLD Button 1 fields (keep for backward compatibility)
       button1AllowCustomGuestsDays: false,
       button1DefaultGuests: 2,
-      button1MaxGuests: 6,
-      button1DefaultDays: 7,
-      button1MaxDays: 10,
-      // Button 2 defaults  
-      button2PricingType: "FIXED",
+      button1DefaultDays: 3,
+      button1MaxGuests: 10,
+      button1MaxDays: 30,
+      
+      // NEW Button 1 fields (reset to defaults)
+      button1GuestsLocked: false,
+      button1GuestsDefault: 2,
+      button1GuestsRangeMax: 10,
+      button1DaysLocked: false,
+      button1DaysDefault: 3,
+      button1DaysRangeMax: 30,
+      
+      button2PricingType: 'FIXED' as const,
       button2FixedPrice: 0,
-      button2VariableBasePrice: 10,
-      button2VariableGuestIncrease: 5,
-      button2VariableDayIncrease: 3,
+      button2VariableBasePrice: 0,
+      button2VariableGuestIncrease: 0,
+      button2VariableDayIncrease: 0,
       button2VariableCommission: 0,
       button2IncludeTax: false,
       button2TaxPercentage: 0,
-      // Button 3 defaults
-      button3SendMethod: "URL",
-      // Button 4 defaults
+      button3SendMethod: 'URL' as const,
       button4LandingPageRequired: true,
-      // Button 5 defaults
       button5SendRebuyEmail: false,
-      updatedAt: new Date(),
     }
     
-    setGlobalConfig(defaultConfig)
-    setConfiguredButtons(new Set()) // Clear all configured buttons
-    
-    // Auto-save the reset configuration
-    setIsAutoSaving(true)
-    setSaveStatus('Resetting to defaults...')
-    
-    try {
-      const response = await fetch('/api/admin/qr-global-config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(defaultConfig),
-      })
-
-      if (response.ok) {
-        setSaveStatus('✅ Reset to defaults')
-        setTimeout(() => setSaveStatus(''), 2000)
-      } else {
-        setSaveStatus('❌ Reset failed')
-        setTimeout(() => setSaveStatus(''), 3000)
-      }
-    } catch (error) {
-      console.error('Reset error:', error)
-      setSaveStatus('❌ Reset error')
-      setTimeout(() => setSaveStatus(''), 3000)
-    } finally {
-      setIsAutoSaving(false)
-    }
+    await updateConfig(defaultConfig)
+    setConfiguredButtons(new Set())
+    setSaveStatus('🔄 Reset to defaults - Auto-saved successfully')
+    setTimeout(() => setSaveStatus(''), 3000)
   }
 
   // Load existing configuration
@@ -373,118 +366,142 @@ export default function QRConfigPage() {
               {activeButton === 1 && (
                 <div className="space-y-6">
                   <div className="border-l-4 border-purple-500 pl-4">
-                    <h2 className="text-xl font-semibold text-gray-900">Button 1: Personalized?</h2>
-                    <p className="text-gray-600 mt-1">Control whether sellers can customize guest count and validity days</p>
+                    <h2 className="text-xl font-semibold text-gray-900">Button 1: Personalized Settings</h2>
+                    <p className="text-gray-600 mt-1">Control guest count and validity days with individual lock/unlock toggles</p>
                   </div>
                   
-                  <div className="space-y-4">
-                    <label className="flex items-start space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={globalConfig.button1AllowCustomGuestsDays === true}
-                        onChange={() => {
-                          updateConfig({ button1AllowCustomGuestsDays: true })
-                          setConfiguredButtons((prev) => new Set(prev).add(1))
-                        }}
-                        className="mt-1 h-4 w-4 text-purple-600"
-                      />
-                      <div>
-                        <span className="font-medium text-gray-900">Yes</span>
-                        <p className="text-sm text-gray-600">Seller can choose number of guests and days</p>
-                      </div>
-                    </label>
-
-                    {globalConfig.button1AllowCustomGuestsDays === true && (
-                      <div className="ml-7 mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <h4 className="font-medium text-blue-900 mb-2">Maximum Limits for Sellers</h4>
-                        <p className="text-sm text-blue-800 mb-4">
-                          Set the maximum values that sellers can choose. Sellers will be able to select between 1 and these maximum values.
-                        </p>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-blue-800">Maximum Guests</label>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    {/* Guests Control */}
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-blue-900">Number of Guests</h3>
+                          <p className="text-sm text-blue-700">Control guest selection</p>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-medium text-blue-700">
+                            {globalConfig.button1GuestsLocked ? 'Fixed' : 'Open'}
+                          </span>
+                          <label className="relative inline-flex items-center cursor-pointer">
                             <input
-                              type="number"
-                              min="1"
-                              value={globalConfig.button1MaxGuests}
+                              type="checkbox"
+                              checked={globalConfig.button1GuestsLocked}
                               onChange={(e) => {
-                                updateConfig({ button1MaxGuests: parseInt(e.target.value) })
+                                updateConfig({ button1GuestsLocked: e.target.checked })
                                 setConfiguredButtons((prev) => new Set(prev).add(1))
                               }}
-                              className="mt-1 block w-full px-3 py-2 border border-blue-300 rounded-md"
+                              className="sr-only"
                             />
-                            <p className="text-xs text-blue-600 mt-1">Sellers can choose 1 to {globalConfig.button1MaxGuests} guests</p>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-blue-800">Maximum Days</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={globalConfig.button1MaxDays}
-                              onChange={(e) => {
-                                updateConfig({ button1MaxDays: parseInt(e.target.value) })
-                                setConfiguredButtons((prev) => new Set(prev).add(1))
-                              }}
-                              className="mt-1 block w-full px-3 py-2 border border-blue-300 rounded-md"
-                            />
-                            <p className="text-xs text-blue-600 mt-1">Sellers can choose 1 to {globalConfig.button1MaxDays} days</p>
-                          </div>
+                            <div className={`w-11 h-6 rounded-full transition-colors ${
+                              globalConfig.button1GuestsLocked ? 'bg-blue-500' : 'bg-gray-300'
+                            }`}>
+                              <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform transform ${
+                                globalConfig.button1GuestsLocked ? 'translate-x-5' : 'translate-x-1'
+                              } mt-0.5`}></div>
+                            </div>
+                          </label>
                         </div>
                       </div>
-                    )}
-
-                    <label className="flex items-start space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={globalConfig.button1AllowCustomGuestsDays === false}
-                        onChange={() => {
-                          updateConfig({ button1AllowCustomGuestsDays: false })
-                          setConfiguredButtons((prev) => new Set(prev).add(1))
-                        }}
-                        className="mt-1 h-4 w-4 text-purple-600"
-                      />
+                      
                       <div>
-                        <span className="font-medium text-gray-900">No</span>
-                        <p className="text-sm text-gray-600">Admin provides default values</p>
-                      </div>
-                    </label>
-
-                    {globalConfig.button1AllowCustomGuestsDays === false && (
-                      <div className="mt-6 p-4 bg-purple-50 rounded-lg">
-                        <h4 className="font-medium text-purple-900 mb-2">Default Settings</h4>
-                        <p className="text-sm text-purple-800 mb-4">
-                          These values will be automatically applied to all QR codes since sellers cannot customize.
+                        <label className="block text-sm font-medium text-blue-800 mb-2">
+                          Default Guest Count
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="50"
+                          value={globalConfig.button1GuestsDefault}
+                          onChange={(e) => {
+                            updateConfig({ button1GuestsDefault: parseInt(e.target.value) || 1 })
+                            setConfiguredButtons((prev) => new Set(prev).add(1))
+                          }}
+                          className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <p className="text-xs text-blue-600 mt-1">
+                          {globalConfig.button1GuestsLocked 
+                            ? `Always ${globalConfig.button1GuestsDefault} guests` 
+                            : `Sellers can choose 1 to ${globalConfig.button1GuestsRangeMax} guests`
+                          }
                         </p>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-purple-800">Default Guests</label>
+                      </div>
+                    </div>
+
+                    {/* Days Control */}
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-green-900">Number of Days</h3>
+                          <p className="text-sm text-green-700">Control day selection</p>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-medium text-green-700">
+                            {globalConfig.button1DaysLocked ? 'Fixed' : 'Open'}
+                          </span>
+                          <label className="relative inline-flex items-center cursor-pointer">
                             <input
-                              type="number"
-                              min="1"
-                              value={globalConfig.button1DefaultGuests}
+                              type="checkbox"
+                              checked={globalConfig.button1DaysLocked}
                               onChange={(e) => {
-                                updateConfig({ button1DefaultGuests: parseInt(e.target.value) })
+                                updateConfig({ button1DaysLocked: e.target.checked })
                                 setConfiguredButtons((prev) => new Set(prev).add(1))
                               }}
-                              className="mt-1 block w-full px-3 py-2 border border-purple-300 rounded-md"
+                              className="sr-only"
                             />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-purple-800">Default Days</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={globalConfig.button1DefaultDays}
-                              onChange={(e) => {
-                                updateConfig({ button1DefaultDays: parseInt(e.target.value) })
-                                setConfiguredButtons((prev) => new Set(prev).add(1))
-                              }}
-                              className="mt-1 block w-full px-3 py-2 border border-purple-300 rounded-md"
-                            />
-                          </div>
+                            <div className={`w-11 h-6 rounded-full transition-colors ${
+                              globalConfig.button1DaysLocked ? 'bg-green-500' : 'bg-gray-300'
+                            }`}>
+                              <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform transform ${
+                                globalConfig.button1DaysLocked ? 'translate-x-5' : 'translate-x-1'
+                              } mt-0.5`}></div>
+                            </div>
+                          </label>
                         </div>
                       </div>
-                    )}
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-green-800 mb-2">
+                          Default Day Count
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="365"
+                          value={globalConfig.button1DaysDefault}
+                          onChange={(e) => {
+                            updateConfig({ button1DaysDefault: parseInt(e.target.value) || 1 })
+                            setConfiguredButtons((prev) => new Set(prev).add(1))
+                          }}
+                          className="w-full px-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        />
+                        <p className="text-xs text-green-600 mt-1">
+                          {globalConfig.button1DaysLocked 
+                            ? `Always ${globalConfig.button1DaysDefault} days` 
+                            : `Sellers can choose 1 to ${globalConfig.button1DaysRangeMax} days`
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Configuration Summary */}
+                  <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <h4 className="text-sm font-semibold text-purple-900 mb-2">Configuration Summary</h4>
+                    <div className="text-sm text-purple-700 space-y-1">
+                      <div>
+                        <span className="font-medium">Guests:</span> {globalConfig.button1GuestsLocked 
+                          ? `Fixed at ${globalConfig.button1GuestsDefault}` 
+                          : `Open range (1-${globalConfig.button1GuestsRangeMax})`
+                        }
+                      </div>
+                      <div>
+                        <span className="font-medium">Days:</span> {globalConfig.button1DaysLocked 
+                          ? `Fixed at ${globalConfig.button1DaysDefault}` 
+                          : `Open range (1-${globalConfig.button1DaysRangeMax})`
+                        }
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -558,7 +575,9 @@ export default function QRConfigPage() {
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                 placeholder="0.00"
                               />
-                              <p className="text-sm text-gray-600 mt-1">Tax percentage to add to final price</p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Tax percentage to add to final price
+                              </p>
                             </div>
                           )}
                         </div>
@@ -613,7 +632,9 @@ export default function QRConfigPage() {
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                 placeholder="0.00"
                               />
-                              <p className="text-sm text-gray-600 mt-1">Price increase per guest</p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Price increase per guest
+                              </p>
                             </div>
                             <div className="mt-4">
                               <label className="block text-sm font-medium text-gray-700 mb-2">Day Increase ($)</label>
@@ -629,7 +650,9 @@ export default function QRConfigPage() {
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                 placeholder="0.00"
                               />
-                              <p className="text-sm text-gray-600 mt-1">Price increase per day</p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Price increase per day
+                              </p>
                             </div>
                             <div className="mt-4">
                               <label className="block text-sm font-medium text-gray-700 mb-2">Commission (%)</label>
@@ -646,7 +669,9 @@ export default function QRConfigPage() {
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                 placeholder="0.00"
                               />
-                              <p className="text-sm text-gray-600 mt-1">Commission percentage for variable pricing</p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Commission percentage for variable pricing
+                              </p>
                             </div>
                             <div className="mt-4">
                               <label className="flex items-center space-x-3 cursor-pointer">
@@ -677,7 +702,9 @@ export default function QRConfigPage() {
                                     className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     placeholder="0.00"
                                   />
-                                  <p className="text-sm text-gray-600 mt-1">Tax percentage to add to final price</p>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    Tax percentage to add to final price
+                                  </p>
                                 </div>
                               )}
                             </div>
@@ -801,7 +828,8 @@ export default function QRConfigPage() {
                         setConfiguredButtons((prev) => new Set(prev).add(3))
                       }}
                     >
-                      <div className="flex items-center space-x-3 mb-3">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">URL (Landing Page)</h3>
                         <input
                           type="radio"
                           checked={globalConfig.button3SendMethod === 'URL'}
@@ -811,7 +839,6 @@ export default function QRConfigPage() {
                           }}
                           className="h-4 w-4 text-blue-600"
                         />
-                        <h3 className="text-lg font-semibold text-gray-900">URL (Landing Page)</h3>
                       </div>
                       <p className="text-gray-600 mb-3">
                         Generates a unique landing page link for the guest
@@ -842,7 +869,8 @@ export default function QRConfigPage() {
                         setConfiguredButtons((prev) => new Set(prev).add(3))
                       }}
                     >
-                      <div className="flex items-center space-x-3 mb-3">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">APP (One-Click)</h3>
                         <input
                           type="radio"
                           checked={globalConfig.button3SendMethod === 'APP'}
@@ -852,7 +880,6 @@ export default function QRConfigPage() {
                           }}
                           className="h-4 w-4 text-blue-600"
                         />
-                        <h3 className="text-lg font-semibold text-gray-900">APP (One-Click)</h3>
                       </div>
                       <p className="text-gray-600 mb-3">
                         One-click trigger inside the seller dashboard

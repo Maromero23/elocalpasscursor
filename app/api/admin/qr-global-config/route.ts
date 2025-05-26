@@ -16,21 +16,35 @@ export async function GET() {
     }
 
     // Try to get existing global config (should only be one)
-    const globalConfig = await prisma.qRGlobalConfig.findFirst()
+    const globalConfig = await prisma.qrGlobalConfig.findFirst()
 
     if (!globalConfig) {
       // Return default config if none exists
       const defaultConfig = {
         id: null,
+        // OLD Button 1 fields (backward compatibility)
         button1AllowCustomGuestsDays: false,
         button1DefaultGuests: 2,
         button1DefaultDays: 3,
         button1MaxGuests: 10,
         button1MaxDays: 30,
+        // NEW Button 1 fields
+        button1GuestsLocked: false,
+        button1GuestsDefault: 2,
+        button1GuestsRangeMax: 10,
+        button1DaysLocked: false,
+        button1DaysDefault: 3,
+        button1DaysRangeMax: 30,
+        // Button 2 fields
         button2PricingType: 'FIXED',
         button2FixedPrice: 0,
+        button2VariableBasePrice: 10,
+        button2VariableGuestIncrease: 5,
+        button2VariableDayIncrease: 3,
+        button2VariableCommission: 0,
         button2IncludeTax: false,
         button2TaxPercentage: 0,
+        // Button 3-5 fields
         button3SendMethod: 'URL',
         button4LandingPageRequired: true,
         button5SendRebuyEmail: false,
@@ -43,6 +57,11 @@ export async function GET() {
     return NextResponse.json(globalConfig)
   } catch (error) {
     console.error('Error fetching global config:', error)
+    console.error('Full error details:', JSON.stringify(error, null, 2))
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -67,15 +86,32 @@ export async function POST(request: NextRequest) {
     
     // Clean and validate the data
     const cleanData = {
+      // OLD Button 1 fields (backward compatibility)
       button1AllowCustomGuestsDays: Boolean(body.button1AllowCustomGuestsDays),
       button1DefaultGuests: parseInt(body.button1DefaultGuests) || 2,
       button1DefaultDays: parseInt(body.button1DefaultDays) || 3,
       button1MaxGuests: parseInt(body.button1MaxGuests) || 10,
       button1MaxDays: parseInt(body.button1MaxDays) || 30,
+      
+      // NEW Button 1 fields
+      button1GuestsLocked: Boolean(body.button1GuestsLocked),
+      button1GuestsDefault: parseInt(body.button1GuestsDefault) || 2,
+      button1GuestsRangeMax: parseInt(body.button1GuestsRangeMax) || 10,
+      button1DaysLocked: Boolean(body.button1DaysLocked),
+      button1DaysDefault: parseInt(body.button1DaysDefault) || 3,
+      button1DaysRangeMax: parseInt(body.button1DaysRangeMax) || 30,
+      
+      // Button 2 fields
       button2PricingType: body.button2PricingType || 'FIXED',
       button2FixedPrice: parseFloat(body.button2FixedPrice) || 0,
+      button2VariableBasePrice: parseFloat(body.button2VariableBasePrice) || 10,
+      button2VariableGuestIncrease: parseFloat(body.button2VariableGuestIncrease) || 5,
+      button2VariableDayIncrease: parseFloat(body.button2VariableDayIncrease) || 3,
+      button2VariableCommission: parseFloat(body.button2VariableCommission) || 0,
       button2IncludeTax: Boolean(body.button2IncludeTax),
       button2TaxPercentage: parseFloat(body.button2TaxPercentage) || 0,
+      
+      // Button 3-5 fields
       button3SendMethod: body.button3SendMethod || 'URL',
       button4LandingPageRequired: Boolean(body.button4LandingPageRequired !== false), // Default to true
       button5SendRebuyEmail: Boolean(body.button5SendRebuyEmail)
@@ -84,18 +120,18 @@ export async function POST(request: NextRequest) {
     console.log('Clean data:', cleanData)
     
     // Check if global config already exists
-    const existingConfig = await prisma.qRGlobalConfig.findFirst()
+    const existingConfig = await prisma.qrGlobalConfig.findFirst()
 
     let savedConfig
     if (existingConfig) {
       // Update existing config
-      savedConfig = await prisma.qRGlobalConfig.update({
+      savedConfig = await prisma.qrGlobalConfig.update({
         where: { id: existingConfig.id },
         data: cleanData
       })
     } else {
       // Create new config
-      savedConfig = await prisma.qRGlobalConfig.create({
+      savedConfig = await prisma.qrGlobalConfig.create({
         data: cleanData
       })
     }
@@ -103,6 +139,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(savedConfig)
   } catch (error) {
     console.error('Error saving global config:', error)
+    console.error('Full error details:', JSON.stringify(error, null, 2))
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

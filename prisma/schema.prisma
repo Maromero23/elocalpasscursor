@@ -83,13 +83,24 @@ model QRConfig {
   seller                User     @relation("SellerConfig", fields: [sellerId], references: [id], onDelete: Cascade)
 }
 
-model QRGlobalConfig {
+model QrGlobalConfig {
   id                           String   @id @default(cuid())
+  
+  // OLD Button 1 fields (keep for backward compatibility)
   button1AllowCustomGuestsDays Boolean  @default(false)
   button1DefaultGuests         Int      @default(2)
   button1DefaultDays           Int      @default(3)
   button1MaxGuests             Int      @default(10)
   button1MaxDays               Int      @default(30)
+  
+  // NEW Button 1 fields (parallel system)
+  button1GuestsLocked          Boolean  @default(false)  // ON = locked to default, OFF = flexible range
+  button1GuestsDefault         Int      @default(2)      // Default value when locked
+  button1GuestsRangeMax        Int      @default(10)     // Max range when flexible (1 to max)
+  button1DaysLocked            Boolean  @default(false)  // ON = locked to default, OFF = flexible range  
+  button1DaysDefault           Int      @default(3)      // Default value when locked
+  button1DaysRangeMax          Int      @default(30)     // Max range when flexible (1 to max)
+  
   button2PricingType           String   @default("FIXED")
   button2FixedPrice            Float?   @default(0)
   button2VariableBasePrice     Float    @default(10)
