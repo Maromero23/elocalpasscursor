@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json()
-    const { clientName, clientEmail, guests, days, language, price, deliveryMethod } = body
+    const { clientName, clientEmail, guests, days, language, deliveryMethod } = body
     
     // Validate required fields
     if (!clientName || !clientEmail || !guests || !days) {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         sellerId: session.user.id,
         guests: guests,
         days: days,
-        cost: parseFloat(price) || 0,
+        cost: 0,
         expiresAt: expiresAt,
         isActive: true,
         landingUrl: requestedDelivery === 'DIRECT' ? null : 'https://example.com' // Replace with actual landing URL
@@ -106,7 +106,6 @@ Hola ${clientName},
 • Código: ${qrCode}
 • Huéspedes: ${guests} personas
 • Válido por: ${days} días
-• Precio pagado: $${price} USD
 
  ACCESO DIRECTO:
 Este código le da acceso inmediato a su experiencia local.
@@ -127,7 +126,6 @@ Your ELocalPass is ready to use!
 • Code: ${qrCode}
 • Guests: ${guests} people
 • Valid for: ${days} days  
-• Price paid: $${price} USD
 
  DIRECT ACCESS:
 This code gives you immediate access to your local experience.
@@ -155,7 +153,6 @@ Hola ${clientName},
 • Código: ${qrCode}
 • Huéspedes: ${guests} personas
 • Válido por: ${days} días
-• Precio pagado: $${price} USD
 
  PRÓXIMO PASO:
 Use este código QR para acceder a su página personalizada y completar el proceso:
@@ -176,7 +173,6 @@ Your ELocalPass has been generated!
 • Code: ${qrCode}
 • Guests: ${guests} people
 • Valid for: ${days} days
-• Price paid: $${price} USD
 
  NEXT STEP:
 Use this QR code to access your personalized page and complete the process:

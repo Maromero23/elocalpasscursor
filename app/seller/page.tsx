@@ -12,7 +12,7 @@ interface QRConfig {
   button1DaysLocked: boolean
   button1DaysDefault: number
   button1DaysRangeMax: number
-  // Button 2 fields
+  // Button 2 fields (for backend pricing calculation only)
   button2PricingType: string
   button2FixedPrice: number
   button2VariableBasePrice: number
@@ -65,32 +65,6 @@ export default function SellerDashboard() {
     }
   }
   
-  // Calculate real-time price
-  const calculatePrice = () => {
-    if (!config) return 0
-    
-    let price = 0
-    
-    if (config.button2PricingType === 'FIXED') {
-      price = config.button2FixedPrice
-    } else if (config.button2PricingType === 'VARIABLE') {
-      price = config.button2VariableBasePrice +
-              (selectedGuests * config.button2VariableGuestIncrease) +
-              (selectedDays * config.button2VariableDayIncrease)
-      
-      // Add commission
-      price += price * (config.button2VariableCommission / 100)
-    }
-    // FREE pricing returns 0
-    
-    // Add tax if enabled
-    if (config.button2IncludeTax) {
-      price += price * (config.button2TaxPercentage / 100)
-    }
-    
-    return price.toFixed(2)
-  }
-  
   // Generate guest options based on config
   const getGuestOptions = () => {
     if (!config || config.button1GuestsLocked) return []
@@ -134,7 +108,6 @@ export default function SellerDashboard() {
           guests: selectedGuests,
           days: selectedDays,
           language,
-          price: calculatePrice(),
           deliveryMethod: config?.button3DeliveryMethod === 'BOTH' ? selectedDeliveryMethod : config?.button3DeliveryMethod
         })
       })
@@ -334,6 +307,29 @@ export default function SellerDashboard() {
                             </select>
                           </div>
                         )}
+                      </div>
+                    </div>
+                    
+                    {/* Configuration Summary */}
+                    <div className="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-400">
+                      <h4 className="text-lg font-semibold text-blue-900 mb-4">
+                        📋 Pass Configuration Summary
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-700">Pass Details:</span>
+                          <span className="font-medium text-gray-900">
+                            {selectedGuests} guest{selectedGuests > 1 ? 's' : ''} × {selectedDays} day{selectedDays > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-700">Delivery Method:</span>
+                          <span className="font-medium text-gray-900">
+                            {config?.button3DeliveryMethod === 'DIRECT' ? '📱 Direct to Client' : 
+                             config?.button3DeliveryMethod === 'URLS' ? '🔗 Via URLs' : 
+                             selectedDeliveryMethod === 'DIRECT' ? '📱 Direct to Client' : '🔗 Via URLs'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
