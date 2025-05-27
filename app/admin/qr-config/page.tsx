@@ -283,7 +283,7 @@ export default function QRConfigPage() {
                   { num: 1, title: "Personalized?" },
                   { num: 2, title: "Pricing Type" },
                   { num: 3, title: "Send Method" },
-                  { num: 4, title: "Landing Page?" },
+                  { num: 4, title: "Welcome Email" },
                   { num: 5, title: "Rebuy Email?" }
                 ].map((button) => (
                   <button
@@ -332,8 +332,8 @@ export default function QRConfigPage() {
                     },
                     { 
                       num: 4, 
-                      title: "Landing Page?", 
-                      value: globalConfig.button4LandingPageRequired ? "Required" : "Not Required" 
+                      title: "Welcome Email", 
+                      value: globalConfig.button4LandingPageRequired ? "Custom Template" : "Default Template" 
                     },
                     { 
                       num: 5, 
@@ -1013,12 +1013,12 @@ export default function QRConfigPage() {
                 </div>
               )}
 
-              {/* Button 4: Landing Page Required */}
+              {/* Button 4: Welcome Email */}
               {activeButton === 4 && (
                 <div className="space-y-6">
-                  <div className="border-l-4 border-green-500 pl-4">
-                    <h2 className="text-xl font-semibold text-gray-900">Button 4: Landing Page Required?</h2>
-                    <p className="text-gray-600 mt-1">Determine if a custom landing page should be generated per QR</p>
+                  <div className="border-l-4 border-purple-500 pl-4">
+                    <h2 className="text-xl font-semibold text-gray-900">Button 4: Welcome Email Template</h2>
+                    <p className="text-gray-600 mt-1">All clients receive welcome emails. Choose template type for this seller.</p>
                   </div>
                   
                   <div className="space-y-4">
@@ -1030,11 +1030,11 @@ export default function QRConfigPage() {
                           updateConfig({ button4LandingPageRequired: true })
                           setConfiguredButtons((prev) => new Set(prev).add(4))
                         }}
-                        className="mt-1 h-4 w-4 text-green-600"
+                        className="mt-1 h-4 w-4 text-purple-600"
                       />
                       <div>
-                        <span className="font-medium text-gray-900">Yes</span>
-                        <p className="text-sm text-gray-600">Custom landing page generated per QR</p>
+                        <span className="font-medium text-gray-900">Custom Template</span>
+                        <p className="text-sm text-gray-600">Use seller-specific template with custom branding, messages, and promotions</p>
                       </div>
                     </label>
 
@@ -1046,36 +1046,61 @@ export default function QRConfigPage() {
                           updateConfig({ button4LandingPageRequired: false })
                           setConfiguredButtons((prev) => new Set(prev).add(4))
                         }}
-                        className="mt-1 h-4 w-4 text-green-600"
+                        className="mt-1 h-4 w-4 text-purple-600"
                       />
                       <div>
-                        <span className="font-medium text-gray-900">No</span>
-                        <p className="text-sm text-gray-600">QR sent directly without landing page</p>
+                        <span className="font-medium text-gray-900">Default Template</span>
+                        <p className="text-sm text-gray-600">Use standard ELocalPass template (same for all sellers)</p>
                       </div>
                     </label>
                   </div>
 
                   {globalConfig.button4LandingPageRequired && (
-                    <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                      <h4 className="font-medium text-green-900 mb-2">Landing Page Features</h4>
-                      <div className="space-y-2 text-sm text-green-800">
+                    <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+                      <h4 className="font-medium text-purple-900 mb-2">Custom Template Features</h4>
+                      <div className="space-y-2 text-sm text-purple-800">
                         <div className="flex items-center space-x-2">
-                          <span className="text-green-600">✓</span>
-                          <span>Personalized greeting for each guest</span>
+                          <span className="text-purple-600">✓</span>
+                          <span>Seller-specific branding (logos, colors)</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-green-600">✓</span>
-                          <span>Location and seller information</span>
+                          <span className="text-purple-600">✓</span>
+                          <span>Custom promotional banners and messages</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-green-600">✓</span>
-                          <span>Pass validity details</span>
+                          <span className="text-purple-600">✓</span>
+                          <span>Special offers and discount codes</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-green-600">✓</span>
-                          <span>Custom branding per location</span>
+                          <span className="text-purple-600">✓</span>
+                          <span>Personalized content for that distributor's market</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-purple-600">✓</span>
+                          <span>Language-specific customizations (EN/ES)</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-purple-600">✓</span>
+                          <span>Enhanced FREE pass highlighting</span>
                         </div>
                       </div>
+                      <button 
+                        onClick={() => router.push('/admin/email-templates')}
+                        className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700"
+                      >
+                        Configure Custom Templates →
+                      </button>
+                    </div>
+                  )}
+
+                  {!globalConfig.button4LandingPageRequired && (
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-2">Default Template</h4>
+                      <p className="text-sm text-gray-700">
+                        Standard ELocalPass welcome email template will be used. This includes basic QR code information, 
+                        validity details, and standard branding. All dynamic variables like client name, guest count, 
+                        and expiry date are automatically included.
+                      </p>
                     </div>
                   )}
                 </div>
