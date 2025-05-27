@@ -68,39 +68,22 @@ model VerificationToken {
 }
 
 model QRConfig {
-  id                    String   @id @default(cuid())
-  sellerId              String   @unique
-  sendMethod            String   @default("URL")
-  landingPageRequired   Boolean  @default(true)
-  allowCustomGuestsDays Boolean  @default(false)
-  defaultGuests         Int      @default(2)
-  defaultDays           Int      @default(3)
-  pricingType           String   @default("FIXED")
-  fixedPrice            Float?
-  sendRebuyEmail        Boolean  @default(false)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  seller                User     @relation("SellerConfig", fields: [sellerId], references: [id], onDelete: Cascade)
-}
-
-model QrGlobalConfig {
   id                           String   @id @default(cuid())
-  
-  // OLD Button 1 fields (keep for backward compatibility)
-  button1AllowCustomGuestsDays Boolean  @default(false)
-  button1DefaultGuests         Int      @default(2)
-  button1DefaultDays           Int      @default(3)
-  button1MaxGuests             Int      @default(10)
-  button1MaxDays               Int      @default(30)
-  
-  // NEW Button 1 fields (parallel system)
-  button1GuestsLocked          Boolean  @default(false)  // ON = locked to default, OFF = flexible range
-  button1GuestsDefault         Int      @default(2)      // Default value when locked
-  button1GuestsRangeMax        Int      @default(10)     // Max range when flexible (1 to max)
-  button1DaysLocked            Boolean  @default(false)  // ON = locked to default, OFF = flexible range  
-  button1DaysDefault           Int      @default(3)      // Default value when locked
-  button1DaysRangeMax          Int      @default(30)     // Max range when flexible (1 to max)
-  
+  sellerId                     String   @unique
+  sendMethod                   String   @default("URL")
+  landingPageRequired          Boolean  @default(true)
+  allowCustomGuestsDays        Boolean  @default(false)
+  defaultGuests                Int      @default(2)
+  defaultDays                  Int      @default(3)
+  pricingType                  String   @default("FIXED")
+  fixedPrice                   Float?
+  sendRebuyEmail               Boolean  @default(false)
+  button1GuestsLocked          Boolean  @default(false)
+  button1GuestsDefault         Int      @default(2)
+  button1GuestsRangeMax        Int      @default(10)
+  button1DaysLocked            Boolean  @default(false)
+  button1DaysDefault           Int      @default(3)
+  button1DaysRangeMax          Int      @default(30)
   button2PricingType           String   @default("FIXED")
   button2FixedPrice            Float?   @default(0)
   button2VariableBasePrice     Float    @default(10)
@@ -109,7 +92,36 @@ model QrGlobalConfig {
   button2VariableCommission    Float    @default(0)
   button2IncludeTax            Boolean  @default(false)
   button2TaxPercentage         Float    @default(0)
-  button3SendMethod            String   @default("URL")
+  button3DeliveryMethod        String   @default("DIRECT")
+  button4LandingPageRequired   Boolean  @default(true)
+  button5SendRebuyEmail        Boolean  @default(false)
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+  seller                       User     @relation("SellerConfig", fields: [sellerId], references: [id], onDelete: Cascade)
+}
+
+model QrGlobalConfig {
+  id                           String   @id @default(cuid())
+  button1AllowCustomGuestsDays Boolean  @default(false)
+  button1DefaultGuests         Int      @default(2)
+  button1DefaultDays           Int      @default(3)
+  button1MaxGuests             Int      @default(10)
+  button1MaxDays               Int      @default(30)
+  button1GuestsLocked          Boolean  @default(false)
+  button1GuestsDefault         Int      @default(2)
+  button1GuestsRangeMax        Int      @default(10)
+  button1DaysLocked            Boolean  @default(false)
+  button1DaysDefault           Int      @default(3)
+  button1DaysRangeMax          Int      @default(30)
+  button2PricingType           String   @default("FIXED")
+  button2FixedPrice            Float?   @default(0)
+  button2VariableBasePrice     Float    @default(10)
+  button2VariableGuestIncrease Float    @default(5)
+  button2VariableDayIncrease   Float    @default(3)
+  button2VariableCommission    Float    @default(0)
+  button2IncludeTax            Boolean  @default(false)
+  button2TaxPercentage         Float    @default(0)
+  button3DeliveryMethod        String   @default("DIRECT")
   button4LandingPageRequired   Boolean  @default(true)
   button5SendRebuyEmail        Boolean  @default(false)
   createdAt                    DateTime @default(now())
@@ -163,9 +175,9 @@ model QRCode {
   isActive    Boolean                 @default(true)
   landingUrl  String?
   createdAt   DateTime                @default(now())
+  submissions LandingPageSubmission[]
   seller      User                    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   scans       QRScan[]
-  submissions LandingPageSubmission[]
 
   @@map("qr_codes")
 }
@@ -208,7 +220,7 @@ model Location {
   email         String?
   notes         String?
   telephone     String?
-  distributor   Distributor @relation("DistributorLocations", fields: [distributorId], references: [id], onDelete: Cascade)
   user          User        @relation("LocationUser", fields: [userId], references: [id], onDelete: Cascade)
+  distributor   Distributor @relation("DistributorLocations", fields: [distributorId], references: [id], onDelete: Cascade)
   sellers       User[]      @relation("LocationSellers")
 }

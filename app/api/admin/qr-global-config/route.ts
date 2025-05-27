@@ -6,19 +6,26 @@ import { prisma } from '../../../../lib/prisma'
 // GET: Fetch global QR configuration
 export async function GET() {
   try {
+    console.log('🔍 Starting GET /api/admin/qr-global-config')
+    
     const session = await getServerSession(authOptions)
+    console.log('✅ Session retrieved:', session?.user?.email, session?.user?.role)
     
     if (!session || session.user.role !== 'ADMIN') {
+      console.log('❌ Authorization failed:', { hasSession: !!session, role: session?.user?.role })
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
+    console.log('🔍 Querying database for global config...')
     // Try to get existing global config (should only be one)
     const globalConfig = await prisma.qrGlobalConfig.findFirst()
+    console.log('📋 Global config found:', !!globalConfig)
 
     if (!globalConfig) {
+      console.log('🆕 No global config found, returning default')
       // Return default config if none exists
       const defaultConfig = {
         id: null,
@@ -45,25 +52,32 @@ export async function GET() {
         button2IncludeTax: false,
         button2TaxPercentage: 0,
         // Button 3-5 fields
-        button3SendMethod: 'URL',
+        button3DeliveryMethod: 'DIRECT',
         button4LandingPageRequired: true,
         button5SendRebuyEmail: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
+      console.log('✅ Returning default config')
       return NextResponse.json(defaultConfig)
     }
 
+    console.log('✅ Returning existing config:', globalConfig.id)
     return NextResponse.json(globalConfig)
   } catch (error) {
-    console.error('Error fetching global config:', error)
-    console.error('Full error details:', JSON.stringify(error, null, 2))
-    if (error instanceof Error) {
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
-    }
+    console.error('💥 ERROR in GET /api/admin/qr-global-config:')
+    console.error('Error type:', typeof error)
+    console.error('Error constructor:', error?.constructor?.name)
+    console.error('Error message:', error instanceof Error ? error.message : String(error))
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2))
+    
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Internal server error', 
+        details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     )
   }
@@ -112,7 +126,7 @@ export async function POST(request: NextRequest) {
       button2TaxPercentage: parseFloat(body.button2TaxPercentage) || 0,
       
       // Button 3-5 fields
-      button3SendMethod: body.button3SendMethod || 'URL',
+      button3DeliveryMethod: body.button3DeliveryMethod || 'DIRECT',
       button4LandingPageRequired: Boolean(body.button4LandingPageRequired !== false), // Default to true
       button5SendRebuyEmail: Boolean(body.button5SendRebuyEmail)
     }

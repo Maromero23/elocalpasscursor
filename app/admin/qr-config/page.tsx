@@ -40,7 +40,7 @@ interface QRGlobalConfig {
   button2VariableCommission: number
   button2IncludeTax: boolean
   button2TaxPercentage: number
-  button3SendMethod: 'URL' | 'APP'
+  button3DeliveryMethod: 'DIRECT' | 'URLS' | 'BOTH'
   button4LandingPageRequired: boolean
   button5SendRebuyEmail: boolean
   updatedAt: Date
@@ -85,7 +85,7 @@ export default function QRConfigPage() {
     button2VariableCommission: 0,
     button2IncludeTax: false,
     button2TaxPercentage: 0,
-    button3SendMethod: 'URL',
+    button3DeliveryMethod: 'DIRECT',
     button4LandingPageRequired: true,
     button5SendRebuyEmail: false,
     updatedAt: new Date(),
@@ -128,7 +128,7 @@ export default function QRConfigPage() {
       button2VariableCommission: 0,
       button2IncludeTax: false,
       button2TaxPercentage: 0,
-      button3SendMethod: 'URL' as const,
+      button3DeliveryMethod: 'DIRECT' as const,
       button4LandingPageRequired: true,
       button5SendRebuyEmail: false,
     }
@@ -324,9 +324,11 @@ export default function QRConfigPage() {
                     { 
                       num: 3, 
                       title: "Send Method", 
-                      value: globalConfig.button3SendMethod === 'URL' 
-                        ? "URL: Landing page link"
-                        : "APP: Dashboard trigger"
+                      value: globalConfig.button3DeliveryMethod === 'DIRECT' 
+                        ? "Direct: QR sent via email"
+                        : globalConfig.button3DeliveryMethod === 'URLS'
+                        ? "URLs: Landing page links"
+                        : "Both: Direct and URLs"
                     },
                     { 
                       num: 4, 
@@ -406,23 +408,30 @@ export default function QRConfigPage() {
                       
                       <div>
                         <label className="block text-sm font-medium text-blue-800 mb-2">
-                          Default Guest Count
+                          {globalConfig.button1GuestsLocked ? 'Fixed Guest Count' : 'Maximum Guests (Sellers choose 1 to this number)'}
                         </label>
                         <input
                           type="number"
                           min="1"
-                          max="50"
-                          value={globalConfig.button1GuestsDefault}
+                          max="10"
+                          value={globalConfig.button1GuestsDefault || ''}
                           onChange={(e) => {
-                            updateConfig({ button1GuestsDefault: parseInt(e.target.value) || 1 })
-                            setConfiguredButtons((prev) => new Set(prev).add(1))
+                            const value = e.target.value === '' ? 0 : parseInt(e.target.value) || 0
+                            if (value <= 10) {
+                              updateConfig({ 
+                                button1GuestsDefault: value,
+                                button1GuestsRangeMax: value // Keep in sync
+                              })
+                              setConfiguredButtons((prev) => new Set(prev).add(1))
+                            }
                           }}
                           className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter number of guests"
                         />
                         <p className="text-xs text-blue-600 mt-1">
                           {globalConfig.button1GuestsLocked 
-                            ? `Always ${globalConfig.button1GuestsDefault} guests` 
-                            : `Sellers can choose 1 to ${globalConfig.button1GuestsRangeMax} guests`
+                            ? `Sellers always get exactly ${globalConfig.button1GuestsDefault} guests` 
+                            : `Sellers can choose from 1 to ${globalConfig.button1GuestsDefault} guests`
                           }
                         </p>
                       </div>
@@ -462,23 +471,30 @@ export default function QRConfigPage() {
                       
                       <div>
                         <label className="block text-sm font-medium text-green-800 mb-2">
-                          Default Day Count
+                          {globalConfig.button1DaysLocked ? 'Fixed Day Count' : 'Maximum Days (Sellers choose 1 to this number)'}
                         </label>
                         <input
                           type="number"
                           min="1"
                           max="365"
-                          value={globalConfig.button1DaysDefault}
+                          value={globalConfig.button1DaysDefault || ''}
                           onChange={(e) => {
-                            updateConfig({ button1DaysDefault: parseInt(e.target.value) || 1 })
-                            setConfiguredButtons((prev) => new Set(prev).add(1))
+                            const value = e.target.value === '' ? 0 : parseInt(e.target.value) || 0
+                            if (value <= 365) {
+                              updateConfig({ 
+                                button1DaysDefault: value,
+                                button1DaysRangeMax: value // Keep in sync
+                              })
+                              setConfiguredButtons((prev) => new Set(prev).add(1))
+                            }
                           }}
                           className="w-full px-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          placeholder="Enter number of days"
                         />
                         <p className="text-xs text-green-600 mt-1">
                           {globalConfig.button1DaysLocked 
-                            ? `Always ${globalConfig.button1DaysDefault} days` 
-                            : `Sellers can choose 1 to ${globalConfig.button1DaysRangeMax} days`
+                            ? `Sellers always get exactly ${globalConfig.button1DaysDefault} days` 
+                            : `Sellers can choose from 1 to ${globalConfig.button1DaysDefault} days`
                           }
                         </p>
                       </div>
@@ -492,13 +508,13 @@ export default function QRConfigPage() {
                       <div>
                         <span className="font-medium">Guests:</span> {globalConfig.button1GuestsLocked 
                           ? `Fixed at ${globalConfig.button1GuestsDefault}` 
-                          : `Open range (1-${globalConfig.button1GuestsRangeMax})`
+                          : `Open range (1-${globalConfig.button1GuestsDefault})`
                         }
                       </div>
                       <div>
                         <span className="font-medium">Days:</span> {globalConfig.button1DaysLocked 
                           ? `Fixed at ${globalConfig.button1DaysDefault}` 
-                          : `Open range (1-${globalConfig.button1DaysRangeMax})`
+                          : `Open range (1-${globalConfig.button1DaysDefault})`
                         }
                       </div>
                     </div>
@@ -813,76 +829,35 @@ export default function QRConfigPage() {
               {activeButton === 3 && (
                 <div className="space-y-6">
                   <div className="border-l-4 border-blue-500 pl-4">
-                    <h2 className="text-xl font-semibold text-gray-900">Button 3: Send Method</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">Button 3: Delivery Method</h2>
                     <p className="text-gray-600 mt-1">Choose how QR codes are delivered to guests</p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className={`p-6 border-2 rounded-lg cursor-pointer transition-colors ${
-                      globalConfig.button3SendMethod === 'URL' 
+                      globalConfig.button3DeliveryMethod === 'DIRECT' 
                         ? 'border-blue-500 bg-blue-50' 
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                       onClick={() => {
-                        updateConfig({ button3SendMethod: 'URL' })
+                        updateConfig({ button3DeliveryMethod: 'DIRECT' })
                         setConfiguredButtons((prev) => new Set(prev).add(3))
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">URL (Landing Page)</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">Direct</h3>
                         <input
                           type="radio"
-                          checked={globalConfig.button3SendMethod === 'URL'}
+                          checked={globalConfig.button3DeliveryMethod === 'DIRECT'}
                           onChange={() => {
-                            updateConfig({ button3SendMethod: 'URL' })
+                            updateConfig({ button3DeliveryMethod: 'DIRECT' })
                             setConfiguredButtons((prev) => new Set(prev).add(3))
                           }}
                           className="h-4 w-4 text-blue-600"
                         />
                       </div>
                       <p className="text-gray-600 mb-3">
-                        Generates a unique landing page link for the guest
-                      </p>
-                      <div className="space-y-2 text-sm text-gray-600">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-green-600">✓</span>
-                          <span>Custom landing page design</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-green-600">✓</span>
-                          <span>Guest enters details on webpage</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-green-600">✓</span>
-                          <span>Fully branded experience</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={`p-6 border-2 rounded-lg cursor-pointer transition-colors ${
-                      globalConfig.button3SendMethod === 'APP' 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                      onClick={() => {
-                        updateConfig({ button3SendMethod: 'APP' })
-                        setConfiguredButtons((prev) => new Set(prev).add(3))
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">APP (One-Click)</h3>
-                        <input
-                          type="radio"
-                          checked={globalConfig.button3SendMethod === 'APP'}
-                          onChange={() => {
-                            updateConfig({ button3SendMethod: 'APP' })
-                            setConfiguredButtons((prev) => new Set(prev).add(3))
-                          }}
-                          className="h-4 w-4 text-blue-600"
-                        />
-                      </div>
-                      <p className="text-gray-600 mb-3">
-                        One-click trigger inside the seller dashboard
+                        QR codes are sent directly to guests via email
                       </p>
                       <div className="space-y-2 text-sm text-gray-600">
                         <div className="flex items-center space-x-2">
@@ -899,18 +874,137 @@ export default function QRConfigPage() {
                         </div>
                       </div>
                     </div>
+
+                    <div className={`p-6 border-2 rounded-lg cursor-pointer transition-colors ${
+                      globalConfig.button3DeliveryMethod === 'URLS' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                      onClick={() => {
+                        updateConfig({ button3DeliveryMethod: 'URLS' })
+                        setConfiguredButtons((prev) => new Set(prev).add(3))
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">URLs</h3>
+                        <input
+                          type="radio"
+                          checked={globalConfig.button3DeliveryMethod === 'URLS'}
+                          onChange={() => {
+                            updateConfig({ button3DeliveryMethod: 'URLS' })
+                            setConfiguredButtons((prev) => new Set(prev).add(3))
+                          }}
+                          className="h-4 w-4 text-blue-600"
+                        />
+                      </div>
+                      <p className="text-gray-600 mb-3">
+                        QR codes are sent as unique landing page links
+                      </p>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>Custom landing page design</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>Guest enters details on webpage</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>Fully branded experience</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={`p-6 border-2 rounded-lg cursor-pointer transition-colors ${
+                      globalConfig.button3DeliveryMethod === 'BOTH' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                      onClick={() => {
+                        updateConfig({ button3DeliveryMethod: 'BOTH' })
+                        setConfiguredButtons((prev) => new Set(prev).add(3))
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">Both</h3>
+                        <input
+                          type="radio"
+                          checked={globalConfig.button3DeliveryMethod === 'BOTH'}
+                          onChange={() => {
+                            updateConfig({ button3DeliveryMethod: 'BOTH' })
+                            setConfiguredButtons((prev) => new Set(prev).add(3))
+                          }}
+                          className="h-4 w-4 text-blue-600"
+                        />
+                      </div>
+                      <p className="text-gray-600 mb-3">
+                        QR codes are sent both directly and as landing page links
+                      </p>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>Instant QR generation</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>QR sent via email</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>Welcome email included</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>Custom landing page design</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>Guest enters details on webpage</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-blue-600">✓</span>
+                          <span>Fully branded experience</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {globalConfig.button3SendMethod === 'URL' && (
+                  {globalConfig.button3DeliveryMethod === 'URLS' && (
                     <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                       <h4 className="font-medium text-blue-900 mb-2">Landing Page System</h4>
                       <p className="text-sm text-blue-800">
-                        When URL method is selected, each QR code will generate a unique landing page where guests can enter their details. 
+                        When URLs method is selected, each QR code will generate a unique landing page where guests can enter their details. 
                         This landing page will be customizable per seller/location.
                       </p>
                       <button 
                         onClick={() => router.push('/admin/landing-templates')}
                         className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                      >
+                        Configure Landing Page Templates →
+                      </button>
+                    </div>
+                  )}
+                  
+                  {globalConfig.button3DeliveryMethod === 'BOTH' && (
+                    <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+                      <h4 className="font-medium text-purple-900 mb-2">Dual Delivery System</h4>
+                      <p className="text-sm text-purple-800 mb-3">
+                        When Both method is selected, sellers can choose between direct email delivery or landing page URLs on a per-QR basis. This provides maximum flexibility.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-3 rounded border">
+                          <h5 className="font-medium text-gray-900 mb-1">Direct Option</h5>
+                          <p className="text-xs text-gray-600">Instant QR generation with email delivery</p>
+                        </div>
+                        <div className="bg-white p-3 rounded border">
+                          <h5 className="font-medium text-gray-900 mb-1">URL Option</h5>
+                          <p className="text-xs text-gray-600">Custom landing page with guest details form</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => router.push('/admin/landing-templates')}
+                        className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700"
                       >
                         Configure Landing Page Templates →
                       </button>
@@ -1043,6 +1137,48 @@ export default function QRConfigPage() {
                   )}
                 </div>
               )}
+            </div>
+            
+            {/* Assign Configuration to Sellers */}
+            <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4">
+                📋 Assign Configuration to Sellers
+              </h3>
+              <p className="text-blue-700 mb-4">
+                Apply the current configuration to existing sellers so they can generate QR codes.
+              </p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/admin/assign-config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          sellerEmail: 'seller@elocalpass.com'
+                        })
+                      })
+                      
+                      if (response.ok) {
+                        alert('✅ Configuration assigned to seller successfully!')
+                      } else {
+                        const error = await response.json()
+                        alert(`❌ Error: ${error.error}`)
+                      }
+                    } catch (error) {
+                      alert(`❌ Error assigning configuration`)
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                >
+                  🎯 Assign to Test Seller (seller@elocalpass.com)
+                </button>
+                
+                <p className="text-xs text-blue-600">
+                  Note: This assigns the current Button 1-3 configuration to the test seller account.
+                </p>
+              </div>
             </div>
           </div>
         </div>
