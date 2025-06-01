@@ -150,6 +150,46 @@ model LandingPageTemplate {
   @@map("landing_page_templates")
 }
 
+model WelcomeEmailTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  subject         String   @default("Welcome to ELocalPass!")
+  logoUrl         String?
+  headerText      String   @default("Welcome to Your ELocalPass Experience!")
+  bodyText        String   @default("Thank you for choosing ELocalPass. Your pass is ready to use.")
+  footerText      String   @default("Enjoy your local experiences!")
+  primaryColor    String   @default("#f97316")
+  backgroundColor String   @default("#ffffff")
+  buttonColor     String   @default("#f97316")
+  buttonText      String   @default("View Your Pass")
+  customHTML      String?
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("welcome_email_templates")
+}
+
+model RebuyEmailTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  subject         String   @default("Your ELocalPass Expires Soon - Get Another!")
+  logoUrl         String?
+  headerText      String   @default("Don't Let Your Local Adventure End!")
+  bodyText        String   @default("Your ELocalPass expires in 12 hours. Get another pass to continue your local experiences.")
+  footerText      String   @default("Thank you for choosing ELocalPass!")
+  primaryColor    String   @default("#f97316")
+  backgroundColor String   @default("#ffffff")
+  buttonColor     String   @default("#f97316")
+  buttonText      String   @default("Get Another Pass")
+  customHTML      String?
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("rebuy_email_templates")
+}
+
 model LandingPageSubmission {
   id              String   @id @default(cuid())
   qrCodeId        String

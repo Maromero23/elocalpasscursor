@@ -278,32 +278,55 @@ export default function QRConfigPage() {
 
             {/* Button Navigation */}
             <div className="mb-8">
-              <div className="flex space-x-2 bg-white p-2 rounded-lg shadow-sm">
+              <div className="flex items-center space-x-3 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 {[
                   { num: 1, title: "Personalized?" },
                   { num: 2, title: "Pricing Type" },
                   { num: 3, title: "Send Method" },
                   { num: 4, title: "Welcome Email" },
                   { num: 5, title: "Rebuy Email?" }
-                ].map((button) => (
-                  <button
-                    key={button.num}
-                    onClick={() => setActiveButton(button.num)}
-                    className={`flex-1 py-3 px-4 rounded-md font-medium transition-colors ${
-                      activeButton === button.num 
-                        ? 'bg-orange-500 text-white' 
-                        : 'bg-white text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {button.title}
-                  </button>
+                ].map((button, index) => (
+                  <div key={button.num} className="flex items-center flex-1">
+                    <button
+                      onClick={() => setActiveButton(button.num)}
+                      className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 shadow-sm border-2 ${
+                        activeButton === button.num 
+                          ? 'bg-orange-500 text-white border-orange-500 shadow-lg transform scale-105' 
+                          : isButtonConfigured(button.num)
+                          ? 'bg-green-500 text-white border-green-500 shadow-md hover:bg-green-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-orange-300 hover:bg-orange-50 hover:shadow-md'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center space-x-2">
+                        <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                          activeButton === button.num 
+                            ? 'bg-white text-orange-500' 
+                            : isButtonConfigured(button.num)
+                            ? 'bg-white text-green-500'
+                            : 'bg-orange-100 text-orange-600'
+                        }`}>
+                          {isButtonConfigured(button.num) && activeButton !== button.num ? '✓' : button.num}
+                        </span>
+                        <span className="text-sm">{button.title}</span>
+                      </div>
+                    </button>
+                    
+                    {/* Step Arrow */}
+                    {index < 4 && (
+                      <div className="flex items-center justify-center mx-2">
+                        <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
 
               {/* Progress Tracker */}
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Configuration Progress</h3>
-                <div className="grid grid-cols-5 gap-2">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Configuration Progress</h3>
+                <div className="flex items-center space-x-2">
                   {[
                     { 
                       num: 1, 
@@ -340,21 +363,31 @@ export default function QRConfigPage() {
                       title: "Rebuy Email?", 
                       value: globalConfig.button5SendRebuyEmail ? "Yes: 12hrs before expiry" : "No follow-up" 
                     }
-                  ].map((button) => (
-                    <div
-                      key={button.num}
-                      className={`p-2 rounded text-xs text-center transition-colors ${
-                        isButtonConfigured(button.num) 
-                          ? 'bg-green-100 text-green-700 border border-green-200' 
-                          : 'bg-gray-100 text-gray-600 border border-gray-200'
-                      }`}
-                    >
-                      <div className="font-medium">{button.title}</div>
-                      <div className="text-xs mt-1 leading-tight">{button.value}</div>
-                      {isButtonConfigured(button.num) ? (
-                        <div className="text-green-600 text-xs mt-1">✓ Auto-saved</div>
-                      ) : (
-                        <div className="text-gray-500 text-xs mt-1">Need to configure</div>
+                  ].map((button, index) => (
+                    <div key={button.num} className="flex items-center flex-1">
+                      <div
+                        className={`w-full p-3 rounded-lg text-xs text-center transition-all duration-200 border-2 ${
+                          isButtonConfigured(button.num) 
+                            ? 'bg-green-50 text-green-700 border-green-300 shadow-sm' 
+                            : 'bg-gray-50 text-gray-600 border-gray-300'
+                        }`}
+                      >
+                        <div className="font-medium text-sm">{button.title}</div>
+                        <div className="text-xs mt-1 leading-tight">{button.value}</div>
+                        {isButtonConfigured(button.num) ? (
+                          <div className="text-green-600 text-xs mt-1 font-medium">✓ Auto-saved</div>
+                        ) : (
+                          <div className="text-gray-500 text-xs mt-1">Need to configure</div>
+                        )}
+                      </div>
+                      
+                      {/* Progress Arrow */}
+                      {index < 4 && (
+                        <div className="flex items-center justify-center mx-1">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -978,10 +1011,10 @@ export default function QRConfigPage() {
                         This landing page will be customizable per seller/location.
                       </p>
                       <button 
-                        onClick={() => router.push('/admin/landing-templates')}
+                        onClick={() => router.push('/admin/qr-config/create')}
                         className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
                       >
-                        Configure Landing Page Templates →
+                        Create Custom Landing Page →
                       </button>
                     </div>
                   )}
@@ -1003,10 +1036,10 @@ export default function QRConfigPage() {
                         </div>
                       </div>
                       <button 
-                        onClick={() => router.push('/admin/landing-templates')}
+                        onClick={() => router.push('/admin/qr-config/create')}
                         className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700"
                       >
-                        Configure Landing Page Templates →
+                        Create Custom Landing Page →
                       </button>
                     </div>
                   )}
@@ -1038,6 +1071,18 @@ export default function QRConfigPage() {
                       </div>
                     </label>
 
+                    {/* Custom Template Features - Show immediately when Custom Template is selected */}
+                    {globalConfig.button4LandingPageRequired && (
+                      <div className="ml-7 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <button 
+                          onClick={() => router.push('/admin/qr-config/email-config?mode=custom')}
+                          className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700"
+                        >
+                          Create Custom Welcome Email →
+                        </button>
+                      </div>
+                    )}
+
                     <label className="flex items-start space-x-3 cursor-pointer">
                       <input
                         type="radio"
@@ -1053,56 +1098,19 @@ export default function QRConfigPage() {
                         <p className="text-sm text-gray-600">Use standard ELocalPass template (same for all sellers)</p>
                       </div>
                     </label>
-                  </div>
 
-                  {globalConfig.button4LandingPageRequired && (
-                    <div className="mt-6 p-4 bg-purple-50 rounded-lg">
-                      <h4 className="font-medium text-purple-900 mb-2">Custom Template Features</h4>
-                      <div className="space-y-2 text-sm text-purple-800">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-purple-600">✓</span>
-                          <span>Seller-specific branding (logos, colors)</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-purple-600">✓</span>
-                          <span>Custom promotional banners and messages</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-purple-600">✓</span>
-                          <span>Special offers and discount codes</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-purple-600">✓</span>
-                          <span>Personalized content for that distributor's market</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-purple-600">✓</span>
-                          <span>Language-specific customizations (EN/ES)</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-purple-600">✓</span>
-                          <span>Enhanced FREE pass highlighting</span>
-                        </div>
+                    {/* Default Template Button - Show when Default Template is selected */}
+                    {!globalConfig.button4LandingPageRequired && (
+                      <div className="ml-7 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <button 
+                          onClick={() => router.push('/admin/qr-config/email-config?mode=default')}
+                          className="px-4 py-2 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700"
+                        >
+                          View Default Email Template →
+                        </button>
                       </div>
-                      <button 
-                        onClick={() => router.push('/admin/email-templates')}
-                        className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700"
-                      >
-                        Configure Custom Templates →
-                      </button>
-                    </div>
-                  )}
-
-                  {!globalConfig.button4LandingPageRequired && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                      <h4 className="font-medium text-gray-900 mb-2">Default Template</h4>
-                      <p className="text-sm text-gray-700">
-                        Standard ELocalPass welcome email template will be used. This includes basic QR code information, 
-                        validity details, and standard branding. All dynamic variables like client name, guest count, 
-                        and expiry date are automatically included.
-                      </p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1155,9 +1163,11 @@ export default function QRConfigPage() {
                         When enabled, the system will automatically send a follow-up email 12 hours before each QR code expires, 
                         encouraging guests to purchase a new QR code for continued access.
                       </p>
-                      <button className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">
-                        Configure Email Templates →
-                      </button>
+                      <Link href="/admin/qr-config/rebuy-config">
+                        <button className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">
+                          Configure Email Templates →
+                        </button>
+                      </Link>
                     </div>
                   )}
                 </div>

@@ -1,340 +1,335 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Calendar, Users, MapPin, Clock, CreditCard, Mail, Phone, Check } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
 
 interface LandingPageTemplateProps {
-  // QR Code Data
-  qrData: {
-    id: string
-    sellerName: string
-    locationName: string
-    distributorName: string
-    daysValid: number
-    guestsAllowed: number
-    expiresAt: string
-    issuedAt: string
-    clientName?: string
-  }
+  // QR Configuration Data (from admin settings)
+  qrConfigId: string
+  businessName: string
+  logoUrl?: string
+  headerText: string
+  descriptionText: string
+  ctaButtonText: string
+  primaryColor: string
+  secondaryColor: string
+  backgroundColor: string
   
-  // Customization Data
-  template: {
-    id: string
-    logoUrl?: string
-    primaryColor: string
-    secondaryColor: string
-    backgroundColor: string
-    headerText: string
-    descriptionText: string
-    ctaButtonText: string
-    showPayPal: boolean
-    showContactForm: boolean
-    customCSS?: string
-  }
-  
-  // Pricing Info
-  pricing?: {
-    amount: number
-    currency: string
-    description: string
-  }
+  // QR Config Rules
+  allowCustomGuests: boolean
+  defaultGuests: number
+  maxGuests: number
+  allowCustomDays: boolean
+  defaultDays: number
+  maxDays: number
 }
 
-export function LandingPageTemplate({ qrData, template, pricing }: LandingPageTemplateProps) {
+export function LandingPageTemplate({
+  qrConfigId,
+  businessName,
+  logoUrl,
+  headerText,
+  descriptionText,
+  ctaButtonText,
+  primaryColor,
+  secondaryColor,
+  backgroundColor,
+  allowCustomGuests,
+  defaultGuests,
+  maxGuests,
+  allowCustomDays,
+  defaultDays,
+  maxDays
+}: LandingPageTemplateProps) {
+  const [selectedGuests, setSelectedGuests] = useState(defaultGuests)
+  const [selectedDays, setSelectedDays] = useState(defaultDays)
   const [formData, setFormData] = useState({
-    clientName: qrData.clientName || '',
+    name: '',
     email: '',
-    phone: '',
-    guests: qrData.guestsAllowed,
-    specialRequests: ''
+    emailConfirmation: ''
   })
-  
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [emailMatchError, setEmailMatchError] = useState(false)
+
+  // Set initial values when props change
+  useEffect(() => {
+    setSelectedGuests(defaultGuests)
+    setSelectedDays(defaultDays)
+  }, [defaultGuests, defaultDays])
+
+  // Check email match in real time
+  useEffect(() => {
+    if (formData.emailConfirmation && formData.email !== formData.emailConfirmation) {
+      setEmailMatchError(true)
+    } else {
+      setEmailMatchError(false)
+    }
+  }, [formData.email, formData.emailConfirmation])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    
+    if (formData.email !== formData.emailConfirmation) {
+      alert('Email addresses do not match')
+      return
+    }
 
+    setIsSubmitting(true)
+    
     try {
-      const response = await fetch('/api/landing-page/submit', {
+      const response = await fetch('/api/landing-page/create-qr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          qrCodeId: qrData.id,
-          formData
+          qrConfigId,
+          customerData: {
+            name: formData.name,
+            email: formData.email,
+            guests: selectedGuests,
+            days: selectedDays
+          }
         })
       })
 
       if (response.ok) {
-        setIsSubmitted(true)
+        const result = await response.json()
+        // TODO: Redirect to success page or show success message
+        alert('Success! Check your email for login instructions.')
+      } else {
+        throw new Error('Failed to create QR code')
       }
     } catch (error) {
-      console.error('Error submitting form:', error)
+      console.error('Error creating QR:', error)
+      alert('Error creating your pass. Please try again.')
     }
     
-    setIsLoading(false)
+    setIsSubmitting(false)
   }
 
-  const daysRemaining = Math.ceil((new Date(qrData.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-
-  if (isSubmitted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50">
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="bg-white rounded-lg shadow-xl p-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="h-8 w-8 text-green-600" />
+  return (
+    <div className="min-h-screen" style={{ backgroundColor }}>
+      {/* Main Content Container */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          
+          {/* Top Section with Logo and Message */}
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
+            
+            {/* Logo Section */}
+            <div className="flex items-center justify-center">
+              <div className="text-center">
+                {logoUrl ? (
+                  <img 
+                    src={logoUrl} 
+                    alt={businessName}
+                    className="w-48 h-32 object-contain mx-auto mb-4"
+                  />
+                ) : (
+                  <div className="w-48 h-32 bg-blue-100 border-2 border-blue-300 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <div className="text-center">
+                      <div className="text-blue-600 text-xl font-bold">{businessName}</div>
+                      <div className="text-blue-500 text-sm">Members Only</div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">¡Confirmado!</h1>
-              <p className="text-gray-600 mb-6">
-                Tu solicitud ha sido enviada exitosamente. Recibirás una confirmación por email con todos los detalles de tu eLocalPass.
+            </div>
+
+            {/* Message Section */}
+            <div className="flex items-center">
+              <div className="text-center md:text-left">
+                <h1 
+                  className="text-2xl md:text-3xl font-bold mb-4"
+                  style={{ color: primaryColor }}
+                >
+                  {headerText}
+                </h1>
+                <p 
+                  className="text-lg"
+                  style={{ color: primaryColor }}
+                >
+                  {descriptionText}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Section */}
+          <div 
+            className="rounded-lg p-8 shadow-lg"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <div className="text-center mb-6">
+              <h2 className="text-white text-xl font-bold mb-2">
+                SIGN UP TO GET YOUR FREE ELOCALPASS!
+              </h2>
+              <p 
+                className="text-lg font-medium"
+                style={{ color: secondaryColor }}
+              >
+                JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:
               </p>
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">Detalles de tu Pass:</h3>
-                <div className="text-sm text-blue-800 space-y-1">
-                  <p><span className="font-medium">Válido por:</span> {qrData.daysValid} días</p>
-                  <p><span className="font-medium">Huéspedes:</span> {formData.guests} personas</p>
-                  <p><span className="font-medium">Expira:</span> {new Date(qrData.expiresAt).toLocaleDateString()}</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              
+              {/* Guest Selection */}
+              <div className="text-center">
+                <div className="flex items-center justify-center space-x-3 mb-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: primaryColor }}>
+                    👥
+                  </div>
+                  <span className="text-sm font-bold text-white">
+                    CHOOSE THE NUMBER OF PEOPLE BETWEEN 1 AND {maxGuests}
+                  </span>
+                </div>
+
+                {allowCustomGuests ? (
+                  <div className="bg-white/20 p-4 rounded-lg max-w-xs mx-auto">
+                    <label className="block text-white text-sm font-bold mb-2 text-center">
+                      Enter number of guests (1-{maxGuests}):
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={maxGuests}
+                      value={selectedGuests}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value)
+                        if (value >= 1 && value <= maxGuests) {
+                          setSelectedGuests(value)
+                        }
+                      }}
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center mx-auto block"
+                      placeholder={defaultGuests.toString()}
+                    />
+                    {selectedGuests < 1 || selectedGuests > maxGuests ? (
+                      <p className="text-red-200 text-sm mt-1 text-center">
+                        Please enter a number between 1 and {maxGuests}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="bg-white/20 p-4 rounded-lg max-w-xs mx-auto">
+                    <p className="text-white text-lg font-bold text-center">
+                      {defaultGuests} Guests (Fixed)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Days Selection */}
+              <div className="text-center">
+                <div className="flex items-center justify-center space-x-3 mb-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: primaryColor }}>
+                    📅
+                  </div>
+                  <span className="text-sm font-bold text-white">
+                    CHOOSE NUMBER OF DAYS (up to {maxDays})
+                  </span>
+                </div>
+
+                {allowCustomDays ? (
+                  <div className="bg-white/20 p-4 rounded-lg max-w-xs mx-auto">
+                    <label className="block text-white text-sm font-bold mb-2 text-center">
+                      Enter number of days (1-{maxDays}):
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={maxDays}
+                      value={selectedDays}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value)
+                        if (value >= 1 && value <= maxDays) {
+                          setSelectedDays(value)
+                        }
+                      }}
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center mx-auto block"
+                      placeholder={defaultDays.toString()}
+                    />
+                    {selectedDays < 1 || selectedDays > maxDays ? (
+                      <p className="text-red-200 text-sm mt-1 text-center">
+                        Please enter a number between 1 and {maxDays}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="bg-white/20 p-4 rounded-lg max-w-xs mx-auto">
+                    <p className="text-white text-lg font-bold text-center">
+                      {defaultDays} Days (Fixed)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Form Fields */}
+              <div className="max-w-md mx-auto space-y-4">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Name: (IT MUST MATCH YOUR ID)"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    className="w-full px-4 py-3 rounded-lg border-0 text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-orange-300"
+                  />
+                </div>
+                
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Email: (TO RECEIVE YOUR ELOCALPASS)"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                    className="w-full px-4 py-3 rounded-lg border-0 text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-orange-300"
+                  />
+                </div>
+                
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Email confirmation: (TO RECEIVE YOUR ELOCALPASS)"
+                    value={formData.emailConfirmation}
+                    onChange={(e) => setFormData({ ...formData, emailConfirmation: e.target.value })}
+                    required
+                    className={`w-full px-4 py-3 rounded-lg border-0 text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-orange-300 ${
+                      emailMatchError ? 'bg-red-100 border-red-300' : ''
+                    }`}
+                  />
+                  {emailMatchError && (
+                    <p className="text-red-200 text-sm mt-1">Emails do not match</p>
+                  )}
                 </div>
               </div>
+
+              {/* Submit Button */}
+              <div className="text-center">
+                <button
+                  type="submit"
+                  disabled={isSubmitting || emailMatchError || !formData.name || !formData.email || !formData.emailConfirmation}
+                  className="px-8 py-4 rounded-lg font-bold text-lg text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: secondaryColor }}
+                >
+                  {isSubmitting ? 'Processing...' : ctaButtonText}
+                </button>
+              </div>
+            </form>
+
+            {/* Privacy Notice */}
+            <div className="mt-6 text-center">
+              <div className="bg-orange-100 border border-orange-300 rounded-lg p-4 max-w-md mx-auto">
+                <p className="text-sm text-gray-700">
+                  FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.
+                </p>
+              </div>
+              <p className="text-white text-xs mt-2">
+                Click HERE to read the privacy notice and data usage
+              </p>
             </div>
           </div>
         </div>
       </div>
-    )
-  }
-
-  return (
-    <div 
-      className="min-h-screen"
-      style={{ 
-        backgroundColor: template.backgroundColor,
-        background: `linear-gradient(135deg, ${template.backgroundColor} 0%, ${template.secondaryColor}20 100%)`
-      }}
-    >
-      {/* Custom CSS */}
-      {template.customCSS && (
-        <style dangerouslySetInnerHTML={{ __html: template.customCSS }} />
-      )}
-
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              {template.logoUrl ? (
-                <img src={template.logoUrl} alt="Logo" className="h-10 w-auto" />
-              ) : (
-                <div 
-                  className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                  style={{ backgroundColor: template.primaryColor }}
-                >
-                  eL
-                </div>
-              )}
-              <div>
-                <h1 className="text-xl font-bold" style={{ color: template.primaryColor }}>
-                  eLocalPass
-                </h1>
-                <p className="text-sm text-gray-500">{qrData.locationName}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Distribuidor</p>
-              <p className="font-medium text-gray-900">{qrData.distributorName}</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
-            {/* Left Column - Information */}
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  {template.headerText}
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  {template.descriptionText}
-                </p>
-
-                {/* Pass Details */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium text-gray-900">Validez</p>
-                      <p className="text-sm text-gray-600">{qrData.daysValid} días • {daysRemaining} días restantes</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                    <Users className="h-5 w-5 text-green-600" />
-                    <div>
-                      <p className="font-medium text-gray-900">Huéspedes</p>
-                      <p className="text-sm text-gray-600">Hasta {qrData.guestsAllowed} personas</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
-                    <MapPin className="h-5 w-5 text-orange-600" />
-                    <div>
-                      <p className="font-medium text-gray-900">Ubicación</p>
-                      <p className="text-sm text-gray-600">{qrData.locationName}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                    <Clock className="h-5 w-5 text-purple-600" />
-                    <div>
-                      <p className="font-medium text-gray-900">Expira</p>
-                      <p className="text-sm text-gray-600">{new Date(qrData.expiresAt).toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pricing */}
-                {pricing && (
-                  <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <CreditCard className="h-5 w-5 text-yellow-600" />
-                        <span className="font-medium text-gray-900">Precio</span>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold" style={{ color: template.primaryColor }}>
-                          ${pricing.amount} {pricing.currency}
-                        </p>
-                        <p className="text-sm text-gray-600">{pricing.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Column - Form */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Confirma tu Pass</h3>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nombre Completo *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.clientName}
-                    onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Tu nombre completo"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="tu@email.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="+52 123 456 7890"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Número de Huéspedes
-                  </label>
-                  <select
-                    value={formData.guests}
-                    onChange={(e) => setFormData({ ...formData, guests: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {Array.from({ length: qrData.guestsAllowed }, (_, i) => i + 1).map((num) => (
-                      <option key={num} value={num}>
-                        {num} {num === 1 ? 'persona' : 'personas'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {template.showContactForm && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Solicitudes Especiales
-                    </label>
-                    <textarea
-                      value={formData.specialRequests}
-                      onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows={3}
-                      placeholder="¿Alguna solicitud especial?"
-                    />
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-3 px-4 rounded-lg font-medium text-white transition-colors"
-                  style={{ backgroundColor: template.primaryColor }}
-                >
-                  {isLoading ? 'Procesando...' : template.ctaButtonText}
-                </button>
-
-                {/* PayPal Integration */}
-                {template.showPayPal && pricing && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div id="paypal-button-container" className="w-full">
-                      {/* PayPal buttons would be rendered here */}
-                      <div className="bg-gray-100 rounded-lg p-4 text-center text-gray-600">
-                        PayPal Payment Integration
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </form>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t mt-12">
-        <div className="container mx-auto px-4 py-6">
-          <div className="text-center text-gray-600">
-            <p className="text-sm">
-              Powered by <span style={{ color: template.primaryColor }} className="font-medium">eLocalPass</span>
-            </p>
-            <p className="text-xs mt-1">
-              Pass ID: {qrData.id} • Vendido por: {qrData.sellerName}
-            </p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

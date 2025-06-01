@@ -4,69 +4,89 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { LandingPageTemplate } from '../../../components/landing-page-template'
 
-interface QRData {
+interface QRConfigData {
   id: string
-  sellerName: string
-  locationName: string
-  distributorName: string
-  daysValid: number
-  guestsAllowed: number
-  expiresAt: string
-  issuedAt: string
-  clientName?: string
-}
-
-interface TemplateData {
-  id: string
+  businessName: string
   logoUrl?: string
-  primaryColor: string
-  secondaryColor: string
-  backgroundColor: string
   headerText: string
   descriptionText: string
   ctaButtonText: string
-  showPayPal: boolean
-  showContactForm: boolean
-  customCSS?: string
-}
-
-interface PricingData {
-  amount: number
-  currency: string
-  description: string
+  primaryColor: string
+  secondaryColor: string
+  backgroundColor: string
+  
+  // QR Configuration Rules from Button 1
+  allowCustomGuests: boolean
+  defaultGuests: number
+  maxGuests: number
+  allowCustomDays: boolean
+  defaultDays: number
+  maxDays: number
 }
 
 export default function LandingPage() {
   const params = useParams()
   const qrId = params.qrId as string
   
-  const [qrData, setQrData] = useState<QRData | null>(null)
-  const [template, setTemplate] = useState<TemplateData | null>(null)
-  const [pricing, setPricing] = useState<PricingData | null>(null)
+  const [configData, setConfigData] = useState<QRConfigData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (qrId) {
-      fetchLandingPageData()
+      fetchQRConfigData()
     }
   }, [qrId])
 
-  const fetchLandingPageData = async () => {
+  const fetchQRConfigData = async () => {
     try {
-      const response = await fetch(`/api/landing-page/${qrId}`)
+      // TODO: This will fetch the QR configuration based on the qrId
+      // For now, using mock data that matches your screenshot
+      const response = await fetch(`/api/qr-config/${qrId}`)
       
       if (!response.ok) {
-        throw new Error('Failed to load landing page data')
+        // If API doesn't exist yet, use mock data
+        setConfigData({
+          id: qrId,
+          businessName: 'Club Viva',
+          logoUrl: undefined,
+          headerText: 'THANKS YOU VERY MUCH FOR GIVING YOURSELF THE OPPORTUNITY TO DISCOVER THE BENEFITS OF THE CLUB.',
+          descriptionText: 'TO RECEIVE YOUR 7-DAY FULL ACCESS GIFT TO ELOCALPASS, SIMPLY FILL OUT THE FIELDS BELOW AND YOU WILL RECEIVE YOUR FREE ELOCALPASS VIA EMAIL.',
+          ctaButtonText: 'Get your eLocalPass now!',
+          primaryColor: '#2563eb', // Blue
+          secondaryColor: '#f97316', // Orange  
+          backgroundColor: '#fef3f2',
+          allowCustomGuests: true,
+          defaultGuests: 2,
+          maxGuests: 6,
+          allowCustomDays: true,
+          defaultDays: 7,
+          maxDays: 30
+        })
+      } else {
+        const data = await response.json()
+        setConfigData(data)
       }
-      
-      const data = await response.json()
-      
-      setQrData(data.qrData)
-      setTemplate(data.template)
-      setPricing(data.pricing)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.log('Using mock data - API not implemented yet')
+      // Use mock data if API fails
+      setConfigData({
+        id: qrId,
+        businessName: 'Club Viva',
+        logoUrl: undefined,
+        headerText: 'THANKS YOU VERY MUCH FOR GIVING YOURSELF THE OPPORTUNITY TO DISCOVER THE BENEFITS OF THE CLUB.',
+        descriptionText: 'TO RECEIVE YOUR 7-DAY FULL ACCESS GIFT TO ELOCALPASS, SIMPLY FILL OUT THE FIELDS BELOW AND YOU WILL RECEIVE YOUR FREE ELOCALPASS VIA EMAIL.',
+        ctaButtonText: 'Get your eLocalPass now!',
+        primaryColor: '#2563eb', // Blue
+        secondaryColor: '#f97316', // Orange  
+        backgroundColor: '#fef3f2',
+        allowCustomGuests: true,
+        defaultGuests: 2,
+        maxGuests: 6,
+        allowCustomDays: true,
+        defaultDays: 7,
+        maxDays: 30
+      })
     } finally {
       setLoading(false)
     }
@@ -77,7 +97,7 @@ export default function LandingPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your eLocalPass...</p>
+          <p className="text-gray-600">Loading your eLocalPass registration...</p>
         </div>
       </div>
     )
@@ -99,7 +119,7 @@ export default function LandingPage() {
     )
   }
 
-  if (!qrData || !template) {
+  if (!configData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center max-w-md">
@@ -108,7 +128,7 @@ export default function LandingPage() {
               <span className="text-yellow-600 text-xl">?</span>
             </div>
             <h1 className="text-xl font-bold text-yellow-900 mb-2">Not Found</h1>
-            <p className="text-yellow-700">This QR code is not valid or has expired.</p>
+            <p className="text-yellow-700">This QR configuration is not valid or has expired.</p>
           </div>
         </div>
       </div>
@@ -117,9 +137,21 @@ export default function LandingPage() {
 
   return (
     <LandingPageTemplate 
-      qrData={qrData}
-      template={template}
-      pricing={pricing}
+      qrConfigId={configData.id}
+      businessName={configData.businessName}
+      logoUrl={configData.logoUrl}
+      headerText={configData.headerText}
+      descriptionText={configData.descriptionText}
+      ctaButtonText={configData.ctaButtonText}
+      primaryColor={configData.primaryColor}
+      secondaryColor={configData.secondaryColor}
+      backgroundColor={configData.backgroundColor}
+      allowCustomGuests={configData.allowCustomGuests}
+      defaultGuests={configData.defaultGuests}
+      maxGuests={configData.maxGuests}
+      allowCustomDays={configData.allowCustomDays}
+      defaultDays={configData.defaultDays}
+      maxDays={configData.maxDays}
     />
   )
 }
