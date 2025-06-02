@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '../../../../hooks/use-toast'
+import { ToastNotifications } from '../../../../components/toast-notification'
 
 interface GlobalConfig {
   button1GuestsLocked: boolean
@@ -121,6 +123,7 @@ const TextWithTypography = ({
 
 export default function CreateEnhancedLandingPage() {
   const router = useRouter()
+  const toast = useToast()
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig | null>(null)
   const [formData, setFormData] = useState({
     businessName: '',
@@ -196,6 +199,23 @@ export default function CreateEnhancedLandingPage() {
   useEffect(() => {
     fetchGlobalConfig()
     loadSavedTemplates()
+    
+    // Check for edit mode and load existing landing page configuration
+    const urlParams = new URLSearchParams(window.location.search)
+    const mode = urlParams.get('mode')
+    
+    if (mode === 'edit') {
+      const landingConfig = localStorage.getItem('elocalpass-landing-config')
+      if (landingConfig) {
+        try {
+          const savedConfig = JSON.parse(landingConfig)
+          setFormData(savedConfig.landingConfig)
+          console.log('✅ Loaded existing landing page configuration for edit mode')
+        } catch (error) {
+          console.log('Could not load landing page configuration:', error)
+        }
+      }
+    }
   }, [])
 
   const fetchGlobalConfig = async () => {
@@ -223,7 +243,7 @@ export default function CreateEnhancedLandingPage() {
 
   const saveTemplate = () => {
     if (!currentTemplateName.trim()) {
-      alert('Please enter a template name')
+      toast.warning('Missing Template Name', 'Please enter a template name')
       return
     }
     
@@ -238,12 +258,12 @@ export default function CreateEnhancedLandingPage() {
     localStorage.setItem('elocalpass-landing-templates', JSON.stringify(updatedTemplates))
     setShowSaveDialog(false)
     setCurrentTemplateName('')
-    alert(`Template "${newTemplate.name}" saved successfully!`)
+    toast.success('Template Saved', `Template "${newTemplate.name}" saved successfully!`)
   }
 
   const loadLandingTemplate = (template: { name: string, data: any }) => {
     setFormData({ ...template.data })
-    alert(`Template "${template.name}" loaded successfully!`)
+    toast.success('Template Loaded', `Template "${template.name}" loaded successfully!`)
   }
 
   const deleteLandingTemplate = (index: number) => {
@@ -252,7 +272,7 @@ export default function CreateEnhancedLandingPage() {
       setLandingTemplates(updatedTemplates)
       localStorage.setItem('elocalpass-landing-templates', JSON.stringify(updatedTemplates))
       setCurrentTemplateName('')
-      alert(`Template "${landingTemplates[index].name}" deleted successfully!`)
+      toast.success('Template Deleted', `Template "${landingTemplates[index].name}" deleted successfully!`)
     }
   }
 
@@ -285,13 +305,30 @@ export default function CreateEnhancedLandingPage() {
         const result = await response.json()
         const landingUrl = `/landing-enhanced/${result.qrId}`
         setGeneratedUrl(landingUrl)
-        alert(`Enhanced landing page created! Landing page URL: ${landingUrl}`)
+        
+        // Save landing page config to localStorage for QR Config Library display
+        const landingConfig = {
+          id: result.qrId,
+          name: `Landing Page - ${new Date().toLocaleDateString()}`,
+          landingConfig: { ...configData },
+          landingUrl: landingUrl,
+          createdAt: new Date(),
+          isActive: true
+        }
+        localStorage.setItem('elocalpass-landing-config', JSON.stringify(landingConfig))
+        
+        toast.success('Landing Page Created', `Enhanced landing page created! Landing page URL: ${landingUrl}`)
+        
+        // Optional: Redirect back to QR config after 2 seconds
+        setTimeout(() => {
+          window.location.href = '/admin/qr-config'
+        }, 2000)
       } else {
         throw new Error('Failed to create landing page')
       }
     } catch (error) {
       console.error('Error:', error)
-      alert('Error creating landing page. Please try again.')
+      toast.error('Error Creating Landing Page', 'Please try again.')
     }
 
     setIsSubmitting(false)
@@ -302,8 +339,20 @@ export default function CreateEnhancedLandingPage() {
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">Create Enhanced Custom Landing Page</h1>
-            <p className="text-gray-600 mb-6">Complete control over text content, colors, fonts, and sizes for your landing page.</p>
+            <div className="mb-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Create Enhanced Custom Landing Page</h1>
+                  <p className="text-gray-600 mt-2">Complete control over text content, colors, fonts, and sizes for your landing page.</p>
+                </div>
+                <button
+                  onClick={() => router.push('/admin/qr-config')}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                >
+                  ← Back to QR Config
+                </button>
+              </div>
+            </div>
             
             <form onSubmit={handleSubmit} className="space-y-8">
               
@@ -627,7 +676,7 @@ export default function CreateEnhancedLandingPage() {
                       <button
                         type="button"
                         onClick={() => setShowSaveDialog(true)}
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                       >
                         Save Current Landing Page as Template
                       </button>
@@ -650,14 +699,14 @@ export default function CreateEnhancedLandingPage() {
                       <div className="flex gap-4">
                         <button
                           type="button"
-                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                           onClick={saveTemplate}
                         >
                           Save
                         </button>
                         <button
                           type="button"
-                          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
                           onClick={() => {
                             setShowSaveDialog(false)
                             setCurrentTemplateName('')
@@ -710,6 +759,10 @@ export default function CreateEnhancedLandingPage() {
           </div>
         </div>
       </div>
+      <ToastNotifications 
+        notifications={toast.notifications} 
+        onRemove={toast.removeToast} 
+      />
     </div>
   )
 }

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import EmailTemplatePreview from '@/components/email-template-preview'
+import { ToastNotifications } from '@/components/toast-notification'
+import { useToast } from '@/hooks/use-toast'
 
 // Font families for typography
 const fontFamilies = [
@@ -102,6 +104,7 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
 
 export default function EmailConfigPage() {
   const router = useRouter()
+  const toast = useToast()
   
   // Auto-detect template mode from URL or previous page choice
   useEffect(() => {
@@ -186,14 +189,42 @@ export default function EmailConfigPage() {
   })
 
   useEffect(() => {
+    // Check for preview mode first
+    const urlParams = new URLSearchParams(window.location.search)
+    const mode = urlParams.get('mode')
+    const isPreviewMode = mode === 'preview'
+    setIsPreviewMode(isPreviewMode)
+    
+    // Load saved templates (which includes loading custom templates in edit/preview mode)
     loadSavedTemplates()
-    loadDefaultEmailTemplate()
+    
+    // Only load default template if NOT in edit or preview mode
+    if (mode !== 'edit' && mode !== 'preview') {
+      loadDefaultEmailTemplate()
+    }
   }, [])
 
   const loadSavedTemplates = () => {
     const savedEmailTemplates = localStorage.getItem('elocalpass-email-templates')
     if (savedEmailTemplates) {
       setEmailTemplates(JSON.parse(savedEmailTemplates))
+    }
+    
+    // Check if we're in edit mode or preview mode and load existing welcome email config
+    const urlParams = new URLSearchParams(window.location.search)
+    const mode = urlParams.get('mode')
+    
+    if (mode === 'edit' || mode === 'preview') {
+      const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+      if (welcomeEmailConfig) {
+        try {
+          const savedConfig = JSON.parse(welcomeEmailConfig)
+          setEmailConfig(savedConfig.emailConfig)
+          console.log('✅ Loaded existing welcome email configuration for', mode)
+        } catch (error) {
+          console.log('Could not load welcome email configuration:', error)
+        }
+      }
     }
   }
 
@@ -207,6 +238,7 @@ export default function EmailConfigPage() {
 
   const saveAsDefaultTemplate = () => {
     const defaultTemplate = {
+      id: 'default',
       name: 'Default Email Template',
       data: { ...emailConfig },
       createdAt: new Date(),
@@ -214,12 +246,12 @@ export default function EmailConfigPage() {
     }
     
     localStorage.setItem('elocalpass-default-email-template', JSON.stringify(defaultTemplate))
-    alert('Current email configuration saved as default template! It will load automatically next time.')
+    toast.success('Default Template Saved', 'Current email configuration saved as default template!')
   }
 
   const clearDefaultTemplate = () => {
     localStorage.removeItem('elocalpass-default-email-template')
-    alert('Default email template cleared! Next time you open this page, it will start with a blank template.')
+    toast.success('Default Template Cleared', 'Default email template cleared successfully!')
   }
 
   const getDefaultTemplateStatus = () => {
@@ -229,7 +261,7 @@ export default function EmailConfigPage() {
 
   const saveEmailTemplate = () => {
     if (!currentEmailTemplateName.trim()) {
-      alert('Please enter a template name')
+      toast.warning('Missing Template Name', 'Please enter a template name')
       return
     }
     
@@ -245,12 +277,12 @@ export default function EmailConfigPage() {
     localStorage.setItem('elocalpass-email-templates', JSON.stringify(updatedTemplates))
     setShowEmailSaveDialog(false)
     setCurrentEmailTemplateName('')
-    alert(`Template "${newTemplate.name}" saved successfully!`)
+    toast.success('Template Saved', `Template "${newTemplate.name}" saved successfully!`)
   }
 
   const loadEmailTemplate = (template: { name: string, data: any }) => {
     setEmailConfig({ ...template.data })
-    alert(`Template "${template.name}" loaded successfully!`)
+    toast.success('Template Loaded', `Template "${template.name}" loaded successfully!`)
   }
 
   const deleteEmailTemplate = (index: number) => {
@@ -259,7 +291,7 @@ export default function EmailConfigPage() {
       setEmailTemplates(updatedTemplates)
       localStorage.setItem('elocalpass-email-templates', JSON.stringify(updatedTemplates))
       setCurrentEmailTemplateName('')
-      alert(`Template "${emailTemplates[index].name}" deleted successfully!`)
+      toast.success('Template Deleted', `Template "${emailTemplates[index].name}" deleted successfully!`)
     }
   }
 
@@ -272,11 +304,30 @@ export default function EmailConfigPage() {
       await new Promise(resolve => setTimeout(resolve, 1000))
       
       const configId = Math.random().toString(36).substr(2, 9)
+      
+      // Save the welcome email configuration to indicate Button 4 is complete
+      const welcomeEmailConfig = {
+        id: configId,
+        name: `Welcome Email Template - ${new Date().toLocaleDateString()}`,
+        emailConfig: { ...emailConfig },
+        createdAt: new Date(),
+        isActive: true
+      }
+      
+      // Save to localStorage so main QR config page knows Button 4 is configured
+      localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(welcomeEmailConfig))
+      
       setGeneratedEmailConfig(configId)
-      alert('Email configuration created successfully!')
+      toast.success('Email Configuration Created', `Welcome Email Template "${welcomeEmailConfig.name}" created successfully!`)
+      
+      // Optional: Redirect back to QR config after 2 seconds
+      setTimeout(() => {
+        router.push('/admin/qr-config')
+      }, 2000)
+      
     } catch (error) {
       console.error('Error creating email configuration:', error)
-      alert('Error creating email configuration')
+      toast.error('Error Creating Email Configuration', 'Error creating email configuration')
     } finally {
       setIsSubmitting(false)
     }
@@ -304,14 +355,23 @@ export default function EmailConfigPage() {
     }
   }, [emailConfig.bannerImages.length])
 
+  const [isPreviewMode, setIsPreviewMode] = useState(false)
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Welcome Email Configuration</h1>
-              <p className="mt-2 text-gray-600">Configure welcome email templates for QR recipients</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {isPreviewMode ? '👀 Welcome Email Preview' : 'Welcome Email Configuration'}
+              </h1>
+              <p className="mt-2 text-gray-600">
+                {isPreviewMode 
+                  ? 'Preview of your saved welcome email template'
+                  : 'Configure welcome email templates for QR recipients'
+                }
+              </p>
             </div>
             <button
               onClick={() => router.push('/admin/qr-config')}
@@ -564,7 +624,7 @@ export default function EmailConfigPage() {
                                 if (emailConfig.newBannerUrl && emailConfig.newBannerUrl.trim()) {
                                   const updatedBanners = [...(emailConfig.bannerImages || []), emailConfig.newBannerUrl.trim()]
                                   if (updatedBanners.length > 10) {
-                                    alert('Maximum 10 banners allowed')
+                                    toast.warning('Maximum Banners Reached', 'Maximum 10 banners allowed')
                                   } else {
                                     setEmailConfig({...emailConfig, bannerImages: updatedBanners, newBannerUrl: ''})
                                   }
@@ -949,11 +1009,22 @@ export default function EmailConfigPage() {
 
             {/* Generated Config Display */}
             {generatedEmailConfig && (
-              <div className="mt-8 p-6 bg-green-50 rounded-lg">
-                <h3 className="text-lg font-bold text-green-900 mb-2">Email Configuration Created!</h3>
-                <p className="text-sm text-green-700 mb-2">Configuration ID:</p>
-                <div className="bg-white p-3 rounded border border-green-200">
-                  <code className="text-sm text-green-800 break-all">{generatedEmailConfig}</code>
+              <div className="mt-8 p-6 bg-green-50 rounded-lg border border-green-200">
+                <h3 className="text-lg font-bold text-green-900 mb-2">✅ Welcome Email Template Created!</h3>
+                <div className="space-y-2">
+                  <div className="text-sm text-green-700">
+                    <p><strong>Template Name:</strong> Welcome Email Template - {new Date().toLocaleDateString()}</p>
+                    <p><strong>Configuration ID:</strong></p>
+                    <div className="bg-white p-3 rounded border border-green-200 mt-1">
+                      <code className="text-sm text-green-800 break-all">{generatedEmailConfig}</code>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
+                    <p className="text-sm text-blue-700">
+                      <strong>Note:</strong> This template is now saved and Button 4 is marked as complete. 
+                      You'll be redirected back to the QR configuration page shortly.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -965,6 +1036,12 @@ export default function EmailConfigPage() {
           </div>
         </div>
       </div>
+
+      {/* Toast Notifications */}
+      <ToastNotifications 
+        notifications={toast.notifications} 
+        onRemove={toast.removeToast} 
+      />
     </div>
   )
 }

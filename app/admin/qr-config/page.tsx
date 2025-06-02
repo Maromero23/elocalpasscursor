@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
-import { Building2, Users, MapPin, QrCode, Settings, Eye, Plus, Edit3, Palette } from 'lucide-react'
-import { ProtectedRoute } from '../../../components/auth/protected-route'
+import { Building2, Users, MapPin, QrCode, Settings, Eye, Plus, Edit3, Palette, Save, Clock, Monitor, Mail, EyeOff, Trash2 } from 'lucide-react'
+import { ProtectedRoute } from '@/components/auth/protected-route'
+import { ToastNotifications } from '@/components/toast-notification'
+import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 
 // Configuration interfaces
@@ -62,6 +64,7 @@ const getNavItems = (userRole: string) => {
 export default function QRConfigPage() {
   const { data: session } = useSession()
   const router = useRouter()
+  const toast = useToast()
   const navItems = getNavItems(session?.user?.role || "")
 
   // State for global configuration
@@ -96,6 +99,31 @@ export default function QRConfigPage() {
   const [saveStatus, setSaveStatus] = useState<string>('')
   const [isAutoSaving, setIsAutoSaving] = useState<boolean>(false)
   const [configuredButtons, setConfiguredButtons] = useState<Set<number>>(new Set())
+  const [savedConfigurations, setSavedConfigurations] = useState<Array<{
+    id: string;
+    name: string;
+    description: string;
+    config: QRGlobalConfig;
+    createdAt: Date;
+  }>>([])
+  const [showSaveModal, setShowSaveModal] = useState(false)
+  const [showConfigLibrary, setShowConfigLibrary] = useState(false)
+  const [expandedConfigs, setExpandedConfigs] = useState<Set<string>>(new Set())
+  const [newConfigName, setNewConfigName] = useState('')
+  const [newConfigDescription, setNewConfigDescription] = useState('')
+  const [progressRestored, setProgressRestored] = useState(false)
+
+  // Seller assignment states
+  const [showSellerModal, setShowSellerModal] = useState(false)
+  const [availableSellers, setAvailableSellers] = useState<Array<{
+    id: string
+    name: string | null
+    email: string
+    role: string
+    hasAssignedConfig: boolean
+  }>>([])
+  const [selectedConfig, setSelectedConfig] = useState<any>(null)
+  const [loadingSellers, setLoadingSellers] = useState(false)
 
   // Helper function to check if a button configuration has been actively modified
   const isButtonConfigured = (buttonNum: number): boolean => {
@@ -131,11 +159,21 @@ export default function QRConfigPage() {
       button3DeliveryMethod: 'DIRECT' as const,
       button4LandingPageRequired: true,
       button5SendRebuyEmail: false,
+      updatedAt: new Date(),
     }
     
     await updateConfig(defaultConfig)
+    
+    // Clear saved templates and configurations
+    localStorage.removeItem('elocalpass-welcome-email-config')
+    localStorage.removeItem('elocalpass-rebuy-email-config')
+    localStorage.removeItem('elocalpass-landing-config')
+    localStorage.removeItem('elocalpass-qr-config-progress')
+    localStorage.removeItem('elocalpass-saved-configurations')
+    
+    // Clear all configured button states so they return to original colors
     setConfiguredButtons(new Set())
-    setSaveStatus('🔄 Reset to defaults - Auto-saved successfully')
+    setSaveStatus('🔄 Reset to defaults - All configurations cleared and values reset')
     setTimeout(() => setSaveStatus(''), 3000)
   }
 
@@ -195,6 +233,304 @@ export default function QRConfigPage() {
     }
   }
 
+  // Load saved configurations on component mount
+  useEffect(() => {
+    loadCurrentProgress()
+    loadSavedConfigurations()
+  }, [])
+
+  const loadSavedConfigurations = () => {
+    const saved = localStorage.getItem('elocalpass-saved-configurations')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        setSavedConfigurations(parsed.map((config: any) => ({
+          ...config,
+          createdAt: new Date(config.createdAt)
+        })))
+      } catch (error) {
+        console.error('Error parsing saved configurations:', error)
+        setSavedConfigurations([])
+      }
+    } else {
+      setSavedConfigurations([])
+    }
+  }
+
+  const loadCurrentProgress = () => {
+    const savedProgress = localStorage.getItem('elocalpass-current-qr-progress')
+    if (savedProgress) {
+      try {
+        const progressData = JSON.parse(savedProgress)
+        // Only restore if the progress is recent (within last 24 hours)
+        const savedTime = new Date(progressData.timestamp)
+        const now = new Date()
+        const hoursDiff = (now.getTime() - savedTime.getTime()) / (1000 * 60 * 60)
+        
+        if (hoursDiff < 24) {
+          setGlobalConfig(progressData.globalConfig)
+          setConfiguredButtons(new Set(progressData.configuredButtons))
+          setProgressRestored(true)
+          console.log('✅ Restored QR configuration progress from previous session')
+          
+          // Hide the progress restored indicator after 5 seconds
+          setTimeout(() => {
+            setProgressRestored(false)
+            console.log('Progress restored indicator hidden')
+          }, 5000)
+        } else {
+          // Clear old progress
+          localStorage.removeItem('elocalpass-current-qr-progress')
+        }
+      } catch (error) {
+        console.log('Could not restore previous progress:', error)
+        localStorage.removeItem('elocalpass-current-qr-progress')
+      }
+    }
+    
+    // Check if Button 4 welcome email configuration exists
+    const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+    if (welcomeEmailConfig) {
+      try {
+        const emailConfig = JSON.parse(welcomeEmailConfig)
+        if (emailConfig.isActive) {
+          setConfiguredButtons((prev) => new Set(prev).add(4))
+          console.log('✅ Found existing welcome email configuration for Button 4')
+        }
+      } catch (error) {
+        console.log('Could not load welcome email configuration:', error)
+      }
+    }
+    
+    // Check if Button 5 rebuy email configuration exists
+    const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+    if (rebuyEmailConfig) {
+      try {
+        const emailConfig = JSON.parse(rebuyEmailConfig)
+        if (emailConfig.isActive) {
+          setConfiguredButtons((prev) => new Set(prev).add(5))
+          console.log('✅ Found existing rebuy email configuration for Button 5')
+        }
+      } catch (error) {
+        console.log('Could not load rebuy email configuration:', error)
+      }
+    }
+  }
+
+  // Check if all 5 buttons are configured
+  const isConfigurationComplete = (): boolean => {
+    return configuredButtons.size === 5
+  }
+
+  // Save current configuration with a name
+  const saveNamedConfiguration = () => {
+    if (!isConfigurationComplete()) {
+      toast.error('Configuration Incomplete', 'Please complete all 5 button configurations before saving')
+      return
+    }
+
+    if (!newConfigName.trim()) {
+      toast.error('Missing Information', 'Please enter a configuration name')
+      return
+    }
+
+    const newConfig = {
+      id: Date.now().toString(),
+      name: newConfigName.trim(),
+      description: newConfigDescription.trim() || 'No description provided',
+      config: { ...globalConfig },
+      createdAt: new Date()
+    }
+    
+    const updatedConfigs = [...savedConfigurations, newConfig]
+    setSavedConfigurations(updatedConfigs)
+    
+    // Robust localStorage saving with error handling
+    try {
+      localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigs))
+      console.log('✅ Configuration saved to localStorage successfully')
+    } catch (error) {
+      console.error('❌ Failed to save to localStorage:', error)
+      toast.error('Save Failed', 'Failed to save configuration to browser storage')
+      return
+    }
+    
+    setNewConfigName('')
+    setNewConfigDescription('')
+    setShowSaveModal(false)
+    
+    toast.success('Configuration Saved!', `Configuration "${newConfig.name}" saved successfully!`)
+  }
+
+  // Delete a saved configuration
+  const deleteConfiguration = (configId: string) => {
+    if (confirm('Are you sure you want to delete this configuration?')) {
+      const updatedConfigs = savedConfigurations.filter(config => config.id !== configId)
+      setSavedConfigurations(updatedConfigs)
+      
+      try {
+        localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigs))
+        console.log('✅ Configuration deleted from localStorage successfully')
+        toast.success('Configuration Deleted', 'Configuration deleted successfully!')
+      } catch (error) {
+        console.error('❌ Failed to update localStorage:', error)
+        toast.error('Delete Failed', 'Failed to update browser storage')
+      }
+    }
+  }
+
+  // Export configurations to file
+  const exportConfigurations = () => {
+    if (savedConfigurations.length === 0) {
+      toast.warning('No Configurations', 'No configurations to export')
+      return
+    }
+
+    const dataStr = JSON.stringify(savedConfigurations, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `elocalpass-configurations-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    toast.success('Export Complete', `Exported ${savedConfigurations.length} configurations`)
+  }
+
+  // Import configurations from file
+  const importConfigurations = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const importedConfigs = JSON.parse(e.target?.result as string)
+        
+        // Validate structure
+        if (!Array.isArray(importedConfigs)) {
+          throw new Error('Invalid file format')
+        }
+
+        // Merge with existing configs (avoiding duplicates by ID)
+        const existingIds = new Set(savedConfigurations.map(c => c.id))
+        const newConfigs = importedConfigs.filter((config: any) => !existingIds.has(config.id))
+        
+        if (newConfigs.length === 0) {
+          toast.warning('No New Configurations', 'All configurations in file already exist')
+          return
+        }
+
+        const mergedConfigs = [...savedConfigurations, ...newConfigs]
+        setSavedConfigurations(mergedConfigs)
+        
+        // Save to localStorage
+        localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(mergedConfigs))
+        
+        toast.success('Import Successful', `Imported ${newConfigs.length} new configurations`)
+      } catch (error) {
+        console.error('Import error:', error)
+        toast.error('Import Failed', 'Invalid file format or corrupted data')
+      }
+    }
+    reader.readAsText(file)
+    
+    // Reset input
+    event.target.value = ''
+  }
+
+  const toggleConfigExpanded = (configId: string) => {
+    const newExpanded = new Set(expandedConfigs)
+    if (newExpanded.has(configId)) {
+      newExpanded.delete(configId)
+    } else {
+      newExpanded.add(configId)
+    }
+    setExpandedConfigs(newExpanded)
+  }
+
+  // Fetch available sellers for assignment
+  const fetchAvailableSellers = async () => {
+    setLoadingSellers(true)
+    try {
+      const response = await fetch('/api/admin/sellers')
+      if (response.ok) {
+        const sellers = await response.json()
+        // For now, show all active sellers (we'll add assignment checking later)
+        const activeSellers = sellers.filter((seller: any) => seller.isActive)
+        setAvailableSellers(activeSellers.map((seller: any) => ({
+          id: seller.id,
+          name: seller.name,
+          email: seller.email,
+          role: seller.role,
+          hasAssignedConfig: false // Will be updated when we have assignment tracking
+        })))
+      } else {
+        toast.error('Error Loading Sellers', 'Failed to fetch available sellers')
+      }
+    } catch (error) {
+      toast.error('Error Loading Sellers', 'Failed to fetch available sellers')
+    }
+    setLoadingSellers(false)
+  }
+
+  // Show seller selection modal
+  const showSellerSelectionModal = (config: any) => {
+    setSelectedConfig(config)
+    setShowSellerModal(true)
+    fetchAvailableSellers()
+  }
+
+  // Updated assignment function with seller selection
+  const assignConfigToSeller = async (sellerEmail: string) => {
+    if (!selectedConfig) return
+    
+    try {
+      const response = await fetch('/api/admin/assign-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          sellerEmail: sellerEmail,
+          configurationId: selectedConfig.id,
+          configuration: selectedConfig.config
+        })
+      })
+
+      if (response.ok) {
+        toast.success('Configuration Assigned', `Configuration "${selectedConfig.name}" assigned to ${sellerEmail} successfully!`)
+        setShowSellerModal(false)
+        setSelectedConfig(null)
+        // Refresh seller list
+        fetchAvailableSellers()
+      } else {
+        const error = await response.json()
+        toast.error('Assignment Failed', `Error: ${error.error}`)
+      }
+    } catch (error) {
+      toast.error('Assignment Failed', 'Error assigning configuration')
+    }
+  }
+
+  // Auto-save current progress to localStorage
+  useEffect(() => {
+    const saveCurrentProgress = () => {
+      const progressData = {
+        globalConfig,
+        configuredButtons: Array.from(configuredButtons),
+        timestamp: new Date().toISOString()
+      }
+      localStorage.setItem('elocalpass-current-qr-progress', JSON.stringify(progressData))
+    }
+
+    // Save progress whenever globalConfig or configuredButtons changes
+    const timeoutId = setTimeout(saveCurrentProgress, 500) // Debounce saves
+    return () => clearTimeout(timeoutId)
+  }, [globalConfig, configuredButtons])
+
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
       <div className="min-h-screen bg-gray-100">
@@ -241,20 +577,39 @@ export default function QRConfigPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">QR Configuration System</h1>
-                  <p className="mt-2 text-gray-600">Configure the 5-button QR generation system for all sellers</p>
+                  <p className="text-gray-600 mt-1">Configure the 5-button QR generation system for all sellers</p>
                 </div>
                 <div className="flex items-center space-x-3">
                   {/* Auto-save status indicator */}
+                  {isAutoSaving && (
+                    <div className="flex items-center space-x-2 text-blue-600">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span className="text-sm">Auto-saving...</span>
+                    </div>
+                  )}
+                  
+                  {/* Progress restored indicator */}
+                  {progressRestored && (
+                    <div className="flex items-center space-x-2 text-green-600 bg-green-50 px-3 py-1 rounded-md">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm">Progress restored from previous session</span>
+                    </div>
+                  )}
+                  
                   {saveStatus && (
-                    <div className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium ${
+                    <div className={`flex items-center space-x-2 text-green-600 ${
                       saveStatus.includes('✅') 
-                        ? 'bg-green-100 text-green-800' 
+                        ? 'bg-green-50 px-3 py-1 rounded-md' 
                         : saveStatus.includes('❌')
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-blue-100 text-blue-800'
+                        ? 'bg-red-50 px-3 py-1 rounded-md'
+                        : 'bg-blue-50 px-3 py-1 rounded-md'
                     }`}>
-                      {isAutoSaving && <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>}
-                      {saveStatus}
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-sm">{saveStatus}</span>
                     </div>
                   )}
                   
@@ -290,22 +645,22 @@ export default function QRConfigPage() {
                     <button
                       onClick={() => setActiveButton(button.num)}
                       className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 shadow-sm border-2 ${
-                        activeButton === button.num 
-                          ? 'bg-orange-500 text-white border-orange-500 shadow-lg transform scale-105' 
-                          : isButtonConfigured(button.num)
+                        isButtonConfigured(button.num)
                           ? 'bg-green-500 text-white border-green-500 shadow-md hover:bg-green-600'
+                          : activeButton === button.num 
+                          ? 'bg-orange-500 text-white border-orange-500 shadow-lg transform scale-105' 
                           : 'bg-white text-gray-700 border-gray-300 hover:border-orange-300 hover:bg-orange-50 hover:shadow-md'
                       }`}
                     >
                       <div className="flex items-center justify-center space-x-2">
                         <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                          activeButton === button.num 
-                            ? 'bg-white text-orange-500' 
-                            : isButtonConfigured(button.num)
+                          isButtonConfigured(button.num)
                             ? 'bg-white text-green-500'
+                            : activeButton === button.num 
+                            ? 'bg-white text-orange-500' 
                             : 'bg-orange-100 text-orange-600'
                         }`}>
-                          {isButtonConfigured(button.num) && activeButton !== button.num ? '✓' : button.num}
+                          {isButtonConfigured(button.num) ? '✓' : button.num}
                         </span>
                         <span className="text-sm">{button.title}</span>
                       </div>
@@ -325,7 +680,32 @@ export default function QRConfigPage() {
 
               {/* Progress Tracker */}
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Configuration Progress</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-gray-700">Configuration Progress</h3>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      isConfigurationComplete() 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {configuredButtons.size}/5 Complete
+                    </span>
+                    {isConfigurationComplete() && (
+                      <button
+                        onClick={() => setShowSaveModal(true)}
+                        className="text-xs px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        💾 Save Configuration
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowConfigLibrary(true)}
+                      className="text-xs px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                    >
+                      📚 Library ({savedConfigurations.length})
+                    </button>
+                  </div>
+                </div>
                 <div className="flex items-center space-x-2">
                   {[
                     { 
@@ -411,7 +791,7 @@ export default function QRConfigPage() {
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="text-lg font-semibold text-blue-900">Number of Guests</h3>
+                          <h3 className="text-lg font-semibold text-gray-900">Number of Guests</h3>
                           <p className="text-sm text-blue-700">Control guest selection</p>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -474,7 +854,7 @@ export default function QRConfigPage() {
                     <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="text-lg font-semibold text-green-900">Number of Days</h3>
+                          <h3 className="text-lg font-semibold text-gray-900">Number of Days</h3>
                           <p className="text-sm text-green-700">Control day selection</p>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -540,13 +920,13 @@ export default function QRConfigPage() {
                     <div className="text-sm text-purple-700 space-y-1">
                       <div>
                         <span className="font-medium">Guests:</span> {globalConfig.button1GuestsLocked 
-                          ? `Fixed at ${globalConfig.button1GuestsDefault}` 
+                          ? `Fixed at ${globalConfig.button1GuestsDefault}`
                           : `Open range (1-${globalConfig.button1GuestsDefault})`
                         }
                       </div>
                       <div>
                         <span className="font-medium">Days:</span> {globalConfig.button1DaysLocked 
-                          ? `Fixed at ${globalConfig.button1DaysDefault}` 
+                          ? `Fixed at ${globalConfig.button1DaysDefault}`
                           : `Open range (1-${globalConfig.button1DaysDefault})`
                         }
                       </div>
@@ -833,7 +1213,7 @@ export default function QRConfigPage() {
                     </label>
 
                     {globalConfig.button2PricingType === 'FREE' && (
-                      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
                         <div className="flex items-center space-x-2">
                           <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                             <span className="text-white font-bold text-sm">✓</span>
@@ -878,25 +1258,29 @@ export default function QRConfigPage() {
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">Direct</h3>
-                        <input
-                          type="radio"
-                          checked={globalConfig.button3DeliveryMethod === 'DIRECT'}
-                          onChange={() => {
-                            updateConfig({ button3DeliveryMethod: 'DIRECT' })
-                            setConfiguredButtons((prev) => new Set(prev).add(3))
-                          }}
-                          className="h-4 w-4 text-blue-600"
-                        />
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">Direct</h3>
+                          <input
+                            type="radio"
+                            checked={globalConfig.button3DeliveryMethod === 'DIRECT'}
+                            onChange={() => {
+                              updateConfig({ button3DeliveryMethod: 'DIRECT' })
+                              setConfiguredButtons((prev) => new Set(prev).add(3))
+                            }}
+                            className="h-4 w-4 text-blue-600"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-medium text-blue-700">
+                            {globalConfig.button3DeliveryMethod === 'DIRECT' ? '✓' : ''}
+                          </span>
+                          <span className="text-gray-900">Instant QR generation</span>
+                        </div>
                       </div>
                       <p className="text-gray-600 mb-3">
                         QR codes are sent directly to guests via email
                       </p>
                       <div className="space-y-2 text-sm text-gray-600">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-blue-600">✓</span>
-                          <span>Instant QR generation</span>
-                        </div>
                         <div className="flex items-center space-x-2">
                           <span className="text-blue-600">✓</span>
                           <span>QR sent via email</span>
@@ -919,25 +1303,29 @@ export default function QRConfigPage() {
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">URLs</h3>
-                        <input
-                          type="radio"
-                          checked={globalConfig.button3DeliveryMethod === 'URLS'}
-                          onChange={() => {
-                            updateConfig({ button3DeliveryMethod: 'URLS' })
-                            setConfiguredButtons((prev) => new Set(prev).add(3))
-                          }}
-                          className="h-4 w-4 text-blue-600"
-                        />
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">URLs</h3>
+                          <input
+                            type="radio"
+                            checked={globalConfig.button3DeliveryMethod === 'URLS'}
+                            onChange={() => {
+                              updateConfig({ button3DeliveryMethod: 'URLS' })
+                              setConfiguredButtons((prev) => new Set(prev).add(3))
+                            }}
+                            className="h-4 w-4 text-blue-600"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-medium text-blue-700">
+                            {globalConfig.button3DeliveryMethod === 'URLS' ? '✓' : ''}
+                          </span>
+                          <span className="text-gray-900">Custom landing page design</span>
+                        </div>
                       </div>
                       <p className="text-gray-600 mb-3">
                         QR codes are sent as unique landing page links
                       </p>
                       <div className="space-y-2 text-sm text-gray-600">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-blue-600">✓</span>
-                          <span>Custom landing page design</span>
-                        </div>
                         <div className="flex items-center space-x-2">
                           <span className="text-blue-600">✓</span>
                           <span>Guest enters details on webpage</span>
@@ -960,16 +1348,24 @@ export default function QRConfigPage() {
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">Both</h3>
-                        <input
-                          type="radio"
-                          checked={globalConfig.button3DeliveryMethod === 'BOTH'}
-                          onChange={() => {
-                            updateConfig({ button3DeliveryMethod: 'BOTH' })
-                            setConfiguredButtons((prev) => new Set(prev).add(3))
-                          }}
-                          className="h-4 w-4 text-blue-600"
-                        />
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">Both</h3>
+                          <input
+                            type="radio"
+                            checked={globalConfig.button3DeliveryMethod === 'BOTH'}
+                            onChange={() => {
+                              updateConfig({ button3DeliveryMethod: 'BOTH' })
+                              setConfiguredButtons((prev) => new Set(prev).add(3))
+                            }}
+                            className="h-4 w-4 text-blue-600"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-medium text-blue-700">
+                            {globalConfig.button3DeliveryMethod === 'BOTH' ? '✓' : ''}
+                          </span>
+                          <span className="text-gray-900">Maximum flexibility</span>
+                        </div>
                       </div>
                       <p className="text-gray-600 mb-3">
                         QR codes are sent both directly and as landing page links
@@ -1012,7 +1408,7 @@ export default function QRConfigPage() {
                       </p>
                       <button 
                         onClick={() => router.push('/admin/qr-config/create')}
-                        className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                        className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                       >
                         Create Custom Landing Page →
                       </button>
@@ -1037,7 +1433,7 @@ export default function QRConfigPage() {
                       </div>
                       <button 
                         onClick={() => router.push('/admin/qr-config/create')}
-                        className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700"
+                        className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
                       >
                         Create Custom Landing Page →
                       </button>
@@ -1074,12 +1470,66 @@ export default function QRConfigPage() {
                     {/* Custom Template Features - Show immediately when Custom Template is selected */}
                     {globalConfig.button4LandingPageRequired && (
                       <div className="ml-7 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                        <button 
-                          onClick={() => router.push('/admin/qr-config/email-config?mode=custom')}
-                          className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700"
-                        >
-                          Create Custom Welcome Email →
-                        </button>
+                        {(() => {
+                          const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+                          if (welcomeEmailConfig) {
+                            try {
+                              const emailConfig = JSON.parse(welcomeEmailConfig)
+                              if (emailConfig.isActive) {
+                                return (
+                                  <div className="space-y-3">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="flex items-center space-x-2 text-green-600">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span className="font-medium text-gray-900">Welcome Email Template Created</span>
+                                      </div>
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                      <p><strong>Name:</strong> <span className="text-gray-900">{emailConfig.name}</span></p>
+                                      <p><strong>Created:</strong> <span className="text-gray-900">{new Date(emailConfig.createdAt).toLocaleDateString()}</span></p>
+                                      <p><strong>Template ID:</strong> <span className="text-gray-900">{emailConfig.id}</span></p>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                      <button 
+                                        onClick={() => router.push('/admin/qr-config/email-config?mode=edit')}
+                                        className="px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                                      >
+                                        Edit Template
+                                      </button>
+                                      <button 
+                                        onClick={() => {
+                                          localStorage.removeItem('elocalpass-welcome-email-config')
+                                          setConfiguredButtons((prev) => {
+                                            const newSet = new Set(prev)
+                                            newSet.delete(4)
+                                            return newSet
+                                          })
+                                          window.location.reload()
+                                        }}
+                                        className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                                      >
+                                        Delete Template
+                                      </button>
+                                    </div>
+                                  </div>
+                                )
+                              }
+                            } catch (error) {
+                              console.log('Error parsing welcome email config:', error)
+                            }
+                          }
+                          
+                          return (
+                            <button 
+                              onClick={() => router.push('/admin/qr-config/email-config?mode=custom')}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                            >
+                              Create Custom Welcome Email →
+                            </button>
+                          )
+                        })()}
                       </div>
                     )}
 
@@ -1104,7 +1554,7 @@ export default function QRConfigPage() {
                       <div className="ml-7 p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <button 
                           onClick={() => router.push('/admin/qr-config/email-config?mode=default')}
-                          className="px-4 py-2 bg-gray-600 text-white rounded-md text-sm hover:bg-gray-700"
+                          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
                         >
                           View Default Email Template →
                         </button>
@@ -1117,7 +1567,7 @@ export default function QRConfigPage() {
               {/* Button 5: Send Rebuy Email */}
               {activeButton === 5 && (
                 <div className="space-y-6">
-                  <div className="border-l-4 border-red-500 pl-4">
+                  <div className="border-l-4 border-blue-500 pl-4">
                     <h2 className="text-xl font-semibold text-gray-900">Button 5: Send Rebuy Email?</h2>
                     <p className="text-gray-600 mt-1">Automatically send follow-up emails before QR expiration</p>
                   </div>
@@ -1131,13 +1581,62 @@ export default function QRConfigPage() {
                           updateConfig({ button5SendRebuyEmail: true })
                           setConfiguredButtons((prev) => new Set(prev).add(5))
                         }}
-                        className="mt-1 h-4 w-4 text-red-600"
+                        className="mt-1 h-4 w-4 text-blue-600"
                       />
                       <div>
                         <span className="font-medium text-gray-900">Yes</span>
                         <p className="text-sm text-gray-600">System will automatically send a follow-up email 12 hours before QR expires</p>
                       </div>
                     </label>
+
+                    {globalConfig.button5SendRebuyEmail && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                        <h4 className="font-medium text-blue-900 mb-2">Rebuy Email System</h4>
+                        <p className="text-sm text-blue-800 mb-3">
+                          When enabled, the system will automatically send a follow-up email 12 hours before each QR code expires, 
+                          encouraging guests to purchase a new QR code for continued access.
+                        </p>
+                        
+                        {/* Check for existing rebuy email template */}
+                        {(() => {
+                          const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+                          if (rebuyEmailConfig) {
+                            try {
+                              const rebuy = JSON.parse(rebuyEmailConfig)
+                              return (
+                                <div>
+                                  <div className="text-green-600">✓ Custom template configured</div>
+                                  <div className="mt-1">
+                                    <span className="font-medium text-gray-900">Template:</span> <span className="text-gray-900">{rebuy.name}</span>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium text-gray-900">Created:</span> <span className="text-gray-900">{new Date(rebuy.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                  <div className="mt-1">
+                                    <a 
+                                      href="/admin/qr-config/rebuy-config?mode=edit" 
+                                      target="_blank"
+                                      className="text-blue-600 hover:text-blue-800 underline text-xs"
+                                    >
+                                      📝 Edit Template
+                                    </a>
+                                  </div>
+                                </div>
+                              )
+                            } catch {
+                              return <div className="text-gray-900">Default template</div>
+                            }
+                          }
+                          return <div className="text-gray-900">Default template</div>
+                        })()}
+                        
+                        <Link href="/admin/qr-config/rebuy-config">
+                          <button className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
+                            {localStorage.getItem('elocalpass-rebuy-email-config') ? 'Reconfigure' : 'Configure'} Rebuy Email →
+                          </button>
+                        </Link>
+                      </div>
+                    )}
 
                     <label className="flex items-start space-x-3 cursor-pointer">
                       <input
@@ -1147,7 +1646,7 @@ export default function QRConfigPage() {
                           updateConfig({ button5SendRebuyEmail: false })
                           setConfiguredButtons((prev) => new Set(prev).add(5))
                         }}
-                        className="mt-1 h-4 w-4 text-red-600"
+                        className="mt-1 h-4 w-4 text-blue-600"
                       />
                       <div>
                         <span className="font-medium text-gray-900">No</span>
@@ -1155,69 +1654,284 @@ export default function QRConfigPage() {
                       </div>
                     </label>
                   </div>
-
-                  {globalConfig.button5SendRebuyEmail && (
-                    <div className="mt-6 p-4 bg-red-50 rounded-lg">
-                      <h4 className="font-medium text-red-900 mb-2">Rebuy Email System</h4>
-                      <p className="text-sm text-red-800">
-                        When enabled, the system will automatically send a follow-up email 12 hours before each QR code expires, 
-                        encouraging guests to purchase a new QR code for continued access.
-                      </p>
-                      <Link href="/admin/qr-config/rebuy-config">
-                        <button className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">
-                          Configure Email Templates →
-                        </button>
-                      </Link>
-                    </div>
-                  )}
                 </div>
               )}
-            </div>
-            
-            {/* Assign Configuration to Sellers */}
-            <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                📋 Assign Configuration to Sellers
-              </h3>
-              <p className="text-blue-700 mb-4">
-                Apply the current configuration to existing sellers so they can generate QR codes.
-              </p>
-              
-              <div className="space-y-3">
-                <button
-                  onClick={async () => {
-                    try {
-                      const response = await fetch('/api/admin/assign-config', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          sellerEmail: 'seller@elocalpass.com'
-                        })
-                      })
-                      
-                      if (response.ok) {
-                        alert('✅ Configuration assigned to seller successfully!')
-                      } else {
-                        const error = await response.json()
-                        alert(`❌ Error: ${error.error}`)
-                      }
-                    } catch (error) {
-                      alert(`❌ Error assigning configuration`)
-                    }
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                >
-                  🎯 Assign to Test Seller (seller@elocalpass.com)
-                </button>
-                
-                <p className="text-xs text-blue-600">
-                  Note: This assigns the current Button 1-3 configuration to the test seller account.
-                </p>
-              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Save Configuration Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Save QR Configuration</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Configuration Name *
+                </label>
+                <input
+                  type="text"
+                  value={newConfigName}
+                  onChange={(e) => setNewConfigName(e.target.value)}
+                  placeholder="e.g., Premium Package, Basic Deal, etc."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={newConfigDescription}
+                  onChange={(e) => setNewConfigDescription(e.target.value)}
+                  placeholder="Brief description of this configuration..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-xs text-gray-600">
+                  This will save your current 5-button configuration for reuse with any seller.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowSaveModal(false)
+                  setNewConfigName('')
+                  setNewConfigDescription('')
+                }}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveNamedConfiguration}
+                disabled={!newConfigName.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              >
+                Save Configuration
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Configuration Library Modal */}
+      {showConfigLibrary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-medium text-gray-900">QR Configuration Library</h3>
+              <div className="flex items-center space-x-3">
+                {/* Export/Import Buttons */}
+                <button
+                  onClick={exportConfigurations}
+                  className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors flex items-center"
+                  title="Export configurations to file"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z" />
+                  </svg>
+                  Export
+                </button>
+                
+                <label className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors cursor-pointer flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l3-3m0 0l3 3m-3-3v8m13-5a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Import
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={importConfigurations}
+                    className="hidden"
+                  />
+                </label>
+
+                <button
+                  onClick={() => setShowConfigLibrary(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {savedConfigurations.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No Saved Configurations</h4>
+                <p className="text-gray-600 mb-4">Complete all 5 button configurations and save them to see them here.</p>
+                <button
+                  onClick={() => setShowConfigLibrary(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {savedConfigurations.map((config) => (
+                  <div key={config.id} className="border border-gray-200 rounded-lg bg-white shadow-sm">
+                    {/* Compact Header */}
+                    <div 
+                      className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
+                        expandedConfigs.has(config.id) ? 'bg-blue-50 border-b border-blue-200' : ''
+                      }`}
+                      onClick={() => toggleConfigExpanded(config.id)}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-semibold text-gray-900 text-lg">{config.name}</h4>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                showSellerSelectionModal(config)
+                              }}
+                              className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                            >
+                              Assign to Seller
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deleteConfiguration(config.id)
+                              }}
+                              className="text-red-400 hover:text-red-600"
+                              title="Delete Configuration"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                            <div className="text-gray-400">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {expandedConfigs.has(config.id) ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                ) : (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                )}
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-500 mt-1">
+                          Created {new Date(config.createdAt).toLocaleDateString()} • ID: {config.id}
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">{config.description || 'No description'}</div>
+                      </div>
+                    </div>
+
+                    {/* Detailed Configuration Grid - Abbreviated for space */}
+                    {expandedConfigs.has(config.id) && (
+                      <div className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {/* Configuration details will be rendered here */}
+                          <div className="col-span-full text-center text-gray-500">
+                            Configuration details available
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Seller Selection Modal */}
+      {showSellerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Assign Configuration to Seller</h3>
+            
+            {selectedConfig && (
+              <div className="mb-4 p-3 bg-blue-50 rounded-md">
+                <p className="text-sm text-blue-900">
+                  <strong>Configuration:</strong> {selectedConfig.name}
+                </p>
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              {loadingSellers ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-sm text-gray-500 mt-2">Loading sellers...</p>
+                </div>
+              ) : availableSellers.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500">No active sellers available</p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Active Sellers
+                  </label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {availableSellers.map((seller) => (
+                      <div
+                        key={seller.id}
+                        className="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer"
+                        onClick={() => assignConfigToSeller(seller.email)}
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{seller.name || 'Unnamed Seller'}</p>
+                          <p className="text-sm text-gray-500">{seller.email}</p>
+                        </div>
+                        <button
+                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            assignConfigToSeller(seller.email)
+                          }}
+                        >
+                          Assign
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowSellerModal(false)
+                  setSelectedConfig(null)
+                }}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notifications */}
+      <ToastNotifications 
+        notifications={toast.notifications} 
+        onRemove={toast.removeToast} 
+      />
     </ProtectedRoute>
   )
 }

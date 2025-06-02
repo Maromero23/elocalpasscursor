@@ -1,6 +1,86 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+
+// Countdown Timer Component
+const CountdownTimer: React.FC<{ 
+  hours: number, 
+  textColor: string, 
+  fontFamily: string, 
+  fontSize: string,
+  sentTimestamp?: Date
+}> = ({ hours, textColor, fontFamily, fontSize, sentTimestamp }) => {
+  const [timeLeft, setTimeLeft] = useState(0)
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const now = new Date()
+      const emailSentTime = sentTimestamp || new Date() // Default to now if no timestamp provided
+      const expirationTime = new Date(emailSentTime.getTime() + (hours * 60 * 60 * 1000)) // Add hours in milliseconds
+      const remainingMs = expirationTime.getTime() - now.getTime()
+      
+      // Convert milliseconds to seconds, ensure it doesn't go below 0
+      return Math.max(0, Math.floor(remainingMs / 1000))
+    }
+
+    // Set initial time
+    setTimeLeft(calculateTimeLeft())
+
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft())
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [hours, sentTimestamp])
+
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600)
+    const mins = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  return (
+    <div 
+      className="text-center py-2 px-4 bg-red-50 border border-red-200 rounded-lg"
+      style={{ 
+        borderColor: textColor,
+        backgroundColor: `${textColor}10`
+      }}
+    >
+      <p 
+        className="text-sm font-medium mb-1"
+        style={{ color: textColor, fontFamily, fontSize: `${parseInt(fontSize) - 2}px` }}
+      >
+        ⏰ Time Remaining Until Expiration:
+      </p>
+      <div 
+        className="text-2xl font-bold font-mono"
+        style={{ 
+          color: textColor, 
+          fontFamily: 'monospace, ' + fontFamily,
+          fontSize: `${parseInt(fontSize) + 4}px`
+        }}
+      >
+        {formatTime(timeLeft)}
+      </div>
+      <p 
+        className="text-xs mt-1"
+        style={{ color: textColor, fontFamily, fontSize: `${parseInt(fontSize) - 4}px` }}
+      >
+        hrs:min:sec
+      </p>
+      {timeLeft === 0 && (
+        <p 
+          className="text-xs mt-1 font-bold"
+          style={{ color: '#dc2626', fontFamily }}
+        >
+          🚨 EXPIRED
+        </p>
+      )}
+    </div>
+  )
+}
 
 interface EmailTemplatePreviewProps {
   emailConfig: {
@@ -35,6 +115,8 @@ interface EmailTemplatePreviewProps {
     customAffiliateMessage: string
     enableLocationBasedAffiliates: boolean
     emailAccountCreationUrl: string
+    showExpirationTimer?: boolean
+    sentTimestamp?: Date
   }
   sellerLocation?: string
 }
@@ -131,7 +213,7 @@ const EmailTemplatePreview: React.FC<EmailTemplatePreviewProps> = ({
       
       {/* Email Footer */}
       <div className="bg-gray-100 p-4 text-center text-xs text-gray-500">
-        <p>© 2024 eLocalPass. All rights reserved.</p>
+        <p> 2025 eLocalPass. All rights reserved.</p>
         <p className="mt-1">
           You received this email because you obtained an eLocalPass. 
           <a href="#" className="text-blue-600 hover:underline">Unsubscribe</a>
@@ -232,26 +314,16 @@ const EmailTemplatePreview: React.FC<EmailTemplatePreviewProps> = ({
           </button>
         </div>
         
-        {/* Custom Important Notice */}
-        <div 
-          className="border-l-4 p-4"
-          style={{ 
-            backgroundColor: `${emailConfig.emailNoticeTextColor}10`,
-            borderColor: emailConfig.emailNoticeTextColor 
-          }}
-        >
-          <p 
-            style={{
-              color: emailConfig.emailNoticeTextColor,
-              fontFamily: emailConfig.emailNoticeFontFamily,
-              fontSize: `${emailConfig.emailNoticeFontSize}px`,
-              fontWeight: '500',
-              margin: 0
-            }}
-          >
-            {emailConfig.emailNoticeText}
-          </p>
-        </div>
+        {/* Countdown Timer */}
+        {emailConfig.showExpirationTimer && (
+          <CountdownTimer 
+            hours={12}
+            textColor={emailConfig.emailNoticeTextColor}
+            fontFamily={emailConfig.emailNoticeFontFamily}
+            fontSize={emailConfig.emailNoticeFontSize}
+            sentTimestamp={emailConfig.sentTimestamp}
+          />
+        )}
         
         {/* Custom Affiliate Section */}
         {emailConfig.enableLocationBasedAffiliates && (
@@ -300,7 +372,7 @@ const EmailTemplatePreview: React.FC<EmailTemplatePreviewProps> = ({
       
       {/* Email Footer */}
       <div className="bg-gray-100 p-4 text-center text-xs text-gray-500">
-        <p>© 2024 eLocalPass. All rights reserved.</p>
+        <p> 2025 eLocalPass. All rights reserved.</p>
         <p className="mt-1">
           You received this email because you obtained an eLocalPass. 
           <a href="#" className="text-blue-600 hover:underline">Unsubscribe</a>
