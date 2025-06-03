@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
+import { NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
@@ -23,6 +23,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         d.contactPerson,
         d.email,
         d.telephone,
+        d.whatsapp,
         d.notes,
         d.isActive,
         d.createdAt,
@@ -52,6 +53,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         l.contactPerson,
         l.email,
         l.telephone,
+        l.whatsapp,
         l.notes,
         l.isActive,
         l.createdAt,
@@ -73,6 +75,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
         s.id,
         s.name,
         s.email,
+        s.telephone,
+        s.whatsapp,
+        s.notes,
         s.role,
         s.isActive,
         s.createdAt,
@@ -93,10 +98,13 @@ export async function GET(request: Request, { params }: { params: { id: string }
         id: seller.id,
         name: seller.name,
         email: seller.email,
+        telephone: seller.telephone,
+        whatsapp: seller.whatsapp,
+        notes: seller.notes,
         role: seller.role,
         isActive: Boolean(seller.isActive),
         createdAt: seller.createdAt,
-        sellerConfigs: [] // TODO: Add seller configs if needed
+        sellerConfigs: null // Will be set to actual QR config if exists
       })
       return acc
     }, {})
@@ -108,6 +116,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       contactPerson: location.contactPerson,
       email: location.email,
       telephone: location.telephone,
+      whatsapp: location.whatsapp,
       notes: location.notes,
       isActive: Boolean(location.isActive),
       createdAt: location.createdAt,
@@ -132,6 +141,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       contactPerson: distRow.contactPerson,
       email: distRow.email,
       telephone: distRow.telephone,
+      whatsapp: distRow.whatsapp,
       notes: distRow.notes,
       isActive: Boolean(distRow.isActive),
       createdAt: distRow.createdAt,

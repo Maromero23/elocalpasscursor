@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { NextRequest, NextResponse } from "next/server"
 
 // GET /api/admin/sellers - Fetch all sellers
 export async function GET(request: NextRequest) {
@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
         u.id,
         u.name,
         u.email,
+        u.telephone,
+        u.whatsapp,
         u.role,
         u.isActive,
         u.createdAt,
@@ -41,6 +43,8 @@ export async function GET(request: NextRequest) {
       id: row.id,
       name: row.name,
       email: row.email,
+      telephone: row.telephone,
+      whatsapp: row.whatsapp,
       role: row.role,
       isActive: Boolean(row.isActive),
       createdAt: row.createdAt,
@@ -77,7 +81,10 @@ export async function POST(request: NextRequest) {
       name, 
       email, 
       password, 
+      telephone,
+      whatsapp,
       locationId,
+      notes,
       // QR Configuration fields
       sendMethod,
       landingPageRequired,
@@ -122,6 +129,9 @@ export async function POST(request: NextRequest) {
           name,
           email,
           password: hashedPassword,
+          telephone: telephone || null,
+          whatsapp: whatsapp || null,
+          notes: notes || null,
           role: "SELLER",
           locationId,
         },

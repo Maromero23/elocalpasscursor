@@ -13,7 +13,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     const { id } = params
-    const { name, contactPerson, email, telephone, notes } = await request.json()
+    const { name, contactPerson, email, telephone, whatsapp, notes } = await request.json()
 
     if (!name) {
       return NextResponse.json({ error: "Missing required field: name" }, { status: 400 })
@@ -61,6 +61,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           contactPerson: contactPerson || null,
           email: email || null,
           telephone: telephone || null,
+          whatsapp: whatsapp || null,
           notes: notes || null
         },
         include: {

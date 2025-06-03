@@ -30,6 +30,7 @@ interface DistributorDetails {
   contactPerson?: string
   email?: string
   telephone?: string
+  whatsapp?: string
   notes?: string
   user: {
     id: string
@@ -107,6 +108,7 @@ export default function DistributorsPage() {
   // Edit mode states
   const [editingDistributor, setEditingDistributor] = useState<string | null>(null)
   const [editingLocation, setEditingLocation] = useState<string | null>(null)
+  const [editingSeller, setEditingSeller] = useState<string | null>(null)
   const [editFormData, setEditFormData] = useState({
     name: "",
     contactPerson: "",
@@ -114,6 +116,7 @@ export default function DistributorsPage() {
     password: "",
     alternativeEmail: "",
     telephone: "",
+    whatsapp: "",
     notes: ""
   })
   const [locationEditFormData, setLocationEditFormData] = useState({
@@ -121,6 +124,16 @@ export default function DistributorsPage() {
     contactPerson: "",
     email: "",
     telephone: "",
+    whatsapp: "",
+    notes: "",
+    password: ""
+  })
+  const [sellerEditFormData, setSellerEditFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    telephone: "",
+    whatsapp: "",
     notes: ""
   })
   const [isUpdating, setIsUpdating] = useState(false)
@@ -138,6 +151,7 @@ export default function DistributorsPage() {
     email: "",
     password: "",
     telephone: "",
+    whatsapp: "",
     notes: ""
   })
   
@@ -146,15 +160,9 @@ export default function DistributorsPage() {
     name: "",
     email: "",
     password: "",
-    // QR Configuration
-    sendMethod: "URL",
-    landingPageRequired: true,
-    allowCustomGuestsDays: false,
-    defaultGuests: 2,
-    defaultDays: 3,
-    pricingType: "FIXED",
-    fixedPrice: 0,
-    sendRebuyEmail: false
+    telephone: "",
+    whatsapp: "",
+    notes: ""
   })
   
   const [isCreatingLocation, setIsCreatingLocation] = useState(false)
@@ -172,6 +180,11 @@ export default function DistributorsPage() {
       if (response.ok) {
         const data = await response.json()
         setDistributors(data)
+        
+        // Fetch details for each distributor to show seller counts immediately
+        data.forEach((distributor: Distributor) => {
+          fetchDistributorDetails(distributor.id)
+        })
       } else {
         setError("Failed to fetch distributors")
       }
@@ -247,6 +260,7 @@ export default function DistributorsPage() {
       password: "",  // Always start with empty password
       alternativeEmail: details?.email || "",
       telephone: details?.telephone || "",
+      whatsapp: details?.whatsapp || "",
       notes: details?.notes || ""
     })
   }
@@ -260,6 +274,7 @@ export default function DistributorsPage() {
       password: "",
       alternativeEmail: "",
       telephone: "",
+      whatsapp: "",
       notes: ""
     })
   }
@@ -312,7 +327,9 @@ export default function DistributorsPage() {
       contactPerson: location.contactPerson || location.user?.name || "",
       email: location.email || location.user?.email || "",
       telephone: location.telephone || "",
-      notes: location.notes || ""
+      whatsapp: location.whatsapp || "",
+      notes: location.notes || "",
+      password: ""
     })
   }
 
@@ -323,7 +340,9 @@ export default function DistributorsPage() {
       contactPerson: "",
       email: "",
       telephone: "",
-      notes: ""
+      whatsapp: "",
+      notes: "",
+      password: ""
     })
   }
 
@@ -364,8 +383,74 @@ export default function DistributorsPage() {
     }
   }
 
-  const handleCreateLocation = async (e: React.FormEvent) => {
+  // Seller edit handlers
+  const handleEditSellerClick = (seller: any, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingSeller(seller.id)
+    
+    // Pre-populate form with current seller data
+    setSellerEditFormData({
+      name: seller.name,
+      email: seller.email,
+      password: "",
+      telephone: seller.telephone || "",
+      whatsapp: seller.whatsapp || "",
+      notes: seller.notes || ""
+    })
+  }
+
+  const handleCancelSellerEdit = () => {
+    setEditingSeller(null)
+    setSellerEditFormData({
+      name: "",
+      email: "",
+      password: "",
+      telephone: "",
+      whatsapp: "",
+      notes: ""
+    })
+  }
+
+  const handleSaveSellerEdit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!editingSeller) return
+
+    setIsUpdating(true)
+    try {
+      const response = await fetch(`/api/admin/sellers/${editingSeller}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(sellerEditFormData),
+      })
+
+      if (response.ok) {
+        // Refresh the distributors list and details
+        await fetchDistributors()
+        // Refresh the specific distributor details that contains this seller
+        const distributorId = Object.keys(distributorDetails).find(distId => 
+          distributorDetails[distId]?.locations?.some(loc => 
+            loc.sellers.some(seller => seller.id === editingSeller)
+          )
+        )
+        if (distributorId) {
+          await fetchDistributorDetails(distributorId)
+        }
+        setEditingSeller(null)
+      } else {
+        const errorData = await response.json()
+        alert(`Error: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error("Error updating seller:", error)
+      alert("Failed to update seller")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleCreateLocation = async (e: React.FormEvent) => {
     if (!selectedDistributorId) return
 
     setIsCreatingLocation(true)
@@ -381,7 +466,7 @@ export default function DistributorsPage() {
 
       if (response.ok) {
         // Reset form and close modal
-        setLocationFormData({ name: "", contactPerson: "", email: "", password: "", telephone: "", notes: "" })
+        setLocationFormData({ name: "", contactPerson: "", email: "", password: "", telephone: "", whatsapp: "", notes: "" })
         setShowLocationModal(false)
         setSelectedDistributorId(null)
         
@@ -402,7 +487,6 @@ export default function DistributorsPage() {
   }
 
   const handleCreateSeller = async (e: React.FormEvent) => {
-    e.preventDefault()
     if (!selectedLocationId) return
 
     setIsCreatingSeller(true)
@@ -418,7 +502,7 @@ export default function DistributorsPage() {
 
       if (response.ok) {
         // Reset form and close modal
-        setSellerFormData({ name: "", email: "", password: "", sendMethod: "URL", landingPageRequired: true, allowCustomGuestsDays: false, defaultGuests: 2, defaultDays: 3, pricingType: "FIXED", fixedPrice: 0, sendRebuyEmail: false })
+        setSellerFormData({ name: "", email: "", password: "", telephone: "", whatsapp: "", notes: "" })
         setShowSellerModal(false)
         setSelectedLocationId(null)
         setSelectedDistributorId(null)
@@ -768,7 +852,7 @@ export default function DistributorsPage() {
                           Email
                         </th>
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Telephone
+                          Sellers
                         </th>
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Locations
@@ -806,7 +890,11 @@ export default function DistributorsPage() {
                         <React.Fragment key={distributor.id}>
                           <tr 
                             key={distributor.id} 
-                            className={`hover:bg-gray-50 cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                            className={`hover:bg-gray-50 cursor-pointer ${
+                              expandedDistributor === distributor.id 
+                                ? 'bg-blue-50' 
+                                : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                            }`}
                             onClick={() => handleDistributorClick(distributor.id)}
                           >
                             <td className="px-4 py-4 whitespace-nowrap">
@@ -816,16 +904,9 @@ export default function DistributorsPage() {
                               />
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-8 w-8">
-                                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Building2 className="h-4 w-4" />
-                                  </div>
-                                </div>
-                                <div className="ml-3">
-                                  <div className="text-sm font-medium text-gray-900">{distributor.name}</div>
-                                  <div className="text-sm text-gray-500">ID: {distributor.id.slice(-8)}</div>
-                                </div>
+                              <div className="flex items-center justify-between w-full">
+                                <div className="text-sm font-medium text-gray-900">{distributor.name}</div>
+                                <div className="text-sm text-gray-500">ID: {distributor.id.slice(-8)}</div>
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
@@ -843,7 +924,7 @@ export default function DistributorsPage() {
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">
-                                {distributorDetails[distributor.id]?.telephone || '—'}
+                                {distributorDetails[distributor.id]?.locations?.reduce((total, location) => total + (location.sellers?.length || 0), 0) || 0}
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
@@ -973,6 +1054,19 @@ export default function DistributorsPage() {
 
                                       <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
+                                          WhatsApp
+                                        </label>
+                                        <input
+                                          type="tel"
+                                          value={editFormData.whatsapp}
+                                          onChange={(e) => setEditFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                          placeholder="If same as telephone leave blank"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
                                           Password (optional)
                                         </label>
                                         <input
@@ -1033,18 +1127,18 @@ export default function DistributorsPage() {
                           {/* Locations Dropdown */}
                           {expandedDistributor === distributor.id && (
                             <tr>
-                              <td colSpan={8} className="bg-orange-50 border-t">
+                              <td colSpan={8} className="bg-blue-50 border-t">
                                 <div className="px-4 py-3">
                                   {loadingDetails[distributor.id] ? (
                                     <div className="text-center py-6">
-                                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 mx-auto"></div>
+                                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
                                       <p className="text-sm text-gray-500 mt-2">Loading locations...</p>
                                     </div>
                                   ) : distributorDetails[distributor.id] ? (
                                     <>
                                       <div className="flex items-center justify-between mb-3">
                                         <h4 className="text-sm font-semibold text-gray-900 flex items-center">
-                                          <Building2 className="w-4 h-4 text-orange-600 mr-2" />
+                                          <Building2 className="w-4 h-4 text-blue-600 mr-2" />
                                           Locations ({distributorDetails[distributor.id]?._count?.locations || 0})
                                         </h4>
                                         <button
@@ -1086,11 +1180,6 @@ export default function DistributorsPage() {
                                                   >
                                                     <td className="px-4 py-3 whitespace-nowrap">
                                                       <div className="flex items-center">
-                                                        <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-                                                          <span className="text-sm font-medium text-orange-600">
-                                                            {location.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                                                          </span>
-                                                        </div>
                                                         <div className="text-sm font-medium text-gray-900">{location.name}</div>
                                                       </div>
                                                     </td>
@@ -1123,10 +1212,7 @@ export default function DistributorsPage() {
                                                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                                                       <div className="flex items-center justify-end space-x-2">
                                                         <button
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleEditLocationClick(location, e);
-                                                          }}
+                                                          onClick={(e) => handleEditLocationClick(location, e)}
                                                           className="text-orange-600 hover:text-orange-800 p-1"
                                                           title="Edit Location"
                                                         >
@@ -1216,6 +1302,19 @@ export default function DistributorsPage() {
 
                                                               <div>
                                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                  Password
+                                                                </label>
+                                                                <input
+                                                                  type="password"
+                                                                  value={locationEditFormData.password}
+                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, password: e.target.value }))}
+                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                  placeholder="New password"
+                                                                />
+                                                              </div>
+
+                                                              <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
                                                                   Telephone
                                                                 </label>
                                                                 <input
@@ -1223,6 +1322,19 @@ export default function DistributorsPage() {
                                                                   value={locationEditFormData.telephone}
                                                                   onChange={(e) => setLocationEditFormData(prev => ({ ...prev, telephone: e.target.value }))}
                                                                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                />
+                                                              </div>
+
+                                                              <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                  WhatsApp
+                                                                </label>
+                                                                <input
+                                                                  type="tel"
+                                                                  value={locationEditFormData.whatsapp}
+                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                  placeholder="If same as telephone leave blank"
                                                                 />
                                                               </div>
                                                             </div>
@@ -1244,7 +1356,7 @@ export default function DistributorsPage() {
                                                               <button
                                                                 type="button"
                                                                 onClick={handleCancelLocationEdit}
-                                                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                                                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
                                                               >
                                                                 Cancel
                                                               </button>
@@ -1253,7 +1365,7 @@ export default function DistributorsPage() {
                                                                 disabled={isUpdating}
                                                                 className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md hover:bg-orange-700 disabled:opacity-50"
                                                               >
-                                                                {isUpdating ? "Updating..." : "Update Location"}
+                                                                {isUpdating ? 'Updating...' : 'Update Location'}
                                                               </button>
                                                             </div>
                                                           </form>
@@ -1265,7 +1377,7 @@ export default function DistributorsPage() {
                                                   {/* Sellers Dropdown */}
                                                   {expandedLocation === location.id && (
                                                     <tr>
-                                                      <td colSpan={7} className="bg-green-50 border-t">
+                                                      <td colSpan={7} className="bg-orange-50 border-t">
                                                         <div className="px-4 py-3">
                                                           <div className="flex items-center justify-between mb-3">
                                                             <h5 className="text-sm font-semibold text-gray-900 flex items-center">
@@ -1301,78 +1413,230 @@ export default function DistributorsPage() {
                                                                 </thead>
                                                                 <tbody className="divide-y divide-gray-200">
                                                                   {location.sellers.map((seller) => (
-                                                                    <tr key={seller.id} className="hover:bg-green-50">
-                                                                      <td className="px-4 py-3 whitespace-nowrap">
-                                                                        <div className="flex items-center">
-                                                                          <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                                                            <span className="text-sm font-medium text-green-600">
-                                                                              {seller.name ? seller.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'S'}
-                                                                            </span>
+                                                                    <React.Fragment key={seller.id}>
+                                                                      <tr className="hover:bg-green-50">
+                                                                        <td className="px-4 py-3 whitespace-nowrap">
+                                                                          <div className="flex items-center">
+                                                                            <div className="text-sm font-medium text-gray-900">{seller.name || 'Unnamed Seller'}</div>
                                                                           </div>
-                                                                          <div className="text-sm font-medium text-gray-900">{seller.name || 'Unnamed Seller'}</div>
-                                                                        </div>
-                                                                      </td>
-                                                                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                                        {seller.name}
-                                                                      </td>
-                                                                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                                        {seller.email}
-                                                                      </td>
-                                                                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                                        —
-                                                                      </td>
-                                                                      <td className="px-4 py-3 whitespace-nowrap">
-                                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                                          seller.sellerConfigs 
-                                                                            ? 'bg-blue-100 text-blue-800' 
-                                                                            : 'bg-gray-100 text-gray-800'
-                                                                        }`}>
-                                                                          {seller.sellerConfigs ? 'Configured' : 'Pending Setup'}
-                                                                        </span>
-                                                                      </td>
-                                                                      <td className="px-4 py-3 whitespace-nowrap">
-                                                                        <button 
-                                                                          onClick={(e) => toggleSellerStatus(seller.id, e)}
-                                                                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${seller.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                                                                        >
-                                                                          <div className={`w-1.5 h-1.5 ${seller.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
-                                                                          {seller.isActive ? 'Active' : 'Inactive'}
-                                                                        </button>
-                                                                      </td>
-                                                                      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                                                        <div className="flex items-center justify-end space-x-2">
-                                                                          <button
-                                                                            onClick={(e) => {
-                                                                              e.stopPropagation();
-                                                                              console.log('Edit seller:', seller.id);
-                                                                            }}
-                                                                            className="text-green-600 hover:text-green-800 p-1"
-                                                                            title="Edit Seller"
-                                                                          >
-                                                                            <Edit2 className="w-4 h-4" />
-                                                                          </button>
-                                                                          <button
-                                                                            onClick={(e) => {
-                                                                              e.stopPropagation();
-                                                                              console.log('Configure seller:', seller.id);
-                                                                            }}
-                                                                            className="text-blue-600 hover:text-blue-800 p-1"
-                                                                            title="Configure Seller"
-                                                                          >
-                                                                            <Settings className="w-4 h-4" />
-                                                                          </button>
-                                                                          <button
+                                                                        </td>
+                                                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                                          {seller.name}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                                          {seller.email}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                                          —
+                                                                        </td>
+                                                                        <td className="px-4 py-3 whitespace-nowrap">
+                                                                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                                            seller.sellerConfigs 
+                                                                              ? 'bg-green-100 text-green-800' 
+                                                                              : 'bg-red-100 text-red-800'
+                                                                          }`}>
+                                                                            {seller.sellerConfigs ? 'Paired' : 'Unpaired'}
+                                                                          </span>
+                                                                        </td>
+                                                                        <td className="px-4 py-3 whitespace-nowrap">
+                                                                          <button 
                                                                             onClick={(e) => toggleSellerStatus(seller.id, e)}
-                                                                            className="text-gray-400 hover:text-gray-600"
+                                                                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${seller.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                                                                           >
-                                                                            <span className="sr-only">Toggle Status</span>
-                                                                            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                                                              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                                                            </svg>
+                                                                            <div className={`w-1.5 h-1.5 ${seller.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
+                                                                            {seller.isActive ? 'Active' : 'Inactive'}
                                                                           </button>
-                                                                        </div>
-                                                                      </td>
-                                                                    </tr>
+                                                                        </td>
+                                                                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                                                          <div className="flex items-center justify-end space-x-2">
+                                                                            <button
+                                                                              onClick={(e) => handleEditSellerClick(seller, e)}
+                                                                              className="text-blue-600 hover:text-blue-800 p-1"
+                                                                              title="Edit Seller"
+                                                                            >
+                                                                              <Edit2 className="w-4 h-4" />
+                                                                            </button>
+                                                                            <button
+                                                                              onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                console.log('Configure seller:', seller.id);
+                                                                              }}
+                                                                              className="text-green-600 hover:text-green-800 p-1"
+                                                                              title="Configure Seller"
+                                                                            >
+                                                                              <Settings className="w-4 h-4" />
+                                                                            </button>
+                                                                          </div>
+                                                                        </td>
+                                                                      </tr>
+                                                                      {editingSeller === seller.id && (
+                                                                        <tr>
+                                                                          <td colSpan={7} className="px-4 py-3 bg-green-50 border-l-4 border-green-400">
+                                                                            <form onSubmit={handleSaveSellerEdit} className="space-y-4">
+                                                                              <div className="flex justify-between items-center mb-4">
+                                                                                <h3 className="text-lg font-semibold text-gray-900">Edit Seller</h3>
+                                                                                <button
+                                                                                  type="button"
+                                                                                  onClick={handleCancelSellerEdit}
+                                                                                  className="text-gray-400 hover:text-gray-600"
+                                                                                >
+                                                                                  <X className="w-5 h-5" />
+                                                                                </button>
+                                                                              </div>
+                                                                              
+                                                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                <div>
+                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    Seller Name *
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="text"
+                                                                                    value={sellerEditFormData.name}
+                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                    required
+                                                                                  />
+                                                                                </div>
+
+                                                                                <div>
+                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    Contact Person
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="text"
+                                                                                    value={sellerEditFormData.name}
+                                                                                    readOnly
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm"
+                                                                                  />
+                                                                                </div>
+
+                                                                                <div>
+                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    Email *
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="email"
+                                                                                    value={sellerEditFormData.email}
+                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                    required
+                                                                                  />
+                                                                                </div>
+
+                                                                                <div>
+                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    Password
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="password"
+                                                                                    value={sellerEditFormData.password}
+                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, password: e.target.value }))}
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                    placeholder="New password"
+                                                                                  />
+                                                                                </div>
+
+                                                                                <div>
+                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    Telephone
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="tel"
+                                                                                    value={sellerEditFormData.telephone}
+                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, telephone: e.target.value }))}
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                  />
+                                                                                </div>
+
+                                                                                <div>
+                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    WhatsApp
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="tel"
+                                                                                    value={sellerEditFormData.whatsapp}
+                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                    placeholder="If same as telephone leave blank"
+                                                                                  />
+                                                                                </div>
+                                                                              </div>
+
+                                                                              <div className="mt-4">
+                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                  Notes
+                                                                                </label>
+                                                                                <textarea
+                                                                                  value={sellerEditFormData.notes}
+                                                                                  onChange={(e) => setSellerEditFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                                                                  rows={3}
+                                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                  placeholder="Additional notes..."
+                                                                                />
+                                                                              </div>
+
+                                                                              <div className="pt-4 border-t">
+                                                                                <div className="text-sm font-medium text-gray-700 mb-3">QR Configuration Management</div>
+                                                                                <div className="flex space-x-2">
+                                                                                  {!seller.sellerConfigs ? (
+                                                                                    <>
+                                                                                      <button
+                                                                                        type="button"
+                                                                                        className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                                                                                        onClick={() => {
+                                                                                          // TODO: Implement pair QR config functionality
+                                                                                          alert('Pair QR Config functionality coming soon!')
+                                                                                        }}
+                                                                                      >
+                                                                                        Pair QR Config
+                                                                                      </button>
+                                                                                      <button
+                                                                                        type="button"
+                                                                                        className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
+                                                                                        onClick={() => {
+                                                                                          // TODO: Implement create QR config functionality
+                                                                                          alert('Create QR Config functionality coming soon!')
+                                                                                        }}
+                                                                                      >
+                                                                                        Create QR Config
+                                                                                      </button>
+                                                                                    </>
+                                                                                  ) : (
+                                                                                    <button
+                                                                                      type="button"
+                                                                                      className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
+                                                                                      onClick={() => {
+                                                                                        // TODO: Implement unpair QR config functionality
+                                                                                        alert('Unpair QR Config functionality coming soon!')
+                                                                                      }}
+                                                                                    >
+                                                                                      Unpair QR Config
+                                                                                    </button>
+                                                                                  )}
+                                                                                </div>
+                                                                              </div>
+
+                                                                              <div className="flex justify-end space-x-3 mt-6">
+                                                                                <button
+                                                                                  type="button"
+                                                                                  onClick={handleCancelSellerEdit}
+                                                                                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                                                                >
+                                                                                  Cancel
+                                                                                </button>
+                                                                                <button
+                                                                                  type="submit"
+                                                                                  disabled={isUpdating}
+                                                                                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:opacity-50"
+                                                                                >
+                                                                                  {isUpdating ? 'Saving...' : 'Save Changes'}
+                                                                                </button>
+                                                                              </div>
+                                                                            </form>
+                                                                          </td>
+                                                                        </tr>
+                                                                      )}
+                                                                    </React.Fragment>
                                                                   ))}
                                                                 </tbody>
                                                               </table>
@@ -1437,7 +1701,7 @@ export default function DistributorsPage() {
               <form onSubmit={handleCreateLocation}>
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <div className="flex items-center mb-4">
-                    <MapPin className="w-6 h-6 text-orange-600 mr-3" />
+                    <MapPin className="w-6 h-6 text-blue-600 mr-3" />
                     <h3 className="text-lg leading-6 font-medium text-gray-900">Add New Location</h3>
                   </div>
                   
@@ -1485,6 +1749,20 @@ export default function DistributorsPage() {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Password *
+                      </label>
+                      <input
+                        type="password"
+                        value={locationFormData.password}
+                        onChange={(e) => setLocationFormData(prev => ({ ...prev, password: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        required
+                        placeholder="Password for location account"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Telephone
                       </label>
                       <input
@@ -1498,15 +1776,14 @@ export default function DistributorsPage() {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Password *
+                        WhatsApp
                       </label>
                       <input
-                        type="password"
-                        value={locationFormData.password}
-                        onChange={(e) => setLocationFormData(prev => ({ ...prev, password: e.target.value }))}
+                        type="tel"
+                        value={locationFormData.whatsapp}
+                        onChange={(e) => setLocationFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        required
-                        placeholder="Password for location account"
+                        placeholder="If same as telephone leave blank"
                       />
                     </div>
                     
@@ -1529,7 +1806,7 @@ export default function DistributorsPage() {
                   <button
                     type="submit"
                     disabled={isCreatingLocation}
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isCreatingLocation ? (
                       <>
@@ -1545,9 +1822,9 @@ export default function DistributorsPage() {
                     onClick={() => {
                       setShowLocationModal(false)
                       setSelectedDistributorId(null)
-                      setLocationFormData({ name: "", contactPerson: "", email: "", password: "", telephone: "", notes: "" })
+                      setLocationFormData({ name: "", contactPerson: "", email: "", password: "", telephone: "", whatsapp: "", notes: "" })
                     }}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >
                     Cancel
                   </button>
@@ -1573,10 +1850,10 @@ export default function DistributorsPage() {
                   </div>
                   
                   <div className="space-y-4">
-                    {/* Seller Details Section */}
-                    <div className="border-b border-gray-200 pb-4">
-                      <div className="text-md font-semibold text-gray-800 mb-3">👤 Seller Details</div>
-                      <div className="space-y-3">
+                    {/* Basic Information Section */}
+                    <div>
+                      <div className="text-md font-semibold text-gray-800 mb-3">👤 Basic Information</div>
+                      <div className="grid grid-cols-1 gap-3">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Seller Name *
@@ -1587,10 +1864,8 @@ export default function DistributorsPage() {
                             onChange={(e) => setSellerFormData(prev => ({ ...prev, name: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                             required
-                            placeholder="Enter seller name"
                           />
                         </div>
-                        
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Email *
@@ -1601,10 +1876,8 @@ export default function DistributorsPage() {
                             onChange={(e) => setSellerFormData(prev => ({ ...prev, email: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                             required
-                            placeholder="seller@example.com"
                           />
                         </div>
-                        
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Password *
@@ -1615,130 +1888,53 @@ export default function DistributorsPage() {
                             onChange={(e) => setSellerFormData(prev => ({ ...prev, password: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                             required
-                            placeholder="Password for seller account"
                           />
                         </div>
                       </div>
                     </div>
-
-                    {/* QR Configuration Section */}
+                    
+                    {/* Contact Information Section */}
                     <div>
-                      <div className="text-md font-semibold text-gray-800 mb-3">⚙️ QR Configuration</div>
-                      <div className="grid grid-cols-1 gap-3">
+                      <div className="text-md font-semibold text-gray-800 mb-3">📞 Contact Information</div>
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Send Method *
-                          </label>
-                          <select
-                            value={sellerFormData.sendMethod}
-                            onChange={(e) => setSellerFormData(prev => ({ ...prev, sendMethod: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            required
-                          >
-                            <option value="URL">URL</option>
-                            <option value="QR Code">QR Code</option>
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Landing Page Required *
-                          </label>
-                          <select
-                            value={sellerFormData.landingPageRequired.toString()}
-                            onChange={(e) => setSellerFormData(prev => ({ ...prev, landingPageRequired: e.target.value === 'true' }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            required
-                          >
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Allow Custom Guests Days *
-                          </label>
-                          <select
-                            value={sellerFormData.allowCustomGuestsDays.toString()}
-                            onChange={(e) => setSellerFormData(prev => ({ ...prev, allowCustomGuestsDays: e.target.value === 'true' }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            required
-                          >
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Default Guests *
+                            Telephone
                           </label>
                           <input
-                            type="number"
-                            value={sellerFormData.defaultGuests}
-                            onChange={(e) => setSellerFormData(prev => ({ ...prev, defaultGuests: parseInt(e.target.value) }))}
+                            type="tel"
+                            value={sellerFormData.telephone}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, telephone: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            required
+                            placeholder="Phone number"
                           />
                         </div>
-                        
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Default Days *
+                            WhatsApp
                           </label>
                           <input
-                            type="number"
-                            value={sellerFormData.defaultDays}
-                            onChange={(e) => setSellerFormData(prev => ({ ...prev, defaultDays: parseInt(e.target.value) }))}
+                            type="tel"
+                            value={sellerFormData.whatsapp}
+                            onChange={(e) => setSellerFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            required
+                            placeholder="If same as telephone leave blank"
                           />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Pricing Type *
-                          </label>
-                          <select
-                            value={sellerFormData.pricingType}
-                            onChange={(e) => setSellerFormData(prev => ({ ...prev, pricingType: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            required
-                          >
-                            <option value="FIXED">Fixed</option>
-                            <option value="PER_GUEST">Per Guest</option>
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Fixed Price *
-                          </label>
-                          <input
-                            type="number"
-                            value={sellerFormData.fixedPrice}
-                            onChange={(e) => setSellerFormData(prev => ({ ...prev, fixedPrice: parseFloat(e.target.value) }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Send Rebuy Email *
-                          </label>
-                          <select
-                            value={sellerFormData.sendRebuyEmail.toString()}
-                            onChange={(e) => setSellerFormData(prev => ({ ...prev, sendRebuyEmail: e.target.value === 'true' }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            required
-                          >
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
-                          </select>
                         </div>
                       </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Notes
+                      </label>
+                      <textarea
+                        value={sellerFormData.notes}
+                        onChange={(e) => setSellerFormData(prev => ({ ...prev, notes: e.target.value }))}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Additional notes..."
+                      />
                     </div>
                   </div>
                 </div>
@@ -1764,7 +1960,7 @@ export default function DistributorsPage() {
                       setShowSellerModal(false)
                       setSelectedLocationId(null)
                       setSelectedDistributorId(null)
-                      setSellerFormData({ name: "", email: "", password: "", sendMethod: "URL", landingPageRequired: true, allowCustomGuestsDays: false, defaultGuests: 2, defaultDays: 3, pricingType: "FIXED", fixedPrice: 0, sendRebuyEmail: false })
+                      setSellerFormData({ name: "", email: "", password: "", telephone: "", whatsapp: "", notes: "" })
                     }}
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >

@@ -38,6 +38,7 @@ export async function GET() {
         d.contactPerson,
         d.email,
         d.telephone,
+        d.whatsapp,
         d.isActive,
         d.createdAt,
         d.updatedAt,
@@ -59,6 +60,7 @@ export async function GET() {
       contactPerson: row.contactPerson,
       email: row.email,
       telephone: row.telephone,
+      whatsapp: row.whatsapp,
       isActive: Boolean(row.isActive),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { name, email, password, contactPerson, alternativeEmail, telephone, notes } = await request.json()
+    const { name, email, password, contactPerson, alternativeEmail, telephone, whatsapp, notes } = await request.json()
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 })
@@ -114,8 +116,8 @@ export async function POST(request: NextRequest) {
       // Create distributor with raw SQL
       const distributorId = `dist_${Date.now()}_${Math.random().toString(36).substring(7)}`
       await tx.$executeRaw`
-        INSERT INTO Distributor (id, name, contactPerson, email, telephone, notes, userId, isActive, createdAt, updatedAt)
-        VALUES (${distributorId}, ${name}, ${contactPerson || null}, ${alternativeEmail || email}, ${telephone || null}, ${notes || null}, ${userId}, 1, datetime('now'), datetime('now'))
+        INSERT INTO Distributor (id, name, contactPerson, email, telephone, whatsapp, notes, userId, isActive, createdAt, updatedAt)
+        VALUES (${distributorId}, ${name}, ${contactPerson || null}, ${alternativeEmail || email}, ${telephone || null}, ${whatsapp || null}, ${notes || null}, ${userId}, 1, datetime('now'), datetime('now'))
       `
 
       return { distributorId, userId }
