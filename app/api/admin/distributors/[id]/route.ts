@@ -89,7 +89,46 @@ export async function GET(request: Request, { params }: { params: { id: string }
       ORDER BY s.createdAt DESC
     `
 
-    // Group sellers by location
+    // Get QR configurations for all sellers
+    const qrConfigsData = await prisma.$queryRaw`
+      SELECT 
+        qr.id,
+        qr.sellerId,
+        qr.button1GuestsLocked,
+        qr.button1GuestsDefault,
+        qr.button1GuestsRangeMax,
+        qr.button1DaysLocked,
+        qr.button1DaysDefault,
+        qr.button1DaysRangeMax,
+        qr.button2PricingType,
+        qr.button2FixedPrice,
+        qr.button2VariableBasePrice,
+        qr.button2VariableGuestIncrease,
+        qr.button2VariableDayIncrease,
+        qr.button2VariableCommission,
+        qr.button2IncludeTax,
+        qr.button2TaxPercentage,
+        qr.button3DeliveryMethod,
+        qr.button4LandingPageRequired,
+        qr.button5SendRebuyEmail,
+        qr.createdAt,
+        qr.updatedAt
+      FROM QRConfig qr
+      WHERE qr.sellerId IN (
+        SELECT s.id FROM users s 
+        WHERE s.locationId IN (
+          SELECT l.id FROM Location l WHERE l.distributorId = ${id}
+        ) AND s.role = 'SELLER'
+      )
+    `
+
+    // Create a map of seller configs by sellerId
+    const configsBySellerMap = (qrConfigsData as any[]).reduce((acc: any, config: any) => {
+      acc[config.sellerId] = config
+      return acc
+    }, {})
+
+    // Group sellers by location and include their QR configurations
     const sellersByLocation = (sellersData as any[]).reduce((acc: any, seller: any) => {
       if (!acc[seller.locationId]) {
         acc[seller.locationId] = []
@@ -104,7 +143,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         role: seller.role,
         isActive: Boolean(seller.isActive),
         createdAt: seller.createdAt,
-        sellerConfigs: null // Will be set to actual QR config if exists
+        sellerConfigs: configsBySellerMap[seller.id] || null // Set actual QR config if exists
       })
       return acc
     }, {})

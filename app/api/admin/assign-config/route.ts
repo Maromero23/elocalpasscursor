@@ -5,22 +5,35 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🚀 Assign Config API called')
+    
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
+      console.log('❌ Unauthorized - no session')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
     if (session.user.role !== 'ADMIN') {
+      console.log('❌ Access denied - not admin')
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
     
     const body = await request.json()
-    const { sellerEmail } = body
+    console.log('📥 Request body:', body)
+    
+    const { sellerEmail, configData } = body
     
     if (!sellerEmail) {
       return NextResponse.json(
         { error: 'Seller email required' },
+        { status: 400 }
+      )
+    }
+
+    if (!configData) {
+      return NextResponse.json(
+        { error: 'Configuration data required' },
         { status: 400 }
       )
     }
@@ -34,83 +47,69 @@ export async function POST(request: NextRequest) {
     })
     
     if (!seller) {
+      console.log('❌ Seller not found with email:', sellerEmail)
       return NextResponse.json(
         { error: `Seller not found with email: ${sellerEmail}` },
         { status: 404 }
       )
     }
     
-    // Get the global configuration
-    const globalConfig = await prisma.qrGlobalConfig.findFirst()
+    console.log('✅ Found seller:', seller.id)
     
-    if (!globalConfig) {
-      return NextResponse.json(
-        { error: 'No global configuration found' },
-        { status: 400 }
-      )
+    // Use the provided configuration data instead of fetching from database
+    const configToAssign = {
+      // Map from QrGlobalConfig to QRConfig field names
+      button1GuestsLocked: configData.button1GuestsLocked,
+      button1GuestsDefault: configData.button1GuestsDefault,
+      button1GuestsRangeMax: configData.button1GuestsRangeMax,
+      button1DaysLocked: configData.button1DaysLocked,
+      button1DaysDefault: configData.button1DaysDefault,
+      button1DaysRangeMax: configData.button1DaysRangeMax,
+      button2PricingType: configData.button2PricingType,
+      button2FixedPrice: configData.button2FixedPrice,
+      button2VariableBasePrice: configData.button2VariableBasePrice,
+      button2VariableGuestIncrease: configData.button2VariableGuestIncrease,
+      button2VariableDayIncrease: configData.button2VariableDayIncrease,
+      button2VariableCommission: configData.button2VariableCommission,
+      button2IncludeTax: configData.button2IncludeTax,
+      button2TaxPercentage: configData.button2TaxPercentage,
+      button3DeliveryMethod: configData.button3DeliveryMethod,
+      button4LandingPageRequired: configData.button4LandingPageRequired,
+      button5SendRebuyEmail: configData.button5SendRebuyEmail,
     }
+    console.log('⚙️ Config to assign:', configToAssign)
     
     // Check if seller already has a config
     const existingConfig = await prisma.qRConfig.findUnique({
       where: { sellerId: seller.id }
     })
     
+    console.log('🔍 Existing config:', existingConfig ? 'Found' : 'Not found')
+    
     if (existingConfig) {
-      // Update existing configuration with global settings
+      console.log('🔄 Updating existing configuration...')
+      // Update existing configuration with provided settings
       const updatedConfig = await prisma.qRConfig.update({
         where: { sellerId: seller.id },
-        data: {
-          // Copy all fields from global config to seller config
-          button1GuestsLocked: globalConfig.button1GuestsLocked,
-          button1GuestsDefault: globalConfig.button1GuestsDefault,
-          button1GuestsRangeMax: globalConfig.button1GuestsRangeMax,
-          button1DaysLocked: globalConfig.button1DaysLocked,
-          button1DaysDefault: globalConfig.button1DaysDefault,
-          button1DaysRangeMax: globalConfig.button1DaysRangeMax,
-          button2PricingType: globalConfig.button2PricingType,
-          button2FixedPrice: globalConfig.button2FixedPrice,
-          button2VariableBasePrice: globalConfig.button2VariableBasePrice,
-          button2VariableGuestIncrease: globalConfig.button2VariableGuestIncrease,
-          button2VariableDayIncrease: globalConfig.button2VariableDayIncrease,
-          button2VariableCommission: globalConfig.button2VariableCommission,
-          button2IncludeTax: globalConfig.button2IncludeTax,
-          button2TaxPercentage: globalConfig.button2TaxPercentage,
-          button3DeliveryMethod: globalConfig.button3DeliveryMethod,
-          button4LandingPageRequired: globalConfig.button4LandingPageRequired,
-          button5SendRebuyEmail: globalConfig.button5SendRebuyEmail,
-        }
+        data: configToAssign
       })
       
+      console.log('✅ Configuration updated successfully')
       return NextResponse.json({
         message: 'Seller configuration updated successfully',
         config: updatedConfig
       })
     } else {
+      console.log('➕ Creating new configuration...')
       // Create new configuration for seller
       const newConfig = await prisma.qRConfig.create({
         data: {
           sellerId: seller.id,
-          // Copy all fields from global config
-          button1GuestsLocked: globalConfig.button1GuestsLocked,
-          button1GuestsDefault: globalConfig.button1GuestsDefault,
-          button1GuestsRangeMax: globalConfig.button1GuestsRangeMax,
-          button1DaysLocked: globalConfig.button1DaysLocked,
-          button1DaysDefault: globalConfig.button1DaysDefault,
-          button1DaysRangeMax: globalConfig.button1DaysRangeMax,
-          button2PricingType: globalConfig.button2PricingType,
-          button2FixedPrice: globalConfig.button2FixedPrice,
-          button2VariableBasePrice: globalConfig.button2VariableBasePrice,
-          button2VariableGuestIncrease: globalConfig.button2VariableGuestIncrease,
-          button2VariableDayIncrease: globalConfig.button2VariableDayIncrease,
-          button2VariableCommission: globalConfig.button2VariableCommission,
-          button2IncludeTax: globalConfig.button2IncludeTax,
-          button2TaxPercentage: globalConfig.button2TaxPercentage,
-          button3DeliveryMethod: globalConfig.button3DeliveryMethod,
-          button4LandingPageRequired: globalConfig.button4LandingPageRequired,
-          button5SendRebuyEmail: globalConfig.button5SendRebuyEmail,
+          ...configToAssign
         }
       })
       
+      console.log('✅ Configuration created successfully')
       return NextResponse.json({
         message: 'Seller configuration created successfully',
         config: newConfig
@@ -118,9 +117,11 @@ export async function POST(request: NextRequest) {
     }
     
   } catch (error) {
-    console.error('Error assigning config to seller:', error)
+    console.error('💥 Error assigning config to seller:', error)
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

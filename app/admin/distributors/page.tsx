@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../../components/auth/protected-route"
 import Link from "next/link"
 import { MapPin, Building2, Users, ChevronRight, ChevronDown, Edit2, Save, X, Plus, Settings, Trash2, User, Mail, Phone, QrCode, ArrowUpDown, ArrowUp, ArrowDown, Filter, Eye, EyeOff } from "lucide-react"
+import { useToast } from '@/hooks/use-toast'
 
 interface Distributor {
   id: string
@@ -167,6 +168,23 @@ export default function DistributorsPage() {
   
   const [isCreatingLocation, setIsCreatingLocation] = useState(false)
   const [isCreatingSeller, setIsCreatingSeller] = useState(false)
+
+  // QR Configuration pairing states
+  const [showQRPairingModal, setShowQRPairingModal] = useState(false)
+  const [selectedSellerForQR, setSelectedSellerForQR] = useState<any>(null)
+  const [availableQRConfigs, setAvailableQRConfigs] = useState<Array<{
+    id: string
+    name: string
+    description: string
+    config: any
+    createdAt: Date
+    source?: string
+  }>>([])
+  const [loadingQRConfigs, setLoadingQRConfigs] = useState(false)
+  const [expandedQRConfigs, setExpandedQRConfigs] = useState<Set<string>>(new Set())
+
+  // Toast notifications
+  const { success: showSuccess, error: showError } = useToast()
 
   const navItems = getNavItems(session?.user?.role || "")
 
@@ -747,6 +765,194 @@ export default function DistributorsPage() {
       return b.name.localeCompare(a.name)
     }
   })
+
+  // QR Configuration pairing functions
+  const fetchQRConfigurations = async () => {
+    setLoadingQRConfigs(true)
+    try {
+      console.log('🔍 Fetching QR configurations...')
+      
+      // Load from localStorage (named configurations)
+      const saved = localStorage.getItem('elocalpass-saved-configurations')
+      console.log('💾 localStorage content:', saved)
+      
+      let localConfigs: any[] = []
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          localConfigs = parsed.map((config: any) => ({
+            ...config,
+            createdAt: new Date(config.createdAt),
+            source: 'localStorage'
+          }))
+          console.log('📦 Parsed localStorage configs:', localConfigs.length, localConfigs.map(c => c.name))
+        } catch (error) {
+          console.error('Error parsing saved configurations:', error)
+        }
+      }
+
+      // Load from API (global configurations)
+      let apiConfigs: any[] = []
+      try {
+        const response = await fetch('/api/admin/qr-global-config', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          // If data is an array, use it; if it's a single object, wrap it in an array
+          if (Array.isArray(data)) {
+            apiConfigs = data.map((config: any) => ({
+              id: config.id || 'global-config',
+              name: `Global Config ${config.id?.slice(-8) || 'API'}`,
+              description: 'Global configuration from API',
+              config: config,
+              createdAt: new Date(config.updatedAt || Date.now()),
+              source: 'api'
+            }))
+          } else if (data && typeof data === 'object') {
+            // Single global config object
+            apiConfigs = [{
+              id: data.id || 'global-config',
+              name: `Global Config ${data.id?.slice(-8) || 'API'}`,
+              description: 'Global configuration from API',
+              config: data,
+              createdAt: new Date(data.updatedAt || Date.now()),
+              source: 'api'
+            }]
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching global configurations:', error)
+      }
+
+      // Combine both sources, removing duplicates by ID
+      const allConfigs = [...localConfigs, ...apiConfigs]
+      console.log('🔄 All configs before deduplication:', allConfigs.map(c => ({ id: c.id, name: c.name, source: c.source })))
+      
+      const uniqueConfigs = allConfigs.filter((config, index, self) => {
+        const firstIndex = self.findIndex(c => c.id === config.id)
+        const isFirstOccurrence = index === firstIndex
+        if (!isFirstOccurrence) {
+          console.log('⚠️  Removing duplicate config:', { id: config.id, name: config.name, source: config.source })
+        }
+        return isFirstOccurrence
+      })
+      
+      setAvailableQRConfigs(uniqueConfigs)
+      console.log('📈 Combined configs after deduplication:', uniqueConfigs.length, uniqueConfigs.map(c => ({ id: c.id, name: c.name, source: c.source })))
+    } catch (error) {
+      console.error('Error loading QR configurations:', error)
+    } finally {
+      setLoadingQRConfigs(false)
+    }
+  }
+
+  const openQRPairingModal = (seller: any) => {
+    setSelectedSellerForQR(seller)
+    setShowQRPairingModal(true)
+    fetchQRConfigurations()
+  }
+
+  const handleAssignQRConfig = async (config: any) => {
+    if (!selectedSellerForQR) return
+
+    console.log('🔄 Starting QR config assignment...')
+    console.log('📧 Seller:', selectedSellerForQR)
+    console.log('⚙️ Config:', config)
+
+    try {
+      const requestBody = {
+        sellerEmail: selectedSellerForQR.email,
+        configId: config.id,
+        configData: config.config
+      }
+      
+      console.log('📤 Request body:', requestBody)
+
+      const response = await fetch('/api/admin/assign-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        credentials: 'include'
+      })
+
+      console.log('📥 Response status:', response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ QR Config paired successfully!', data)
+        
+        // Debug: Check localStorage after pairing
+        const savedAfterPairing = localStorage.getItem('elocalpass-saved-configurations')
+        console.log('💾 localStorage after pairing:', savedAfterPairing)
+        
+        showSuccess('QR Configuration Paired', 'Configuration has been successfully assigned to the seller.')
+        
+        // Close modal and refresh data
+        setShowQRPairingModal(false)
+        setSelectedSellerForQR(null)
+        
+        // Refresh distributor data to show updated seller config status
+        await fetchDistributors()
+        if (expandedDistributor) {
+          // Force refresh with forceRefresh: true to update UI immediately
+          await fetchDistributorDetails(expandedDistributor, true)
+        }
+      } else {
+        const errorData = await response.json()
+        console.error('❌ Failed to pair QR config:', errorData)
+        showError('Pairing Failed', errorData.error || errorData.message || 'Unknown error occurred')
+      }
+    } catch (error) {
+      console.error('💥 Error pairing QR config:', error)
+      showError('Network Error', 'Failed to connect to server while pairing QR config')
+    }
+  }
+
+  const handleUnpairQRConfig = async (seller: any) => {
+    try {
+      console.log('🔄 Unpairing QR config for seller:', seller.name, seller.id)
+      
+      const response = await fetch(`/api/admin/sellers/${seller.id}/unpair-config`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      console.log('📥 Unpair response status:', response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ QR Config unpaired successfully!', data)
+        showSuccess('QR Configuration Unpaired', 'Configuration has been successfully removed from the seller.')
+        
+        // Refresh distributor data to show updated seller config status
+        await fetchDistributors()
+        if (expandedDistributor) {
+          // Force refresh with forceRefresh: true to update UI immediately
+          await fetchDistributorDetails(expandedDistributor, true)
+        }
+      } else {
+        const errorData = await response.json()
+        console.error('❌ Failed to unpair QR config:', errorData)
+        showError('Unpair Failed', errorData.error || errorData.message || 'Unknown error occurred')
+      }
+    } catch (error) {
+      console.error('💥 Error unpairing QR config:', error)
+      showError('Network Error', 'Failed to connect to server while unpairing QR config')
+    }
+  }
+
+  const toggleQRConfigExpanded = (configId: string) => {
+    const newExpanded = new Set(expandedQRConfigs)
+    if (newExpanded.has(configId)) {
+      newExpanded.delete(configId)
+    } else {
+      newExpanded.add(configId)
+    }
+    setExpandedQRConfigs(newExpanded)
+  }
 
   if (loading) {
     return (
@@ -1583,10 +1789,7 @@ export default function DistributorsPage() {
                                                                                       <button
                                                                                         type="button"
                                                                                         className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
-                                                                                        onClick={() => {
-                                                                                          // TODO: Implement pair QR config functionality
-                                                                                          alert('Pair QR Config functionality coming soon!')
-                                                                                        }}
+                                                                                        onClick={() => openQRPairingModal(seller)}
                                                                                       >
                                                                                         Pair QR Config
                                                                                       </button>
@@ -1594,8 +1797,8 @@ export default function DistributorsPage() {
                                                                                         type="button"
                                                                                         className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
                                                                                         onClick={() => {
-                                                                                          // TODO: Implement create QR config functionality
-                                                                                          alert('Create QR Config functionality coming soon!')
+                                                                                          // Navigate to QR Config page to create new config
+                                                                                          window.open('/admin/qr-config', '_blank')
                                                                                         }}
                                                                                       >
                                                                                         Create QR Config
@@ -1605,10 +1808,7 @@ export default function DistributorsPage() {
                                                                                     <button
                                                                                       type="button"
                                                                                       className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
-                                                                                      onClick={() => {
-                                                                                        // TODO: Implement unpair QR config functionality
-                                                                                        alert('Unpair QR Config functionality coming soon!')
-                                                                                      }}
+                                                                                      onClick={() => handleUnpairQRConfig(seller)}
                                                                                     >
                                                                                       Unpair QR Config
                                                                                     </button>
@@ -1968,6 +2168,175 @@ export default function DistributorsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* QR Configuration Pairing Modal */}
+      {showQRPairingModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Pair QR Configuration with {selectedSellerForQR?.name}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowQRPairingModal(false)
+                    setSelectedSellerForQR(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {loadingQRConfigs ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-gray-600">Loading configurations...</span>
+                </div>
+              ) : availableQRConfigs.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-4">
+                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">No QR Configurations Found</h4>
+                  <p className="text-gray-600 mb-4">Create some QR configurations first to pair with sellers.</p>
+                  <button
+                    onClick={() => window.open('/admin/qr-config', '_blank')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Create QR Config
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {availableQRConfigs.map((config) => (
+                    <div key={config.id} className="border border-gray-200 rounded-lg bg-white shadow-sm">
+                      {/* Compact Header */}
+                      <div 
+                        className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
+                          expandedQRConfigs.has(config.id) ? 'bg-blue-50 border-b border-blue-200' : ''
+                        }`}
+                        onClick={() => toggleQRConfigExpanded(config.id)}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-gray-900 text-lg">{config.name}</h4>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                config.source === 'api' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {config.source === 'api' ? 'Global' : 'Saved'}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleAssignQRConfig(config)
+                                }}
+                                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                              >
+                                Pair
+                              </button>
+                              <svg 
+                                className={`w-5 h-5 text-gray-400 transition-transform ${
+                                  expandedQRConfigs.has(config.id) ? 'rotate-180' : ''
+                                }`} 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{config.description}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Created: {config.createdAt.toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Expanded Details */}
+                      {expandedQRConfigs.has(config.id) && (
+                        <div className="px-4 pb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                            {/* Button 1: Guest & Day Limits */}
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                              <div className="flex items-center mb-3">
+                                <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                  1
+                                </div>
+                                <h5 className="font-semibold text-gray-900">Guest & Day Limits</h5>
+                              </div>
+                              <div className="text-sm text-gray-700 space-y-1">
+                                <p><strong>Guests:</strong> {config.config.button1GuestsDefault} (max: {config.config.button1GuestsRangeMax})</p>
+                                <p><strong>Days:</strong> {config.config.button1DaysDefault} (max: {config.config.button1DaysRangeMax})</p>
+                                <p><strong>Locked:</strong> {config.config.button1GuestsLocked && config.config.button1DaysLocked ? 'Yes' : 'No'}</p>
+                              </div>
+                            </div>
+
+                            {/* Button 2: Pricing */}
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                              <div className="flex items-center mb-3">
+                                <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                  2
+                                </div>
+                                <h5 className="font-semibold text-gray-900">Pricing</h5>
+                              </div>
+                              <div className="text-sm text-gray-700 space-y-1">
+                                <p><strong>Type:</strong> {config.config.button2PricingType}</p>
+                                {config.config.button2PricingType === 'FIXED' && (
+                                  <p><strong>Price:</strong> ${config.config.button2FixedPrice}</p>
+                                )}
+                                {config.config.button2PricingType === 'PER_GUEST' && (
+                                  <p><strong>Per Guest:</strong> ${config.config.button2PerGuestPrice}</p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Button 3: QR Delivery */}
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                              <div className="flex items-center mb-3">
+                                <div className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                  3
+                                </div>
+                                <h5 className="font-semibold text-gray-900">QR Delivery</h5>
+                              </div>
+                              <div className="text-sm text-gray-700 space-y-1">
+                                <p><strong>Method:</strong> {
+                                  config.config.button3DeliveryMethod === 'DIRECT' ? 'Direct Download' :
+                                  config.config.button3DeliveryMethod === 'URLS' ? 'Landing Pages' :
+                                  'Both Methods'
+                                }</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowQRPairingModal(false)
+                    setSelectedSellerForQR(null)
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

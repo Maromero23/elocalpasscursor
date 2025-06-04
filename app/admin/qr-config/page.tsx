@@ -239,24 +239,66 @@ export default function QRConfigPage() {
     loadSavedConfigurations()
   }, [])
 
-  const loadSavedConfigurations = () => {
+  const loadSavedConfigurations = async () => {
+    // Load from localStorage (named configurations)
     const saved = localStorage.getItem('elocalpass-saved-configurations')
+    let localConfigs: any[] = []
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        setSavedConfigurations(parsed.map((config: any) => ({
+        localConfigs = parsed.map((config: any) => ({
           ...config,
           createdAt: new Date(config.createdAt)
-        })))
+        }))
       } catch (error) {
         console.error('Error parsing saved configurations:', error)
-        setSavedConfigurations([])
       }
-    } else {
-      setSavedConfigurations([])
     }
+
+    // Load from API (global configurations)
+    let apiConfigs: any[] = []
+    try {
+      const response = await fetch('/api/admin/qr-global-config', {
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        // If data is an array, use it; if it's a single object, wrap it in an array
+        if (Array.isArray(data)) {
+          apiConfigs = data.map((config: any) => ({
+            id: config.id || 'global-config',
+            name: `Global Config ${config.id?.slice(-8) || 'API'}`,
+            description: 'Global configuration from API',
+            config: config,
+            createdAt: new Date(config.updatedAt || Date.now()),
+            source: 'api'
+          }))
+        } else if (data && typeof data === 'object') {
+          // Single global config object
+          apiConfigs = [{
+            id: data.id || 'global-config',
+            name: `Global Config ${data.id?.slice(-8) || 'API'}`,
+            description: 'Global configuration from API',
+            config: data,
+            createdAt: new Date(data.updatedAt || Date.now()),
+            source: 'api'
+          }]
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching global configurations:', error)
+    }
+
+    // Combine both sources, removing duplicates by ID
+    const allConfigs = [...localConfigs, ...apiConfigs]
+    const uniqueConfigs = allConfigs.filter((config, index, self) => 
+      index === self.findIndex(c => c.id === config.id)
+    )
+    
+    setSavedConfigurations(uniqueConfigs)
   }
 
+  // Load current progress
   const loadCurrentProgress = () => {
     const savedProgress = localStorage.getItem('elocalpass-current-qr-progress')
     if (savedProgress) {
@@ -457,22 +499,48 @@ export default function QRConfigPage() {
   const fetchAvailableSellers = async () => {
     setLoadingSellers(true)
     try {
-      const response = await fetch('/api/admin/sellers')
-      if (response.ok) {
-        const sellers = await response.json()
-        // For now, show all active sellers (we'll add assignment checking later)
-        const activeSellers = sellers.filter((seller: any) => seller.isActive)
-        setAvailableSellers(activeSellers.map((seller: any) => ({
-          id: seller.id,
-          name: seller.name,
-          email: seller.email,
-          role: seller.role,
-          hasAssignedConfig: false // Will be updated when we have assignment tracking
-        })))
-      } else {
+      // Fetch sellers
+      const sellersResponse = await fetch('/api/admin/sellers')
+      if (!sellersResponse.ok) {
         toast.error('Error Loading Sellers', 'Failed to fetch available sellers')
+        return
       }
+      
+      const sellers = await sellersResponse.json()
+      const activeSellers = sellers.filter((seller: any) => seller.isActive)
+      
+      // Fetch QR configurations to check which sellers already have configs
+      const configsResponse = await fetch('/api/admin/qr-config/sellers')
+      let assignedSellerIds: string[] = []
+      
+      if (configsResponse.ok) {
+        const sellersWithConfigs = await configsResponse.json()
+        // Extract seller IDs that already have QR configurations (qrConfig is not null)
+        assignedSellerIds = sellersWithConfigs
+          .filter((seller: any) => seller.qrConfig !== null)
+          .map((seller: any) => seller.id)
+        console.log('📋 Sellers with existing QR configs:', assignedSellerIds)
+      } else {
+        console.warn('⚠️ Could not fetch existing QR configurations, showing all sellers')
+      }
+      
+      // Filter out sellers who already have QR configurations
+      const unassignedSellers = activeSellers.filter((seller: any) => 
+        !assignedSellerIds.includes(seller.id)
+      )
+      
+      console.log(`📊 Total active sellers: ${activeSellers.length}, Unassigned sellers: ${unassignedSellers.length}`)
+      
+      setAvailableSellers(unassignedSellers.map((seller: any) => ({
+        id: seller.id,
+        name: seller.name,
+        email: seller.email,
+        role: seller.role,
+        hasAssignedConfig: false
+      })))
+      
     } catch (error) {
+      console.error('💥 Error fetching sellers:', error)
       toast.error('Error Loading Sellers', 'Failed to fetch available sellers')
     }
     setLoadingSellers(false)
@@ -495,8 +563,7 @@ export default function QRConfigPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           sellerEmail: sellerEmail,
-          configurationId: selectedConfig.id,
-          configuration: selectedConfig.config
+          configData: selectedConfig.config  // Fixed: changed from 'configuration' to 'configData'
         })
       })
 
@@ -1738,7 +1805,7 @@ export default function QRConfigPage() {
                   title="Export configurations to file"
                 >
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l3-3m0 0l3 3m-3-3v8m-13-5a9 9 0 110 18 9 9 0 010-18z" />
                   </svg>
                   Export
                 </button>
@@ -1837,13 +1904,203 @@ export default function QRConfigPage() {
                       </div>
                     </div>
 
-                    {/* Detailed Configuration Grid - Abbreviated for space */}
+                    {/* Detailed Configuration Grid */}
                     {expandedConfigs.has(config.id) && (
-                      <div className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {/* Configuration details will be rendered here */}
-                          <div className="col-span-full text-center text-gray-500">
-                            Configuration details available
+                      <div className="p-6 bg-gray-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          
+                          {/* 1. Guest & Day Limits */}
+                          <div className="bg-white p-4 rounded-lg shadow-sm">
+                            <div className="flex items-center mb-3">
+                              <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                1
+                              </div>
+                              <h5 className="font-semibold text-gray-900">Guest & Day Limits</h5>
+                            </div>
+                            <div className="text-sm text-gray-700 space-y-1">
+                              {!config.config.button1GuestsLocked ? (
+                                <>
+                                  <p><strong>Guests:</strong> 1-{config.config.button1GuestsRangeMax} (default: {config.config.button1GuestsDefault})</p>
+                                  <p><strong>Days:</strong> {!config.config.button1DaysLocked ? `1-${config.config.button1DaysRangeMax} (default: ${config.config.button1DaysDefault})` : `Fixed at ${config.config.button1DaysDefault}`}</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p><strong>Guests:</strong> Fixed at {config.config.button1GuestsDefault}</p>
+                                  <p><strong>Days:</strong> Fixed at {config.config.button1DaysDefault}</p>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 2. Pricing */}
+                          <div className="bg-white p-4 rounded-lg shadow-sm">
+                            <div className="flex items-center mb-3">
+                              <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                2
+                              </div>
+                              <h5 className="font-semibold text-gray-900">Pricing</h5>
+                            </div>
+                            <div className="text-sm text-gray-700 space-y-1">
+                              <p><strong>Type:</strong> {config.config.button2PricingType === 'FIXED' ? 'Fixed' : config.config.button2PricingType === 'VARIABLE' ? 'Variable' : 'Free'}</p>
+                              {config.config.button2PricingType === 'FIXED' && config.config.button2FixedPrice && (
+                                <p><strong>Price:</strong> ${config.config.button2FixedPrice}</p>
+                              )}
+                              {config.config.button2PricingType === 'VARIABLE' && (
+                                <>
+                                  <p><strong>Base Price:</strong> ${config.config.button2VariableBasePrice}</p>
+                                  <p><strong>Per Guest:</strong> +${config.config.button2VariableGuestIncrease}</p>
+                                  <p><strong>Per Day:</strong> +${config.config.button2VariableDayIncrease}</p>
+                                  <p><strong>Commission:</strong> {config.config.button2VariableCommission}%</p>
+                                </>
+                              )}
+                              {config.config.button2IncludeTax && (
+                                <p><strong>Tax:</strong> {config.config.button2TaxPercentage}% included</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 3. QR Delivery */}
+                          <div className="bg-white p-4 rounded-lg shadow-sm">
+                            <div className="flex items-center mb-3">
+                              <div className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                3
+                              </div>
+                              <h5 className="font-semibold text-gray-900">QR Delivery</h5>
+                            </div>
+                            <div className="text-sm text-gray-700 space-y-1">
+                              <p><strong>Method:</strong> {
+                                config.config.button3DeliveryMethod === 'DIRECT' ? 'Direct Download' :
+                                config.config.button3DeliveryMethod === 'URLS' ? 'Landing Pages' :
+                                'Button Trigger'
+                              }</p>
+                              <p><strong>Available delivery options configured</strong></p>
+                            </div>
+                          </div>
+
+                          {/* 4. Landing Page */}
+                          <div className="bg-white p-4 rounded-lg shadow-sm">
+                            <div className="flex items-center mb-3">
+                              <div className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                4
+                              </div>
+                              <h5 className="font-semibold text-gray-900">Landing Page</h5>
+                            </div>
+                            <div className="text-sm text-gray-700 space-y-1">
+                              <p><strong>Required:</strong> {config.config.button4LandingPageRequired ? 'Yes' : 'No'}</p>
+                              {config.config.button4LandingPageRequired && (
+                                <>
+                                  <div className="flex items-center">
+                                    <span className="text-green-600 mr-1">✓</span>
+                                    <span>Landing page configured</span>
+                                  </div>
+                                  <div className="mt-2 space-y-1">
+                                    <p><strong>Template:</strong> <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">Custom Landing Page - {new Date(config.createdAt).toLocaleDateString()}</span></p>
+                                    <p className="text-xs">
+                                      <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">📝 Edit Template</span>
+                                    </p>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 5. Rebuy Email */}
+                          <div className="bg-white p-4 rounded-lg shadow-sm">
+                            <div className="flex items-center mb-3">
+                              <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                5
+                              </div>
+                              <h5 className="font-semibold text-gray-900">Rebuy Email</h5>
+                            </div>
+                            <div className="text-sm text-gray-700 space-y-1">
+                              <p><strong>Enabled:</strong> {config.config.button5SendRebuyEmail ? 'Yes' : 'No'}</p>
+                              {config.config.button5SendRebuyEmail && (
+                                <>
+                                  <div className="flex items-center">
+                                    <span className="text-green-600 mr-1">✓</span>
+                                    <span>Custom template configured</span>
+                                  </div>
+                                  <div className="mt-2 space-y-1">
+                                    <p><strong>Template:</strong> <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}</span></p>
+                                    <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                    <p className="text-xs">
+                                      <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">📝 Edit Template</span>
+                                    </p>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                        </div>
+
+                        {/* Configuration Summary */}
+                        <div className="mt-6 p-4 bg-white rounded-lg shadow-sm">
+                          <h5 className="font-semibold text-gray-900 mb-3">Configuration Summary</h5>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-500">Source</p>
+                              <p className="font-medium">Global (API)</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Created</p>
+                              <p className="font-medium">{new Date(config.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">ID</p>
+                              <p className="font-medium text-xs">{config.id}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Description</p>
+                              <p className="font-medium">{config.description || 'No description'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="mt-6 flex justify-between items-center pt-4 border-t border-gray-200">
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={() => {
+                                // Load this configuration into the main form
+                                updateConfig(config.config)
+                                setShowConfigLibrary(false)
+                                toast.success('Configuration Loaded', 'Configuration loaded into the form for editing')
+                              }}
+                              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors font-medium"
+                            >
+                              Load Configuration
+                            </button>
+                            <button
+                              onClick={() => {
+                                // Export configuration as JSON
+                                const configData = JSON.stringify(config, null, 2)
+                                const blob = new Blob([configData], { type: 'application/json' })
+                                const url = URL.createObjectURL(blob)
+                                const a = document.createElement('a')
+                                a.href = url
+                                a.download = `qr-config-${config.name.replace(/\s+/g, '-').toLowerCase()}.json`
+                                document.body.appendChild(a)
+                                a.click()
+                                document.body.removeChild(a)
+                                URL.revokeObjectURL(url)
+                                toast.success('Configuration Exported', 'Configuration downloaded as JSON file')
+                              }}
+                              className="px-4 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors font-medium"
+                            >
+                              Export JSON
+                            </button>
+                            {/* Assign to Seller Button */}
+                            <button
+                              onClick={() => {
+                                setSelectedConfig(config)
+                                fetchAvailableSellers()
+                                setShowSellerModal(true)
+                              }}
+                              className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors font-medium"
+                            >
+                              Assign to Seller
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1878,12 +2135,13 @@ export default function QRConfigPage() {
                 </div>
               ) : availableSellers.length === 0 ? (
                 <div className="text-center py-4">
-                  <p className="text-sm text-gray-500">No active sellers available</p>
+                  <p className="text-sm text-gray-500">No unassigned sellers available</p>
+                  <p className="text-xs text-gray-400 mt-1">All active sellers already have QR configurations assigned</p>
                 </div>
               ) : (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Active Sellers
+                    Available Sellers (Unassigned)
                   </label>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {availableSellers.map((seller) => (
