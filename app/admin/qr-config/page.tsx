@@ -108,6 +108,7 @@ export default function QRConfigPage() {
       welcomeEmail: any;
       rebuyEmail: any;
     };
+    landingPageConfig: any;
     createdAt: Date;
   }>>([])
   const [showSaveModal, setShowSaveModal] = useState(false)
@@ -132,6 +133,49 @@ export default function QRConfigPage() {
   // Helper function to check if a button configuration has been actively modified
   const isButtonConfigured = (buttonNum: number): boolean => {
     return Array.from(configuredButtons).includes(buttonNum)
+  }
+
+  // Helper function to check if any saved configuration uses a specific template
+  const isTemplateUsedBySavedConfigs = (templateType: 'welcome' | 'rebuy' | 'landing'): boolean => {
+    return savedConfigurations.some(config => {
+      switch (templateType) {
+        case 'welcome':
+          return config.emailTemplates?.welcomeEmail !== null
+        case 'rebuy':
+          return config.emailTemplates?.rebuyEmail !== null
+        case 'landing':
+          return config.landingPageConfig !== null
+        default:
+          return false
+      }
+    })
+  }
+
+  // Helper function to clean up orphaned templates after configuration deletion
+  const cleanupOrphanedTemplates = (deletedConfigId: string) => {
+    // Get the remaining configurations (after deletion)
+    const remainingConfigs = savedConfigurations.filter(config => config.id !== deletedConfigId)
+    
+    // Check if welcome email template is still used
+    const welcomeStillUsed = remainingConfigs.some(config => config.emailTemplates?.welcomeEmail !== null)
+    if (!welcomeStillUsed) {
+      localStorage.removeItem('elocalpass-welcome-email-config')
+      console.log('🧹 Cleaned up orphaned welcome email template')
+    }
+    
+    // Check if rebuy email template is still used
+    const rebuyStillUsed = remainingConfigs.some(config => config.emailTemplates?.rebuyEmail !== null)
+    if (!rebuyStillUsed) {
+      localStorage.removeItem('elocalpass-rebuy-email-config')
+      console.log('🧹 Cleaned up orphaned rebuy email template')
+    }
+    
+    // Check if landing page template is still used
+    const landingStillUsed = remainingConfigs.some(config => config.landingPageConfig !== null)
+    if (!landingStillUsed) {
+      localStorage.removeItem('elocalpass-landing-config')
+      console.log('🧹 Cleaned up orphaned landing page template')
+    }
   }
 
   // Reset all configurations to defaults
@@ -168,12 +212,31 @@ export default function QRConfigPage() {
     
     await updateConfig(defaultConfig)
     
-    // Clear saved templates and configurations
-    localStorage.removeItem('elocalpass-welcome-email-config')
-    localStorage.removeItem('elocalpass-rebuy-email-config')
-    localStorage.removeItem('elocalpass-landing-config')
+    // Smart template clearing: Only clear if NOT used by saved configurations
+    if (!isTemplateUsedBySavedConfigs('welcome')) {
+      localStorage.removeItem('elocalpass-welcome-email-config')
+      console.log('🧹 Reset cleared welcome email template (not used by saved configs)')
+    } else {
+      console.log('🔒 Preserved welcome email template (used by saved configurations)')
+    }
+    
+    if (!isTemplateUsedBySavedConfigs('rebuy')) {
+      localStorage.removeItem('elocalpass-rebuy-email-config')
+      console.log('🧹 Reset cleared rebuy email template (not used by saved configs)')
+    } else {
+      console.log('🔒 Preserved rebuy email template (used by saved configurations)')
+    }
+    
+    if (!isTemplateUsedBySavedConfigs('landing')) {
+      localStorage.removeItem('elocalpass-landing-config')
+      console.log('🧹 Reset cleared landing page template (not used by saved configs)')
+    } else {
+      console.log('🔒 Preserved landing page template (used by saved configurations)')
+    }
+    
+    // Always clear progress (this is just temporary workflow state)
     localStorage.removeItem('elocalpass-qr-config-progress')
-    localStorage.removeItem('elocalpass-saved-configurations')
+    // ⚠️ DO NOT delete 'elocalpass-saved-configurations' - those are saved library items!
     
     // Clear all configured button states so they return to original colors
     setConfiguredButtons(new Set())
@@ -361,6 +424,19 @@ export default function QRConfigPage() {
         console.log('Could not load rebuy email configuration:', error)
       }
     }
+    
+    // Check if Button 3 landing page configuration exists
+    const landingPageConfig = localStorage.getItem('elocalpass-landing-config')
+    if (landingPageConfig) {
+      try {
+        const landingConfig = JSON.parse(landingPageConfig)
+        if (landingConfig.isActive) {
+          console.log('✅ Found existing landing page configuration for Button 3')
+        }
+      } catch (error) {
+        console.log('Could not load landing page configuration:', error)
+      }
+    }
   }
 
   // Check if all 5 buttons are configured
@@ -383,9 +459,11 @@ export default function QRConfigPage() {
     // Gather email template configurations
     const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
     const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+    const landingPageConfig = localStorage.getItem('elocalpass-landing-config')
     
     let parsedWelcomeEmail = null
     let parsedRebuyEmail = null
+    let parsedLandingPage = null
     
     try {
       if (welcomeEmailConfig) {
@@ -394,8 +472,11 @@ export default function QRConfigPage() {
       if (rebuyEmailConfig) {
         parsedRebuyEmail = JSON.parse(rebuyEmailConfig)
       }
+      if (landingPageConfig) {
+        parsedLandingPage = JSON.parse(landingPageConfig)
+      }
     } catch (error) {
-      console.warn('Warning: Could not parse email template configurations:', error)
+      console.warn('Warning: Could not parse template configurations:', error)
     }
 
     const newConfig = {
@@ -407,6 +488,7 @@ export default function QRConfigPage() {
         welcomeEmail: parsedWelcomeEmail,
         rebuyEmail: parsedRebuyEmail
       },
+      landingPageConfig: parsedLandingPage,
       createdAt: new Date()
     }
     
@@ -433,13 +515,17 @@ export default function QRConfigPage() {
   // Delete a saved configuration
   const deleteConfiguration = (configId: string) => {
     if (confirm('Are you sure you want to delete this configuration?')) {
+      // First, clean up any orphaned templates
+      cleanupOrphanedTemplates(configId)
+      
+      // Then remove the configuration from the library
       const updatedConfigs = savedConfigurations.filter(config => config.id !== configId)
       setSavedConfigurations(updatedConfigs)
       
       try {
         localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigs))
         console.log('✅ Configuration deleted from localStorage successfully')
-        toast.success('Configuration Deleted', 'Configuration deleted successfully!')
+        toast.success('Configuration Deleted', 'Configuration and unused templates deleted successfully!')
       } catch (error) {
         console.error('❌ Failed to update localStorage:', error)
         toast.error('Delete Failed', 'Failed to update browser storage')
@@ -730,7 +816,7 @@ export default function QRConfigPage() {
                 {[
                   { num: 1, title: "Personalized?" },
                   { num: 2, title: "Pricing Type" },
-                  { num: 3, title: "Send Method" },
+                  { num: 3, title: "Delivery Method" },
                   { num: 4, title: "Welcome Email" },
                   { num: 5, title: "Rebuy Email?" }
                 ].map((button, index) => (
@@ -819,7 +905,7 @@ export default function QRConfigPage() {
                     },
                     { 
                       num: 3, 
-                      title: "Send Method", 
+                      title: "Delivery Method", 
                       value: globalConfig.button3DeliveryMethod === 'DIRECT' 
                         ? "Direct: QR sent via email"
                         : globalConfig.button3DeliveryMethod === 'URLS'
@@ -1331,7 +1417,7 @@ export default function QRConfigPage() {
                 </div>
               )}
 
-              {/* Button 3: Send Method */}
+              {/* Button 3: Delivery Method */}
               {activeButton === 3 && (
                 <div className="space-y-6">
                   <div className="border-l-4 border-blue-500 pl-4">
@@ -1584,28 +1670,6 @@ export default function QRConfigPage() {
                                       <p><strong>Created:</strong> <span className="text-gray-900">{new Date(emailConfig.createdAt).toLocaleDateString()}</span></p>
                                       <p><strong>Template ID:</strong> <span className="text-gray-900">{emailConfig.id}</span></p>
                                     </div>
-                                    <div className="flex space-x-2">
-                                      <button 
-                                        onClick={() => router.push('/admin/qr-config/email-config?mode=edit')}
-                                        className="px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                                      >
-                                        Edit Template
-                                      </button>
-                                      <button 
-                                        onClick={() => {
-                                          localStorage.removeItem('elocalpass-welcome-email-config')
-                                          setConfiguredButtons((prev) => {
-                                            const newSet = new Set(prev)
-                                            newSet.delete(4)
-                                            return newSet
-                                          })
-                                          window.location.reload()
-                                        }}
-                                        className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                                      >
-                                        Delete Template
-                                      </button>
-                                    </div>
                                   </div>
                                 )
                               }
@@ -1616,7 +1680,7 @@ export default function QRConfigPage() {
                           
                           return (
                             <button 
-                              onClick={() => router.push('/admin/qr-config/email-config?mode=custom')}
+                              onClick={() => router.push('/admin/qr-config/email-config')}
                               className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
                             >
                               Create Custom Welcome Email →
@@ -1704,15 +1768,6 @@ export default function QRConfigPage() {
                                   </div>
                                   <div>
                                     <span className="font-medium text-gray-900">Created:</span> <span className="text-gray-900">{new Date(rebuy.createdAt).toLocaleDateString()}</span>
-                                  </div>
-                                  <div className="mt-1">
-                                    <a 
-                                      href="/admin/qr-config/rebuy-config?mode=edit" 
-                                      target="_blank"
-                                      className="text-blue-600 hover:text-blue-800 underline text-xs"
-                                    >
-                                      📝 Edit Template
-                                    </a>
                                   </div>
                                 </div>
                               )
@@ -1984,6 +2039,36 @@ export default function QRConfigPage() {
                                 config.config.button3DeliveryMethod === 'BOTH' ? 'Both Options' : 'Button Trigger'
                               }</p>
                               <p><strong>Available delivery options configured</strong></p>
+                              {config.landingPageConfig && (
+                                <div className="mt-2 space-y-1">
+                                  <p><strong>Landing Page:</strong> 
+                                    <a 
+                                      href={config.landingPageConfig.landingUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                    >
+                                      {config.landingPageConfig.landingUrl}
+                                    </a>
+                                  </p>
+                                  <p><strong>Template:</strong> 
+                                    <button 
+                                      onClick={() => {
+                                        // First, restore this configuration's landing page data to localStorage
+                                        if (config.landingPageConfig) {
+                                          localStorage.setItem('elocalpass-landing-config', JSON.stringify(config.landingPageConfig))
+                                        }
+                                        // Then navigate to create page in EDIT mode to load the template
+                                        window.open('/admin/qr-config/create?mode=edit', '_blank')
+                                      }}
+                                      className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                    >
+                                      Edit
+                                    </button>
+                                  </p>
+                                  <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -2005,10 +2090,22 @@ export default function QRConfigPage() {
                                   </div>
                                   {config.emailTemplates?.welcomeEmail && (
                                     <div className="mt-2 space-y-1">
-                                      <p><strong>Template:</strong> <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">Welcome Email Template - {new Date(config.createdAt).toLocaleDateString()}</span></p>
-                                      <p className="text-xs">
-                                        <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">📝 Edit Template</span>
+                                      <p><strong>Template:</strong> 
+                                        <button 
+                                          onClick={() => {
+                                            // First, restore this configuration's template data to localStorage
+                                            if (config.emailTemplates?.welcomeEmail) {
+                                              localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(config.emailTemplates.welcomeEmail))
+                                            }
+                                            // Then navigate to email-config page in EDIT mode to load the template
+                                            window.open('/admin/qr-config/email-config?mode=edit', '_blank')
+                                          }}
+                                          className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                        >
+                                          Welcome Email Template - {new Date(config.createdAt).toLocaleDateString()}
+                                        </button>
                                       </p>
+                                      <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
                                     </div>
                                   )}
                                 </>
@@ -2034,11 +2131,22 @@ export default function QRConfigPage() {
                                   </div>
                                   {config.emailTemplates?.rebuyEmail && (
                                     <div className="mt-2 space-y-1">
-                                      <p><strong>Template:</strong> <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}</span></p>
-                                      <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
-                                      <p className="text-xs">
-                                        <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">📝 Edit Template</span>
+                                      <p><strong>Template:</strong> 
+                                        <button 
+                                          onClick={() => {
+                                            // First, restore this configuration's rebuy template data to localStorage
+                                            if (config.emailTemplates?.rebuyEmail) {
+                                              localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(config.emailTemplates.rebuyEmail))
+                                            }
+                                            // Then navigate to rebuy-config page in EDIT mode to load the template
+                                            window.open('/admin/qr-config/rebuy-config?mode=edit', '_blank')
+                                          }}
+                                          className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                        >
+                                          Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}
+                                        </button>
                                       </p>
+                                      <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
                                     </div>
                                   )}
                                 </>

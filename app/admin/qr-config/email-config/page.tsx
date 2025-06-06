@@ -317,8 +317,25 @@ export default function EmailConfigPage() {
       // Save to localStorage so main QR config page knows Button 4 is configured
       localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(welcomeEmailConfig))
       
+      // CRITICAL: Also update the saved configurations library if this template belongs to a saved config
+      const savedConfigurations = JSON.parse(localStorage.getItem('elocalpass-saved-configurations') || '[]')
+      const updatedConfigurations = savedConfigurations.map((config: any) => {
+        // If this config has email templates, update the welcome email template
+        if (config.emailTemplates?.welcomeEmail) {
+          return {
+            ...config,
+            emailTemplates: {
+              ...config.emailTemplates,
+              welcomeEmail: welcomeEmailConfig
+            }
+          }
+        }
+        return config
+      })
+      localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigurations))
+      
       setGeneratedEmailConfig(configId)
-      toast.success('Email Configuration Created', `Welcome Email Template "${welcomeEmailConfig.name}" created successfully!`)
+      toast.success('Email Configuration Saved', `Welcome Email Template "${welcomeEmailConfig.name}" saved successfully! Returning to QR Config...`)
       
       // Optional: Redirect back to QR config after 2 seconds
       setTimeout(() => {

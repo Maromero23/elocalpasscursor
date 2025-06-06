@@ -328,6 +328,23 @@ export default function RebuyEmailConfigPage() {
         // Save to localStorage so main QR config page knows Button 5 is configured
         localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(rebuyEmailConfig))
         
+        // CRITICAL: Also update the saved configurations library if this template belongs to a saved config
+        const savedConfigurations = JSON.parse(localStorage.getItem('elocalpass-saved-configurations') || '[]')
+        const updatedConfigurations = savedConfigurations.map((config: any) => {
+          // If this config has email templates, update the rebuy email template
+          if (config.emailTemplates?.rebuyEmail) {
+            return {
+              ...config,
+              emailTemplates: {
+                ...config.emailTemplates,
+                rebuyEmail: rebuyEmailConfig
+              }
+            }
+          }
+          return config
+        })
+        localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigurations))
+        
         // Set the generated config ID to display success message with ID
         setGeneratedConfig(configId)
         

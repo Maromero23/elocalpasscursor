@@ -317,6 +317,20 @@ export default function CreateEnhancedLandingPage() {
         }
         localStorage.setItem('elocalpass-landing-config', JSON.stringify(landingConfig))
         
+        // CRITICAL: Also update the saved configurations library if this landing page belongs to a saved config
+        const savedConfigurations = JSON.parse(localStorage.getItem('elocalpass-saved-configurations') || '[]')
+        const updatedConfigurations = savedConfigurations.map((config: any) => {
+          // If this config has landing page data, update the landing page configuration
+          if (config.landingPageConfig) {
+            return {
+              ...config,
+              landingPageConfig: landingConfig
+            }
+          }
+          return config
+        })
+        localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigurations))
+        
         toast.success('Landing Page Created', `Enhanced landing page created! Landing page URL: ${landingUrl}`)
         
         // Optional: Redirect back to QR config after 2 seconds
