@@ -1,5 +1,5 @@
-import { getServerSession } from "next-auth"
 import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
@@ -217,7 +217,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     const body = await request.json()
-    const { name, email, password, contactPerson, alternativeEmail, telephone, notes } = body
+    const { name, email, password, contactPerson, alternativeEmail, telephone, whatsapp, notes } = body
     const { id } = params
 
     if (!name || !email) {
@@ -260,13 +260,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       // Update distributor
       const updatedDistributor = await tx.distributor.update({
         where: { id },
-        data: { name, contactPerson, email: alternativeEmail, telephone, notes },
+        data: { name, contactPerson, email: alternativeEmail, telephone, whatsapp, notes },
         select: {
           id: true,
           name: true,
           contactPerson: true,
           email: true,
           telephone: true,
+          whatsapp: true,
           notes: true,
           user: {
             select: {

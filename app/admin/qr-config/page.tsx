@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
+import { useToast } from '@/hooks/use-toast'
 import { Building2, Users, MapPin, QrCode, Settings, Eye, Plus, Edit3, Palette, Save, Clock, Monitor, Mail, EyeOff, Trash2 } from 'lucide-react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { ToastNotifications } from '@/components/toast-notification'
-import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 
 // Configuration interfaces
@@ -64,6 +64,7 @@ const getNavItems = (userRole: string) => {
 export default function QRConfigPage() {
   const { data: session } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useToast()
   const navItems = getNavItems(session?.user?.role || "")
 
@@ -397,46 +398,9 @@ export default function QRConfigPage() {
       }
     }
     
-    // Check if Button 4 welcome email configuration exists
-    const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
-    if (welcomeEmailConfig) {
-      try {
-        const emailConfig = JSON.parse(welcomeEmailConfig)
-        if (emailConfig.isActive) {
-          setConfiguredButtons((prev) => new Set(prev).add(4))
-          console.log('✅ Found existing welcome email configuration for Button 4')
-        }
-      } catch (error) {
-        console.log('Could not load welcome email configuration:', error)
-      }
-    }
-    
-    // Check if Button 5 rebuy email configuration exists
-    const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
-    if (rebuyEmailConfig) {
-      try {
-        const emailConfig = JSON.parse(rebuyEmailConfig)
-        if (emailConfig.isActive) {
-          setConfiguredButtons((prev) => new Set(prev).add(5))
-          console.log('✅ Found existing rebuy email configuration for Button 5')
-        }
-      } catch (error) {
-        console.log('Could not load rebuy email configuration:', error)
-      }
-    }
-    
-    // Check if Button 3 landing page configuration exists
-    const landingPageConfig = localStorage.getItem('elocalpass-landing-config')
-    if (landingPageConfig) {
-      try {
-        const landingConfig = JSON.parse(landingPageConfig)
-        if (landingConfig.isActive) {
-          console.log('✅ Found existing landing page configuration for Button 3')
-        }
-      } catch (error) {
-        console.log('Could not load landing page configuration:', error)
-      }
-    }
+    // NOTE: Don't auto-configure buttons just because templates exist in localStorage
+    // Templates are shared resources that might be used by saved configurations
+    // Only mark buttons as configured if they're part of active workflow progress
   }
 
   // Check if all 5 buttons are configured
@@ -709,6 +673,21 @@ export default function QRConfigPage() {
     const timeoutId = setTimeout(saveCurrentProgress, 500) // Debounce saves
     return () => clearTimeout(timeoutId)
   }, [globalConfig, configuredButtons])
+
+  // Handle URL parameters to open specific configuration
+  useEffect(() => {
+    const openLibrary = searchParams.get('openLibrary')
+    const configId = searchParams.get('configId')
+    
+    if (openLibrary === 'true' && savedConfigurations.length > 0) {
+      setShowConfigLibrary(true)
+      
+      if (configId) {
+        // Expand the specific configuration
+        setExpandedConfigs(prev => new Set(Array.from(prev).concat(configId)))
+      }
+    }
+  }, [searchParams, savedConfigurations])
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
@@ -2039,7 +2018,8 @@ export default function QRConfigPage() {
                                 config.config.button3DeliveryMethod === 'BOTH' ? 'Both Options' : 'Button Trigger'
                               }</p>
                               <p><strong>Available delivery options configured</strong></p>
-                              {config.landingPageConfig && (
+                              {/* Only show landing page info for URLS or BOTH delivery methods, NOT for DIRECT */}
+                              {config.landingPageConfig && config.config.button3DeliveryMethod !== 'DIRECT' && (
                                 <div className="mt-2 space-y-1">
                                   <p><strong>Landing Page:</strong> 
                                     <a 
@@ -2067,6 +2047,14 @@ export default function QRConfigPage() {
                                     </button>
                                   </p>
                                   <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                </div>
+                              )}
+                              {/* Show direct delivery info when DIRECT method is selected */}
+                              {config.config.button3DeliveryMethod === 'DIRECT' && (
+                                <div className="mt-2 space-y-1">
+                                  <p className="text-sm text-gray-600">
+                                    <em>Direct delivery: Sellers input customer details and send ELocalPass directly from their dashboard.</em>
+                                  </p>
                                 </div>
                               )}
                             </div>

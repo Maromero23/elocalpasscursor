@@ -194,7 +194,12 @@ export default function DistributorsPage() {
 
   const fetchDistributors = async () => {
     try {
-      const response = await fetch("/api/admin/distributors")
+      const response = await fetch("/api/admin/distributors", {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setDistributors(data)
@@ -218,7 +223,12 @@ export default function DistributorsPage() {
 
     setLoadingDetails(prev => ({ ...prev, [distributorId]: true }))
     try {
-      const response = await fetch(`/api/admin/distributors/${distributorId}`)
+      const response = await fetch(`/api/admin/distributors/${distributorId}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setDistributorDetails(prev => ({ ...prev, [distributorId]: data }))
@@ -320,7 +330,7 @@ export default function DistributorsPage() {
       if (response.ok) {
         // Refresh the distributors list and details
         await fetchDistributors()
-        await fetchDistributorDetails(editingDistributor)
+        await fetchDistributorDetails(editingDistributor, true)
         setEditingDistributor(null)
         setError("")
       } else {
@@ -386,7 +396,7 @@ export default function DistributorsPage() {
           distributorDetails[distId]?.locations?.some(loc => loc.id === editingLocation)
         )
         if (distributorId) {
-          await fetchDistributorDetails(distributorId)
+          await fetchDistributorDetails(distributorId, true)
         }
         setEditingLocation(null)
       } else {
@@ -405,6 +415,9 @@ export default function DistributorsPage() {
   const handleEditSellerClick = (seller: any, e: React.MouseEvent) => {
     e.stopPropagation()
     setEditingSeller(seller.id)
+    
+    // Load QR configurations for detailed display
+    fetchQRConfigurations()
     
     // Pre-populate form with current seller data
     setSellerEditFormData({
@@ -453,7 +466,7 @@ export default function DistributorsPage() {
           )
         )
         if (distributorId) {
-          await fetchDistributorDetails(distributorId)
+          await fetchDistributorDetails(distributorId, true)
         }
         setEditingSeller(null)
       } else {
@@ -491,7 +504,7 @@ export default function DistributorsPage() {
         // Refresh both the distributors list and details
         await fetchDistributors()
         if (expandedDistributor) {
-          await fetchDistributorDetails(expandedDistributor)
+          await fetchDistributorDetails(expandedDistributor, true)
         }
       } else {
         const errorData = await response.json()
@@ -528,7 +541,7 @@ export default function DistributorsPage() {
         // Refresh distributor details and main list
         await fetchDistributors()
         if (expandedDistributor) {
-          await fetchDistributorDetails(expandedDistributor)
+          await fetchDistributorDetails(expandedDistributor, true)
         }
       } else {
         const errorData = await response.json()
@@ -543,49 +556,38 @@ export default function DistributorsPage() {
 
   // Status toggle handlers
   const toggleDistributorStatus = async (distributorId: string, e: React.MouseEvent) => {
-    console.log("🔥 DISTRIBUTOR TOGGLE CLICKED:", distributorId)
     e.stopPropagation()
     try {
-      console.log("🚀 Making API call to:", `/api/admin/distributors/${distributorId}/toggle-status`)
       const response = await fetch(`/api/admin/distributors/${distributorId}/toggle-status`, {
         method: "PATCH",
       })
 
       if (response.ok) {
         const result = await response.json()
-        console.log("✅ Distributor toggle response OK - New status:", result.isActive)
         
         // Force immediate refresh of all data
-        console.log("🔄 Refreshing distributors list...")
         await fetchDistributors()
         
         // Force refresh the specific distributor details (bypass cache)
-        console.log("🔄 Refreshing distributor details for:", distributorId)
         await fetchDistributorDetails(distributorId, true)
         
         // Also refresh all other expanded distributors to ensure UI consistency
         const expandedIds = Object.keys(distributorDetails)
         for (const id of expandedIds) {
           if (id !== distributorId) {
-            console.log("🔄 Refreshing additional distributor:", id)
             await fetchDistributorDetails(id, true)
           }
         }
-        
-        console.log("✅ All distributor data refreshed successfully")
       } else {
         const errorData = await response.json()
-        console.error("❌ Distributor toggle failed:", errorData)
         setError(`Failed to toggle distributor status: ${errorData.error}`)
       }
     } catch (error) {
-      console.error("💥 Distributor toggle error:", error)
       setError("Error toggling distributor status")
     }
   }
 
   const toggleLocationStatus = async (locationId: string, e: React.MouseEvent) => {
-    console.log("🔥 LOCATION TOGGLE CLICKED:", locationId)
     e.stopPropagation()
     
     // Find the distributor that contains this location
@@ -599,25 +601,20 @@ export default function DistributorsPage() {
       
       // 🔒 HIERARCHICAL LOCK: If distributor is inactive, can't activate location
       if (distributor && !distributor.isActive && location && !location.isActive) {
-        console.log("🔒 BLOCKED: Cannot activate location - distributor is inactive")
         setError("Cannot activate location: distributor must be active first")
         return
       }
     }
     
     try {
-      console.log("🚀 Making API call to:", `/api/admin/locations/${locationId}/toggle-status`)
       const response = await fetch(`/api/admin/locations/${locationId}/toggle-status`, {
         method: "PATCH",
       })
 
       if (response.ok) {
-        console.log("✅ Location toggle response OK")
         const result = await response.json()
-        console.log("✅ Location toggle response OK - New status:", result.isActive)
         
         // Force immediate refresh of all data
-        console.log("🔄 Refreshing distributors list...")
         await fetchDistributors()
         
         // Find and refresh the specific distributor details that contains this location
@@ -626,7 +623,6 @@ export default function DistributorsPage() {
         )
         
         if (distributorId) {
-          console.log("🔄 Refreshing distributor details for:", distributorId)
           await fetchDistributorDetails(distributorId, true)
         }
         
@@ -634,25 +630,19 @@ export default function DistributorsPage() {
         const expandedIds = Object.keys(distributorDetails)
         for (const id of expandedIds) {
           if (id !== distributorId) {
-            console.log("🔄 Refreshing additional distributor:", id)
             await fetchDistributorDetails(id, true)
           }
         }
-        
-        console.log("✅ All data refreshed successfully")
       } else {
         const errorData = await response.json()
-        console.error("❌ Location toggle failed:", errorData)
         setError(`Failed to toggle location status: ${errorData.error}`)
       }
     } catch (error) {
-      console.error("💥 Location toggle error:", error)
       setError("Error toggling location status")
     }
   }
 
   const toggleSellerStatus = async (sellerId: string, e: React.MouseEvent) => {
-    console.log("🔥 SELLER TOGGLE CLICKED:", sellerId)
     e.stopPropagation()
     
     // Find the distributor and location that contains this seller
@@ -683,31 +673,26 @@ export default function DistributorsPage() {
     if (distributorId && locationId && distributor && location && seller) {
       // 🔒 HIERARCHICAL LOCK: If distributor is inactive, can't activate seller
       if (!distributor.isActive && !seller.isActive) {
-        console.log("🔒 BLOCKED: Cannot activate seller - distributor is inactive")
         setError("Cannot activate seller: distributor must be active first")
         return
       }
       
       // 🔒 HIERARCHICAL LOCK: If location is inactive, can't activate seller
       if (!location.isActive && !seller.isActive) {
-        console.log("🔒 BLOCKED: Cannot activate seller - location is inactive")
         setError("Cannot activate seller: location must be active first")
         return
       }
     }
     
     try {
-      console.log("🚀 Making API call to:", `/api/admin/sellers/${sellerId}/toggle-status`)
       const response = await fetch(`/api/admin/sellers/${sellerId}/toggle-status`, {
         method: "PATCH",
       })
 
       if (response.ok) {
         const result = await response.json()
-        console.log("✅ Seller toggle response OK - New status:", result.isActive)
         
         // Force immediate refresh of all data
-        console.log("🔄 Refreshing distributors list...")
         await fetchDistributors()
         
         // Find and force refresh the specific distributor details that contains this seller's location
@@ -718,7 +703,6 @@ export default function DistributorsPage() {
         )
         
         if (distributorId) {
-          console.log("🔄 Force refreshing distributor details for:", distributorId)
           await fetchDistributorDetails(distributorId, true)
         }
         
@@ -726,19 +710,14 @@ export default function DistributorsPage() {
         const expandedIds = Object.keys(distributorDetails)
         for (const id of expandedIds) {
           if (id !== distributorId) {
-            console.log("🔄 Refreshing additional distributor:", id)
             await fetchDistributorDetails(id, true)
           }
         }
-        
-        console.log("✅ All seller data refreshed successfully")
       } else {
         const errorData = await response.json()
-        console.error("❌ Seller toggle failed:", errorData)
         setError(`Failed to toggle seller status: ${errorData.error}`)
       }
     } catch (error) {
-      console.error("💥 Seller toggle error:", error)
       setError("Error toggling seller status")
     }
   }
@@ -770,12 +749,8 @@ export default function DistributorsPage() {
   const fetchQRConfigurations = async () => {
     setLoadingQRConfigs(true)
     try {
-      console.log('🔍 Fetching QR configurations...')
-      
       // Load from localStorage (named configurations)
       const saved = localStorage.getItem('elocalpass-saved-configurations')
-      console.log('💾 localStorage content:', saved)
-      
       let localConfigs: any[] = []
       if (saved) {
         try {
@@ -785,7 +760,6 @@ export default function DistributorsPage() {
             createdAt: new Date(config.createdAt),
             source: 'localStorage'
           }))
-          console.log('📦 Parsed localStorage configs:', localConfigs.length, localConfigs.map(c => c.name))
         } catch (error) {
           console.error('Error parsing saved configurations:', error)
         }
@@ -827,19 +801,13 @@ export default function DistributorsPage() {
 
       // Combine both sources, removing duplicates by ID
       const allConfigs = [...localConfigs, ...apiConfigs]
-      console.log('🔄 All configs before deduplication:', allConfigs.map(c => ({ id: c.id, name: c.name, source: c.source })))
-      
       const uniqueConfigs = allConfigs.filter((config, index, self) => {
         const firstIndex = self.findIndex(c => c.id === config.id)
         const isFirstOccurrence = index === firstIndex
-        if (!isFirstOccurrence) {
-          console.log('⚠️  Removing duplicate config:', { id: config.id, name: config.name, source: config.source })
-        }
         return isFirstOccurrence
       })
       
       setAvailableQRConfigs(uniqueConfigs)
-      console.log('📈 Combined configs after deduplication:', uniqueConfigs.length, uniqueConfigs.map(c => ({ id: c.id, name: c.name, source: c.source })))
     } catch (error) {
       console.error('Error loading QR configurations:', error)
     } finally {
@@ -856,18 +824,12 @@ export default function DistributorsPage() {
   const handleAssignQRConfig = async (config: any) => {
     if (!selectedSellerForQR) return
 
-    console.log('🔄 Starting QR config assignment...')
-    console.log('📧 Seller:', selectedSellerForQR)
-    console.log('⚙️ Config:', config)
-
     try {
       const requestBody = {
         sellerEmail: selectedSellerForQR.email,
         configId: config.id,
         configData: config.config
       }
-      
-      console.log('📤 Request body:', requestBody)
 
       const response = await fetch('/api/admin/assign-config', {
         method: 'POST',
@@ -878,22 +840,15 @@ export default function DistributorsPage() {
         credentials: 'include'
       })
 
-      console.log('📥 Response status:', response.status)
-
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ QR Config paired successfully!', data)
-        
-        // Debug: Check localStorage after pairing
-        const savedAfterPairing = localStorage.getItem('elocalpass-saved-configurations')
-        console.log('💾 localStorage after pairing:', savedAfterPairing)
-        
+
         showSuccess('QR Configuration Paired', 'Configuration has been successfully assigned to the seller.')
-        
+
         // Close modal and refresh data
         setShowQRPairingModal(false)
         setSelectedSellerForQR(null)
-        
+
         // Refresh distributor data to show updated seller config status
         await fetchDistributors()
         if (expandedDistributor) {
@@ -902,31 +857,24 @@ export default function DistributorsPage() {
         }
       } else {
         const errorData = await response.json()
-        console.error('❌ Failed to pair QR config:', errorData)
         showError('Pairing Failed', errorData.error || errorData.message || 'Unknown error occurred')
       }
     } catch (error) {
-      console.error('💥 Error pairing QR config:', error)
       showError('Network Error', 'Failed to connect to server while pairing QR config')
     }
   }
 
   const handleUnpairQRConfig = async (seller: any) => {
     try {
-      console.log('🔄 Unpairing QR config for seller:', seller.name, seller.id)
-      
       const response = await fetch(`/api/admin/sellers/${seller.id}/unpair-config`, {
         method: 'DELETE',
         credentials: 'include'
       })
 
-      console.log('📥 Unpair response status:', response.status)
-
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ QR Config unpaired successfully!', data)
         showSuccess('QR Configuration Unpaired', 'Configuration has been successfully removed from the seller.')
-        
+
         // Refresh distributor data to show updated seller config status
         await fetchDistributors()
         if (expandedDistributor) {
@@ -935,11 +883,9 @@ export default function DistributorsPage() {
         }
       } else {
         const errorData = await response.json()
-        console.error('❌ Failed to unpair QR config:', errorData)
         showError('Unpair Failed', errorData.error || errorData.message || 'Unknown error occurred')
       }
     } catch (error) {
-      console.error('💥 Error unpairing QR config:', error)
       showError('Network Error', 'Failed to connect to server while unpairing QR config')
     }
   }
@@ -1061,7 +1007,16 @@ export default function DistributorsPage() {
                           Sellers
                         </th>
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Locations
+                          <div className="flex items-center justify-between">
+                            <span>Locations</span>
+                            <div className="text-blue-600 hover:text-blue-800">
+                              {expandedDistributor ? (
+                                <ChevronDown className="h-5 w-5" />
+                              ) : (
+                                <ChevronRight className="h-5 w-5" />
+                              )}
+                            </div>
+                          </div>
                         </th>
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           <button 
@@ -1129,14 +1084,14 @@ export default function DistributorsPage() {
                               </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
+                              <span className="text-sm font-medium text-gray-900">
                                 {distributorDetails[distributor.id]?.locations?.reduce((total, location) => total + (location.sellers?.length || 0), 0) || 0}
-                              </div>
+                              </span>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium text-gray-900">
-                                  {distributorDetails[distributor.id]?._count?.locations} location{distributorDetails[distributor.id]?._count?.locations !== 1 ? 's' : ''}
+                                  {distributorDetails[distributor.id]?._count?.locations}
                                 </span>
                                 <div className="text-blue-600 hover:text-blue-800">
                                   {expandedDistributor === distributor.id ? (
@@ -1150,7 +1105,7 @@ export default function DistributorsPage() {
                             <td className="px-4 py-4 whitespace-nowrap">
                               <button 
                                 onClick={(e) => toggleDistributorStatus(distributor.id, e)}
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${distributor.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${distributor.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                               >
                                 <div className={`w-1.5 h-1.5 ${distributor.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
                                 {distributor.isActive ? 'Active' : 'Inactive'}
@@ -1369,7 +1324,18 @@ export default function DistributorsPage() {
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Contact Person</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telephone</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sellers</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                                  <div className="flex items-center justify-between">
+                                                    <span>Sellers</span>
+                                                    <div className="text-blue-600 hover:text-blue-800">
+                                                      {expandedLocation ? (
+                                                        <ChevronDown className="h-5 w-5" />
+                                                      ) : (
+                                                        <ChevronRight className="h-5 w-5" />
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                </th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                               </tr>
@@ -1399,16 +1365,29 @@ export default function DistributorsPage() {
                                                       {location.telephone || '—'}
                                                     </td>
                                                     <td className="px-4 py-3 whitespace-nowrap">
-                                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                        {location._count.sellers} seller{location._count.sellers !== 1 ? 's' : ''}
-                                                      </span>
+                                                      <div className="flex items-center space-x-2">
+                                                        <span className="text-sm font-medium text-gray-900">
+                                                          {location._count.sellers} seller{location._count.sellers !== 1 ? 's' : ''}
+                                                        </span>
+                                                        <button
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleLocationClick(location.id);
+                                                          }}
+                                                          className="text-orange-600 hover:text-orange-800 p-1"
+                                                          title="View Sellers"
+                                                        >
+                                                          {expandedLocation === location.id ? (
+                                                            <ChevronDown className="h-4 w-4" />
+                                                          ) : (
+                                                            <ChevronRight className="h-4 w-4" />
+                                                          )}
+                                                        </button>
+                                                      </div>
                                                     </td>
                                                     <td className="px-4 py-3 whitespace-nowrap">
                                                       <button 
-                                                        onClick={(e) => {
-                                                          console.log("🔥 LOCATION BUTTON CLICKED! ID:", location.id, "Current Status:", location.isActive)
-                                                          toggleLocationStatus(location.id, e)
-                                                        }}
+                                                        onClick={(e) => toggleLocationStatus(location.id, e)}
                                                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${location.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                                                       >
                                                         <div className={`w-1.5 h-1.5 ${location.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
@@ -1423,20 +1402,6 @@ export default function DistributorsPage() {
                                                           title="Edit Location"
                                                         >
                                                           <Edit2 className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleLocationClick(location.id);
-                                                          }}
-                                                          className="text-orange-600 hover:text-orange-800 p-1"
-                                                          title="View Sellers"
-                                                        >
-                                                          {expandedLocation === location.id ? (
-                                                            <ChevronDown className="h-4 w-4" />
-                                                          ) : (
-                                                            <ChevronRight className="h-4 w-4" />
-                                                          )}
                                                         </button>
                                                         <button
                                                           onClick={(e) => toggleLocationStatus(location.id, e)}
@@ -1633,7 +1598,7 @@ export default function DistributorsPage() {
                                                                           {seller.email}
                                                                         </td>
                                                                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                                          —
+                                                                          {(seller as any).telephone || '—'}
                                                                         </td>
                                                                         <td className="px-4 py-3 whitespace-nowrap">
                                                                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -1706,18 +1671,6 @@ export default function DistributorsPage() {
 
                                                                                 <div>
                                                                                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                    Contact Person
-                                                                                  </label>
-                                                                                  <input
-                                                                                    type="text"
-                                                                                    value={sellerEditFormData.name}
-                                                                                    readOnly
-                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm"
-                                                                                  />
-                                                                                </div>
-
-                                                                                <div>
-                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
                                                                                     Email *
                                                                                   </label>
                                                                                   <input
@@ -1726,19 +1679,6 @@ export default function DistributorsPage() {
                                                                                     onChange={(e) => setSellerEditFormData(prev => ({ ...prev, email: e.target.value }))}
                                                                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                                                                                     required
-                                                                                  />
-                                                                                </div>
-
-                                                                                <div>
-                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                    Password
-                                                                                  </label>
-                                                                                  <input
-                                                                                    type="password"
-                                                                                    value={sellerEditFormData.password}
-                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, password: e.target.value }))}
-                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                                                                    placeholder="New password"
                                                                                   />
                                                                                 </div>
 
@@ -1766,6 +1706,19 @@ export default function DistributorsPage() {
                                                                                     placeholder="If same as telephone leave blank"
                                                                                   />
                                                                                 </div>
+
+                                                                                <div>
+                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    Password
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="password"
+                                                                                    value={sellerEditFormData.password}
+                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, password: e.target.value }))}
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                    placeholder="New password"
+                                                                                  />
+                                                                                </div>
                                                                               </div>
 
                                                                               <div className="mt-4">
@@ -1783,6 +1736,147 @@ export default function DistributorsPage() {
 
                                                                               <div className="pt-4 border-t">
                                                                                 <div className="text-sm font-medium text-gray-700 mb-3">QR Configuration Management</div>
+                                                                                
+                                                                                {seller.sellerConfigs && (
+                                                                                  <div className="mb-4 p-3 bg-gray-50 rounded-lg text-xs">
+                                                                                    {/* Load QR configs when opening edit form and try to match by seller config data */}
+                                                                                    {(() => {
+                                                                                      const matchingConfig = availableQRConfigs.find(config => {
+                                                                                        const matches = config.config && 
+                                                                                               (seller.sellerConfigs as any) && 
+                                                                                               config.config.button1GuestsDefault === (seller.sellerConfigs as any).button1GuestsDefault &&
+                                                                                               config.config.button1DaysDefault === (seller.sellerConfigs as any).button1DaysDefault &&
+                                                                                               config.config.button2FixedPrice === (seller.sellerConfigs as any).button2FixedPrice
+                                                                                        return matches
+                                                                                      })
+                                                                                      
+                                                                                      if (matchingConfig) {
+                                                                                        // Display full 5-button configuration
+                                                                                        return (
+                                                                                          <div className="grid grid-cols-3 gap-2">
+                                                                                            {/* Button 1: Guest & Day Limits */}
+                                                                                            <div className="space-y-1">
+                                                                                              <div className="flex items-center">
+                                                                                                <div className="w-3 h-3 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs mr-1">1</div>
+                                                                                                <span className="font-semibold text-gray-800 text-xs">Guest & Day Limits</span>
+                                                                                              </div>
+                                                                                              <div className="text-gray-600 ml-4 text-xs">
+                                                                                                <div>Guests: {matchingConfig.config.button1GuestsLocked ? matchingConfig.config.button1GuestsDefault : `1-${matchingConfig.config.button1GuestsRangeMax}`}</div>
+                                                                                                <div>Days: {matchingConfig.config.button1DaysLocked ? matchingConfig.config.button1DaysDefault : `1-${matchingConfig.config.button1DaysRangeMax}`}</div>
+                                                                                              </div>
+                                                                                            </div>
+                                                                                            
+                                                                                            {/* Button 2: Pricing */}
+                                                                                            <div className="space-y-1">
+                                                                                              <div className="flex items-center">
+                                                                                                <div className="w-3 h-3 bg-green-500 text-white rounded-full flex items-center justify-center text-xs mr-1">2</div>
+                                                                                                <span className="font-semibold text-gray-800 text-xs">Pricing</span>
+                                                                                              </div>
+                                                                                              <div className="text-gray-600 ml-4 text-xs">
+                                                                                                {matchingConfig.config.button2PricingType === 'FIXED' ? (
+                                                                                                  <div>
+                                                                                                    <div>Price: ${matchingConfig.config.button2FixedPrice}{matchingConfig.config.button2IncludeTax ? ` + ${matchingConfig.config.button2TaxPercentage}% tax` : ' (no tax)'}</div>
+                                                                                                  </div>
+                                                                                                ) : matchingConfig.config.button2PricingType === 'VARIABLE' ? (
+                                                                                                  <div>
+                                                                                                    <div>Base: ${matchingConfig.config.button2VariableBasePrice}</div>
+                                                                                                    <div>+${matchingConfig.config.button2VariableGuestIncrease}/guest, +${matchingConfig.config.button2VariableDayIncrease}/day</div>
+                                                                                                    {matchingConfig.config.button2VariableCommission > 0 && <div>+${matchingConfig.config.button2VariableCommission}% commission</div>}
+                                                                                                    {matchingConfig.config.button2IncludeTax ? <div>+${matchingConfig.config.button2TaxPercentage}% tax</div> : <div>(no tax)</div>}
+                                                                                                  </div>
+                                                                                                ) : (
+                                                                                                  <div>Free</div>
+                                                                                                )}
+                                                                                              </div>
+                                                                                            </div>
+                                                                                            
+                                                                                            {/* Button 3: QR Delivery */}
+                                                                                            <div className="space-y-1">
+                                                                                              <div className="flex items-center">
+                                                                                                <div className="w-3 h-3 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs mr-1">3</div>
+                                                                                                <span className="font-semibold text-gray-800 text-xs">QR Delivery</span>
+                                                                                              </div>
+                                                                                              <div className="text-gray-600 ml-4 text-xs">
+                                                                                                <div>Method: {
+                                                                                                  matchingConfig.config.button3DeliveryMethod === 'DIRECT' ? 'Direct' :
+                                                                                                  matchingConfig.config.button3DeliveryMethod === 'URLS' ? '1 URL' :
+                                                                                                  'Both'
+                                                                                                }</div>
+                                                                                              </div>
+                                                                                            </div>
+                                                                                            
+                                                                                            {/* Button 4: Welcome Email */}
+                                                                                            <div className="space-y-1">
+                                                                                              <div className="flex items-center">
+                                                                                                <div className="w-3 h-3 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs mr-1">4</div>
+                                                                                                <span className="font-semibold text-gray-800 text-xs">Welcome Email</span>
+                                                                                              </div>
+                                                                                              <div className="text-gray-600 ml-4 text-xs">
+                                                                                                <div>{matchingConfig.config.button4LandingPageRequired ? 'Customized' : 'Default'}</div>
+                                                                                              </div>
+                                                                                            </div>
+                                                                                            
+                                                                                            {/* Button 5: Rebuy Email */}
+                                                                                            <div className="space-y-1">
+                                                                                              <div className="flex items-center">
+                                                                                                <div className="w-3 h-3 bg-red-500 text-white rounded-full flex items-center justify-center text-xs mr-1">5</div>
+                                                                                                <span className="font-semibold text-gray-800 text-xs">Rebuy Email</span>
+                                                                                              </div>
+                                                                                              <div className="text-gray-600 ml-4 text-xs">
+                                                                                                <div>
+                                                                                                  {matchingConfig.config.button5SendRebuyEmail ? (
+                                                                                                    (() => {
+                                                                                                      const rebuyEmailConfig = typeof window !== 'undefined' ? localStorage.getItem('elocalpass-rebuy-email-config') : null
+                                                                                                      try {
+                                                                                                        return rebuyEmailConfig && JSON.parse(rebuyEmailConfig) 
+                                                                                                          ? 'Yes - Customized' 
+                                                                                                          : 'Yes - Default'
+                                                                                                      } catch {
+                                                                                                        return 'Yes - Default'
+                                                                                                      }
+                                                                                                    })()
+                                                                                                  ) : 'No'}
+                                                                                                </div>
+                                                                                              </div>
+                                                                                            </div>
+                                                                                            
+                                                                                            {/* Status & Actions */}
+                                                                                            <div className="space-y-1">
+                                                                                              <div className="flex items-center">
+                                                                                                <div className="w-3 h-3 bg-gray-500 text-white rounded-full flex items-center justify-center text-xs mr-1">✓</div>
+                                                                                                <span className="font-semibold text-gray-800 text-xs">Status</span>
+                                                                                              </div>
+                                                                                              <div className="text-gray-600 ml-4 text-xs">
+                                                                                                <div className="text-green-600">PAIRED: {matchingConfig.name.toUpperCase()}</div>
+                                                                                                <button 
+                                                                                                  onClick={() => window.open(`/admin/qr-config?openLibrary=true&configId=${matchingConfig.id}`, '_blank')}
+                                                                                                  className="text-blue-600 hover:underline"
+                                                                                                >
+                                                                                                  View Full Config →
+                                                                                                </button>
+                                                                                              </div>
+                                                                                            </div>
+                                                                                          </div>
+                                                                                        )
+                                                                                      } else {
+                                                                                        // Fallback to basic info if no matching config found
+                                                                                        return (
+                                                                                          <div className="text-center text-gray-600 text-xs">
+                                                                                            <div className="text-green-600 mb-2">✓ QR Configuration Paired</div>
+                                                                                            <div>Basic Config: {(seller.sellerConfigs as any).defaultGuests} guests, {(seller.sellerConfigs as any).defaultDays} days, ${(seller.sellerConfigs as any).fixedPrice}</div>
+                                                                                            <button 
+                                                                                              onClick={() => window.open('/admin/qr-config', '_blank')}
+                                                                                              className="text-blue-600 hover:underline mt-1 block"
+                                                                                            >
+                                                                                              View Full Configuration →
+                                                                                            </button>
+                                                                                          </div>
+                                                                                        )
+                                                                                      }
+                                                                                    })()}
+                                                                                  </div>
+                                                                                )}
+                                                                                
                                                                                 <div className="flex space-x-2">
                                                                                   {!seller.sellerConfigs ? (
                                                                                     <>
@@ -2006,7 +2100,7 @@ export default function DistributorsPage() {
                   <button
                     type="submit"
                     disabled={isCreatingLocation}
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isCreatingLocation ? (
                       <>
@@ -2024,7 +2118,7 @@ export default function DistributorsPage() {
                       setSelectedDistributorId(null)
                       setLocationFormData({ name: "", contactPerson: "", email: "", password: "", telephone: "", whatsapp: "", notes: "" })
                     }}
-                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >
                     Cancel
                   </button>
@@ -2066,6 +2160,7 @@ export default function DistributorsPage() {
                             required
                           />
                         </div>
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Email *
@@ -2078,6 +2173,7 @@ export default function DistributorsPage() {
                             required
                           />
                         </div>
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Password *
@@ -2277,9 +2373,8 @@ export default function DistributorsPage() {
                                 <h5 className="font-semibold text-gray-900">Guest & Day Limits</h5>
                               </div>
                               <div className="text-sm text-gray-700 space-y-1">
-                                <p><strong>Guests:</strong> {config.config.button1GuestsDefault} (max: {config.config.button1GuestsRangeMax})</p>
-                                <p><strong>Days:</strong> {config.config.button1DaysDefault} (max: {config.config.button1DaysRangeMax})</p>
-                                <p><strong>Locked:</strong> {config.config.button1GuestsLocked && config.config.button1DaysLocked ? 'Yes' : 'No'}</p>
+                                <p><strong>Guests:</strong> {config.config.button1GuestsLocked ? config.config.button1GuestsDefault : `1-${config.config.button1GuestsRangeMax}`}</p>
+                                <p><strong>Days:</strong> {config.config.button1DaysLocked ? config.config.button1DaysDefault : `1-${config.config.button1DaysRangeMax}`}</p>
                               </div>
                             </div>
 
@@ -2292,12 +2387,20 @@ export default function DistributorsPage() {
                                 <h5 className="font-semibold text-gray-900">Pricing</h5>
                               </div>
                               <div className="text-sm text-gray-700 space-y-1">
-                                <p><strong>Type:</strong> {config.config.button2PricingType}</p>
-                                {config.config.button2PricingType === 'FIXED' && (
-                                  <p><strong>Price:</strong> ${config.config.button2FixedPrice}</p>
-                                )}
-                                {config.config.button2PricingType === 'PER_GUEST' && (
-                                  <p><strong>Per Guest:</strong> ${config.config.button2PerGuestPrice}</p>
+                                {config.config.button2PricingType === 'FIXED' ? (
+                                  <div>
+                                    <p><strong>Price:</strong> ${config.config.button2FixedPrice}{config.config.button2IncludeTax ? ` + ${config.config.button2TaxPercentage}% tax` : ' (no tax)'}</p>
+                                  </div>
+                                ) : config.config.button2PricingType === 'VARIABLE' ? (
+                                  <div>
+                                    <p><strong>Base:</strong> ${config.config.button2VariableBasePrice}</p>
+                                    <p><strong>Per Guest:</strong> +${config.config.button2VariableGuestIncrease}</p>
+                                    <p><strong>Per Day:</strong> +${config.config.button2VariableDayIncrease}</p>
+                                    {config.config.button2VariableCommission > 0 && <p><strong>Commission:</strong> +${config.config.button2VariableCommission}%</p>}
+                                    {config.config.button2IncludeTax ? <p><strong>Tax:</strong> +${config.config.button2TaxPercentage}%</p> : <p>(no tax)</p>}
+                                  </div>
+                                ) : (
+                                  <p>Free</p>
                                 )}
                               </div>
                             </div>
@@ -2312,9 +2415,9 @@ export default function DistributorsPage() {
                               </div>
                               <div className="text-sm text-gray-700 space-y-1">
                                 <p><strong>Method:</strong> {
-                                  config.config.button3DeliveryMethod === 'DIRECT' ? 'Direct Download' :
-                                  config.config.button3DeliveryMethod === 'URLS' ? 'Landing Pages' :
-                                  'Both Methods'
+                                  config.config.button3DeliveryMethod === 'DIRECT' ? 'Direct' :
+                                  config.config.button3DeliveryMethod === 'URLS' ? '1 URL' :
+                                  'Both'
                                 }</p>
                               </div>
                             </div>
