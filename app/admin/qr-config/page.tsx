@@ -104,6 +104,10 @@ export default function QRConfigPage() {
     name: string;
     description: string;
     config: QRGlobalConfig;
+    emailTemplates: {
+      welcomeEmail: any;
+      rebuyEmail: any;
+    };
     createdAt: Date;
   }>>([])
   const [showSaveModal, setShowSaveModal] = useState(false)
@@ -376,11 +380,33 @@ export default function QRConfigPage() {
       return
     }
 
+    // Gather email template configurations
+    const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+    const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+    
+    let parsedWelcomeEmail = null
+    let parsedRebuyEmail = null
+    
+    try {
+      if (welcomeEmailConfig) {
+        parsedWelcomeEmail = JSON.parse(welcomeEmailConfig)
+      }
+      if (rebuyEmailConfig) {
+        parsedRebuyEmail = JSON.parse(rebuyEmailConfig)
+      }
+    } catch (error) {
+      console.warn('Warning: Could not parse email template configurations:', error)
+    }
+
     const newConfig = {
       id: Date.now().toString(),
       name: newConfigName.trim(),
       description: newConfigDescription.trim() || 'No description provided',
       config: { ...globalConfig },
+      emailTemplates: {
+        welcomeEmail: parsedWelcomeEmail,
+        rebuyEmail: parsedRebuyEmail
+      },
       createdAt: new Date()
     }
     
@@ -1798,31 +1824,6 @@ export default function QRConfigPage() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-medium text-gray-900">QR Configuration Library</h3>
               <div className="flex items-center space-x-3">
-                {/* Export/Import Buttons */}
-                <button
-                  onClick={exportConfigurations}
-                  className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors flex items-center"
-                  title="Export configurations to file"
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l3-3m0 0l3 3m-3-3v8m-13-5a9 9 0 110 18 9 9 0 010-18z" />
-                  </svg>
-                  Export
-                </button>
-                
-                <label className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors cursor-pointer flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l3-3m0 0l3 3m-3-3v8m13-5a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Import
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={importConfigurations}
-                    className="hidden"
-                  />
-                </label>
-
                 <button
                   onClick={() => setShowConfigLibrary(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -1872,7 +1873,7 @@ export default function QRConfigPage() {
                               }}
                               className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
                             >
-                              Assign to Seller
+                              Pair with Seller
                             </button>
                             <button
                               onClick={(e) => {
@@ -1943,7 +1944,16 @@ export default function QRConfigPage() {
                             <div className="text-sm text-gray-700 space-y-1">
                               <p><strong>Type:</strong> {config.config.button2PricingType === 'FIXED' ? 'Fixed' : config.config.button2PricingType === 'VARIABLE' ? 'Variable' : 'Free'}</p>
                               {config.config.button2PricingType === 'FIXED' && config.config.button2FixedPrice && (
-                                <p><strong>Price:</strong> ${config.config.button2FixedPrice}</p>
+                                <>
+                                  {config.config.button2IncludeTax ? (
+                                    <>
+                                      <p><strong>Price:</strong> ${config.config.button2FixedPrice} + ${(config.config.button2FixedPrice * (config.config.button2TaxPercentage / 100)).toFixed(2)} ({config.config.button2TaxPercentage}% tax)</p>
+                                      <p><strong>Total:</strong> ${(config.config.button2FixedPrice * (1 + config.config.button2TaxPercentage / 100)).toFixed(2)}</p>
+                                    </>
+                                  ) : (
+                                    <p><strong>Price:</strong> ${config.config.button2FixedPrice}</p>
+                                  )}
+                                </>
                               )}
                               {config.config.button2PricingType === 'VARIABLE' && (
                                 <>
@@ -1951,10 +1961,10 @@ export default function QRConfigPage() {
                                   <p><strong>Per Guest:</strong> +${config.config.button2VariableGuestIncrease}</p>
                                   <p><strong>Per Day:</strong> +${config.config.button2VariableDayIncrease}</p>
                                   <p><strong>Commission:</strong> {config.config.button2VariableCommission}%</p>
+                                  {config.config.button2IncludeTax && (
+                                    <p><strong>Tax:</strong> +{config.config.button2TaxPercentage}% (added to final amount)</p>
+                                  )}
                                 </>
-                              )}
-                              {config.config.button2IncludeTax && (
-                                <p><strong>Tax:</strong> {config.config.button2TaxPercentage}% included</p>
                               )}
                             </div>
                           </div>
@@ -1971,34 +1981,36 @@ export default function QRConfigPage() {
                               <p><strong>Method:</strong> {
                                 config.config.button3DeliveryMethod === 'DIRECT' ? 'Direct Download' :
                                 config.config.button3DeliveryMethod === 'URLS' ? 'Landing Pages' :
-                                'Button Trigger'
+                                config.config.button3DeliveryMethod === 'BOTH' ? 'Both Options' : 'Button Trigger'
                               }</p>
                               <p><strong>Available delivery options configured</strong></p>
                             </div>
                           </div>
 
-                          {/* 4. Landing Page */}
+                          {/* 4. Welcome Email */}
                           <div className="bg-white p-4 rounded-lg shadow-sm">
                             <div className="flex items-center mb-3">
                               <div className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
                                 4
                               </div>
-                              <h5 className="font-semibold text-gray-900">Landing Page</h5>
+                              <h5 className="font-semibold text-gray-900">Welcome Email</h5>
                             </div>
                             <div className="text-sm text-gray-700 space-y-1">
-                              <p><strong>Required:</strong> {config.config.button4LandingPageRequired ? 'Yes' : 'No'}</p>
+                              <p><strong>Enabled:</strong> {config.config.button4LandingPageRequired ? 'Yes' : 'No'}</p>
                               {config.config.button4LandingPageRequired && (
                                 <>
                                   <div className="flex items-center">
                                     <span className="text-green-600 mr-1">✓</span>
-                                    <span>Landing page configured</span>
+                                    <span>{config.emailTemplates?.welcomeEmail ? 'Custom template configured' : 'Default template'}</span>
                                   </div>
-                                  <div className="mt-2 space-y-1">
-                                    <p><strong>Template:</strong> <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">Custom Landing Page - {new Date(config.createdAt).toLocaleDateString()}</span></p>
-                                    <p className="text-xs">
-                                      <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">📝 Edit Template</span>
-                                    </p>
-                                  </div>
+                                  {config.emailTemplates?.welcomeEmail && (
+                                    <div className="mt-2 space-y-1">
+                                      <p><strong>Template:</strong> <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">Welcome Email Template - {new Date(config.createdAt).toLocaleDateString()}</span></p>
+                                      <p className="text-xs">
+                                        <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">📝 Edit Template</span>
+                                      </p>
+                                    </div>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -2018,15 +2030,17 @@ export default function QRConfigPage() {
                                 <>
                                   <div className="flex items-center">
                                     <span className="text-green-600 mr-1">✓</span>
-                                    <span>Custom template configured</span>
+                                    <span>{config.emailTemplates?.rebuyEmail ? 'Custom template configured' : 'Default template'}</span>
                                   </div>
-                                  <div className="mt-2 space-y-1">
-                                    <p><strong>Template:</strong> <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}</span></p>
-                                    <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
-                                    <p className="text-xs">
-                                      <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">📝 Edit Template</span>
-                                    </p>
-                                  </div>
+                                  {config.emailTemplates?.rebuyEmail && (
+                                    <div className="mt-2 space-y-1">
+                                      <p><strong>Template:</strong> <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}</span></p>
+                                      <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                      <p className="text-xs">
+                                        <span className="text-blue-600 hover:text-blue-800 cursor-pointer underline">📝 Edit Template</span>
+                                      </p>
+                                    </div>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -2034,72 +2048,28 @@ export default function QRConfigPage() {
 
                         </div>
 
-                        {/* Configuration Summary */}
-                        <div className="mt-6 p-4 bg-white rounded-lg shadow-sm">
-                          <h5 className="font-semibold text-gray-900 mb-3">Configuration Summary</h5>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <p className="text-gray-500">Source</p>
-                              <p className="font-medium">Global (API)</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500">Created</p>
-                              <p className="font-medium">{new Date(config.createdAt).toLocaleDateString()}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500">ID</p>
-                              <p className="font-medium text-xs">{config.id}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500">Description</p>
-                              <p className="font-medium">{config.description || 'No description'}</p>
-                            </div>
-                          </div>
-                        </div>
-
                         {/* Action Buttons */}
                         <div className="mt-6 flex justify-between items-center pt-4 border-t border-gray-200">
                           <div className="flex space-x-3">
                             <button
                               onClick={() => {
-                                // Load this configuration into the main form
+                                // Clone this configuration into the main form
                                 updateConfig(config.config)
+                                
+                                // Restore email templates to localStorage for editing
+                                if (config.emailTemplates?.welcomeEmail) {
+                                  localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(config.emailTemplates.welcomeEmail))
+                                }
+                                if (config.emailTemplates?.rebuyEmail) {
+                                  localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(config.emailTemplates.rebuyEmail))
+                                }
+                                
                                 setShowConfigLibrary(false)
-                                toast.success('Configuration Loaded', 'Configuration loaded into the form for editing')
+                                toast.success('Configuration Cloned', `"${config.name}" has been cloned. Make your changes and save as a new configuration.`)
                               }}
-                              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors font-medium"
+                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
                             >
-                              Load Configuration
-                            </button>
-                            <button
-                              onClick={() => {
-                                // Export configuration as JSON
-                                const configData = JSON.stringify(config, null, 2)
-                                const blob = new Blob([configData], { type: 'application/json' })
-                                const url = URL.createObjectURL(blob)
-                                const a = document.createElement('a')
-                                a.href = url
-                                a.download = `qr-config-${config.name.replace(/\s+/g, '-').toLowerCase()}.json`
-                                document.body.appendChild(a)
-                                a.click()
-                                document.body.removeChild(a)
-                                URL.revokeObjectURL(url)
-                                toast.success('Configuration Exported', 'Configuration downloaded as JSON file')
-                              }}
-                              className="px-4 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors font-medium"
-                            >
-                              Export JSON
-                            </button>
-                            {/* Assign to Seller Button */}
-                            <button
-                              onClick={() => {
-                                setSelectedConfig(config)
-                                fetchAvailableSellers()
-                                setShowSellerModal(true)
-                              }}
-                              className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors font-medium"
-                            >
-                              Assign to Seller
+                              🔄 Clone Configuration
                             </button>
                           </div>
                         </div>
