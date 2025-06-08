@@ -5,6 +5,9 @@ import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState, useEffect } from "react"
 
 interface QRConfig {
+  // Configuration info
+  configName: string
+  configDescription?: string
   // Button 1 fields
   button1GuestsLocked: boolean
   button1GuestsDefault: number
@@ -23,6 +26,13 @@ interface QRConfig {
   button2TaxPercentage: number
   // Button 3 fields
   button3DeliveryMethod: 'DIRECT' | 'URLS' | 'BOTH'
+  // Landing page URLs from configuration
+  landingPageUrls?: Array<{
+    id: string
+    name: string
+    url: string
+    description?: string
+  }>
 }
 
 export default function SellerDashboard() {
@@ -39,6 +49,7 @@ export default function SellerDashboard() {
   const [selectedDays, setSelectedDays] = useState(3)
   const [language, setLanguage] = useState('en')
   const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState<'DIRECT' | 'URLS'>('DIRECT')
+  const [selectedLandingPage, setSelectedLandingPage] = useState<string | null>(null)
   
   // Load seller configuration
   useEffect(() => {
@@ -57,6 +68,9 @@ export default function SellerDashboard() {
         }
         if (data.button1DaysLocked) {
           setSelectedDays(data.button1DaysDefault)
+        }
+        if (data.landingPageUrls && data.landingPageUrls.length > 0) {
+          setSelectedLandingPage(data.landingPageUrls[0].id)
         }
       }
     } catch (error) {
@@ -109,7 +123,8 @@ export default function SellerDashboard() {
           guests: selectedGuests,
           days: selectedDays,
           language,
-          deliveryMethod: config?.button3DeliveryMethod === 'BOTH' ? selectedDeliveryMethod : config?.button3DeliveryMethod
+          deliveryMethod: config?.button3DeliveryMethod === 'BOTH' ? selectedDeliveryMethod : config?.button3DeliveryMethod,
+          landingPageId: selectedLandingPage
         })
       })
       
@@ -185,6 +200,16 @@ export default function SellerDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    
+                    {/* Configuration Name */}
+                    <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
+                      <h4 className="text-lg font-semibold text-blue-900 mb-2">
+                        {config.configName}
+                      </h4>
+                      {config.configDescription && (
+                        <p className="text-sm text-gray-700">{config.configDescription}</p>
+                      )}
+                    </div>
                     
                     {/* Step 1: Client Information */}
                     <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
@@ -293,16 +318,86 @@ export default function SellerDashboard() {
                       </div>
                     </div>
                     
-                    {/* Step 3: Language & Delivery */}
+                    {/* Step 3A: Delivery Method */}
                     <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
                       <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                        Step 3: Language & Delivery
+                        Step 3A: Delivery Method
                       </h4>
                       <div className="space-y-3">
-                        {/* Language - Inline */}
+                        {config.button3DeliveryMethod === 'DIRECT' && (
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-gray-700 flex-shrink-0">
+                              Send via:
+                            </label>
+                            <div className="ml-3 px-3 py-2 bg-blue-100 rounded-md text-sm text-gray-900 min-w-0 flex-shrink-0">
+                              Direct Email (fixed)
+                            </div>
+                          </div>
+                        )}
+                        
+                        {config.button3DeliveryMethod === 'URLS' && config.landingPageUrls && config.landingPageUrls.length > 0 && (
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-gray-700 flex-shrink-0">
+                              Landing Page:
+                            </label>
+                            <select
+                              value={selectedLandingPage || ''}
+                              onChange={(e) => setSelectedLandingPage(e.target.value)}
+                              className="ml-3 flex-1 max-w-xs py-2 px-2 border border-gray-300 bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              {config.landingPageUrls.map(lp => (
+                                <option key={lp.id} value={lp.id}>{lp.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        
+                        {config.button3DeliveryMethod === 'BOTH' && (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <label className="text-sm font-medium text-gray-700 flex-shrink-0">
+                                Send via:
+                              </label>
+                              <select
+                                value={selectedDeliveryMethod}
+                                onChange={(e) => setSelectedDeliveryMethod(e.target.value as 'DIRECT' | 'URLS')}
+                                className="ml-3 w-32 py-2 px-2 border border-gray-300 bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="DIRECT">Direct Email</option>
+                                <option value="URLS">Landing Page</option>
+                              </select>
+                            </div>
+                            
+                            {selectedDeliveryMethod === 'URLS' && config.landingPageUrls && config.landingPageUrls.length > 0 && (
+                              <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-gray-700 flex-shrink-0">
+                                  Landing Page:
+                                </label>
+                                <select
+                                  value={selectedLandingPage || ''}
+                                  onChange={(e) => setSelectedLandingPage(e.target.value)}
+                                  className="ml-3 flex-1 max-w-xs py-2 px-2 border border-gray-300 bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                  {config.landingPageUrls.map(lp => (
+                                    <option key={lp.id} value={lp.id}>{lp.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Step 3B: Customer Communication Language */}
+                    <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
+                      <h4 className="text-lg font-semibold text-blue-900 mb-2">
+                        Step 3B: Customer Communication Language
+                      </h4>
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <label className="text-sm font-medium text-gray-700 flex-shrink-0">
-                            Language:
+                            Customer emails will be sent in:
                           </label>
                           <select
                             value={language}
@@ -313,23 +408,6 @@ export default function SellerDashboard() {
                             <option value="es">Español</option>
                           </select>
                         </div>
-                        
-                        {/* Delivery Method - Inline */}
-                        {config?.button3DeliveryMethod === 'BOTH' && (
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-gray-700 flex-shrink-0">
-                              Send via:
-                            </label>
-                            <select
-                              value={selectedDeliveryMethod}
-                              onChange={(e) => setSelectedDeliveryMethod(e.target.value as 'DIRECT' | 'URLS')}
-                              className="ml-3 w-32 py-2 px-2 border border-gray-300 bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                              <option value="DIRECT">Direct</option>
-                              <option value="URLS">URLs</option>
-                            </select>
-                          </div>
-                        )}
                       </div>
                     </div>
                     
@@ -348,18 +426,34 @@ export default function SellerDashboard() {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-700">Send:</span>
                           <span className="font-medium text-gray-900 text-sm">
-                            {config?.button3DeliveryMethod === 'DIRECT' ? 'Direct' : 
-                             config?.button3DeliveryMethod === 'URLS' ? 'URLs' : 
-                             selectedDeliveryMethod === 'DIRECT' ? 'Direct' : 'URLs'}
+                            {config?.button3DeliveryMethod === 'DIRECT' ? 'Direct Email' : 
+                             config?.button3DeliveryMethod === 'URLS' ? 'Landing Page' : 
+                             selectedDeliveryMethod === 'DIRECT' ? 'Direct Email' : 'Landing Page'}
+                          </span>
+                        </div>
+                        {(config?.button3DeliveryMethod === 'URLS' || 
+                          (config?.button3DeliveryMethod === 'BOTH' && selectedDeliveryMethod === 'URLS')) && 
+                         selectedLandingPage && config?.landingPageUrls && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-700">Landing Page:</span>
+                            <span className="font-medium text-gray-900 text-sm">
+                              {config.landingPageUrls.find(lp => lp.id === selectedLandingPage)?.name}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-700">Language:</span>
+                          <span className="font-medium text-gray-900 text-sm">
+                            {language === 'en' ? 'English' : 'Español'}
                           </span>
                         </div>
                       </div>
                     </div>
                     
-                    {/* Step 4: Generate & Send */}
+                    {/* Step 5: Generate & Send */}
                     <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
                       <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                        Step 4: Generate & Send
+                        Step 5: Generate & Send
                       </h4>
                       <button
                         onClick={handleGenerateQR}

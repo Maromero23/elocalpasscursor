@@ -26,7 +26,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(null)
     }
     
-    return NextResponse.json(config)
+    // Add temporary configuration name based on configuration
+    const configWithName = {
+      ...config,
+      configName: `QR Configuration (${config.button3DeliveryMethod.toLowerCase()})`,
+      configDescription: `${config.button1GuestsDefault} guests × ${config.button1DaysDefault} days - ${config.button3DeliveryMethod.toLowerCase()} delivery`
+    }
+    
+    return NextResponse.json(configWithName)
     
   } catch (error) {
     console.error('Error fetching seller config:', error)

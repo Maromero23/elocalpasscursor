@@ -128,6 +128,7 @@ export default function CreateEnhancedLandingPage() {
   const [formData, setFormData] = useState({
     businessName: '',
     logoUrl: '',
+    configurationName: '',
     
     // Header Text
     headerText: 'WELCOME TO......',
@@ -198,13 +199,15 @@ export default function CreateEnhancedLandingPage() {
   // Fetch global configuration on component mount
   useEffect(() => {
     fetchGlobalConfig()
-    loadSavedTemplates()
     
-    // Check for edit mode and load existing landing page configuration
+    // Check for edit mode and load existing configurations only for edit
     const urlParams = new URLSearchParams(window.location.search)
     const mode = urlParams.get('mode')
     
     if (mode === 'edit') {
+      // Only load saved templates when editing existing configurations
+      loadSavedTemplates()
+      
       const landingConfig = localStorage.getItem('elocalpass-landing-config')
       if (landingConfig) {
         try {
@@ -215,6 +218,9 @@ export default function CreateEnhancedLandingPage() {
           console.log('Could not load landing page configuration:', error)
         }
       }
+    } else {
+      // For fresh/new configurations, start with empty templates
+      console.log('✅ Starting fresh configuration - not loading saved templates')
     }
   }, [])
 
@@ -281,6 +287,19 @@ export default function CreateEnhancedLandingPage() {
     setIsSubmitting(true)
 
     try {
+      // Validate required fields
+      if (!formData.configurationName?.trim()) {
+        toast.error('Missing Information', 'Please enter a configuration name')
+        setIsSubmitting(false)
+        return
+      }
+      
+      if (!formData.businessName?.trim()) {
+        toast.error('Missing Information', 'Please enter a business name')
+        setIsSubmitting(false)
+        return
+      }
+
       const configData = {
         ...formData,
         // Include Button 1 settings from global config
@@ -306,10 +325,35 @@ export default function CreateEnhancedLandingPage() {
         const landingUrl = `/landing-enhanced/${result.qrId}`
         setGeneratedUrl(landingUrl)
         
+        // Save the named configuration as a landing page URL entry
+        try {
+          const urlResponse = await fetch('/api/seller/landing-urls', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              name: formData.configurationName.trim(),
+              url: `${window.location.origin}${landingUrl}`,
+              description: `Custom landing page configuration created on ${new Date().toLocaleDateString()}`
+            })
+          })
+          
+          if (urlResponse.ok) {
+            toast.success('Landing Page Configuration Saved', `"${formData.configurationName}" created and saved to your URL management! URL: ${landingUrl}`)
+          } else {
+            toast.error('Save Error', 'Landing page created but failed to save to URL management')
+          }
+        } catch (urlError) {
+          console.error('Error saving landing page URL:', urlError)
+          toast.error('Save Error', 'Landing page created but failed to save to URL management')
+        }
+        
         // Save landing page config to localStorage for QR Config Library display
         const landingConfig = {
           id: result.qrId,
-          name: `Landing Page - ${new Date().toLocaleDateString()}`,
+          name: formData.configurationName.trim(),
           landingConfig: { ...configData },
           landingUrl: landingUrl,
           createdAt: new Date(),
@@ -317,23 +361,7 @@ export default function CreateEnhancedLandingPage() {
         }
         localStorage.setItem('elocalpass-landing-config', JSON.stringify(landingConfig))
         
-        // CRITICAL: Also update the saved configurations library if this landing page belongs to a saved config
-        const savedConfigurations = JSON.parse(localStorage.getItem('elocalpass-saved-configurations') || '[]')
-        const updatedConfigurations = savedConfigurations.map((config: any) => {
-          // If this config has landing page data, update the landing page configuration
-          if (config.landingPageConfig) {
-            return {
-              ...config,
-              landingPageConfig: landingConfig
-            }
-          }
-          return config
-        })
-        localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigurations))
-        
-        toast.success('Landing Page Created', `Enhanced landing page created! Landing page URL: ${landingUrl}`)
-        
-        // Optional: Redirect back to QR config after 2 seconds
+        // Redirect back to QR config after 2 seconds
         setTimeout(() => {
           window.location.href = '/admin/qr-config'
         }, 2000)
@@ -373,6 +401,24 @@ export default function CreateEnhancedLandingPage() {
               {/* Basic Configuration */}
               <div className="bg-gray-50 p-6 rounded-lg">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Basic Information</h2>
+                
+                <div className="grid md:grid-cols-1 gap-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Configuration Name *
+                    </label>
+                    <input
+                      key="configurationName-input"
+                      type="text"
+                      value={formData.configurationName || ''}
+                      onChange={(e) => setFormData({...formData, configurationName: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Summer Promotion Page, Holiday Special, Weekend Deal"
+                      required
+                    />
+                    <p className="text-sm text-gray-500 mt-1">This name will appear in your URL management list for easy selection.</p>
+                  </div>
+                </div>
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
@@ -741,7 +787,7 @@ export default function CreateEnhancedLandingPage() {
                   disabled={isSubmitting}
                   className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-105"
                 >
-                  {isSubmitting ? 'Creating Enhanced Landing Page...' : 'Create Enhanced Landing Page'}
+                  {isSubmitting ? 'Saving Landing Page Configuration...' : 'Save Landing Page Configuration'}
                 </button>
               </div>
             </form>

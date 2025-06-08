@@ -24,6 +24,7 @@ model User {
   distributorProfile Distributor? @relation("DistributorUser")
   locationProfile    Location?    @relation("LocationUser")
   sellerConfigs      QRConfig?    @relation("SellerConfig")
+  landingPageUrls    SellerLandingPageUrl[] @relation("SellerLandingUrls")
   accounts           Account[]
   qrCodes            QRCode[]
   sessions           Session[]
@@ -191,6 +192,23 @@ model RebuyEmailTemplate {
   updatedAt       DateTime @updatedAt
 
   @@map("rebuy_email_templates")
+}
+
+model SellerLandingPageUrl {
+  id              String   @id @default(cuid())
+  sellerId        String
+  name            String   // User-friendly name for the URL (e.g., "Summer Promotion", "Weekend Special")
+  url             String?  // The actual landing page URL (optional - can be added later)
+  description     String?  // Optional description
+  isActive        Boolean  @default(true)
+  clickCount      Int      @default(0)  // Track usage
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  seller          User     @relation("SellerLandingUrls", fields: [sellerId], references: [id], onDelete: Cascade)
+  
+  @@map("seller_landing_page_urls")
 }
 
 model LandingPageSubmission {

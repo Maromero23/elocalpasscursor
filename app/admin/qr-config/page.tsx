@@ -81,7 +81,7 @@ export default function QRConfigPage() {
     button1DaysLocked: false,
     button1DaysDefault: 3,
     button1DaysRangeMax: 30,
-    button2PricingType: 'FIXED',
+    button2PricingType: 'FIXED' as const,
     button2FixedPrice: 0,
     button2VariableBasePrice: 0,
     button2VariableGuestIncrease: 0,
@@ -89,7 +89,7 @@ export default function QRConfigPage() {
     button2VariableCommission: 0,
     button2IncludeTax: false,
     button2TaxPercentage: 0,
-    button3DeliveryMethod: 'DIRECT',
+    button3DeliveryMethod: 'DIRECT' as const,
     button4LandingPageRequired: true,
     button5SendRebuyEmail: false,
     updatedAt: new Date(),
@@ -119,6 +119,12 @@ export default function QRConfigPage() {
   const [newConfigDescription, setNewConfigDescription] = useState('')
   const [progressRestored, setProgressRestored] = useState(false)
 
+  // Search and filter states for QR Configuration Library
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterPricingType, setFilterPricingType] = useState('ALL')
+  const [filterDeliveryMethod, setFilterDeliveryMethod] = useState('ALL')
+  const [sortBy, setSortBy] = useState('DATE_DESC')
+
   // Seller assignment states
   const [showSellerModal, setShowSellerModal] = useState(false)
   const [availableSellers, setAvailableSellers] = useState<Array<{
@@ -130,6 +136,61 @@ export default function QRConfigPage() {
   }>>([])
   const [selectedConfig, setSelectedConfig] = useState<any>(null)
   const [loadingSellers, setLoadingSellers] = useState(false)
+
+  // URL Management states  
+  const [sellerUrls, setSellerUrls] = useState<Array<{
+    id: string
+    name: string
+    url: string
+    description?: string
+    isActive: boolean
+    createdAt: string
+  }>>([])
+  const [showUrlModal, setShowUrlModal] = useState(false)
+  const [editingUrl, setEditingUrl] = useState<{
+    id: string
+    name: string
+    url: string
+    description?: string
+  } | null>(null)
+  const [urlFormData, setUrlFormData] = useState({
+    name: '',
+    url: '',
+    description: ''
+  })
+  const [selectedUrlIds, setSelectedUrlIds] = useState<string[]>([])
+
+  // Filter and sort configurations based on search and filters
+  const filteredAndSortedConfigurations = savedConfigurations
+    .filter(config => {
+      // Search query filter (name, description)
+      const matchesSearch = searchQuery === '' || 
+        config.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        config.description.toLowerCase().includes(searchQuery.toLowerCase())
+
+      // Pricing type filter
+      const matchesPricing = filterPricingType === 'ALL' || 
+        config.config.button2PricingType === filterPricingType
+
+      // Delivery method filter
+      const matchesDelivery = filterDeliveryMethod === 'ALL' || 
+        config.config.button3DeliveryMethod === filterDeliveryMethod
+
+      return matchesSearch && matchesPricing && matchesDelivery
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'NAME_ASC':
+          return a.name.localeCompare(b.name)
+        case 'NAME_DESC':
+          return b.name.localeCompare(a.name)
+        case 'DATE_ASC':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        case 'DATE_DESC':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+    })
 
   // Helper function to check if a button configuration has been actively modified
   const isButtonConfigured = (buttonNum: number): boolean => {
@@ -213,34 +274,56 @@ export default function QRConfigPage() {
     
     await updateConfig(defaultConfig)
     
-    // Smart template clearing: Only clear if NOT used by saved configurations
-    if (!isTemplateUsedBySavedConfigs('welcome')) {
-      localStorage.removeItem('elocalpass-welcome-email-config')
-      console.log('🧹 Reset cleared welcome email template (not used by saved configs)')
-    } else {
-      console.log('🔒 Preserved welcome email template (used by saved configurations)')
-    }
+    // Clear all template configurations on reset - fresh start
+    localStorage.removeItem('elocalpass-welcome-email-config')
+    localStorage.removeItem('elocalpass-rebuy-email-config')
+    localStorage.removeItem('elocalpass-landing-config')
+    localStorage.removeItem('elocalpass-current-qr-progress')
+    console.log('🧹 Reset cleared all templates and progress - fresh start')
     
-    if (!isTemplateUsedBySavedConfigs('rebuy')) {
-      localStorage.removeItem('elocalpass-rebuy-email-config')
-      console.log('🧹 Reset cleared rebuy email template (not used by saved configs)')
-    } else {
-      console.log('🔒 Preserved rebuy email template (used by saved configurations)')
+    // Clean up auto-generated landing page URLs from database
+    try {
+      const response = await fetch('/api/seller/landing-urls')
+      if (response.ok) {
+        const urls = await response.json()
+        // Filter URLs that are configuration-specific (auto-generated or created for QR configs)
+        const configSpecificUrls = urls.filter((url: any) => 
+          // Auto-generated enhanced landing pages
+          url.description?.includes('Auto-generated enhanced landing page') ||
+          url.name?.includes('Enhanced Landing Page -') ||
+          // Configuration-specific URLs (created during QR config process)
+          url.description?.includes('Custom landing page configuration created on') ||
+          // URLs that contain common QR configuration naming patterns
+          url.name?.includes('Riu Cancun') ||
+          url.name?.includes('Compro') ||
+          // Any URL created in the last session (if description contains creation date)
+          (url.description && url.description.includes('created on'))
+        )
+        
+        console.log('🧹 Found configuration-specific URLs to delete:', configSpecificUrls.map((u: any) => u.name))
+        
+        // Delete configuration-specific URLs
+        for (const url of configSpecificUrls) {
+          try {
+            await fetch(`/api/seller/landing-urls/${url.id}`, {
+              method: 'DELETE'
+            })
+            console.log('🗑️ Deleted configuration URL:', url.name)
+          } catch (error) {
+            console.error('Error deleting configuration URL:', error)
+          }
+        }
+        
+        // Refresh the URL list
+        fetchSellerUrls()
+      }
+    } catch (error) {
+      console.error('Error cleaning up configuration URLs:', error)
     }
-    
-    if (!isTemplateUsedBySavedConfigs('landing')) {
-      localStorage.removeItem('elocalpass-landing-config')
-      console.log('🧹 Reset cleared landing page template (not used by saved configs)')
-    } else {
-      console.log('🔒 Preserved landing page template (used by saved configurations)')
-    }
-    
-    // Always clear progress (this is just temporary workflow state)
-    localStorage.removeItem('elocalpass-qr-config-progress')
-    // ⚠️ DO NOT delete 'elocalpass-saved-configurations' - those are saved library items!
     
     // Clear all configured button states so they return to original colors
     setConfiguredButtons(new Set())
+    setSelectedUrlIds([])
     setSaveStatus('🔄 Reset to defaults - All configurations cleared and values reset')
     setTimeout(() => setSaveStatus(''), 3000)
   }
@@ -366,20 +449,32 @@ export default function QRConfigPage() {
     setSavedConfigurations(uniqueConfigs)
   }
 
-  // Load current progress
   const loadCurrentProgress = () => {
+    // Try to restore previous progress from localStorage
     const savedProgress = localStorage.getItem('elocalpass-current-qr-progress')
+    console.log('🔄 RESTORE: Raw localStorage data:', savedProgress)
+    
     if (savedProgress) {
       try {
         const progressData = JSON.parse(savedProgress)
+        console.log('🔄 RESTORE: Parsed progress data:', progressData)
+        
         // Only restore if the progress is recent (within last 24 hours)
         const savedTime = new Date(progressData.timestamp)
         const now = new Date()
         const hoursDiff = (now.getTime() - savedTime.getTime()) / (1000 * 60 * 60)
         
+        console.log('🔄 RESTORE: Time check - Hours diff:', hoursDiff)
+        
         if (hoursDiff < 24) {
+          console.log('🔄 RESTORE: Restoring data:', {
+            globalConfig: progressData.globalConfig,
+            configuredButtons: progressData.configuredButtons,
+            selectedUrlIds: progressData.selectedUrlIds
+          })
           setGlobalConfig(progressData.globalConfig)
           setConfiguredButtons(new Set(progressData.configuredButtons))
+          setSelectedUrlIds(progressData.selectedUrlIds || [])
           setProgressRestored(true)
           console.log('✅ Restored QR configuration progress from previous session')
           
@@ -391,26 +486,101 @@ export default function QRConfigPage() {
         } else {
           // Clear old progress
           localStorage.removeItem('elocalpass-current-qr-progress')
+          console.log('🗑️ RESTORE: Cleared old progress (older than 24 hours)')
         }
       } catch (error) {
-        console.log('Could not restore previous progress:', error)
+        console.log('❌ RESTORE: Could not restore previous progress:', error)
         localStorage.removeItem('elocalpass-current-qr-progress')
       }
+    } else {
+      console.log('🔄 RESTORE: No saved progress found in localStorage')
     }
-    
-    // NOTE: Don't auto-configure buttons just because templates exist in localStorage
-    // Templates are shared resources that might be used by saved configurations
-    // Only mark buttons as configured if they're part of active workflow progress
   }
 
   // Check if all 5 buttons are configured
-  const isConfigurationComplete = (): boolean => {
+  const areAllButtonsConfigured = (): boolean => {
     return configuredButtons.size === 5
   }
 
+  // Detect configuration status after state changes (runs after restoration)
+  useEffect(() => {
+    // Skip if this is the initial render before any restoration
+    if (!globalConfig) return
+
+    console.log('🔍 DETECTION: Checking configuration status after state change')
+    console.log('- Current globalConfig:', globalConfig)
+    console.log('- Current configuredButtons:', Array.from(configuredButtons))
+    console.log('- Current selectedUrlIds:', selectedUrlIds)
+    
+    // DEBUG: Show all Button 1 related fields
+    const button1Fields = Object.keys(globalConfig).filter(key => key.includes('button1'))
+    console.log('🔍 BUTTON 1 FIELDS:', button1Fields.map(field => ({ [field]: (globalConfig as any)[field] })))
+    
+    const configuredButtonsSet = new Set(configuredButtons)
+    
+    // Check Button 1 (Personalization) - mark as configured if any personalization settings are non-default
+    const hasButton1Config = 
+      globalConfig.button1AllowCustomGuestsDays !== false ||
+      globalConfig.button1GuestsDefault !== 2 ||
+      globalConfig.button1DaysDefault !== 3 ||
+      globalConfig.button1GuestsRangeMax !== 10 ||
+      globalConfig.button1DaysRangeMax !== 30
+    console.log('- Button 1 detection:', { hasButton1Config, inConfiguredButtons: configuredButtons.has(1) })
+    if (hasButton1Config || configuredButtons.has(1)) {
+      configuredButtonsSet.add(1)
+    }
+    
+    // Check Button 2 (Pricing) - mark as configured if pricing settings are non-default
+    const hasButton2Config = 
+      globalConfig.button2PricingType !== 'FIXED' ||
+      globalConfig.button2FixedPrice !== 0 ||
+      globalConfig.button2VariableBasePrice !== 0 ||
+      globalConfig.button2VariableGuestIncrease !== 0 ||
+      globalConfig.button2VariableDayIncrease !== 0 ||
+      globalConfig.button2VariableCommission !== 0 ||
+      globalConfig.button2IncludeTax !== false ||
+      globalConfig.button2TaxPercentage !== 0
+    console.log('- Button 2 detection:', { hasButton2Config, inConfiguredButtons: configuredButtons.has(2) })
+    if (hasButton2Config || configuredButtons.has(2)) {
+      configuredButtonsSet.add(2)
+    }
+    
+    // Check Button 3 (Delivery Method) - mark as configured if delivery method is set or URLs selected
+    const hasButton3Config = 
+      globalConfig.button3DeliveryMethod !== 'DIRECT' ||
+      selectedUrlIds.length > 0
+    console.log('- Button 3 detection:', { hasButton3Config, deliveryMethod: globalConfig.button3DeliveryMethod, urlsSelected: selectedUrlIds.length, inConfiguredButtons: configuredButtons.has(3) })
+    if (hasButton3Config || configuredButtons.has(3)) {
+      configuredButtonsSet.add(3)
+    }
+    
+    // Check Button 4 (Welcome Email) - mark as configured if template exists
+    const hasWelcomeTemplate = !!localStorage.getItem('elocalpass-welcome-email-config')
+    console.log('- Button 4 detection:', { hasWelcomeTemplate, inConfiguredButtons: configuredButtons.has(4) })
+    if (hasWelcomeTemplate || configuredButtons.has(4)) {
+      configuredButtonsSet.add(4)
+    }
+    
+    // Check Button 5 (Rebuy Email) - mark as configured if rebuy is enabled or already marked as configured  
+    const hasRebuyTemplate = !!localStorage.getItem('elocalpass-rebuy-email-config')
+    console.log('- Button 5 detection:', { rebuyEnabled: globalConfig.button5SendRebuyEmail, hasRebuyTemplate, inConfiguredButtons: configuredButtons.has(5) })
+    if (configuredButtons.has(5) || globalConfig.button5SendRebuyEmail === true) {
+      configuredButtonsSet.add(5)
+    }
+    
+    console.log('🎯 DETECTION: Final configuredButtonsSet:', Array.from(configuredButtonsSet))
+    
+    // Only update if something changed
+    if (configuredButtonsSet.size !== configuredButtons.size || 
+        !Array.from(configuredButtonsSet).every(btn => configuredButtons.has(btn))) {
+      console.log('🔄 DETECTION: Updating configuredButtons state')
+      setConfiguredButtons(configuredButtonsSet)
+    }
+  }, [globalConfig, selectedUrlIds]) // Run when these change
+
   // Save current configuration with a name
   const saveNamedConfiguration = () => {
-    if (!isConfigurationComplete()) {
+    if (!areAllButtonsConfigured()) {
       toast.error('Configuration Incomplete', 'Please complete all 5 button configurations before saving')
       return
     }
@@ -420,27 +590,18 @@ export default function QRConfigPage() {
       return
     }
 
-    // Gather email template configurations
-    const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
-    const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+    // Gather template configurations - ONLY for landing page (not email templates)
+    // Email templates should start fresh for new configurations
     const landingPageConfig = localStorage.getItem('elocalpass-landing-config')
     
-    let parsedWelcomeEmail = null
-    let parsedRebuyEmail = null
     let parsedLandingPage = null
     
     try {
-      if (welcomeEmailConfig) {
-        parsedWelcomeEmail = JSON.parse(welcomeEmailConfig)
-      }
-      if (rebuyEmailConfig) {
-        parsedRebuyEmail = JSON.parse(rebuyEmailConfig)
-      }
       if (landingPageConfig) {
         parsedLandingPage = JSON.parse(landingPageConfig)
       }
     } catch (error) {
-      console.warn('Warning: Could not parse template configurations:', error)
+      console.warn('Warning: Could not parse landing page configuration:', error)
     }
 
     const newConfig = {
@@ -449,8 +610,8 @@ export default function QRConfigPage() {
       description: newConfigDescription.trim() || 'No description provided',
       config: { ...globalConfig },
       emailTemplates: {
-        welcomeEmail: parsedWelcomeEmail,
-        rebuyEmail: parsedRebuyEmail
+        welcomeEmail: null,  // Start fresh - no saved templates
+        rebuyEmail: null     // Start fresh - no saved templates
       },
       landingPageConfig: parsedLandingPage,
       createdAt: new Date()
@@ -658,21 +819,145 @@ export default function QRConfigPage() {
     }
   }
 
+  // URL Management Functions
+  const fetchSellerUrls = async () => {
+    try {
+      const response = await fetch('/api/seller/landing-urls')
+      if (response.ok) {
+        const urls = await response.json()
+        setSellerUrls(urls)
+      } else {
+        console.error('Failed to fetch seller URLs')
+      }
+    } catch (error) {
+      console.error('Error fetching seller URLs:', error)
+    }
+  }
+
+  const handleCreateUrl = async () => {
+    if (!urlFormData.name.trim()) {
+      toast.error('Missing Information', 'Please enter a name for the URL')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/seller/landing-urls', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(urlFormData)
+      })
+
+      if (response.ok) {
+        toast.success('URL Created', 'Landing page URL created successfully')
+        setUrlFormData({ name: '', url: '', description: '' })
+        setShowUrlModal(false)
+        fetchSellerUrls()
+        setConfiguredButtons((prev) => new Set(prev).add(3))
+      } else {
+        const error = await response.json()
+        toast.error('Creation Failed', `Error: ${error.error}`)
+      }
+    } catch (error) {
+      toast.error('Creation Failed', 'Error creating URL')
+    }
+  }
+
+  const handleUpdateUrl = async () => {
+    if (!editingUrl || !urlFormData.name.trim()) {
+      toast.error('Missing Information', 'Please enter a name for the URL')
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/seller/landing-urls/${editingUrl.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(urlFormData)
+      })
+
+      if (response.ok) {
+        toast.success('URL Updated', 'Landing page URL updated successfully')
+        setUrlFormData({ name: '', url: '', description: '' })
+        setEditingUrl(null)
+        setShowUrlModal(false)
+        fetchSellerUrls()
+      } else {
+        const error = await response.json()
+        toast.error('Update Failed', `Error: ${error.error}`)
+      }
+    } catch (error) {
+      toast.error('Update Failed', 'Error updating URL')
+    }
+  }
+
+  const handleDeleteUrl = async (urlId: string) => {
+    if (!confirm('Are you sure you want to delete this URL?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/seller/landing-urls/${urlId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        toast.success('URL Deleted', 'Landing page URL deleted successfully')
+        fetchSellerUrls()
+        
+        // If this was the selected URL, clear the selection
+        if (selectedUrlIds.includes(urlId)) {
+          setSelectedUrlIds(selectedUrlIds.filter(id => id !== urlId))
+        }
+      } else {
+        const error = await response.json()
+        toast.error('Deletion Failed', `Error: ${error.error}`)
+      }
+    } catch (error) {
+      toast.error('Deletion Failed', 'Error deleting URL')
+    }
+  }
+
+  const openUrlModal = (url?: any) => {
+    if (url) {
+      setEditingUrl(url)
+      setUrlFormData({
+        name: url.name,
+        url: url.url,
+        description: url.description || ''
+      })
+    } else {
+      setEditingUrl(null)
+      setUrlFormData({ name: '', url: '', description: '' })
+    }
+    setShowUrlModal(true)
+  }
+
+  // Load seller URLs when component mounts
+  useEffect(() => {
+    fetchSellerUrls()
+  }, [])
+
   // Auto-save current progress to localStorage
   useEffect(() => {
     const saveCurrentProgress = () => {
       const progressData = {
         globalConfig,
         configuredButtons: Array.from(configuredButtons),
+        selectedUrlIds,
         timestamp: new Date().toISOString()
       }
+      console.log('💾 AUTO-SAVE: Saving progress data:', progressData)
       localStorage.setItem('elocalpass-current-qr-progress', JSON.stringify(progressData))
     }
 
-    // Save progress whenever globalConfig or configuredButtons changes
+    // Save progress whenever globalConfig, configuredButtons, or selectedUrlIds changes
     const timeoutId = setTimeout(saveCurrentProgress, 500) // Debounce saves
     return () => clearTimeout(timeoutId)
-  }, [globalConfig, configuredButtons])
+  }, [globalConfig, configuredButtons, selectedUrlIds])
 
   // Handle URL parameters to open specific configuration
   useEffect(() => {
@@ -842,23 +1127,23 @@ export default function QRConfigPage() {
                   <h3 className="text-sm font-medium text-gray-700">Configuration Progress</h3>
                   <div className="flex items-center space-x-2">
                     <span className={`text-xs px-2 py-1 rounded-full ${
-                      isConfigurationComplete() 
+                      areAllButtonsConfigured() 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-yellow-100 text-yellow-700'
                     }`}>
                       {configuredButtons.size}/5 Complete
                     </span>
-                    {isConfigurationComplete() && (
+                    {areAllButtonsConfigured() && (
                       <button
                         onClick={() => setShowSaveModal(true)}
-                        className="text-xs px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        className="text-xs px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                       >
                         💾 Save Configuration
                       </button>
                     )}
                     <button
                       onClick={() => setShowConfigLibrary(true)}
-                      className="text-xs px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                      className="text-xs px-3 py-1 bg-gray-600 text-white rounded-md hover:bg-gray-700"
                     >
                       📚 Library ({savedConfigurations.length})
                     </button>
@@ -1127,10 +1412,11 @@ export default function QRConfigPage() {
                           step="0.01"
                           value={globalConfig.button2FixedPrice || ''}
                           onChange={(e) => {
-                            updateConfig({ button2FixedPrice: parseFloat(e.target.value) || 0 })
+                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
+                            updateConfig({ button2FixedPrice: value })
                             setConfiguredButtons((prev) => new Set(prev).add(2))
                           }}
-                          className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                          className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                           placeholder="0.00"
                         />
                         <div className="mt-4">
@@ -1159,7 +1445,7 @@ export default function QRConfigPage() {
                                   updateConfig({ button2TaxPercentage: parseFloat(e.target.value) || 0 })
                                   setConfiguredButtons((prev) => new Set(prev).add(2))
                                 }}
-                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                 placeholder="0.00"
                               />
                               <p className="text-sm text-gray-600 mt-1">
@@ -1199,10 +1485,11 @@ export default function QRConfigPage() {
                               step="0.01"
                               value={globalConfig.button2VariableBasePrice || ''}
                               onChange={(e) => {
-                                updateConfig({ button2VariableBasePrice: parseFloat(e.target.value) || 0 })
+                                const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
+                                updateConfig({ button2VariableBasePrice: value })
                                 setConfiguredButtons((prev) => new Set(prev).add(2))
                               }}
-                              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                               placeholder="0.00"
                             />
                             <div className="mt-4">
@@ -1213,10 +1500,11 @@ export default function QRConfigPage() {
                                 step="0.01"
                                 value={globalConfig.button2VariableGuestIncrease || ''}
                                 onChange={(e) => {
-                                  updateConfig({ button2VariableGuestIncrease: parseFloat(e.target.value) || 0 })
+                                  const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
+                                  updateConfig({ button2VariableGuestIncrease: value })
                                   setConfiguredButtons((prev) => new Set(prev).add(2))
                                 }}
-                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                 placeholder="0.00"
                               />
                               <p className="text-sm text-gray-600 mt-1">
@@ -1231,10 +1519,11 @@ export default function QRConfigPage() {
                                 step="0.01"
                                 value={globalConfig.button2VariableDayIncrease || ''}
                                 onChange={(e) => {
-                                  updateConfig({ button2VariableDayIncrease: parseFloat(e.target.value) || 0 })
+                                  const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
+                                  updateConfig({ button2VariableDayIncrease: value })
                                   setConfiguredButtons((prev) => new Set(prev).add(2))
                                 }}
-                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                 placeholder="0.00"
                               />
                               <p className="text-sm text-gray-600 mt-1">
@@ -1250,10 +1539,11 @@ export default function QRConfigPage() {
                                 step="0.01"
                                 value={globalConfig.button2VariableCommission || ''}
                                 onChange={(e) => {
-                                  updateConfig({ button2VariableCommission: parseFloat(e.target.value) || 0 })
+                                  const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
+                                  updateConfig({ button2VariableCommission: value })
                                   setConfiguredButtons((prev) => new Set(prev).add(2))
                                 }}
-                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                 placeholder="0.00"
                               />
                               <p className="text-sm text-gray-600 mt-1">
@@ -1286,7 +1576,7 @@ export default function QRConfigPage() {
                                       updateConfig({ button2TaxPercentage: parseFloat(e.target.value) || 0 })
                                       setConfiguredButtons((prev) => new Set(prev).add(2))
                                     }}
-                                    className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                     placeholder="0.00"
                                   />
                                   <p className="text-sm text-gray-600 mt-1">
@@ -1405,6 +1695,8 @@ export default function QRConfigPage() {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    {/* Direct */}
                     <div className={`p-6 border-2 rounded-lg cursor-pointer transition-colors ${
                       globalConfig.button3DeliveryMethod === 'DIRECT' 
                         ? 'border-blue-500 bg-blue-50' 
@@ -1450,6 +1742,7 @@ export default function QRConfigPage() {
                       </div>
                     </div>
 
+                    {/* URLs */}
                     <div className={`p-6 border-2 rounded-lg cursor-pointer transition-colors ${
                       globalConfig.button3DeliveryMethod === 'URLS' 
                         ? 'border-blue-500 bg-blue-50' 
@@ -1495,6 +1788,7 @@ export default function QRConfigPage() {
                       </div>
                     </div>
 
+                    {/* Both */}
                     <div className={`p-6 border-2 rounded-lg cursor-pointer transition-colors ${
                       globalConfig.button3DeliveryMethod === 'BOTH' 
                         ? 'border-blue-500 bg-blue-50' 
@@ -1564,12 +1858,14 @@ export default function QRConfigPage() {
                         When URLs method is selected, each QR code will generate a unique landing page where guests can enter their details. 
                         This landing page will be customizable per seller/location.
                       </p>
-                      <button 
-                        onClick={() => router.push('/admin/qr-config/create')}
-                        className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                      >
-                        Create Custom Landing Page →
-                      </button>
+                      {sellerUrls.length === 0 && (
+                        <button 
+                          onClick={() => router.push('/admin/qr-config/create')}
+                          className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        >
+                          Create Custom Landing Page →
+                        </button>
+                      )}
                     </div>
                   )}
                   
@@ -1589,12 +1885,113 @@ export default function QRConfigPage() {
                           <p className="text-xs text-gray-600">Custom landing page with guest details form</p>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => router.push('/admin/qr-config/create')}
-                        className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                      >
-                        Create Custom Landing Page →
-                      </button>
+                      {sellerUrls.length === 0 && (
+                        <button 
+                          onClick={() => router.push('/admin/qr-config/create')}
+                          className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                        >
+                          Create Custom Landing Page →
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
+                  {(globalConfig.button3DeliveryMethod === 'URLS' || globalConfig.button3DeliveryMethod === 'BOTH') && (
+                    <div className="mt-6 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg font-semibold text-gray-900">Manage Landing Page URLs</h4>
+                        <button
+                          onClick={() => sellerUrls.length === 0 ? openUrlModal() : router.push('/admin/qr-config/create')}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                        >
+                          + Add New URL
+                        </button>
+                      </div>
+
+                      {sellerUrls.length === 0 ? (
+                        <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          <p className="text-gray-500 mb-2">No landing page URLs configured yet</p>
+                          <p className="text-sm text-gray-400">Create your first URL to start using the landing page delivery method</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {sellerUrls.map((url) => (
+                            <div 
+                              key={url.id} 
+                              className={`p-4 border rounded-lg ${
+                                selectedUrlIds.includes(url.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedUrlIds.includes(url.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedUrlIds(prev => [...prev, url.id])
+                                        } else {
+                                          setSelectedUrlIds(prev => prev.filter(id => id !== url.id))
+                                        }
+                                      }}
+                                      className="h-4 w-4 text-blue-600"
+                                    />
+                                    <div>
+                                      <h5 className="font-medium text-gray-900">{url.name}</h5>
+                                      <p className="text-sm text-gray-600 truncate max-w-md">{url.url}</p>
+                                      {url.description && (
+                                        <p className="text-xs text-gray-500 mt-1">{url.description}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <span className={`px-2 py-1 text-xs rounded-full ${
+                                    url.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {url.isActive ? 'Active' : 'Inactive'}
+                                  </span>
+                                  <button
+                                    onClick={() => openUrlModal(url)}
+                                    className="p-1 text-gray-400 hover:text-blue-600"
+                                    title="Edit URL"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteUrl(url.id)}
+                                    className="p-1 text-gray-400 hover:text-red-600"
+                                    title="Delete URL"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-7 7-7-7" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {sellerUrls.length > 0 && !selectedUrlIds.length && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                          <p className="text-sm text-yellow-800">
+                            <span className="font-medium">⚠️ Please select URLs:</span> Choose which landing page URLs will be available as options for sellers to use.
+                          </p>
+                        </div>
+                      )}
+                      
+                      {selectedUrlIds.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm text-blue-800">
+                            <span className="font-medium">✓ {selectedUrlIds.length} URL{selectedUrlIds.length === 1 ? '' : 's'} selected:</span> These will be available as delivery options for sellers.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1690,7 +2087,7 @@ export default function QRConfigPage() {
                       <div className="ml-7 p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <button 
                           onClick={() => router.push('/admin/qr-config/email-config?mode=default')}
-                          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
                         >
                           View Default Email Template →
                         </button>
@@ -1721,7 +2118,9 @@ export default function QRConfigPage() {
                       />
                       <div>
                         <span className="font-medium text-gray-900">Yes</span>
-                        <p className="text-sm text-gray-600">System will automatically send a follow-up email 12 hours before QR expires</p>
+                        <p className="text-sm text-gray-600">System will automatically send a follow-up email 12 hours before each QR code expires, 
+                          encouraging guests to purchase a new QR code for continued access.
+                        </p>
                       </div>
                     </label>
 
@@ -1804,7 +2203,7 @@ export default function QRConfigPage() {
                   value={newConfigName}
                   onChange={(e) => setNewConfigName(e.target.value)}
                   placeholder="e.g., Premium Package, Basic Deal, etc."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               
@@ -1817,7 +2216,7 @@ export default function QRConfigPage() {
                   onChange={(e) => setNewConfigDescription(e.target.value)}
                   placeholder="Brief description of this configuration..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
@@ -1845,6 +2244,82 @@ export default function QRConfigPage() {
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
                 Save Configuration
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* URL Management Modal */}
+      {showUrlModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              {editingUrl ? 'Edit Landing Page URL' : 'Add New Landing Page URL'}
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  URL Name *
+                </label>
+                <input
+                  type="text"
+                  value={urlFormData.name}
+                  onChange={(e) => setUrlFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Main Landing Page, Special Offer Page"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  URL <span className="text-gray-500">(Optional - can be added later)</span>
+                </label>
+                <input
+                  type="url"
+                  value={urlFormData.url}
+                  onChange={(e) => setUrlFormData(prev => ({ ...prev, url: e.target.value }))}
+                  placeholder="https://example.com/landing-page (leave empty if not created yet)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 You can create this URL entry now and add/edit the actual URL later when your landing page is ready.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={urlFormData.description}
+                  onChange={(e) => setUrlFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Brief description of this landing page..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowUrlModal(false)
+                  setEditingUrl(null)
+                  setUrlFormData({ name: '', url: '', description: '' })
+                }}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingUrl ? handleUpdateUrl : handleCreateUrl}
+                disabled={!urlFormData.name.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              >
+                {editingUrl ? 'Update URL' : 'Create URL'}
               </button>
             </div>
           </div>
@@ -1887,292 +2362,401 @@ export default function QRConfigPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {savedConfigurations.map((config) => (
-                  <div key={config.id} className="border border-gray-200 rounded-lg bg-white shadow-sm">
-                    {/* Compact Header */}
-                    <div 
-                      className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                        expandedConfigs.has(config.id) ? 'bg-blue-50 border-b border-blue-200' : ''
-                      }`}
-                      onClick={() => toggleConfigExpanded(config.id)}
-                    >
+                {/* Search and Filter Controls */}
+                {savedConfigurations.length > 0 && (
+                  <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-4">
+                    {/* Search Bar */}
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      
+                      {/* Quick Clear Button */}
+                      {(searchQuery || filterPricingType !== 'ALL' || filterDeliveryMethod !== 'ALL' || sortBy !== 'DATE_DESC') && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery('')
+                            setFilterPricingType('ALL')
+                            setFilterDeliveryMethod('ALL')
+                            setSortBy('DATE_DESC')
+                          }}
+                          className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-100"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Filter Row */}
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      {/* Pricing Type Filter */}
                       <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-semibold text-gray-900 text-lg">{config.name}</h4>
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                showSellerSelectionModal(config)
-                              }}
-                              className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                            >
-                              Pair with Seller
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                deleteConfiguration(config.id)
-                              }}
-                              className="text-red-400 hover:text-red-600"
-                              title="Delete Configuration"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                            <div className="text-gray-400">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                {expandedConfigs.has(config.id) ? (
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                ) : (
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                )}
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          Created {new Date(config.createdAt).toLocaleDateString()} • ID: {config.id}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">{config.description || 'No description'}</div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Pricing Type</label>
+                        <select
+                          value={filterPricingType}
+                          onChange={(e) => setFilterPricingType(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="ALL">All Pricing Types</option>
+                          <option value="FREE">Free</option>
+                          <option value="FIXED">Fixed Price</option>
+                          <option value="VARIABLE">Variable Price</option>
+                        </select>
+                      </div>
+
+                      {/* Delivery Method Filter */}
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Method</label>
+                        <select
+                          value={filterDeliveryMethod}
+                          onChange={(e) => setFilterDeliveryMethod(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="ALL">All Delivery Methods</option>
+                          <option value="DIRECT">Direct</option>
+                          <option value="URLS">URLs</option>
+                          <option value="BOTH">Both</option>
+                        </select>
+                      </div>
+
+                      {/* Sort By */}
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="DATE_DESC">Newest First</option>
+                          <option value="DATE_ASC">Oldest First</option>
+                          <option value="NAME_ASC">Name A-Z</option>
+                          <option value="NAME_DESC">Name Z-A</option>
+                        </select>
                       </div>
                     </div>
 
-                    {/* Detailed Configuration Grid */}
-                    {expandedConfigs.has(config.id) && (
-                      <div className="p-6 bg-gray-50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          
-                          {/* 1. Guest & Day Limits */}
-                          <div className="bg-white p-4 rounded-lg shadow-sm">
-                            <div className="flex items-center mb-3">
-                              <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
-                                1
-                              </div>
-                              <h5 className="font-semibold text-gray-900">Guest & Day Limits</h5>
-                            </div>
-                            <div className="text-sm text-gray-700 space-y-1">
-                              {!config.config.button1GuestsLocked ? (
-                                <>
-                                  <p><strong>Guests:</strong> 1-{config.config.button1GuestsRangeMax} (default: {config.config.button1GuestsDefault})</p>
-                                  <p><strong>Days:</strong> {!config.config.button1DaysLocked ? `1-${config.config.button1DaysRangeMax} (default: ${config.config.button1DaysDefault})` : `Fixed at ${config.config.button1DaysDefault}`}</p>
-                                </>
-                              ) : (
-                                <>
-                                  <p><strong>Guests:</strong> Fixed at {config.config.button1GuestsDefault}</p>
-                                  <p><strong>Days:</strong> Fixed at {config.config.button1DaysDefault}</p>
-                                </>
-                              )}
-                            </div>
-                          </div>
+                    {/* Results Counter */}
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      <span>
+                        Showing {filteredAndSortedConfigurations.length} of {savedConfigurations.length} configurations
+                      </span>
+                      {searchQuery && (
+                        <span className="text-blue-600">
+                          Searching for: "{searchQuery}"
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                          {/* 2. Pricing */}
-                          <div className="bg-white p-4 rounded-lg shadow-sm">
-                            <div className="flex items-center mb-3">
-                              <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
-                                2
+                {filteredAndSortedConfigurations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">
+                      <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Matching Configurations</h4>
+                    <p className="text-gray-600 mb-4">Try adjusting your search terms or filters to find configurations.</p>
+                    <button
+                      onClick={() => {
+                        setSearchQuery('')
+                        setFilterPricingType('ALL')
+                        setFilterDeliveryMethod('ALL')
+                        setSortBy('DATE_DESC')
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    {filteredAndSortedConfigurations.map((config) => (
+                      <div key={config.id} className="border border-gray-200 rounded-lg bg-white shadow-sm">
+                        {/* Compact Header */}
+                        <div 
+                          className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
+                            expandedConfigs.has(config.id) ? 'bg-blue-50 border-b border-blue-200' : ''
+                          }`}
+                          onClick={() => toggleConfigExpanded(config.id)}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold text-gray-900">{config.name}</h4>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    showSellerSelectionModal(config)
+                                  }}
+                                  className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                                >
+                                  Pair with Seller
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    deleteConfiguration(config.id)
+                                  }}
+                                  className="text-red-400 hover:text-red-600"
+                                  title="Delete Configuration"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-7 7-7-7" />
+                                  </svg>
+                                </button>
+                                <div className="text-gray-400">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    {expandedConfigs.has(config.id) ? (
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                    ) : (
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    )}
+                                  </svg>
+                                </div>
                               </div>
-                              <h5 className="font-semibold text-gray-900">Pricing</h5>
                             </div>
-                            <div className="text-sm text-gray-700 space-y-1">
-                              <p><strong>Type:</strong> {config.config.button2PricingType === 'FIXED' ? 'Fixed' : config.config.button2PricingType === 'VARIABLE' ? 'Variable' : 'Free'}</p>
-                              {config.config.button2PricingType === 'FIXED' && config.config.button2FixedPrice && (
-                                <>
-                                  {config.config.button2IncludeTax ? (
+                            <div className="text-sm text-gray-500 mt-1">
+                              Created {new Date(config.createdAt).toLocaleDateString()} • ID: {config.id}
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">{config.description || 'No description'}</div>
+                          </div>
+                        </div>
+
+                        {/* Detailed Configuration Grid */}
+                        {expandedConfigs.has(config.id) && (
+                          <div className="p-6 bg-gray-50">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              
+                              {/* 1. Guest & Day Limits */}
+                              <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <div className="flex items-center mb-3">
+                                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                    1
+                                  </div>
+                                  <h5 className="font-semibold text-gray-900">Guest & Day Limits</h5>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-1">
+                                  {!config.config.button1GuestsLocked ? (
                                     <>
-                                      <p><strong>Price:</strong> ${config.config.button2FixedPrice} + ${(config.config.button2FixedPrice * (config.config.button2TaxPercentage / 100)).toFixed(2)} ({config.config.button2TaxPercentage}% tax)</p>
-                                      <p><strong>Total:</strong> ${(config.config.button2FixedPrice * (1 + config.config.button2TaxPercentage / 100)).toFixed(2)}</p>
+                                      <p><strong>Guests:</strong> 1-{config.config.button1GuestsRangeMax} (default: {config.config.button1GuestsDefault})</p>
+                                      <p><strong>Days:</strong> {!config.config.button1DaysLocked ? `1-${config.config.button1DaysRangeMax} (default: ${config.config.button1DaysDefault})` : `Fixed at ${config.config.button1DaysDefault}`}</p>
                                     </>
                                   ) : (
-                                    <p><strong>Price:</strong> ${config.config.button2FixedPrice}</p>
+                                    <>
+                                      <p><strong>Guests:</strong> Fixed at {config.config.button1GuestsDefault}</p>
+                                      <p><strong>Days:</strong> Fixed at {config.config.button1DaysDefault}</p>
+                                    </>
                                   )}
-                                </>
-                              )}
-                              {config.config.button2PricingType === 'VARIABLE' && (
-                                <>
-                                  <p><strong>Base Price:</strong> ${config.config.button2VariableBasePrice}</p>
-                                  <p><strong>Per Guest:</strong> +${config.config.button2VariableGuestIncrease}</p>
-                                  <p><strong>Per Day:</strong> +${config.config.button2VariableDayIncrease}</p>
-                                  <p><strong>Commission:</strong> {config.config.button2VariableCommission}%</p>
-                                  {config.config.button2IncludeTax && (
-                                    <p><strong>Tax:</strong> +{config.config.button2TaxPercentage}% (added to final amount)</p>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 3. QR Delivery */}
-                          <div className="bg-white p-4 rounded-lg shadow-sm">
-                            <div className="flex items-center mb-3">
-                              <div className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
-                                3
-                              </div>
-                              <h5 className="font-semibold text-gray-900">QR Delivery</h5>
-                            </div>
-                            <div className="text-sm text-gray-700 space-y-1">
-                              <p><strong>Method:</strong> {
-                                config.config.button3DeliveryMethod === 'DIRECT' ? 'Direct Download' :
-                                config.config.button3DeliveryMethod === 'URLS' ? 'Landing Pages' :
-                                config.config.button3DeliveryMethod === 'BOTH' ? 'Both Options' : 'Button Trigger'
-                              }</p>
-                              <p><strong>Available delivery options configured</strong></p>
-                              {/* Only show landing page info for URLS or BOTH delivery methods, NOT for DIRECT */}
-                              {config.landingPageConfig && config.config.button3DeliveryMethod !== 'DIRECT' && (
-                                <div className="mt-2 space-y-1">
-                                  <p><strong>Landing Page:</strong> 
-                                    <a 
-                                      href={config.landingPageConfig.landingUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
-                                    >
-                                      {config.landingPageConfig.landingUrl}
-                                    </a>
-                                  </p>
-                                  <p><strong>Template:</strong> 
-                                    <button 
-                                      onClick={() => {
-                                        // First, restore this configuration's landing page data to localStorage
-                                        if (config.landingPageConfig) {
-                                          localStorage.setItem('elocalpass-landing-config', JSON.stringify(config.landingPageConfig))
-                                        }
-                                        // Then navigate to create page in EDIT mode to load the template
-                                        window.open('/admin/qr-config/create?mode=edit', '_blank')
-                                      }}
-                                      className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
-                                    >
-                                      Edit
-                                    </button>
-                                  </p>
-                                  <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
                                 </div>
-                              )}
-                              {/* Show direct delivery info when DIRECT method is selected */}
-                              {config.config.button3DeliveryMethod === 'DIRECT' && (
-                                <div className="mt-2 space-y-1">
-                                  <p className="text-sm text-gray-600">
-                                    <em>Direct delivery: Sellers input customer details and send ELocalPass directly from their dashboard.</em>
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 4. Welcome Email */}
-                          <div className="bg-white p-4 rounded-lg shadow-sm">
-                            <div className="flex items-center mb-3">
-                              <div className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
-                                4
                               </div>
-                              <h5 className="font-semibold text-gray-900">Welcome Email</h5>
-                            </div>
-                            <div className="text-sm text-gray-700 space-y-1">
-                              <p><strong>Enabled:</strong> {config.config.button4LandingPageRequired ? 'Yes' : 'No'}</p>
-                              {config.config.button4LandingPageRequired && (
-                                <>
-                                  <div className="flex items-center">
-                                    <span className="text-green-600 mr-1">✓</span>
-                                    <span>{config.emailTemplates?.welcomeEmail ? 'Custom template configured' : 'Default template'}</span>
+
+                              {/* 2. Pricing */}
+                              <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <div className="flex items-center mb-3">
+                                  <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                    2
                                   </div>
-                                  {config.emailTemplates?.welcomeEmail && (
+                                  <h5 className="font-semibold text-gray-900">Pricing</h5>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-1">
+                                  <p><strong>Type:</strong> {config.config.button2PricingType === 'FIXED' ? 'Fixed' : config.config.button2PricingType === 'VARIABLE' ? 'Variable' : 'Free'}</p>
+                                  {config.config.button2PricingType === 'FIXED' && config.config.button2FixedPrice && (
+                                    <>
+                                      {config.config.button2IncludeTax ? (
+                                        <>
+                                          <p><strong>Price:</strong> ${config.config.button2FixedPrice} + ${(config.config.button2FixedPrice * (config.config.button2TaxPercentage / 100)).toFixed(2)} ({config.config.button2TaxPercentage}% tax)</p>
+                                          <p><strong>Total:</strong> ${(config.config.button2FixedPrice * (1 + config.config.button2TaxPercentage / 100)).toFixed(2)}</p>
+                                        </>
+                                      ) : (
+                                        <p><strong>Price:</strong> ${config.config.button2FixedPrice}</p>
+                                      )}
+                                    </>
+                                  )}
+                                  {config.config.button2PricingType === 'VARIABLE' && (
+                                    <>
+                                      <p><strong>Base Price:</strong> ${config.config.button2VariableBasePrice}</p>
+                                      <p><strong>Per Guest:</strong> +${config.config.button2VariableGuestIncrease}</p>
+                                      <p><strong>Per Day:</strong> +${config.config.button2VariableDayIncrease}</p>
+                                      <p><strong>Commission:</strong> {config.config.button2VariableCommission}%</p>
+                                      {config.config.button2IncludeTax && (
+                                        <p><strong>Tax:</strong> +{config.config.button2TaxPercentage}% (added to final amount)</p>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* 3. QR Delivery */}
+                              <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <div className="flex items-center mb-3">
+                                  <div className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                    3
+                                  </div>
+                                  <h5 className="font-semibold text-gray-900">QR Delivery</h5>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-1">
+                                  <p><strong>Method:</strong> {
+                                    config.config.button3DeliveryMethod === 'DIRECT' ? 'Direct Download' :
+                                    config.config.button3DeliveryMethod === 'URLS' ? 'Landing Pages' :
+                                    config.config.button3DeliveryMethod === 'BOTH' ? 'Both Options' : 'Button Trigger'
+                                  }</p>
+                                  <p><strong>Available delivery options configured</strong></p>
+                                  {/* Only show landing page info for URLS or BOTH delivery methods, NOT for DIRECT */}
+                                  {config.landingPageConfig && config.config.button3DeliveryMethod !== 'DIRECT' && (
                                     <div className="mt-2 space-y-1">
+                                      <p><strong>Landing Page:</strong> 
+                                        <a 
+                                          href={config.landingPageConfig.landingUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                        >
+                                          {config.landingPageConfig.landingUrl}
+                                        </a>
+                                      </p>
                                       <p><strong>Template:</strong> 
                                         <button 
                                           onClick={() => {
-                                            // First, restore this configuration's template data to localStorage
-                                            if (config.emailTemplates?.welcomeEmail) {
-                                              localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(config.emailTemplates.welcomeEmail))
+                                            // First, restore this configuration's landing page data to localStorage
+                                            if (config.landingPageConfig) {
+                                              localStorage.setItem('elocalpass-landing-config', JSON.stringify(config.landingPageConfig))
                                             }
-                                            // Then navigate to email-config page in EDIT mode to load the template
-                                            window.open('/admin/qr-config/email-config?mode=edit', '_blank')
+                                            // Then navigate to create page in EDIT mode to load the template
+                                            window.open('/admin/qr-config/create?mode=edit', '_blank')
                                           }}
                                           className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
                                         >
-                                          Welcome Email Template - {new Date(config.createdAt).toLocaleDateString()}
+                                          Edit
                                         </button>
                                       </p>
                                       <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
                                     </div>
                                   )}
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 5. Rebuy Email */}
-                          <div className="bg-white p-4 rounded-lg shadow-sm">
-                            <div className="flex items-center mb-3">
-                              <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
-                                5
-                              </div>
-                              <h5 className="font-semibold text-gray-900">Rebuy Email</h5>
-                            </div>
-                            <div className="text-sm text-gray-700 space-y-1">
-                              <p><strong>Enabled:</strong> {config.config.button5SendRebuyEmail ? 'Yes' : 'No'}</p>
-                              {config.config.button5SendRebuyEmail && (
-                                <>
-                                  <div className="flex items-center">
-                                    <span className="text-green-600 mr-1">✓</span>
-                                    <span>{config.emailTemplates?.rebuyEmail ? 'Custom template configured' : 'Default template'}</span>
-                                  </div>
-                                  {config.emailTemplates?.rebuyEmail && (
+                                  {/* Show direct delivery info when DIRECT method is selected */}
+                                  {config.config.button3DeliveryMethod === 'DIRECT' && (
                                     <div className="mt-2 space-y-1">
-                                      <p><strong>Template:</strong> 
-                                        <button 
-                                          onClick={() => {
-                                            // First, restore this configuration's rebuy template data to localStorage
-                                            if (config.emailTemplates?.rebuyEmail) {
-                                              localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(config.emailTemplates.rebuyEmail))
-                                            }
-                                            // Then navigate to rebuy-config page in EDIT mode to load the template
-                                            window.open('/admin/qr-config/rebuy-config?mode=edit', '_blank')
-                                          }}
-                                          className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
-                                        >
-                                          Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}
-                                        </button>
+                                      <p className="text-sm text-gray-600">
+                                        <em>Direct delivery: Sellers input customer details and send ELocalPass directly from their dashboard.</em>
                                       </p>
-                                      <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
                                     </div>
                                   )}
-                                </>
-                              )}
+                                </div>
+                              </div>
+
+                              {/* 4. Welcome Email */}
+                              <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <div className="flex items-center mb-3">
+                                  <div className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                    4
+                                  </div>
+                                  <h5 className="font-semibold text-gray-900">Welcome Email</h5>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-1">
+                                  <p><strong>Enabled:</strong> {config.config.button4LandingPageRequired ? 'Yes' : 'No'}</p>
+                                  {config.config.button4LandingPageRequired && (
+                                    <>
+                                      <div className="flex items-center">
+                                        <span className="text-green-600 mr-1">✓</span>
+                                        <span>{config.emailTemplates?.welcomeEmail ? 'Custom template configured' : 'Default template'}</span>
+                                      </div>
+                                      {config.emailTemplates?.welcomeEmail && (
+                                        <div className="mt-2 space-y-1">
+                                          <p><strong>Template:</strong> 
+                                            <button 
+                                              onClick={() => {
+                                                // First, restore this configuration's template data to localStorage
+                                                if (config.emailTemplates?.welcomeEmail) {
+                                                  localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(config.emailTemplates.welcomeEmail))
+                                                }
+                                                // Then navigate to email-config page in EDIT mode to load the template
+                                                window.open('/admin/qr-config/email-config?mode=edit', '_blank')
+                                              }}
+                                              className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                            >
+                                              Welcome Email Template - {new Date(config.createdAt).toLocaleDateString()}
+                                            </button>
+                                          </p>
+                                          <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* 5. Rebuy Email */}
+                              <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <div className="flex items-center mb-3">
+                                  <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                    5
+                                  </div>
+                                  <h5 className="font-semibold text-gray-900">Rebuy Email</h5>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-1">
+                                  <p><strong>Enabled:</strong> {config.config.button5SendRebuyEmail ? 'Yes' : 'No'}</p>
+                                  {config.config.button5SendRebuyEmail && (
+                                    <>
+                                      <div className="flex items-center">
+                                        <span className="text-green-600 mr-1">✓</span>
+                                        <span>{config.emailTemplates?.rebuyEmail ? 'Custom template configured' : 'Default template'}</span>
+                                      </div>
+                                      {config.emailTemplates?.rebuyEmail && (
+                                        <div className="mt-2 space-y-1">
+                                          <p><strong>Template:</strong> 
+                                            <button 
+                                              onClick={() => {
+                                                // First, restore this configuration's rebuy template data to localStorage
+                                                if (config.emailTemplates?.rebuyEmail) {
+                                                  localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(config.emailTemplates.rebuyEmail))
+                                                }
+                                                // Then navigate to rebuy-config page in EDIT mode to load the template
+                                                window.open('/admin/qr-config/rebuy-config?mode=edit', '_blank')
+                                              }}
+                                              className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                            >
+                                              Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}
+                                            </button>
+                                          </p>
+                                          <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="mt-6 flex justify-between items-center pt-4 border-t border-gray-200">
+                              <div className="flex space-x-3">
+                                <button
+                                  onClick={() => {
+                                    // Clone this configuration into the main form
+                                    updateConfig(config.config)
+                                    
+                                    // Restore email templates to localStorage for editing
+                                    if (config.emailTemplates?.welcomeEmail) {
+                                      localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(config.emailTemplates.welcomeEmail))
+                                    }
+                                    if (config.emailTemplates?.rebuyEmail) {
+                                      localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(config.emailTemplates.rebuyEmail))
+                                    }
+                                    
+                                    setShowConfigLibrary(false)
+                                    toast.success('Configuration Cloned', `"${config.name}" has been cloned. Make your changes and save as a new configuration.`)
+                                  }}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                                >
+                                  🔄 Clone Configuration
+                                </button>
+                              </div>
                             </div>
                           </div>
-
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="mt-6 flex justify-between items-center pt-4 border-t border-gray-200">
-                          <div className="flex space-x-3">
-                            <button
-                              onClick={() => {
-                                // Clone this configuration into the main form
-                                updateConfig(config.config)
-                                
-                                // Restore email templates to localStorage for editing
-                                if (config.emailTemplates?.welcomeEmail) {
-                                  localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(config.emailTemplates.welcomeEmail))
-                                }
-                                if (config.emailTemplates?.rebuyEmail) {
-                                  localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(config.emailTemplates.rebuyEmail))
-                                }
-                                
-                                setShowConfigLibrary(false)
-                                toast.success('Configuration Cloned', `"${config.name}" has been cloned. Make your changes and save as a new configuration.`)
-                              }}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-                            >
-                              🔄 Clone Configuration
-                            </button>
-                          </div>
-                        </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>

@@ -179,12 +179,63 @@ export default function DistributorsPage() {
     config: any
     createdAt: Date
     source?: string
+    landingPageConfig?: any
+    emailTemplates?: {
+      welcomeEmail?: any
+      rebuyEmail?: any
+    }
   }>>([])
   const [loadingQRConfigs, setLoadingQRConfigs] = useState(false)
   const [expandedQRConfigs, setExpandedQRConfigs] = useState<Set<string>>(new Set())
+  const [qrSearchQuery, setQrSearchQuery] = useState('')
+  const [qrFilterPricingType, setQrFilterPricingType] = useState('ALL')
+  const [qrFilterDeliveryMethod, setQrFilterDeliveryMethod] = useState('ALL')
+  const [qrSortBy, setQrSortBy] = useState('DATE_DESC')
 
   // Toast notifications
   const { success: showSuccess, error: showError } = useToast()
+
+  // Filter and sort QR configurations for pairing modal
+  const filteredAndSortedQRConfigs = availableQRConfigs
+    .filter(config => {
+      // Search query filter (name, description)
+      const matchesSearch = qrSearchQuery === '' || 
+        config.name.toLowerCase().includes(qrSearchQuery.toLowerCase()) ||
+        config.description.toLowerCase().includes(qrSearchQuery.toLowerCase())
+
+      // Pricing type filter
+      const matchesPricing = qrFilterPricingType === 'ALL' || 
+        config.config.button2PricingType === qrFilterPricingType
+
+      // Delivery method filter
+      const matchesDelivery = qrFilterDeliveryMethod === 'ALL' || 
+        config.config.button3DeliveryMethod === qrFilterDeliveryMethod
+
+      return matchesSearch && matchesPricing && matchesDelivery
+    })
+    .sort((a, b) => {
+      switch (qrSortBy) {
+        case 'NAME_ASC':
+          return a.name.localeCompare(b.name)
+        case 'NAME_DESC':
+          return b.name.localeCompare(a.name)
+        case 'DATE_ASC':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        case 'DATE_DESC':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+    })
+
+  const toggleQRConfigExpanded = (configId: string) => {
+    const newExpanded = new Set(expandedQRConfigs)
+    if (newExpanded.has(configId)) {
+      newExpanded.delete(configId)
+    } else {
+      newExpanded.add(configId)
+    }
+    setExpandedQRConfigs(newExpanded)
+  }
 
   const navItems = getNavItems(session?.user?.role || "")
 
@@ -890,16 +941,6 @@ export default function DistributorsPage() {
     }
   }
 
-  const toggleQRConfigExpanded = (configId: string) => {
-    const newExpanded = new Set(expandedQRConfigs)
-    if (newExpanded.has(configId)) {
-      newExpanded.delete(configId)
-    } else {
-      newExpanded.add(configId)
-    }
-    setExpandedQRConfigs(newExpanded)
-  }
-
   if (loading) {
     return (
       <ProtectedRoute allowedRoles={["ADMIN"]}>
@@ -1007,16 +1048,7 @@ export default function DistributorsPage() {
                           Sellers
                         </th>
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center justify-between">
-                            <span>Locations</span>
-                            <div className="text-blue-600 hover:text-blue-800">
-                              {expandedDistributor ? (
-                                <ChevronDown className="h-5 w-5" />
-                              ) : (
-                                <ChevronRight className="h-5 w-5" />
-                              )}
-                            </div>
-                          </div>
+                          Locations
                         </th>
                         <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           <button 
@@ -1088,8 +1120,8 @@ export default function DistributorsPage() {
                                 {distributorDetails[distributor.id]?.locations?.reduce((total, location) => total + (location.sellers?.length || 0), 0) || 0}
                               </span>
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="flex items-center justify-between">
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <div className="flex items-center space-x-2">
                                 <span className="text-sm font-medium text-gray-900">
                                   {distributorDetails[distributor.id]?._count?.locations}
                                 </span>
@@ -1112,7 +1144,7 @@ export default function DistributorsPage() {
                               </button>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center justify-end space-x-2">
                                 <button
                                   onClick={(e) => handleEditClick(distributor, e)}
                                   className="text-blue-600 hover:text-blue-900 flex items-center space-x-1"
@@ -1325,16 +1357,7 @@ export default function DistributorsPage() {
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telephone</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                                  <div className="flex items-center justify-between">
-                                                    <span>Sellers</span>
-                                                    <div className="text-blue-600 hover:text-blue-800">
-                                                      {expandedLocation ? (
-                                                        <ChevronDown className="h-5 w-5" />
-                                                      ) : (
-                                                        <ChevronRight className="h-5 w-5" />
-                                                      )}
-                                                    </div>
-                                                  </div>
+                                                  Sellers
                                                 </th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -1798,9 +1821,9 @@ export default function DistributorsPage() {
                                                                                               </div>
                                                                                               <div className="text-gray-600 ml-4 text-xs">
                                                                                                 <div>Method: {
-                                                                                                  matchingConfig.config.button3DeliveryMethod === 'DIRECT' ? 'Direct' :
-                                                                                                  matchingConfig.config.button3DeliveryMethod === 'URLS' ? '1 URL' :
-                                                                                                  'Both'
+                                                                                                  matchingConfig.config.button3DeliveryMethod === 'DIRECT' ? 'Direct Download' :
+                                                                                                  matchingConfig.config.button3DeliveryMethod === 'URLS' ? 'Landing Pages' :
+                                                                                                  'Both Options'
                                                                                                 }</div>
                                                                                               </div>
                                                                                             </div>
@@ -1991,7 +2014,7 @@ export default function DistributorsPage() {
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-7xl sm:w-full">
               <form onSubmit={handleCreateLocation}>
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <div className="flex items-center mb-4">
@@ -2135,7 +2158,7 @@ export default function DistributorsPage() {
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-7xl sm:w-full">
               <form onSubmit={handleCreateSeller}>
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <div className="flex items-center mb-4">
@@ -2271,8 +2294,8 @@ export default function DistributorsPage() {
       
       {/* QR Configuration Pairing Modal */}
       {showQRPairingModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-7xl mx-4 h-[95vh] overflow-y-auto">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -2291,30 +2314,136 @@ export default function DistributorsPage() {
                 </button>
               </div>
 
+              {/* Search and Filter Controls */}
+              {availableQRConfigs.length > 0 && (
+                <div className="mb-6 space-y-4">
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search configurations by name or description..."
+                      value={qrSearchQuery}
+                      onChange={(e) => setQrSearchQuery(e.target.value)}
+                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Filter Controls */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Pricing Type Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Pricing Type</label>
+                      <select
+                        value={qrFilterPricingType}
+                        onChange={(e) => setQrFilterPricingType(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="ALL">All Types</option>
+                        <option value="FIXED">Fixed Price</option>
+                        <option value="VARIABLE">Variable Price</option>
+                        <option value="FREE">Free</option>
+                      </select>
+                    </div>
+
+                    {/* Delivery Method Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Method</label>
+                      <select
+                        value={qrFilterDeliveryMethod}
+                        onChange={(e) => setQrFilterDeliveryMethod(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="ALL">All Methods</option>
+                        <option value="DIRECT">Direct Download</option>
+                        <option value="URLS">Landing Pages</option>
+                        <option value="BOTH">Both Options</option>
+                      </select>
+                    </div>
+
+                    {/* Sort Options */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                      <select
+                        value={qrSortBy}
+                        onChange={(e) => setQrSortBy(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="DATE_DESC">Newest First</option>
+                        <option value="DATE_ASC">Oldest First</option>
+                        <option value="NAME_ASC">Name A-Z</option>
+                        <option value="NAME_DESC">Name Z-A</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Results Info and Clear All */}
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      {qrSearchQuery && (
+                        <span className="mr-2">
+                          Search: "<span className="font-medium">{qrSearchQuery}</span>"
+                        </span>
+                      )}
+                      Showing {filteredAndSortedQRConfigs.length} of {availableQRConfigs.length} configurations
+                    </div>
+                    <button
+                      onClick={() => {
+                        setQrSearchQuery('')
+                        setQrFilterPricingType('ALL')
+                        setQrFilterDeliveryMethod('ALL')
+                        setQrSortBy('DATE_DESC')
+                      }}
+                      className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {loadingQRConfigs ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   <span className="ml-2 text-gray-600">Loading configurations...</span>
                 </div>
-              ) : availableQRConfigs.length === 0 ? (
+              ) : filteredAndSortedQRConfigs.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="text-gray-400 mb-4">
                     <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">No QR Configurations Found</h4>
-                  <p className="text-gray-600 mb-4">Create some QR configurations first to pair with sellers.</p>
-                  <button
-                    onClick={() => window.open('/admin/qr-config', '_blank')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Create QR Config
-                  </button>
+                  {availableQRConfigs.length === 0 ? (
+                    <>
+                      <p className="text-gray-500 mb-4">No QR configurations available</p>
+                      <p className="text-sm text-gray-400">Create a QR configuration first to pair with sellers.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-500 mb-4">No matching configurations found</p>
+                      <p className="text-sm text-gray-400 mb-4">Try adjusting your search or filters to find more configurations.</p>
+                      <button
+                        onClick={() => {
+                          setQrSearchQuery('')
+                          setQrFilterPricingType('ALL')
+                          setQrFilterDeliveryMethod('ALL')
+                          setQrSortBy('DATE_DESC')
+                        }}
+                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        Clear Filters
+                      </button>
+                    </>
+                  )}
                 </div>
               ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {availableQRConfigs.map((config) => (
+                <div className="space-y-4">
+                  {filteredAndSortedQRConfigs.map((config) => (
                     <div key={config.id} className="border border-gray-200 rounded-lg bg-white shadow-sm">
                       {/* Compact Header */}
                       <div 
@@ -2362,9 +2491,10 @@ export default function DistributorsPage() {
 
                       {/* Expanded Details */}
                       {expandedQRConfigs.has(config.id) && (
-                        <div className="px-4 pb-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                            {/* Button 1: Guest & Day Limits */}
+                        <div className="p-6 bg-gray-50">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            
+                            {/* 1. Guest & Day Limits */}
                             <div className="bg-white p-4 rounded-lg shadow-sm">
                               <div className="flex items-center mb-3">
                                 <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
@@ -2373,12 +2503,21 @@ export default function DistributorsPage() {
                                 <h5 className="font-semibold text-gray-900">Guest & Day Limits</h5>
                               </div>
                               <div className="text-sm text-gray-700 space-y-1">
-                                <p><strong>Guests:</strong> {config.config.button1GuestsLocked ? config.config.button1GuestsDefault : `1-${config.config.button1GuestsRangeMax}`}</p>
-                                <p><strong>Days:</strong> {config.config.button1DaysLocked ? config.config.button1DaysDefault : `1-${config.config.button1DaysRangeMax}`}</p>
+                                {!config.config.button1GuestsLocked ? (
+                                  <>
+                                    <p><strong>Guests:</strong> 1-{config.config.button1GuestsRangeMax} (default: {config.config.button1GuestsDefault})</p>
+                                    <p><strong>Days:</strong> {!config.config.button1DaysLocked ? `1-${config.config.button1DaysRangeMax} (default: ${config.config.button1DaysDefault})` : `Fixed at ${config.config.button1DaysDefault}`}</p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p><strong>Guests:</strong> Fixed at {config.config.button1GuestsDefault}</p>
+                                    <p><strong>Days:</strong> Fixed at {config.config.button1DaysDefault}</p>
+                                  </>
+                                )}
                               </div>
                             </div>
 
-                            {/* Button 2: Pricing */}
+                            {/* 2. Pricing */}
                             <div className="bg-white p-4 rounded-lg shadow-sm">
                               <div className="flex items-center mb-3">
                                 <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
@@ -2387,25 +2526,34 @@ export default function DistributorsPage() {
                                 <h5 className="font-semibold text-gray-900">Pricing</h5>
                               </div>
                               <div className="text-sm text-gray-700 space-y-1">
-                                {config.config.button2PricingType === 'FIXED' ? (
-                                  <div>
-                                    <p><strong>Price:</strong> ${config.config.button2FixedPrice}{config.config.button2IncludeTax ? ` + ${config.config.button2TaxPercentage}% tax` : ' (no tax)'}</p>
-                                  </div>
-                                ) : config.config.button2PricingType === 'VARIABLE' ? (
-                                  <div>
-                                    <p><strong>Base:</strong> ${config.config.button2VariableBasePrice}</p>
+                                <p><strong>Type:</strong> {config.config.button2PricingType === 'FIXED' ? 'Fixed' : config.config.button2PricingType === 'VARIABLE' ? 'Variable' : 'Free'}</p>
+                                {config.config.button2PricingType === 'FIXED' && config.config.button2FixedPrice && (
+                                  <>
+                                    {config.config.button2IncludeTax ? (
+                                      <>
+                                        <p><strong>Price:</strong> ${config.config.button2FixedPrice} + ${(config.config.button2FixedPrice * (config.config.button2TaxPercentage / 100)).toFixed(2)} ({config.config.button2TaxPercentage}% tax)</p>
+                                        <p><strong>Total:</strong> ${(config.config.button2FixedPrice * (1 + config.config.button2TaxPercentage / 100)).toFixed(2)}</p>
+                                      </>
+                                    ) : (
+                                      <p><strong>Price:</strong> ${config.config.button2FixedPrice}</p>
+                                    )}
+                                  </>
+                                )}
+                                {config.config.button2PricingType === 'VARIABLE' && (
+                                  <>
+                                    <p><strong>Base Price:</strong> ${config.config.button2VariableBasePrice}</p>
                                     <p><strong>Per Guest:</strong> +${config.config.button2VariableGuestIncrease}</p>
                                     <p><strong>Per Day:</strong> +${config.config.button2VariableDayIncrease}</p>
-                                    {config.config.button2VariableCommission > 0 && <p><strong>Commission:</strong> +${config.config.button2VariableCommission}%</p>}
-                                    {config.config.button2IncludeTax ? <p><strong>Tax:</strong> +${config.config.button2TaxPercentage}%</p> : <p>(no tax)</p>}
-                                  </div>
-                                ) : (
-                                  <p>Free</p>
+                                    <p><strong>Commission:</strong> {config.config.button2VariableCommission}%</p>
+                                    {config.config.button2IncludeTax && (
+                                      <p><strong>Tax:</strong> +{config.config.button2TaxPercentage}% (added to final amount)</p>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </div>
 
-                            {/* Button 3: QR Delivery */}
+                            {/* 3. QR Delivery */}
                             <div className="bg-white p-4 rounded-lg shadow-sm">
                               <div className="flex items-center mb-3">
                                 <div className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
@@ -2415,10 +2563,132 @@ export default function DistributorsPage() {
                               </div>
                               <div className="text-sm text-gray-700 space-y-1">
                                 <p><strong>Method:</strong> {
-                                  config.config.button3DeliveryMethod === 'DIRECT' ? 'Direct' :
-                                  config.config.button3DeliveryMethod === 'URLS' ? '1 URL' :
-                                  'Both'
+                                  config.config.button3DeliveryMethod === 'DIRECT' ? 'Direct Download' :
+                                  config.config.button3DeliveryMethod === 'URLS' ? 'Landing Pages' :
+                                  config.config.button3DeliveryMethod === 'BOTH' ? 'Both Options' : 'Button Trigger'
                                 }</p>
+                                <p><strong>Available delivery options configured</strong></p>
+                                {/* Show landing page info for URLS or BOTH delivery methods */}
+                                {config.landingPageConfig && config.config.button3DeliveryMethod !== 'DIRECT' && (
+                                  <div className="mt-2 space-y-1">
+                                    <p><strong>Landing Page:</strong> 
+                                      <a 
+                                        href={config.landingPageConfig.landingUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                      >
+                                        {config.landingPageConfig.landingUrl}
+                                      </a>
+                                    </p>
+                                    <p><strong>Template:</strong> 
+                                      <button 
+                                        onClick={() => {
+                                          // First, restore this configuration's landing page data to localStorage
+                                          if (config.landingPageConfig) {
+                                            localStorage.setItem('elocalpass-landing-config', JSON.stringify(config.landingPageConfig))
+                                          }
+                                          // Then navigate to create page in EDIT mode to load the template
+                                          window.open('/admin/qr-config/create?mode=edit', '_blank')
+                                        }}
+                                        className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                      >
+                                        Edit
+                                      </button>
+                                    </p>
+                                    <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                  </div>
+                                )}
+                                {/* Show direct delivery info when DIRECT method is selected */}
+                                {config.config.button3DeliveryMethod === 'DIRECT' && (
+                                  <div className="mt-2 space-y-1">
+                                    <p className="text-sm text-gray-600">
+                                      <em>Direct delivery: Sellers input customer details and send ELocalPass directly from their dashboard.</em>
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 4. Welcome Email */}
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                              <div className="flex items-center mb-3">
+                                <div className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                  4
+                                </div>
+                                <h5 className="font-semibold text-gray-900">Welcome Email</h5>
+                              </div>
+                              <div className="text-sm text-gray-700 space-y-1">
+                                <p><strong>Enabled:</strong> {config.config.button4LandingPageRequired ? 'Yes' : 'No'}</p>
+                                {config.config.button4LandingPageRequired && (
+                                  <>
+                                    <div className="flex items-center">
+                                      <span className="text-green-600 mr-1">✓</span>
+                                      <span>{config.emailTemplates?.welcomeEmail ? 'Custom template configured' : 'Default template'}</span>
+                                    </div>
+                                    {config.emailTemplates?.welcomeEmail && (
+                                      <div className="mt-2 space-y-1">
+                                        <p><strong>Template:</strong> 
+                                          <button 
+                                            onClick={() => {
+                                              // First, restore this configuration's template data to localStorage
+                                              if (config.emailTemplates?.welcomeEmail) {
+                                                localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(config.emailTemplates.welcomeEmail))
+                                              }
+                                              // Then navigate to email-config page in EDIT mode to load the template
+                                              window.open('/admin/qr-config/email-config?mode=edit', '_blank')
+                                            }}
+                                            className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                          >
+                                            Welcome Email Template - {new Date(config.createdAt).toLocaleDateString()}
+                                          </button>
+                                        </p>
+                                        <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 5. Rebuy Email */}
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                              <div className="flex items-center mb-3">
+                                <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                  5
+                                </div>
+                                <h5 className="font-semibold text-gray-900">Rebuy Email</h5>
+                              </div>
+                              <div className="text-sm text-gray-700 space-y-1">
+                                <p><strong>Enabled:</strong> {config.config.button5SendRebuyEmail ? 'Yes' : 'No'}</p>
+                                {config.config.button5SendRebuyEmail && (
+                                  <>
+                                    <div className="flex items-center">
+                                      <span className="text-green-600 mr-1">✓</span>
+                                      <span>{config.emailTemplates?.rebuyEmail ? 'Custom template configured' : 'Default template'}</span>
+                                    </div>
+                                    {config.emailTemplates?.rebuyEmail && (
+                                      <div className="mt-2 space-y-1">
+                                        <p><strong>Template:</strong> 
+                                          <button 
+                                            onClick={() => {
+                                              // First, restore this configuration's rebuy template data to localStorage
+                                              if (config.emailTemplates?.rebuyEmail) {
+                                                localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(config.emailTemplates.rebuyEmail))
+                                              }
+                                              // Then navigate to rebuy-config page in EDIT mode to load the template
+                                              window.open('/admin/qr-config/rebuy-config?mode=edit', '_blank')
+                                            }}
+                                            className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                          >
+                                            Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}
+                                          </button>
+                                        </p>
+                                        <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -2435,7 +2705,7 @@ export default function DistributorsPage() {
                     setShowQRPairingModal(false)
                     setSelectedSellerForQR(null)
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Cancel
                 </button>
