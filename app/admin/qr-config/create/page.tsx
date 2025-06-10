@@ -125,6 +125,9 @@ export default function CreateEnhancedLandingPage() {
   const router = useRouter()
   const toast = useToast()
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig | null>(null)
+  const [editMode, setEditMode] = useState(false)
+  const [editQrId, setEditQrId] = useState<string | null>(null)
+  const [editUrlId, setEditUrlId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     businessName: '',
     logoUrl: '',
@@ -203,17 +206,30 @@ export default function CreateEnhancedLandingPage() {
     // Check for edit mode and load existing configurations only for edit
     const urlParams = new URLSearchParams(window.location.search)
     const mode = urlParams.get('mode')
+    const qrId = urlParams.get('qrId')
+    const urlId = urlParams.get('urlId')
+    
+    console.log('🔧 LANDING EDITOR: URL params:', { mode, qrId, urlId })
     
     if (mode === 'edit') {
+      setEditMode(true)
+      setEditQrId(qrId)
+      setEditUrlId(urlId)
+      
       // Only load saved templates when editing existing configurations
       loadSavedTemplates()
       
       const landingConfig = localStorage.getItem('elocalpass-landing-config')
+      console.log('🔧 LANDING EDITOR: Raw localStorage data:', landingConfig)
+      
       if (landingConfig) {
         try {
           const savedConfig = JSON.parse(landingConfig)
+          console.log('🔧 LANDING EDITOR: Parsed config:', savedConfig)
+          console.log('🔧 LANDING EDITOR: Landing config data:', savedConfig.landingConfig)
           setFormData(savedConfig.landingConfig)
           console.log('✅ Loaded existing landing page configuration for edit mode')
+          console.log('✅ Current form data after load:', savedConfig.landingConfig)
         } catch (error) {
           console.log('Could not load landing page configuration:', error)
         }
@@ -265,6 +281,11 @@ export default function CreateEnhancedLandingPage() {
     setShowSaveDialog(false)
     setCurrentTemplateName('')
     toast.success('Template Saved', `Template "${newTemplate.name}" saved successfully!`)
+    
+    // Also save to QR configuration if in edit mode
+    if (editMode && editQrId) {
+      saveToQRConfiguration()
+    }
   }
 
   const loadLandingTemplate = (template: { name: string, data: any }) => {
@@ -282,11 +303,114 @@ export default function CreateEnhancedLandingPage() {
     }
   }
 
+  const saveToQRConfiguration = async () => {
+    if (!editMode || !editQrId) {
+      console.log('❌ SAVE DEBUG: Not in edit mode or missing QR ID', { editMode, editQrId })
+      return
+    }
+
+    try {
+      console.log('💾 SAVE DEBUG: Starting save process for QR ID:', editQrId)
+      console.log('💾 SAVE DEBUG: Current form data:', formData)
+      
+      // Load existing saved configurations
+      const savedConfigsData = localStorage.getItem('elocalpass-saved-configurations')
+      console.log('💾 SAVE DEBUG: Raw saved configs:', savedConfigsData)
+      
+      let savedConfigs = []
+      
+      if (savedConfigsData) {
+        savedConfigs = JSON.parse(savedConfigsData)
+        console.log('💾 SAVE DEBUG: Parsed saved configs:', savedConfigs.length, 'configurations')
+      } else {
+        console.log('💾 SAVE DEBUG: No saved configurations found')
+      }
+      
+      // Find the specific configuration
+      const configIndex = savedConfigs.findIndex((config: any) => config.id === editQrId)
+      console.log('💾 SAVE DEBUG: Found config at index:', configIndex)
+      
+      if (configIndex === -1) {
+        console.log('❌ SAVE DEBUG: Configuration not found for ID:', editQrId)
+        toast.error('Configuration Not Found', 'Could not find the QR configuration to update')
+        return
+      }
+      
+      // Update the configuration with landing page content
+      const updatedConfig = { ...savedConfigs[configIndex] }
+      console.log('💾 SAVE DEBUG: Original config:', updatedConfig)
+      
+      // Ensure templates structure exists
+      if (!updatedConfig.templates) {
+        updatedConfig.templates = {}
+      }
+      if (!updatedConfig.templates.landingPage) {
+        updatedConfig.templates.landingPage = {}
+      }
+      if (!updatedConfig.templates.landingPage.urlCustomContent) {
+        updatedConfig.templates.landingPage.urlCustomContent = {}
+      }
+      
+      // Save the current form data as custom content FOR THIS SPECIFIC URL
+      if (editUrlId) {
+        updatedConfig.templates.landingPage.urlCustomContent[editUrlId] = { ...formData }
+      }
+      updatedConfig.updatedAt = new Date().toISOString()
+      
+      console.log('💾 SAVE DEBUG: Updated config with new content:', updatedConfig)
+      console.log('💾 SAVE DEBUG: Custom content saved:', updatedConfig.templates.landingPage.urlCustomContent)
+      
+      // Update the configuration in the array
+      savedConfigs[configIndex] = updatedConfig
+      
+      // Save back to localStorage
+      localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(savedConfigs))
+      console.log('💾 SAVE DEBUG: Saved to localStorage successfully')
+      
+      // Also save to API if available
+      try {
+        const response = await fetch(`/api/qr-config/${editQrId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updatedConfig)
+        })
+        
+        if (response.ok) {
+          console.log('✅ SAVE DEBUG: Successfully saved to API')
+        } else {
+          console.log('⚠️ SAVE DEBUG: API save failed, status:', response.status)
+        }
+      } catch (apiError) {
+        console.log('⚠️ SAVE DEBUG: API error:', apiError)
+      }
+      
+      toast.success('Landing Page Saved', 'Your changes have been saved to the QR configuration!')
+      
+      // Navigate back to QR configuration page with the specific config expanded
+      setTimeout(() => {
+        router.push(`/admin/qr-config?expand=${editQrId}`)
+      }, 1500) // Wait for toast to be visible
+      
+    } catch (error) {
+      console.error('❌ SAVE DEBUG: Error saving:', error)
+      toast.error('Save Failed', 'Failed to save landing page changes')
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
     try {
+      // If in edit mode, save to QR configuration instead of creating new
+      if (editMode && editQrId) {
+        await saveToQRConfiguration()
+        setIsSubmitting(false)
+        return
+      }
+
       // Validate required fields
       if (!formData.configurationName?.trim()) {
         toast.error('Missing Information', 'Please enter a configuration name')
@@ -450,48 +574,6 @@ export default function CreateEnhancedLandingPage() {
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Button 1 Configuration - Inherited from Global Settings */}
-              <div className="bg-blue-50 p-6 rounded-lg">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Guest & Day Selection Rules</h2>
-                <p className="text-sm text-blue-700 mb-4">These settings are inherited from your QR Configuration System (Button 1) and cannot be modified here.</p>
-                
-                {globalConfig ? (
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {/* Guest Configuration */}
-                    <div>
-                      <h3 className="font-semibold text-gray-700 mb-3">Guest Selection</h3>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-center">
-                          <span className="text-sm text-gray-600">
-                            {globalConfig.button1GuestsLocked ? 'Fixed at' : 'Flexible up to'}: {' '}
-                            <span className="font-medium">{globalConfig.button1GuestsDefault}</span>
-                            {!globalConfig.button1GuestsLocked && ` (max: ${globalConfig.button1GuestsRangeMax})`}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Day Configuration */}
-                    <div>
-                      <h3 className="font-semibold text-gray-700 mb-3">Day Selection</h3>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-center">
-                          <span className="text-sm text-gray-600">
-                            {globalConfig.button1DaysLocked ? 'Fixed at' : 'Flexible up to'}: {' '}
-                            <span className="font-medium">{globalConfig.button1DaysDefault}</span>
-                            {!globalConfig.button1DaysLocked && ` (max: ${globalConfig.button1DaysRangeMax})`}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-gray-500">Loading Button 1 configuration...</div>
-                )}
               </div>
 
               {/* Brand Colors */}
@@ -787,7 +869,10 @@ export default function CreateEnhancedLandingPage() {
                   disabled={isSubmitting}
                   className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-105"
                 >
-                  {isSubmitting ? 'Saving Landing Page Configuration...' : 'Save Landing Page Configuration'}
+                  {isSubmitting 
+                    ? (editMode ? 'Saving Changes...' : 'Saving Landing Page Configuration...') 
+                    : (editMode ? '💾 Save Changes to QR Configuration' : 'Save Landing Page Configuration')
+                  }
                 </button>
               </div>
             </form>

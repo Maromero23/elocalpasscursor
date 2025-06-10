@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import EmailTemplatePreview from '@/components/email-template-preview'
 import { ToastNotifications } from '@/components/toast-notification'
 import { useToast } from '@/hooks/use-toast'
@@ -104,7 +104,11 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
 
 export default function EmailConfigPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useToast()
+  
+  // Get qrId from URL params for redirection back to specific config
+  const qrId = searchParams.get('qrId')
   
   // Auto-detect template mode from URL or previous page choice
   useEffect(() => {
@@ -339,7 +343,13 @@ export default function EmailConfigPage() {
       
       // Optional: Redirect back to QR config after 2 seconds
       setTimeout(() => {
-        router.push('/admin/qr-config')
+        if (qrId) {
+          // Redirect back to specific QR config and expand it
+          router.push(`/admin/qr-config?expand=${qrId}`)
+        } else {
+          // Redirect to main QR config page
+          router.push('/admin/qr-config')
+        }
       }, 2000)
       
     } catch (error) {

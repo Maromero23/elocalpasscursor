@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { LandingPageTemplate } from '../../../../components/landing-page-template'
 
 interface QRConfigData {
@@ -26,7 +26,9 @@ interface QRConfigData {
 
 export default function CustomLandingPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const qrId = params.qrId as string
+  const urlId = searchParams.get('urlId')  // Get URL ID from query params
   
   const [configData, setConfigData] = useState<QRConfigData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -36,7 +38,7 @@ export default function CustomLandingPage() {
     if (qrId) {
       fetchQRConfigData()
     }
-  }, [qrId])
+  }, [qrId, urlId])  // Re-fetch when urlId changes
 
   const fetchQRConfigData = async () => {
     try {
@@ -51,9 +53,23 @@ export default function CustomLandingPage() {
         
         const foundConfig = savedConfigs.find((config: any) => config.id === qrId)
         console.log('🔍 Found config for qrId:', foundConfig)
+        console.log('🔍 URL ID from query:', urlId)
+        console.log('🔍 Config templates structure:', foundConfig?.templates)
+        console.log('🔍 Landing page template:', foundConfig?.templates?.landingPage)
+        console.log('🔍 URL custom content:', foundConfig?.templates?.landingPage?.urlCustomContent)
+        console.log('🔍 Specific URL content:', urlId ? foundConfig?.templates?.landingPage?.urlCustomContent?.[urlId] : 'No URL ID provided')
         
-        if (foundConfig && foundConfig.templates?.landingPage?.customContent) {
-          const customContent = foundConfig.templates.landingPage.customContent
+        // Check for URL-specific custom content first
+        let customContent = null
+        if (foundConfig && urlId && foundConfig.templates?.landingPage?.urlCustomContent?.[urlId]) {
+          customContent = foundConfig.templates.landingPage.urlCustomContent[urlId]
+          console.log('🔍 Using URL-specific custom content for URL:', urlId)
+        } else if (foundConfig && foundConfig.templates?.landingPage?.customContent) {
+          customContent = foundConfig.templates.landingPage.customContent
+          console.log('🔍 Using fallback config-level custom content')
+        }
+        
+        if (foundConfig && customContent) {
           console.log('🔍 Custom landing page content found:', customContent)
           console.log('🔍 businessName:', customContent.businessName)
           console.log('🔍 headerText:', customContent.headerText) 
@@ -166,7 +182,7 @@ export default function CustomLandingPage() {
       allowCustomDays={configData.allowCustomDays}
       defaultDays={configData.defaultDays}
       maxDays={configData.maxDays}
-      qrId={qrId}
+      qrConfigId={qrId}
     />
   )
 }

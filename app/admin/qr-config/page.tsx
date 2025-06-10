@@ -105,6 +105,7 @@ export default function QRConfigPage() {
     name: string;
     description: string;
     config: QRGlobalConfig;
+    selectedUrlIds: string[]; // Preserve selected URL IDs for multi-URL support
     emailTemplates: {
       welcomeEmail: any;
       rebuyEmail: any;
@@ -274,57 +275,20 @@ export default function QRConfigPage() {
     
     await updateConfig(defaultConfig)
     
-    // Clear all template configurations on reset - fresh start
+    // Clear ONLY current working templates - NOT saved configurations
     localStorage.removeItem('elocalpass-welcome-email-config')
     localStorage.removeItem('elocalpass-rebuy-email-config')
     localStorage.removeItem('elocalpass-landing-config')
     localStorage.removeItem('elocalpass-current-qr-progress')
-    console.log('🧹 Reset cleared all templates and progress - fresh start')
+    console.log('🧹 Reset cleared current working templates - saved configurations preserved')
     
-    // Clean up auto-generated landing page URLs from database
-    try {
-      const response = await fetch('/api/seller/landing-urls')
-      if (response.ok) {
-        const urls = await response.json()
-        // Filter URLs that are configuration-specific (auto-generated or created for QR configs)
-        const configSpecificUrls = urls.filter((url: any) => 
-          // Auto-generated enhanced landing pages
-          url.description?.includes('Auto-generated enhanced landing page') ||
-          url.name?.includes('Enhanced Landing Page -') ||
-          // Configuration-specific URLs (created during QR config process)
-          url.description?.includes('Custom landing page configuration created on') ||
-          // URLs that contain common QR configuration naming patterns
-          url.name?.includes('Riu Cancun') ||
-          url.name?.includes('Compro') ||
-          // Any URL created in the last session (if description contains creation date)
-          (url.description && url.description.includes('created on'))
-        )
-        
-        console.log('🧹 Found configuration-specific URLs to delete:', configSpecificUrls.map((u: any) => u.name))
-        
-        // Delete configuration-specific URLs
-        for (const url of configSpecificUrls) {
-          try {
-            await fetch(`/api/seller/landing-urls/${url.id}`, {
-              method: 'DELETE'
-            })
-            console.log('🗑️ Deleted configuration URL:', url.name)
-          } catch (error) {
-            console.error('Error deleting configuration URL:', error)
-          }
-        }
-        
-        // Refresh the URL list
-        fetchSellerUrls()
-      }
-    } catch (error) {
-      console.error('Error cleaning up configuration URLs:', error)
-    }
+    // DO NOT delete URLs from database - Reset should only affect current working session
+    // The original code was too aggressive and deleted user's saved URLs
     
     // Clear all configured button states so they return to original colors
     setConfiguredButtons(new Set())
     setSelectedUrlIds([])
-    setSaveStatus('🔄 Reset to defaults - All configurations cleared and values reset')
+    setSaveStatus('🔄 Reset to defaults - All current working values reset, saved configurations preserved')
     setTimeout(() => setSaveStatus(''), 3000)
   }
 
@@ -590,18 +554,27 @@ export default function QRConfigPage() {
       return
     }
 
-    // Gather template configurations - ONLY for landing page (not email templates)
-    // Email templates should start fresh for new configurations
+    // Gather template configurations - including email templates if they exist
     const landingPageConfig = localStorage.getItem('elocalpass-landing-config')
+    const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+    const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
     
     let parsedLandingPage = null
+    let parsedWelcomeEmail = null
+    let parsedRebuyEmail = null
     
     try {
       if (landingPageConfig) {
         parsedLandingPage = JSON.parse(landingPageConfig)
       }
+      if (welcomeEmailConfig) {
+        parsedWelcomeEmail = JSON.parse(welcomeEmailConfig)
+      }
+      if (rebuyEmailConfig) {
+        parsedRebuyEmail = JSON.parse(rebuyEmailConfig)
+      }
     } catch (error) {
-      console.warn('Warning: Could not parse landing page configuration:', error)
+      console.warn('Warning: Could not parse template configurations:', error)
     }
 
     const newConfig = {
@@ -609,13 +582,17 @@ export default function QRConfigPage() {
       name: newConfigName.trim(),
       description: newConfigDescription.trim() || 'No description provided',
       config: { ...globalConfig },
+      selectedUrlIds: selectedUrlIds, // Preserve selected URL IDs for multi-URL support
       emailTemplates: {
-        welcomeEmail: null,  // Start fresh - no saved templates
-        rebuyEmail: null     // Start fresh - no saved templates
+        welcomeEmail: parsedWelcomeEmail,  // Preserve custom welcome email template
+        rebuyEmail: parsedRebuyEmail       // Preserve custom rebuy email template
       },
       landingPageConfig: parsedLandingPage,
       createdAt: new Date()
     }
+    
+    console.log('🐛 DEBUG: Saving configuration with selectedUrlIds:', selectedUrlIds)
+    console.log('🐛 DEBUG: newConfig being saved:', newConfig)
     
     const updatedConfigs = [...savedConfigurations, newConfig]
     setSavedConfigurations(updatedConfigs)
@@ -821,16 +798,20 @@ export default function QRConfigPage() {
 
   // URL Management Functions
   const fetchSellerUrls = async () => {
+    console.log('🌐 FETCH: Starting fetchSellerUrls...')
     try {
       const response = await fetch('/api/seller/landing-urls')
+      console.log('🌐 FETCH: Response status:', response.status)
       if (response.ok) {
         const urls = await response.json()
+        console.log('🌐 FETCH: Retrieved URLs from API:', urls.length, urls.map((u: any) => ({id: u.id, name: u.name})))
         setSellerUrls(urls)
+        console.log('🌐 FETCH: Set sellerUrls state with', urls.length, 'URLs')
       } else {
-        console.error('Failed to fetch seller URLs')
+        console.error('🌐 FETCH: Failed to fetch seller URLs, status:', response.status)
       }
     } catch (error) {
-      console.error('Error fetching seller URLs:', error)
+      console.error('🌐 FETCH: Error fetching seller URLs:', error)
     }
   }
 
@@ -939,6 +920,18 @@ export default function QRConfigPage() {
   // Load seller URLs when component mounts
   useEffect(() => {
     fetchSellerUrls()
+    
+    // Reload URLs when returning from editor (window regains focus)
+    const handleWindowFocus = () => {
+      console.log('🔄 Window focused - refreshing seller URLs')
+      fetchSellerUrls()
+    }
+    
+    window.addEventListener('focus', handleWindowFocus)
+    
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus)
+    }
   }, [])
 
   // Auto-save current progress to localStorage
@@ -963,6 +956,7 @@ export default function QRConfigPage() {
   useEffect(() => {
     const openLibrary = searchParams.get('openLibrary')
     const configId = searchParams.get('configId')
+    const expandId = searchParams.get('expand')  // New parameter for expanding specific config
     
     if (openLibrary === 'true' && savedConfigurations.length > 0) {
       setShowConfigLibrary(true)
@@ -971,6 +965,20 @@ export default function QRConfigPage() {
         // Expand the specific configuration
         setExpandedConfigs(prev => new Set(Array.from(prev).concat(configId)))
       }
+    }
+    
+    // Handle direct expand parameter (from edit page navigation)
+    if (expandId && savedConfigurations.length > 0) {
+      setShowConfigLibrary(true)  // Open the library
+      setExpandedConfigs(prev => new Set(Array.from(prev).concat(expandId)))  // Expand the specific config
+      
+      // Scroll to the expanded configuration after a brief delay
+      setTimeout(() => {
+        const configElement = document.getElementById(`config-${expandId}`)
+        if (configElement) {
+          configElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 100)
     }
   }, [searchParams, savedConfigurations])
 
@@ -1078,11 +1086,41 @@ export default function QRConfigPage() {
             <div className="mb-8">
               <div className="flex items-center space-x-3 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 {[
-                  { num: 1, title: "Personalized?" },
-                  { num: 2, title: "Pricing Type" },
-                  { num: 3, title: "Delivery Method" },
-                  { num: 4, title: "Welcome Email" },
-                  { num: 5, title: "Rebuy Email?" }
+                  { 
+                    num: 1, 
+                    title: "Personalized?", 
+                    value: globalConfig.button1GuestsDefault !== 2 || globalConfig.button1DaysDefault !== 3
+                      ? `Yes: ${globalConfig.button1GuestsDefault} guests, ${globalConfig.button1DaysDefault} days`
+                      : `No: Default 2 guests, 3 days`
+                  },
+                  { 
+                    num: 2, 
+                    title: "Pricing Type", 
+                    value: globalConfig.button2PricingType === 'FIXED' 
+                      ? `Fixed: $${globalConfig.button2FixedPrice}${globalConfig.button2IncludeTax ? ` +${globalConfig.button2TaxPercentage}% tax` : ''}`
+                      : globalConfig.button2PricingType === 'VARIABLE'
+                      ? `Variable: Base $${globalConfig.button2VariableBasePrice} +$${globalConfig.button2VariableGuestIncrease}/guest +$${globalConfig.button2VariableDayIncrease}/day${globalConfig.button2VariableCommission > 0 ? ` +${globalConfig.button2VariableCommission}% commission` : ''}${globalConfig.button2IncludeTax ? ` +${globalConfig.button2TaxPercentage}% tax` : ''}`
+                      : 'Free'
+                  },
+                  { 
+                    num: 3, 
+                    title: "Delivery Method", 
+                    value: globalConfig.button3DeliveryMethod === 'DIRECT' 
+                      ? "Direct: QR sent via email"
+                      : globalConfig.button3DeliveryMethod === 'URLS'
+                      ? "URLs: Landing page links"
+                      : "Both: Direct and URLs"
+                  },
+                  { 
+                    num: 4, 
+                    title: "Welcome Email", 
+                    value: globalConfig.button4LandingPageRequired ? "Custom Template" : "Default Template" 
+                  },
+                  { 
+                    num: 5, 
+                    title: "Rebuy Email?", 
+                    value: globalConfig.button5SendRebuyEmail ? "Yes: 12hrs before expiry" : "No follow-up" 
+                  }
                 ].map((button, index) => (
                   <div key={button.num} className="flex items-center flex-1">
                     <button
@@ -1154,9 +1192,9 @@ export default function QRConfigPage() {
                     { 
                       num: 1, 
                       title: "Personalized?", 
-                      value: globalConfig.button1AllowCustomGuestsDays 
-                        ? `Yes: Max ${globalConfig.button1MaxGuests} guests, ${globalConfig.button1MaxDays} days`
-                        : `No: Default ${globalConfig.button1DefaultGuests} guests, ${globalConfig.button1DefaultDays} days`
+                      value: globalConfig.button1GuestsDefault !== 2 || globalConfig.button1DaysDefault !== 3
+                        ? `Yes: ${globalConfig.button1GuestsDefault} guests, ${globalConfig.button1DaysDefault} days`
+                        : `No: Default 2 guests, 3 days`
                     },
                     { 
                       num: 2, 
@@ -1476,6 +1514,7 @@ export default function QRConfigPage() {
                     {globalConfig.button2PricingType === 'VARIABLE' && (
                       <div className="ml-7 p-4 bg-yellow-50 rounded-lg">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          
                           {/* Left side - Configuration inputs */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Base Price ($)</label>
@@ -1911,7 +1950,7 @@ export default function QRConfigPage() {
                       {sellerUrls.length === 0 ? (
                         <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                           <p className="text-gray-500 mb-2">No landing page URLs configured yet</p>
-                          <p className="text-sm text-gray-400">Create your first URL to start using the landing page delivery method</p>
+                          <p className="text-sm text-gray-400 mt-1">Create your first URL to start using the landing page delivery method</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -1967,7 +2006,7 @@ export default function QRConfigPage() {
                                     title="Delete URL"
                                   >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-7 7-7-7" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                   </button>
                                 </div>
@@ -1990,6 +2029,16 @@ export default function QRConfigPage() {
                           <p className="text-sm text-blue-800">
                             <span className="font-medium">✓ {selectedUrlIds.length} URL{selectedUrlIds.length === 1 ? '' : 's'} selected:</span> These will be available as delivery options for sellers.
                           </p>
+                          {/* Debug: Show which URLs are selected */}
+                          <div className="mt-2 text-xs text-blue-600">
+                            Selected URL IDs: {selectedUrlIds.join(', ')}
+                          </div>
+                          <button
+                            onClick={() => setSelectedUrlIds([])}
+                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                          >
+                            Clear Selection
+                          </button>
                         </div>
                       )}
                     </div>
@@ -2057,7 +2106,7 @@ export default function QRConfigPage() {
                           return (
                             <button 
                               onClick={() => router.push('/admin/qr-config/email-config')}
-                              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
                             >
                               Create Custom Welcome Email →
                             </button>
@@ -2470,7 +2519,7 @@ export default function QRConfigPage() {
                 ) : (
                   <div>
                     {filteredAndSortedConfigurations.map((config) => (
-                      <div key={config.id} className="border border-gray-200 rounded-lg bg-white shadow-sm">
+                      <div key={config.id} id={`config-${config.id}`} className="border border-gray-200 rounded-lg bg-white shadow-sm">
                         {/* Compact Header */}
                         <div 
                           className={`flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
@@ -2500,7 +2549,7 @@ export default function QRConfigPage() {
                                   title="Delete Configuration"
                                 >
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-7 7-7-7" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                   </svg>
                                 </button>
                                 <div className="text-gray-400">
@@ -2601,42 +2650,146 @@ export default function QRConfigPage() {
                                   }</p>
                                   <p><strong>Available delivery options configured</strong></p>
                                   {/* Only show landing page info for URLS or BOTH delivery methods, NOT for DIRECT */}
-                                  {config.landingPageConfig && config.config.button3DeliveryMethod !== 'DIRECT' && (
+                                  {(config.selectedUrlIds?.length > 0 || config.landingPageConfig) && config.config.button3DeliveryMethod !== 'DIRECT' && (
                                     <div className="mt-2 space-y-1">
-                                      <p><strong>Landing Page:</strong> 
-                                        <a 
-                                          href={config.landingPageConfig.landingUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
-                                        >
-                                          {config.landingPageConfig.landingUrl}
-                                        </a>
-                                      </p>
-                                      <p><strong>Template:</strong> 
-                                        <button 
-                                          onClick={() => {
-                                            // First, restore this configuration's landing page data to localStorage
-                                            if (config.landingPageConfig) {
-                                              localStorage.setItem('elocalpass-landing-config', JSON.stringify(config.landingPageConfig))
-                                            }
-                                            // Then navigate to create page in EDIT mode to load the template
-                                            window.open('/admin/qr-config/create?mode=edit', '_blank')
-                                          }}
-                                          className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
-                                        >
-                                          Edit
-                                        </button>
-                                      </p>
-                                      <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
-                                    </div>
-                                  )}
-                                  {/* Show direct delivery info when DIRECT method is selected */}
-                                  {config.config.button3DeliveryMethod === 'DIRECT' && (
-                                    <div className="mt-2 space-y-1">
-                                      <p className="text-sm text-gray-600">
-                                        <em>Direct delivery: Sellers input customer details and send ELocalPass directly from their dashboard.</em>
-                                      </p>
+                                      {/* Show selected URLs if available (new multi-URL system) */}
+                                      {config.selectedUrlIds?.length > 0 ? (
+                                        <div>
+                                          <p><strong>Landing Page{config.selectedUrlIds.length > 1 ? 's' : ''}:</strong></p>
+                                          {config.selectedUrlIds.map((urlId, index) => {
+                                            // Find the URL details from sellerUrls
+                                            const urlDetails = sellerUrls.find(url => url.id === urlId);
+                                            console.log('🔍 URL Lookup Debug:', {
+                                              urlId,
+                                              sellerUrls: sellerUrls.length,
+                                              urlDetails: urlDetails ? 'FOUND' : 'NOT FOUND',
+                                              allSellerUrlIds: sellerUrls.map(u => u.id),
+                                              allSellerUrlNames: sellerUrls.map(u => u.name),
+                                              searchingFor: urlId,
+                                              urlDetailsData: urlDetails
+                                            });
+                                            const hasCustomEdits = (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
+                                            const displayUrl = hasCustomEdits 
+                                              ? `/landing/custom/${config.id}?urlId=${urlId}` 
+                                              : (urlDetails?.url || '#');
+                                            return (
+                                              <div key={urlId} className="ml-4 mt-1 flex items-center justify-between">
+                                                <a 
+                                                  href={displayUrl}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="text-blue-600 hover:text-blue-800 cursor-pointer underline"
+                                                >
+                                                  {urlDetails?.name || `URL ${index + 1}`}
+                                                </a>
+                                                <button 
+                                                  onClick={async () => {
+                                                    // Load the latest URL-specific custom content for editing
+                                                    if (urlDetails) {
+                                                      let urlConfig;
+                                                      
+                                                      console.log('🎯 EDIT: Loading latest content for URL ID:', urlId);
+                                                      console.log('🎯 EDIT: Config ID:', config.id);
+                                                      
+                                                      // Check if URL-specific custom content exists
+                                                      const urlSpecificContent = (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
+                                                      console.log('🎯 EDIT: Found URL-specific content:', urlSpecificContent);
+                                                      
+                                                      if (urlSpecificContent) {
+                                                        // Use the latest URL-specific custom content
+                                                        urlConfig = {
+                                                          landingConfig: {
+                                                            ...urlSpecificContent,
+                                                            configurationName: urlDetails.name,
+                                                            landingUrl: urlDetails.url
+                                                          }
+                                                        };
+                                                        console.log('🎯 EDIT: Using URL-specific custom content');
+                                                      } else {
+                                                        // Fallback to config-level content if no URL-specific content
+                                                        const configLevelContent = (config as any).templates?.landingPage?.customContent;
+                                                        if (configLevelContent) {
+                                                          urlConfig = {
+                                                            landingConfig: {
+                                                              ...configLevelContent,
+                                                              configurationName: urlDetails.name,
+                                                              businessName: urlDetails.name,
+                                                              landingUrl: urlDetails.url
+                                                            }
+                                                          };
+                                                          console.log('🎯 EDIT: Using config-level custom content as fallback');
+                                                        } else {
+                                                          // Final fallback to defaults
+                                                          urlConfig = {
+                                                            landingConfig: {
+                                                              configurationName: urlDetails.name,
+                                                              businessName: urlDetails.name,
+                                                              landingUrl: urlDetails.url,
+                                                              // Add default values for required fields
+                                                              headerText: 'Welcome to Our Business',
+                                                              headerTextColor: '#f97316',
+                                                              headerFontFamily: 'Arial, sans-serif',
+                                                              headerFontSize: '32',
+                                                              descriptionText: 'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.',
+                                                              descriptionTextColor: '#1e40af',
+                                                              descriptionFontFamily: 'Arial, sans-serif',
+                                                              descriptionFontSize: '18',
+                                                              ctaButtonText: 'GET YOUR ELOCALPASS NOW',
+                                                              ctaButtonTextColor: '#ffffff',
+                                                              ctaButtonFontFamily: 'Arial, sans-serif',
+                                                              ctaButtonFontSize: '18'
+                                                            }
+                                                          };
+                                                          console.log('🎯 EDIT: Using default template as final fallback');
+                                                        }
+                                                      }
+                                                      
+                                                      localStorage.setItem('elocalpass-landing-config', JSON.stringify(urlConfig))
+                                                      console.log('🐛 DEBUG: Loading URL template for edit:', urlConfig)
+                                                    }
+                                                    // Navigate to create page in EDIT mode to load the template for this URL
+                                                    window.open(`/admin/qr-config/create?mode=edit&qrId=${config.id}&urlId=${urlId}`, '_blank')
+                                                  }}
+                                                  className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-2 text-sm"
+                                                >
+                                                  Edit
+                                                </button>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      ) : (
+                                        /* Show legacy single landing page (old system) */
+                                        config.landingPageConfig && (
+                                          <div>
+                                            <p><strong>Landing Page:</strong> 
+                                              <a 
+                                                href={config.landingPageConfig.landingUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:text-blue-800 cursor-pointer underline"
+                                              >
+                                                {config.landingPageConfig.landingUrl}
+                                              </a>
+                                            </p>
+                                            <p><strong>Template:</strong> 
+                                              <button 
+                                                onClick={() => {
+                                                  // First, restore this configuration's landing page data to localStorage
+                                                  if (config.landingPageConfig) {
+                                                    localStorage.setItem('elocalpass-landing-config', JSON.stringify(config.landingPageConfig))
+                                                  }
+                                                  // Then navigate to create page in EDIT mode to load the template
+                                                  window.open('/admin/qr-config/create?mode=edit', '_blank')
+                                                }}
+                                                className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                              >
+                                                Edit
+                                              </button>
+                                            </p>
+                                          </div>
+                                        )
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -2651,11 +2804,11 @@ export default function QRConfigPage() {
                                   <h5 className="font-semibold text-gray-900">Welcome Email</h5>
                                 </div>
                                 <div className="text-sm text-gray-700 space-y-1">
-                                  <p><strong>Enabled:</strong> {config.config.button4LandingPageRequired ? 'Yes' : 'No'}</p>
+                                  <p><strong>Enabled:</strong> {config.config.button4LandingPageRequired ? "Yes" : "No"}</p>
                                   {config.config.button4LandingPageRequired && (
                                     <>
                                       <div className="flex items-center">
-                                        <span className="text-green-600 mr-1">✓</span>
+                                        <span className="text-green-600">✓</span>
                                         <span>{config.emailTemplates?.welcomeEmail ? 'Custom template configured' : 'Default template'}</span>
                                       </div>
                                       {config.emailTemplates?.welcomeEmail && (
@@ -2668,7 +2821,7 @@ export default function QRConfigPage() {
                                                   localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(config.emailTemplates.welcomeEmail))
                                                 }
                                                 // Then navigate to email-config page in EDIT mode to load the template
-                                                window.open('/admin/qr-config/email-config?mode=edit', '_blank')
+                                                window.open(`/admin/qr-config/email-config?mode=edit&qrId=${config.id}`, '_blank')
                                               }}
                                               className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
                                             >
@@ -2692,11 +2845,11 @@ export default function QRConfigPage() {
                                   <h5 className="font-semibold text-gray-900">Rebuy Email</h5>
                                 </div>
                                 <div className="text-sm text-gray-700 space-y-1">
-                                  <p><strong>Enabled:</strong> {config.config.button5SendRebuyEmail ? 'Yes' : 'No'}</p>
+                                  <p><strong>Enabled:</strong> {config.config.button5SendRebuyEmail ? "Yes" : "No"}</p>
                                   {config.config.button5SendRebuyEmail && (
                                     <>
                                       <div className="flex items-center">
-                                        <span className="text-green-600 mr-1">✓</span>
+                                        <span className="text-green-600">✓</span>
                                         <span>{config.emailTemplates?.rebuyEmail ? 'Custom template configured' : 'Default template'}</span>
                                       </div>
                                       {config.emailTemplates?.rebuyEmail && (
@@ -2709,7 +2862,7 @@ export default function QRConfigPage() {
                                                   localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(config.emailTemplates.rebuyEmail))
                                                 }
                                                 // Then navigate to rebuy-config page in EDIT mode to load the template
-                                                window.open('/admin/qr-config/rebuy-config?mode=edit', '_blank')
+                                                window.open(`/admin/qr-config/rebuy-config?mode=edit&qrId=${config.id}`, '_blank')
                                               }}
                                               className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
                                             >
@@ -2733,6 +2886,11 @@ export default function QRConfigPage() {
                                   onClick={() => {
                                     // Clone this configuration into the main form
                                     updateConfig(config.config)
+                                    
+                                    // Restore selected URLs for multi-URL support
+                                    if (config.selectedUrlIds?.length > 0) {
+                                      setSelectedUrlIds(config.selectedUrlIds)
+                                    }
                                     
                                     // Restore email templates to localStorage for editing
                                     if (config.emailTemplates?.welcomeEmail) {

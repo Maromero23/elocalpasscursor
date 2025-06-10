@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import EmailTemplatePreview from '@/components/email-template-preview'
 import { ToastNotifications } from '@/components/toast-notification'
 import { useToast } from '@/hooks/use-toast'
@@ -108,7 +108,17 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
 
 export default function RebuyEmailConfigPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useToast()
+  
+  // Get qrId from URL params for redirection back to specific config
+  const qrId = searchParams.get('qrId')
+  
+  // Debug: Log qrId on component mount
+  useEffect(() => {
+    console.log('Rebuy Config Page - qrId from URL:', qrId)
+    console.log('Current URL search params:', window.location.search)
+  }, [qrId])
   
   // Rebuy Email Configuration State
   const [rebuyConfig, setRebuyConfig] = useState({
@@ -353,7 +363,16 @@ export default function RebuyEmailConfigPage() {
         
         // Optional: Redirect back to QR config after 2 seconds
         setTimeout(() => {
-          router.push('/admin/qr-config')
+          console.log('Rebuy Config - qrId for redirect:', qrId)
+          if (qrId) {
+            // Redirect back to specific QR config and expand it
+            console.log('Redirecting to:', `/admin/qr-config?expand=${qrId}`)
+            router.push(`/admin/qr-config?expand=${qrId}`)
+          } else {
+            // Redirect to main QR config page
+            console.log('Redirecting to main QR config page')
+            router.push('/admin/qr-config')
+          }
         }, 2000)
         
         setIsSubmitting(false)
