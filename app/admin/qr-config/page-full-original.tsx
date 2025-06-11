@@ -19,21 +19,12 @@ interface QRButtonConfig {
 
 interface QRGlobalConfig {
   id?: string
-  // OLD Button 1 fields (keep for backward compatibility)
-  button1AllowCustomGuestsDays: boolean
-  button1DefaultGuests: number
-  button1DefaultDays: number
-  button1MaxGuests: number
-  button1MaxDays: number
-  
-  // NEW Button 1 fields (parallel system)
   button1GuestsLocked: boolean          // ON = locked to default, OFF = flexible range
   button1GuestsDefault: number          // Default value when locked
   button1GuestsRangeMax: number         // Max range when flexible (1 to max)
   button1DaysLocked: boolean            // ON = locked to default, OFF = flexible range  
   button1DaysDefault: number            // Default value when locked
   button1DaysRangeMax: number           // Max range when flexible (1 to max)
-  
   button2PricingType: 'FIXED' | 'VARIABLE' | 'FREE'
   button2FixedPrice?: number
   button2VariableBasePrice: number
@@ -70,11 +61,6 @@ export default function QRConfigPage() {
 
   // State for global configuration
   const [globalConfig, setGlobalConfig] = useState<QRGlobalConfig>({
-    button1AllowCustomGuestsDays: false,
-    button1DefaultGuests: 2,
-    button1DefaultDays: 3,
-    button1MaxGuests: 10,
-    button1MaxDays: 30,
     button1GuestsLocked: false,
     button1GuestsDefault: 2,
     button1GuestsRangeMax: 10,
@@ -119,6 +105,7 @@ export default function QRConfigPage() {
   const [newConfigName, setNewConfigName] = useState('')
   const [newConfigDescription, setNewConfigDescription] = useState('')
   const [progressRestored, setProgressRestored] = useState(false)
+  const [hasUserInteracted, setHasUserInteracted] = useState(false) // Prevent auto-detection until user interacts
 
   // Search and filter states for QR Configuration Library
   const [searchQuery, setSearchQuery] = useState('')
@@ -244,21 +231,12 @@ export default function QRConfigPage() {
   // Reset all configurations to defaults
   const resetToDefaults = async () => {
     const defaultConfig = {
-      // OLD Button 1 fields (keep for backward compatibility)
-      button1AllowCustomGuestsDays: false,
-      button1DefaultGuests: 2,
-      button1DefaultDays: 3,
-      button1MaxGuests: 10,
-      button1MaxDays: 30,
-      
-      // NEW Button 1 fields (reset to defaults)
       button1GuestsLocked: false,
       button1GuestsDefault: 2,
       button1GuestsRangeMax: 10,
       button1DaysLocked: false,
       button1DaysDefault: 3,
       button1DaysRangeMax: 30,
-      
       button2PricingType: 'FIXED' as const,
       button2FixedPrice: 0,
       button2VariableBasePrice: 0,
@@ -288,6 +266,7 @@ export default function QRConfigPage() {
     // Clear all configured button states so they return to original colors
     setConfiguredButtons(new Set())
     setSelectedUrlIds([])
+    setHasUserInteracted(false) // Reset interaction flag to prevent auto-detection
     setSaveStatus('🔄 Reset to defaults - All current working values reset, saved configurations preserved')
     setTimeout(() => setSaveStatus(''), 3000)
   }
@@ -440,6 +419,7 @@ export default function QRConfigPage() {
           setConfiguredButtons(new Set(progressData.configuredButtons))
           setSelectedUrlIds(progressData.selectedUrlIds || [])
           setProgressRestored(true)
+          setHasUserInteracted(true) // Mark as interacted since we're restoring saved progress
           console.log('✅ Restored QR configuration progress from previous session')
           
           // Hide the progress restored indicator after 5 seconds
@@ -468,13 +448,14 @@ export default function QRConfigPage() {
 
   // Detect configuration status after state changes (runs after restoration)
   useEffect(() => {
-    // Skip if this is the initial render before any restoration
-    if (!globalConfig) return
+    // Skip if this is the initial render before any restoration AND user hasn't interacted
+    if (!globalConfig || (!progressRestored && !hasUserInteracted)) return
 
     console.log('🔍 DETECTION: Checking configuration status after state change')
     console.log('- Current globalConfig:', globalConfig)
     console.log('- Current configuredButtons:', Array.from(configuredButtons))
     console.log('- Current selectedUrlIds:', selectedUrlIds)
+    console.log('- Progress restored:', progressRestored, '- User interacted:', hasUserInteracted)
     
     // DEBUG: Show all Button 1 related fields
     const button1Fields = Object.keys(globalConfig).filter(key => key.includes('button1'))
@@ -483,9 +464,18 @@ export default function QRConfigPage() {
     const configuredButtonsSet = new Set(configuredButtons)
     
     // Check Button 1 (Personalization) - mark as configured if any personalization settings are non-default
+    console.log('🔍 BUTTON 1 VALUES CHECK:')
+    console.log('- button1GuestsLocked:', globalConfig.button1GuestsLocked, '!== false?', globalConfig.button1GuestsLocked !== false)
+    console.log('- button1GuestsDefault:', globalConfig.button1GuestsDefault, '!== 2?', globalConfig.button1GuestsDefault !== 2)
+    console.log('- button1DaysLocked:', globalConfig.button1DaysLocked, '!== false?', globalConfig.button1DaysLocked !== false)
+    console.log('- button1DaysDefault:', globalConfig.button1DaysDefault, '!== 3?', globalConfig.button1DaysDefault !== 3)
+    console.log('- button1GuestsRangeMax:', globalConfig.button1GuestsRangeMax, '!== 10?', globalConfig.button1GuestsRangeMax !== 10)
+    console.log('- button1DaysRangeMax:', globalConfig.button1DaysRangeMax, '!== 30?', globalConfig.button1DaysRangeMax !== 30)
+
     const hasButton1Config = 
-      globalConfig.button1AllowCustomGuestsDays !== false ||
+      globalConfig.button1GuestsLocked !== false ||
       globalConfig.button1GuestsDefault !== 2 ||
+      globalConfig.button1DaysLocked !== false ||
       globalConfig.button1DaysDefault !== 3 ||
       globalConfig.button1GuestsRangeMax !== 10 ||
       globalConfig.button1DaysRangeMax !== 30
@@ -495,6 +485,13 @@ export default function QRConfigPage() {
     }
     
     // Check Button 2 (Pricing) - mark as configured if pricing settings are non-default
+    console.log('🔍 BUTTON 2 VALUES CHECK:')
+    console.log('- button2PricingType:', globalConfig.button2PricingType, '!== FIXED?', globalConfig.button2PricingType !== 'FIXED')
+    console.log('- button2FixedPrice:', globalConfig.button2FixedPrice, '!== 0?', globalConfig.button2FixedPrice !== 0)
+    console.log('- button2VariableBasePrice:', globalConfig.button2VariableBasePrice, '!== 0?', globalConfig.button2VariableBasePrice !== 0)
+    console.log('- button2IncludeTax:', globalConfig.button2IncludeTax, '!== false?', globalConfig.button2IncludeTax !== false)
+    console.log('- configuredButtons.has(2):', configuredButtons.has(2))
+
     const hasButton2Config = 
       globalConfig.button2PricingType !== 'FIXED' ||
       globalConfig.button2FixedPrice !== 0 ||
@@ -540,7 +537,7 @@ export default function QRConfigPage() {
       console.log('🔄 DETECTION: Updating configuredButtons state')
       setConfiguredButtons(configuredButtonsSet)
     }
-  }, [globalConfig, selectedUrlIds]) // Run when these change
+  }, [globalConfig, selectedUrlIds, hasUserInteracted, progressRestored]) // Run when these change
 
   // Save current configuration with a name
   const saveNamedConfiguration = () => {
@@ -771,22 +768,13 @@ export default function QRConfigPage() {
   const assignConfigToSeller = async (sellerEmail: string) => {
     if (!selectedConfig) return
     
-    console.log('🔧 Assigning config to seller:', { 
-      sellerEmail, 
-      configId: selectedConfig.id, 
-      configName: selectedConfig.name,
-      hasConfig: !!selectedConfig.config
-    })
-    
     try {
       const response = await fetch('/api/admin/assign-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           sellerEmail: sellerEmail,
-          configData: selectedConfig.config,
-          configId: selectedConfig.id,
-          configName: selectedConfig.name
+          configData: selectedConfig.config  // Fixed: changed from 'configuration' to 'configData'
         })
       })
 
@@ -1013,7 +1001,7 @@ export default function QRConfigPage() {
                         {item.label}
                       </Link>
                     )
-                  })}
+                  ))}
                 </div>
               </div>
               <div className="flex items-center space-x-4">
@@ -1295,6 +1283,7 @@ export default function QRConfigPage() {
                               onChange={(e) => {
                                 updateConfig({ button1GuestsLocked: e.target.checked })
                                 setConfiguredButtons((prev) => new Set(prev).add(1))
+                                setHasUserInteracted(true)
                               }}
                               className="sr-only"
                             />
@@ -1326,6 +1315,7 @@ export default function QRConfigPage() {
                                 button1GuestsRangeMax: value // Keep in sync
                               })
                               setConfiguredButtons((prev) => new Set(prev).add(1))
+                              setHasUserInteracted(true)
                             }
                           }}
                           className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1358,6 +1348,7 @@ export default function QRConfigPage() {
                               onChange={(e) => {
                                 updateConfig({ button1DaysLocked: e.target.checked })
                                 setConfiguredButtons((prev) => new Set(prev).add(1))
+                                setHasUserInteracted(true)
                               }}
                               className="sr-only"
                             />
@@ -1389,6 +1380,7 @@ export default function QRConfigPage() {
                                 button1DaysRangeMax: value // Keep in sync
                               })
                               setConfiguredButtons((prev) => new Set(prev).add(1))
+                              setHasUserInteracted(true)
                             }
                           }}
                           className="w-full px-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -1441,6 +1433,7 @@ export default function QRConfigPage() {
                         onChange={() => {
                           updateConfig({ button2PricingType: 'FIXED' })
                           setConfiguredButtons((prev) => new Set(prev).add(2))
+                          setHasUserInteracted(true)
                         }}
                         className="mt-1 h-4 w-4 text-yellow-600"
                       />
@@ -1462,6 +1455,7 @@ export default function QRConfigPage() {
                             const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
                             updateConfig({ button2FixedPrice: value })
                             setConfiguredButtons((prev) => new Set(prev).add(2))
+                            setHasUserInteracted(true)
                           }}
                           className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                           placeholder="0.00"
@@ -1474,6 +1468,7 @@ export default function QRConfigPage() {
                               onChange={(e) => {
                                 updateConfig({ button2IncludeTax: e.target.checked })
                                 setConfiguredButtons((prev) => new Set(prev).add(2))
+                                setHasUserInteracted(true)
                               }}
                               className="form-checkbox h-4 w-4 text-yellow-600 rounded focus:ring-yellow-500 border-gray-300"
                             />
@@ -1491,6 +1486,7 @@ export default function QRConfigPage() {
                                 onChange={(e) => {
                                   updateConfig({ button2TaxPercentage: parseFloat(e.target.value) || 0 })
                                   setConfiguredButtons((prev) => new Set(prev).add(2))
+                                  setHasUserInteracted(true)
                                 }}
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                 placeholder="0.00"
@@ -1511,6 +1507,7 @@ export default function QRConfigPage() {
                         onChange={() => {
                           updateConfig({ button2PricingType: 'VARIABLE' })
                           setConfiguredButtons((prev) => new Set(prev).add(2))
+                          setHasUserInteracted(true)
                         }}
                         className="mt-1 h-4 w-4 text-yellow-600"
                       />
@@ -1536,6 +1533,7 @@ export default function QRConfigPage() {
                                 const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
                                 updateConfig({ button2VariableBasePrice: value })
                                 setConfiguredButtons((prev) => new Set(prev).add(2))
+                                setHasUserInteracted(true)
                               }}
                               className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                               placeholder="0.00"
@@ -1551,6 +1549,7 @@ export default function QRConfigPage() {
                                   const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
                                   updateConfig({ button2VariableGuestIncrease: value })
                                   setConfiguredButtons((prev) => new Set(prev).add(2))
+                                  setHasUserInteracted(true)
                                 }}
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                 placeholder="0.00"
@@ -1570,6 +1569,7 @@ export default function QRConfigPage() {
                                   const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
                                   updateConfig({ button2VariableDayIncrease: value })
                                   setConfiguredButtons((prev) => new Set(prev).add(2))
+                                  setHasUserInteracted(true)
                                 }}
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                 placeholder="0.00"
@@ -1590,6 +1590,7 @@ export default function QRConfigPage() {
                                   const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
                                   updateConfig({ button2VariableCommission: value })
                                   setConfiguredButtons((prev) => new Set(prev).add(2))
+                                  setHasUserInteracted(true)
                                 }}
                                 className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                 placeholder="0.00"
@@ -1606,6 +1607,7 @@ export default function QRConfigPage() {
                                   onChange={(e) => {
                                     updateConfig({ button2IncludeTax: e.target.checked })
                                     setConfiguredButtons((prev) => new Set(prev).add(2))
+                                    setHasUserInteracted(true)
                                   }}
                                   className="form-checkbox h-4 w-4 text-yellow-600 rounded focus:ring-yellow-500 border-gray-300"
                                 />
@@ -1623,6 +1625,7 @@ export default function QRConfigPage() {
                                     onChange={(e) => {
                                       updateConfig({ button2TaxPercentage: parseFloat(e.target.value) || 0 })
                                       setConfiguredButtons((prev) => new Set(prev).add(2))
+                                      setHasUserInteracted(true)
                                     }}
                                     className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                                     placeholder="0.00"
@@ -1678,7 +1681,7 @@ export default function QRConfigPage() {
                                             ${finalPrice.toFixed(0)}
                                           </td>
                                         );
-                                      })}
+                                      ))}
                                     </tr>
                                   ))}
                                 </tbody>
@@ -1699,6 +1702,7 @@ export default function QRConfigPage() {
                         onChange={() => {
                           updateConfig({ button2PricingType: 'FREE' })
                           setConfiguredButtons((prev) => new Set(prev).add(2))
+                          setHasUserInteracted(true)
                         }}
                         className="mt-1 h-4 w-4 text-yellow-600"
                       />
@@ -1753,6 +1757,7 @@ export default function QRConfigPage() {
                       onClick={() => {
                         updateConfig({ button3DeliveryMethod: 'DIRECT' })
                         setConfiguredButtons((prev) => new Set(prev).add(3))
+                        setHasUserInteracted(true)
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
@@ -1764,6 +1769,7 @@ export default function QRConfigPage() {
                             onChange={() => {
                               updateConfig({ button3DeliveryMethod: 'DIRECT' })
                               setConfiguredButtons((prev) => new Set(prev).add(3))
+                              setHasUserInteracted(true)
                             }}
                             className="h-4 w-4 text-blue-600"
                           />
@@ -1799,6 +1805,7 @@ export default function QRConfigPage() {
                       onClick={() => {
                         updateConfig({ button3DeliveryMethod: 'URLS' })
                         setConfiguredButtons((prev) => new Set(prev).add(3))
+                        setHasUserInteracted(true)
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
@@ -1810,6 +1817,7 @@ export default function QRConfigPage() {
                             onChange={() => {
                               updateConfig({ button3DeliveryMethod: 'URLS' })
                               setConfiguredButtons((prev) => new Set(prev).add(3))
+                              setHasUserInteracted(true)
                             }}
                             className="h-4 w-4 text-blue-600"
                           />
@@ -1845,6 +1853,7 @@ export default function QRConfigPage() {
                       onClick={() => {
                         updateConfig({ button3DeliveryMethod: 'BOTH' })
                         setConfiguredButtons((prev) => new Set(prev).add(3))
+                        setHasUserInteracted(true)
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
@@ -1856,6 +1865,7 @@ export default function QRConfigPage() {
                             onChange={() => {
                               updateConfig({ button3DeliveryMethod: 'BOTH' })
                               setConfiguredButtons((prev) => new Set(prev).add(3))
+                              setHasUserInteracted(true)
                             }}
                             className="h-4 w-4 text-blue-600"
                           />
@@ -2071,6 +2081,7 @@ export default function QRConfigPage() {
                         onChange={() => {
                           updateConfig({ button4LandingPageRequired: true })
                           setConfiguredButtons((prev) => new Set(prev).add(4))
+                          setHasUserInteracted(true)
                         }}
                         className="mt-1 h-4 w-4 text-purple-600"
                       />
@@ -2131,6 +2142,7 @@ export default function QRConfigPage() {
                         onChange={() => {
                           updateConfig({ button4LandingPageRequired: false })
                           setConfiguredButtons((prev) => new Set(prev).add(4))
+                          setHasUserInteracted(true)
                         }}
                         className="mt-1 h-4 w-4 text-purple-600"
                       />
@@ -2171,6 +2183,7 @@ export default function QRConfigPage() {
                         onChange={() => {
                           updateConfig({ button5SendRebuyEmail: true })
                           setConfiguredButtons((prev) => new Set(prev).add(5))
+                          setHasUserInteracted(true)
                         }}
                         className="mt-1 h-4 w-4 text-blue-600"
                       />
@@ -2229,6 +2242,7 @@ export default function QRConfigPage() {
                         onChange={() => {
                           updateConfig({ button5SendRebuyEmail: false })
                           setConfiguredButtons((prev) => new Set(prev).add(5))
+                          setHasUserInteracted(true)
                         }}
                         className="mt-1 h-4 w-4 text-blue-600"
                       />
@@ -2681,15 +2695,6 @@ export default function QRConfigPage() {
                                             const displayUrl = hasCustomEdits 
                                               ? `/landing/custom/${config.id}?urlId=${urlId}` 
                                               : (urlDetails?.url || '#');
-                                            
-                                            // Get the configuration name from the custom content if available
-                                            const customConfigName = hasCustomEdits 
-                                              ? (config as any).templates?.landingPage?.urlCustomContent?.[urlId]?.configurationName 
-                                              : null;
-                                            
-                                            // Display priority: 1. Custom config name, 2. URL name, 3. Fallback to URL number
-                                            const displayName = customConfigName || urlDetails?.name || `URL ${index + 1}`;
-                                            
                                             return (
                                               <div key={urlId} className="ml-4 mt-1 flex items-center justify-between">
                                                 <a 
@@ -2698,10 +2703,10 @@ export default function QRConfigPage() {
                                                   rel="noopener noreferrer"
                                                   className="text-blue-600 hover:text-blue-800 cursor-pointer underline"
                                                 >
-                                                  {displayName}
+                                                  {urlDetails?.name || `URL ${index + 1}`}
                                                 </a>
-                                                <button
-                                                  onClick={() => {
+                                                <button 
+                                                  onClick={async () => {
                                                     // Load the latest URL-specific custom content for editing
                                                     if (urlDetails) {
                                                       let urlConfig;
@@ -2711,7 +2716,7 @@ export default function QRConfigPage() {
                                                       
                                                       // Check if URL-specific custom content exists
                                                       const urlSpecificContent = (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
-                                                      console.log('🎯 EDIT: Found URL-specific content for', urlId, ':', urlSpecificContent ? 'YES' : 'NO');
+                                                      console.log('🎯 EDIT: Found URL-specific content:', urlSpecificContent);
                                                       
                                                       if (urlSpecificContent) {
                                                         // Use the latest URL-specific custom content
@@ -2722,30 +2727,44 @@ export default function QRConfigPage() {
                                                             landingUrl: urlDetails.url
                                                           }
                                                         };
-                                                        console.log('🎯 EDIT: Using URL-specific custom content for', urlId);
+                                                        console.log('🎯 EDIT: Using URL-specific custom content');
                                                       } else {
-                                                        // Create default config specific to this URL - DO NOT use shared config-level content
-                                                        urlConfig = {
-                                                          landingConfig: {
-                                                            configurationName: urlDetails.name,
-                                                            businessName: urlDetails.name,
-                                                            landingUrl: urlDetails.url,
-                                                            // Add default values for required fields
-                                                            headerText: 'Welcome to Our Business',
-                                                            headerTextColor: '#f97316',
-                                                            headerFontFamily: 'Arial, sans-serif',
-                                                            headerFontSize: '32',
-                                                            descriptionText: 'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.',
-                                                            descriptionTextColor: '#1e40af',
-                                                            descriptionFontFamily: 'Arial, sans-serif',
-                                                            descriptionFontSize: '18',
-                                                            ctaButtonText: 'GET YOUR ELOCALPASS NOW',
-                                                            ctaButtonTextColor: '#ffffff',
-                                                            ctaButtonFontFamily: 'Arial, sans-serif',
-                                                            ctaButtonFontSize: '18'
-                                                          }
-                                                        };
-                                                        console.log('🎯 EDIT: Using fresh default config for', urlId, '- no URL-specific content found');
+                                                        // Fallback to config-level content if no URL-specific content
+                                                        const configLevelContent = (config as any).templates?.landingPage?.customContent;
+                                                        if (configLevelContent) {
+                                                          urlConfig = {
+                                                            landingConfig: {
+                                                              ...configLevelContent,
+                                                              configurationName: urlDetails.name,
+                                                              businessName: urlDetails.name,
+                                                              landingUrl: urlDetails.url
+                                                            }
+                                                          };
+                                                          console.log('🎯 EDIT: Using config-level custom content as fallback');
+                                                        } else {
+                                                          // Final fallback to defaults
+                                                          urlConfig = {
+                                                            landingConfig: {
+                                                              configurationName: urlDetails.name,
+                                                              businessName: urlDetails.name,
+                                                              landingUrl: urlDetails.url,
+                                                              // Add default values for required fields
+                                                              headerText: 'Welcome to Our Business',
+                                                              headerTextColor: '#f97316',
+                                                              headerFontFamily: 'Arial, sans-serif',
+                                                              headerFontSize: '32',
+                                                              descriptionText: 'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.',
+                                                              descriptionTextColor: '#1e40af',
+                                                              descriptionFontFamily: 'Arial, sans-serif',
+                                                              descriptionFontSize: '18',
+                                                              ctaButtonText: 'GET YOUR ELOCALPASS NOW',
+                                                              ctaButtonTextColor: '#ffffff',
+                                                              ctaButtonFontFamily: 'Arial, sans-serif',
+                                                              ctaButtonFontSize: '18'
+                                                            }
+                                                          };
+                                                          console.log('🎯 EDIT: Using default template as final fallback');
+                                                        }
                                                       }
                                                       
                                                       localStorage.setItem('elocalpass-landing-config', JSON.stringify(urlConfig))
@@ -2760,7 +2779,7 @@ export default function QRConfigPage() {
                                                 </button>
                                               </div>
                                             );
-                                          })}
+                                          ))}
                                         </div>
                                       ) : (
                                         /* Show legacy single landing page (old system) */

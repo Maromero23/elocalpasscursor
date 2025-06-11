@@ -452,11 +452,10 @@ export default function DistributorsPage() {
         setEditingLocation(null)
       } else {
         const errorData = await response.json()
-        alert(`Error: ${errorData.error}`)
+        setError(errorData.message || "Failed to update location")
       }
     } catch (error) {
-      console.error("Error updating location:", error)
-      alert("Failed to update location")
+      setError("Network error occurred")
     } finally {
       setIsUpdating(false)
     }
@@ -522,11 +521,10 @@ export default function DistributorsPage() {
         setEditingSeller(null)
       } else {
         const errorData = await response.json()
-        alert(`Error: ${errorData.error}`)
+        setError(`Failed to update seller: ${errorData.error}`)
       }
     } catch (error) {
-      console.error("Error updating seller:", error)
-      alert("Failed to update seller")
+      setError("Error updating seller")
     } finally {
       setIsUpdating(false)
     }
@@ -879,6 +877,7 @@ export default function DistributorsPage() {
       const requestBody = {
         sellerEmail: selectedSellerForQR.email,
         configId: config.id,
+        configName: config.name,
         configData: config.config
       }
 
@@ -1764,14 +1763,24 @@ export default function DistributorsPage() {
                                                                                   <div className="mb-4 p-3 bg-gray-50 rounded-lg text-xs">
                                                                                     {/* Load QR configs when opening edit form and try to match by seller config data */}
                                                                                     {(() => {
-                                                                                      const matchingConfig = availableQRConfigs.find(config => {
-                                                                                        const matches = config.config && 
-                                                                                               (seller.sellerConfigs as any) && 
-                                                                                               config.config.button1GuestsDefault === (seller.sellerConfigs as any).button1GuestsDefault &&
-                                                                                               config.config.button1DaysDefault === (seller.sellerConfigs as any).button1DaysDefault &&
-                                                                                               config.config.button2FixedPrice === (seller.sellerConfigs as any).button2FixedPrice
-                                                                                        return matches
-                                                                                      })
+                                                                                      let matchingConfig = null
+                                                                                      
+                                                                                      if ((seller as any).configurationId) {
+                                                                                        // Use stored configuration ID for exact match
+                                                                                        matchingConfig = availableQRConfigs.find(config => config.id === (seller as any).configurationId)
+                                                                                      }
+                                                                                      
+                                                                                      if (!matchingConfig) {
+                                                                                        // Fallback to content comparison for legacy data
+                                                                                        matchingConfig = availableQRConfigs.find(config => {
+                                                                                          const matches = config.config && 
+                                                                                                  (seller as any).sellerConfigs && 
+                                                                                                  config.config.button1GuestsDefault === ((seller as any).sellerConfigs as any).button1GuestsDefault &&
+                                                                                                  config.config.button1DaysDefault === ((seller as any).sellerConfigs as any).button1DaysDefault &&
+                                                                                                  config.config.button2FixedPrice === ((seller as any).sellerConfigs as any).button2FixedPrice
+                                                                                          return matches
+                                                                                        })
+                                                                                      }
                                                                                       
                                                                                       if (matchingConfig) {
                                                                                         // Display full 5-button configuration
@@ -1886,7 +1895,7 @@ export default function DistributorsPage() {
                                                                                         return (
                                                                                           <div className="text-center text-gray-600 text-xs">
                                                                                             <div className="text-green-600 mb-2">✓ QR Configuration Paired</div>
-                                                                                            <div>Basic Config: {(seller.sellerConfigs as any).defaultGuests} guests, {(seller.sellerConfigs as any).defaultDays} days, ${(seller.sellerConfigs as any).fixedPrice}</div>
+                                                                                            <div>Basic Config: {(seller as any).sellerConfigs?.defaultGuests} guests, {(seller as any).sellerConfigs?.defaultDays} days, ${(seller as any).sellerConfigs?.fixedPrice}</div>
                                                                                             <button 
                                                                                               onClick={() => window.open('/admin/qr-config', '_blank')}
                                                                                               className="text-blue-600 hover:underline mt-1 block"
@@ -2249,7 +2258,7 @@ export default function DistributorsPage() {
                       </label>
                       <textarea
                         value={sellerFormData.notes}
-                        onChange={(e) => setSellerFormData(prev => ({ ...prev, notes: e.target.value }))}
+                        onChange={(e) => setSellerEditFormData(prev => ({ ...prev, notes: e.target.value }))}
                         rows={3}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                         placeholder="Additional notes..."

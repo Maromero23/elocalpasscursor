@@ -21,6 +21,11 @@ model User {
   updatedAt          DateTime     @updatedAt
   locationId         String?
   distributorId      String?
+  
+  // Configuration identifiers for pairing
+  configurationId    String?      // ID of the assigned QR configuration
+  configurationName  String?      // Name of the assigned QR configuration for display
+  
   distributorProfile Distributor? @relation("DistributorUser")
   locationProfile    Location?    @relation("LocationUser")
   sellerConfigs      QRConfig?    @relation("SellerConfig")

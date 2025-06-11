@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-// GET - Fetch all landing page URLs for the seller
+// GET - Fetch all landing page URLs for the seller (or all URLs if admin)
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -14,14 +14,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const urls = await prisma.sellerLandingPageUrl.findMany({
-      where: {
-        sellerId: session.user.id
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    let urls;
+    
+    // If user is admin, fetch all URLs. If seller, fetch only their URLs
+    if (session.user.role === 'ADMIN') {
+      console.log(' ADMIN: Fetching all seller landing page URLs')
+      urls = await prisma.sellerLandingPageUrl.findMany({
+        orderBy: {
+          createdAt: 'desc'
+        }
+      })
+      console.log(' ADMIN: Found', urls.length, 'total URLs')
+    } else {
+      console.log(' SELLER: Fetching URLs for seller ID:', session.user.id)
+      urls = await prisma.sellerLandingPageUrl.findMany({
+        where: {
+          sellerId: session.user.id
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      })
+      console.log(' SELLER: Found', urls.length, 'URLs for this seller')
+    }
 
     return NextResponse.json(urls)
   } catch (error) {

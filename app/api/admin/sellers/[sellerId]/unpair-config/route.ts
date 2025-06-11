@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { NextRequest, NextResponse } from 'next/server'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 
@@ -39,6 +39,15 @@ export async function DELETE(
     // Delete the QR configuration for this seller
     const deletedConfig = await prisma.qRConfig.delete({
       where: { sellerId: sellerId }
+    })
+
+    // Also clear the configuration identifiers from the seller
+    await prisma.user.update({
+      where: { id: sellerId },
+      data: {
+        configurationId: null,
+        configurationName: null
+      }
     })
 
     console.log(' QR config unpaired successfully:', deletedConfig.id)

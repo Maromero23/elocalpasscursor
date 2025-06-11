@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
         u.isActive,
         u.createdAt,
         u.locationId,
+        u.configurationId,
+        u.configurationName,
         l.id as locationId,
         l.name as locationName,
         l.isActive as locationIsActive,
@@ -49,6 +51,8 @@ export async function GET(request: NextRequest) {
       isActive: Boolean(row.isActive),
       createdAt: row.createdAt,
       locationId: row.locationId,
+      configurationId: row.configurationId,
+      configurationName: row.configurationName,
       location: row.locationId ? {
         id: row.locationId,
         name: row.locationName,

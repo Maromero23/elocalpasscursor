@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { NextRequest, NextResponse } from 'next/server'
 import { authOptions } from '../../auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('📥 Request body:', body)
     
-    const { sellerEmail, configData } = body
+    const { sellerEmail, configData, configId, configName } = body
     
     if (!sellerEmail) {
       return NextResponse.json(
@@ -34,6 +34,13 @@ export async function POST(request: NextRequest) {
     if (!configData) {
       return NextResponse.json(
         { error: 'Configuration data required' },
+        { status: 400 }
+      )
+    }
+
+    if (!configId || !configName) {
+      return NextResponse.json(
+        { error: 'Configuration ID and name required for pairing' },
         { status: 400 }
       )
     }
@@ -94,6 +101,15 @@ export async function POST(request: NextRequest) {
         data: configToAssign
       })
       
+      // Also update the seller's configuration identifiers
+      await (prisma.user as any).update({
+        where: { id: seller.id },
+        data: {
+          configurationId: configId,
+          configurationName: configName
+        }
+      })
+      
       console.log('✅ Configuration updated successfully')
       return NextResponse.json({
         message: 'Seller configuration updated successfully',
@@ -106,6 +122,15 @@ export async function POST(request: NextRequest) {
         data: {
           sellerId: seller.id,
           ...configToAssign
+        }
+      })
+      
+      // Also update the seller's configuration identifiers
+      await (prisma.user as any).update({
+        where: { id: seller.id },
+        data: {
+          configurationId: configId,
+          configurationName: configName
         }
       })
       

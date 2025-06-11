@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
+import { NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
@@ -81,7 +81,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
         s.role,
         s.isActive,
         s.createdAt,
-        s.locationId
+        s.locationId,
+        s.configurationId,
+        s.configurationName
       FROM users s
       WHERE s.locationId IN (
         SELECT l.id FROM Location l WHERE l.distributorId = ${id}
@@ -143,6 +145,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
         role: seller.role,
         isActive: Boolean(seller.isActive),
         createdAt: seller.createdAt,
+        configurationId: seller.configurationId,
+        configurationName: seller.configurationName,
         sellerConfigs: configsBySellerMap[seller.id] || null // Set actual QR config if exists
       })
       return acc

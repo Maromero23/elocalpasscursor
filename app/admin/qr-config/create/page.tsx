@@ -219,20 +219,39 @@ export default function CreateEnhancedLandingPage() {
       // Only load saved templates when editing existing configurations
       loadSavedTemplates()
       
-      const landingConfig = localStorage.getItem('elocalpass-landing-config')
-      console.log('🔧 LANDING EDITOR: Raw localStorage data:', landingConfig)
+      // Load URL-specific settings from saved configurations (same storage as save function)
+      const savedConfigsData = localStorage.getItem('elocalpass-saved-configurations')
+      console.log('🔧 LANDING EDITOR: Raw saved configs data:', savedConfigsData)
       
-      if (landingConfig) {
+      if (savedConfigsData && qrId && urlId) {
         try {
-          const savedConfig = JSON.parse(landingConfig)
-          console.log('🔧 LANDING EDITOR: Parsed config:', savedConfig)
-          console.log('🔧 LANDING EDITOR: Landing config data:', savedConfig.landingConfig)
-          setFormData(savedConfig.landingConfig)
-          console.log('✅ Loaded existing landing page configuration for edit mode')
-          console.log('✅ Current form data after load:', savedConfig.landingConfig)
+          const savedConfigs = JSON.parse(savedConfigsData)
+          console.log('🔧 LANDING EDITOR: Parsed saved configs:', savedConfigs)
+          
+          // Find the specific configuration by QR ID
+          const config = savedConfigs.find((config: any) => config.id === qrId)
+          console.log('🔧 LANDING EDITOR: Found config for QR ID', qrId, ':', config)
+          
+          if (config) {
+            // Load URL-specific settings from templates.landingPage.urlCustomContent[urlId]
+            const urlSpecificConfig = config?.templates?.landingPage?.urlCustomContent?.[urlId]
+            console.log('🔧 LANDING EDITOR: URL-specific config for', urlId, ':', urlSpecificConfig)
+            
+            if (urlSpecificConfig) {
+              setFormData(urlSpecificConfig)
+              console.log('✅ Loaded URL-specific landing page configuration for edit mode')
+              console.log('✅ Current form data after load:', urlSpecificConfig)
+            } else {
+              console.log('⚠️ No URL-specific config found, using default form data')
+            }
+          } else {
+            console.log('⚠️ No configuration found for QR ID:', qrId)
+          }
         } catch (error) {
-          console.log('Could not load landing page configuration:', error)
+          console.log('Could not load saved configurations:', error)
         }
+      } else {
+        console.log('⚠️ Missing required parameters for loading URL config:', { qrId, urlId })
       }
     } else {
       // For fresh/new configurations, start with empty templates
