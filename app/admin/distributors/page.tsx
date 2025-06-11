@@ -1793,8 +1793,8 @@ export default function DistributorsPage() {
                                                                                                 <span className="font-semibold text-gray-800 text-xs">Guest & Day Limits</span>
                                                                                               </div>
                                                                                               <div className="text-gray-600 ml-4 text-xs">
-                                                                                                <div>Guests: {matchingConfig.config.button1GuestsLocked ? matchingConfig.config.button1GuestsDefault : `1-${matchingConfig.config.button1GuestsRangeMax}`}</div>
-                                                                                                <div>Days: {matchingConfig.config.button1DaysLocked ? matchingConfig.config.button1DaysDefault : `1-${matchingConfig.config.button1DaysRangeMax}`}</div>
+                                                                                                <div>Guests: {!matchingConfig.config.button1GuestsLocked ? `1-${matchingConfig.config.button1GuestsRangeMax} Open` : `${matchingConfig.config.button1GuestsDefault} Fixed`}</div>
+                                                                                                <div>Days: {!matchingConfig.config.button1DaysLocked ? `1-${matchingConfig.config.button1DaysRangeMax} Open` : `${matchingConfig.config.button1DaysDefault} Fixed`}</div>
                                                                                               </div>
                                                                                             </div>
                                                                                             
@@ -2505,17 +2505,8 @@ export default function DistributorsPage() {
                                 <h5 className="font-semibold text-gray-900">Guest & Day Limits</h5>
                               </div>
                               <div className="text-sm text-gray-700 space-y-1">
-                                {!config.config.button1GuestsLocked ? (
-                                  <>
-                                    <p><strong>Guests:</strong> 1-{config.config.button1GuestsRangeMax} (default: {config.config.button1GuestsDefault})</p>
-                                    <p><strong>Days:</strong> {!config.config.button1DaysLocked ? `1-${config.config.button1DaysRangeMax} (default: ${config.config.button1DaysDefault})` : `Fixed at ${config.config.button1DaysDefault}`}</p>
-                                  </>
-                                ) : (
-                                  <>
-                                    <p><strong>Guests:</strong> Fixed at {config.config.button1GuestsDefault}</p>
-                                    <p><strong>Days:</strong> Fixed at {config.config.button1DaysDefault}</p>
-                                  </>
-                                )}
+                                <p><strong>Guests:</strong> {!config.config.button1GuestsLocked ? `1-${config.config.button1GuestsRangeMax} Open` : `${config.config.button1GuestsDefault} Fixed`}</p>
+                                <p><strong>Days:</strong> {!config.config.button1DaysLocked ? `1-${config.config.button1DaysRangeMax} Open` : `${config.config.button1DaysDefault} Fixed`}</p>
                               </div>
                             </div>
 

@@ -26,16 +26,33 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Verify seller has configuration
-    const config = await prisma.qRConfig.findUnique({
+    // Get seller info and configuration
+    const seller = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { 
+        id: true,
+        configurationId: true,
+        configurationName: true 
+      }
+    })
+    
+    if (!seller?.configurationId) {
+      return NextResponse.json(
+        { error: 'No configuration assigned to seller' },
+        { status: 400 }
+      )
+    }
+    
+    // Get the QR global configuration that this seller is paired to
+    const config = await prisma.qrGlobalConfig.findUnique({
       where: {
-        sellerId: session.user.id
+        id: seller.configurationId
       }
     })
     
     if (!config) {
       return NextResponse.json(
-        { error: 'No configuration assigned to seller' },
+        { error: 'Configuration not found' },
         { status: 400 }
       )
     }
@@ -64,54 +81,77 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Generate unique QR code
-    const qrCode = `ELPASS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    // Calculate pricing (Button 2) - Hidden from seller
+    let calculatedPrice = 0
+    if (config.button2PricingType === 'FIXED') {
+      calculatedPrice = config.button2FixedPrice || 0
+    } else if (config.button2PricingType === 'VARIABLE') {
+      // Variable pricing: base + (guest increase * extra guests) + (day increase * extra days)
+      const basePrice = config.button2VariableBasePrice || 0
+      const extraGuests = Math.max(0, guests - 1) // Assuming first guest is included in base
+      const extraDays = Math.max(0, days - 1) // Assuming first day is included in base
+      const guestPrice = (config.button2VariableGuestIncrease || 0) * extraGuests
+      const dayPrice = (config.button2VariableDayIncrease || 0) * extraDays
+      calculatedPrice = basePrice + guestPrice + dayPrice
+      
+      // Add commission if configured
+      if (config.button2VariableCommission > 0) {
+        calculatedPrice += config.button2VariableCommission
+      }
+      
+      // Add tax if configured
+      if (config.button2IncludeTax && config.button2TaxPercentage > 0) {
+        calculatedPrice += calculatedPrice * (config.button2TaxPercentage / 100)
+      }
+    }
     
-    // Calculate expiration date
+    // Generate unique QR code
+    const qrCode = `EL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + days)
     
-    // Create QR code in database
-    const newQRCode = await prisma.qRCode.create({
+    // Store QR record with calculated price (hidden from seller)
+    const qrRecord = await prisma.qRCode.create({
       data: {
         code: qrCode,
         sellerId: session.user.id,
         guests: guests,
         days: days,
-        cost: 0,
+        cost: calculatedPrice, // Hidden pricing stored
         expiresAt: expiresAt,
         isActive: true,
-        landingUrl: requestedDelivery === 'DIRECT' ? null : 'https://example.com' // Replace with actual landing URL
+        landingUrl: requestedDelivery === 'DIRECT' ? null : 'https://example.com'
       }
     })
     
-    // Generate email content based on delivery method
+    // Button 4: Welcome Email Template Logic
     const isSpanish = language === 'es'
-    
     let emailContent = ''
     let subject = ''
     
-    if (requestedDelivery === 'DIRECT') {
-      // Direct delivery - QR code gives immediate access
-      subject = isSpanish 
-        ? ' Su ELocalPass está listo - Acceso Inmediato' 
-        : ' Your ELocalPass is Ready - Immediate Access'
-        
-      emailContent = isSpanish ? `
+    // For now, Button 4 just determines if landing page is required
+    // In the future, we can add button4WelcomeEmailTemplate field to schema
+    // Currently using default welcome email template
+    
+    subject = isSpanish 
+      ? 'Su ELocalPass está listo - Acceso Inmediato' 
+      : 'Your ELocalPass is Ready - Immediate Access'
+      
+    emailContent = isSpanish ? `
 Hola ${clientName},
 
 ¡Su ELocalPass está listo para usar! 
 
- DETALLES DE SU PASE:
+📋 DETALLES DE SU PASE:
 • Código: ${qrCode}
 • Huéspedes: ${guests} personas
 • Válido por: ${days} días
 
- ACCESO DIRECTO:
+🎯 ACCESO DIRECTO:
 Este código le da acceso inmediato a su experiencia local.
 Solo muestre este código QR en el punto de acceso.
 
- VÁLIDO HASTA: ${expiresAt.toLocaleDateString('es-ES')}
+⏰ VÁLIDO HASTA: ${expiresAt.toLocaleDateString('es-ES')}
 
 ¡Disfrute su experiencia ELocalPass!
 
@@ -122,78 +162,50 @@ Hello ${clientName},
 
 Your ELocalPass is ready to use!
 
- PASS DETAILS:
-• Code: ${qrCode}
-• Guests: ${guests} people
-• Valid for: ${days} days  
-
- DIRECT ACCESS:
-This code gives you immediate access to your local experience.
-Simply show this QR code at the access point.
-
- VALID UNTIL: ${expiresAt.toLocaleDateString('en-US')}
-
-Enjoy your ELocalPass experience!
-
-Best regards,
-The ELocalPass Team
-`
-    } else {
-      // URL delivery - QR code leads to landing page
-      subject = isSpanish 
-        ? ' Su ELocalPass - Complete su registro' 
-        : ' Your ELocalPass - Complete Your Registration'
-        
-      emailContent = isSpanish ? `
-Hola ${clientName},
-
-¡Su ELocalPass ha sido generado! 
-
- DETALLES DE SU PASE:
-• Código: ${qrCode}
-• Huéspedes: ${guests} personas
-• Válido por: ${days} días
-
- PRÓXIMO PASO:
-Use este código QR para acceder a su página personalizada y completar el proceso:
-${qrCode}
-
- VÁLIDO HASTA: ${expiresAt.toLocaleDateString('es-ES')}
-
-¡Esperamos que disfrute su experiencia local!
-
-Saludos,
-El equipo ELocalPass
-` : `
-Hello ${clientName},
-
-Your ELocalPass has been generated!
-
- PASS DETAILS:
+📋 PASS DETAILS:
 • Code: ${qrCode}
 • Guests: ${guests} people
 • Valid for: ${days} days
 
- NEXT STEP:
-Use this QR code to access your personalized page and complete the process:
-${qrCode}
+🎯 DIRECT ACCESS:
+This code gives you immediate access to your local experience.
+Simply show this QR code at the access point.
 
- VALID UNTIL: ${expiresAt.toLocaleDateString('en-US')}
+⏰ VALID UNTIL: ${expiresAt.toLocaleDateString('en-US')}
 
 We hope you enjoy your local experience!
 
 Best regards,
 The ELocalPass Team
 `
+    
+    // Button 5: Rebuy Email Logic (Hidden from seller)
+    const shouldSendRebuyEmail = config.button5SendRebuyEmail
+    let rebuyEmailScheduled = false
+    
+    if (shouldSendRebuyEmail) {
+      // Schedule rebuy email to be sent when QR expires
+      // For now, just log that rebuy email would be scheduled
+      console.log(`📧 Rebuy email will be scheduled for ${clientEmail} when QR expires on ${expiresAt.toLocaleDateString()}`)
+      rebuyEmailScheduled = true
+      
+      // TODO: Implement actual rebuy email scheduling
+      // This could involve:
+      // 1. Creating a scheduled job/cron task
+      // 2. Using a queue system (Bull, Agenda, etc.)
+      // 3. Database trigger or background process
+    } else {
+      console.log(`❌ Rebuy email disabled for this configuration`)
     }
     
-    // TODO: Send actual email
+    // TODO: Send actual welcome email
     // For now, we'll just log the email content
-    console.log(' EMAIL TO SEND:')
+    console.log(' 📧 WELCOME EMAIL TO SEND:')
     console.log(`To: ${clientEmail}`)
     console.log(`Subject: ${subject}`)
     console.log(`Language: ${language}`)
     console.log(`Delivery Method: ${requestedDelivery}`)
+    console.log(`Rebuy Email Scheduled: ${rebuyEmailScheduled}`)
     console.log('Content:')
     console.log(emailContent)
     

@@ -15,10 +15,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
     
-    // Get seller's QR configuration
-    const config = await prisma.qRConfig.findUnique({
+    // Get seller's user record to find their configurationId
+    const seller = await prisma.user.findUnique({
       where: {
-        sellerId: session.user.id
+        id: session.user.id
+      },
+      select: {
+        id: true,
+        email: true,
+        configurationId: true,
+        configurationName: true
+      }
+    })
+    
+    if (!seller?.configurationId) {
+      return NextResponse.json(null)
+    }
+    
+    // Get the QR configuration that this seller is paired to
+    const config = await prisma.qrGlobalConfig.findUnique({
+      where: {
+        id: seller.configurationId
       }
     })
     
@@ -26,14 +43,51 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(null)
     }
     
-    // Add temporary configuration name based on configuration
-    const configWithName = {
-      ...config,
-      configName: `QR Configuration (${config.button3DeliveryMethod.toLowerCase()})`,
-      configDescription: `${config.button1GuestsDefault} guests × ${config.button1DaysDefault} days - ${config.button3DeliveryMethod.toLowerCase()} delivery`
+    // Get landing page URLs associated with this seller
+    const landingPageUrls = await prisma.sellerLandingPageUrl.findMany({
+      where: {
+        sellerId: session.user.id,
+        isActive: true
+      },
+      select: {
+        id: true,
+        name: true,
+        url: true,
+        description: true
+      }
+    })
+    
+    // Transform the QrGlobalConfig to match the expected QRConfig interface on the frontend
+    const transformedConfig = {
+      configName: seller.configurationName || `Configuration ${config.id.slice(-6)}`,
+      configDescription: `${config.button1GuestsDefault} guests × ${config.button1DaysDefault} days - ${config.button3DeliveryMethod.toLowerCase()} delivery`,
+      
+      // Button 1 fields
+      button1GuestsLocked: config.button1GuestsLocked,
+      button1GuestsDefault: config.button1GuestsDefault,
+      button1GuestsRangeMax: config.button1GuestsRangeMax,
+      button1DaysLocked: config.button1DaysLocked,
+      button1DaysDefault: config.button1DaysDefault,
+      button1DaysRangeMax: config.button1DaysRangeMax,
+      
+      // Button 2 fields (for backend pricing calculation only)
+      button2PricingType: config.button2PricingType,
+      button2FixedPrice: config.button2FixedPrice,
+      button2VariableBasePrice: config.button2VariableBasePrice,
+      button2VariableGuestIncrease: config.button2VariableGuestIncrease,
+      button2VariableDayIncrease: config.button2VariableDayIncrease,
+      button2VariableCommission: config.button2VariableCommission,
+      button2IncludeTax: config.button2IncludeTax,
+      button2TaxPercentage: config.button2TaxPercentage,
+      
+      // Button 3 fields
+      button3DeliveryMethod: config.button3DeliveryMethod as 'DIRECT' | 'URLS' | 'BOTH',
+      
+      // Landing page URLs from configuration
+      landingPageUrls: landingPageUrls
     }
     
-    return NextResponse.json(configWithName)
+    return NextResponse.json(transformedConfig)
     
   } catch (error) {
     console.error('Error fetching seller config:', error)
