@@ -1123,12 +1123,12 @@ export default function QRConfigPage() {
                   { 
                     num: 4, 
                     title: "Welcome Email", 
-                    value: globalConfig.button4LandingPageRequired ? "Custom Template" : "Default Template" 
+                    value: globalConfig.button4LandingPageRequired ? "Customized" : "Default" 
                   },
                   { 
                     num: 5, 
                     title: "Rebuy Email?", 
-                    value: globalConfig.button5SendRebuyEmail ? "Yes: 12hrs before expiry" : "No follow-up" 
+                    value: globalConfig.button5SendRebuyEmail ? "Customized" : "Default"
                   }
                 ].map((button, index) => (
                   <div key={button.num} className="flex items-center flex-1">
@@ -1226,12 +1226,12 @@ export default function QRConfigPage() {
                     { 
                       num: 4, 
                       title: "Welcome Email", 
-                      value: globalConfig.button4LandingPageRequired ? "Custom Template" : "Default Template" 
+                      value: globalConfig.button4LandingPageRequired ? "Customized" : "Default" 
                     },
                     { 
                       num: 5, 
                       title: "Rebuy Email?", 
-                      value: globalConfig.button5SendRebuyEmail ? "Yes: 12hrs before expiry" : "No follow-up" 
+                      value: globalConfig.button5SendRebuyEmail ? "Customized" : "Default"
                     }
                   ].map((button, index) => (
                     <div key={button.num} className="flex items-center flex-1">

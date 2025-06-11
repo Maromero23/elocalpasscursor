@@ -1855,20 +1855,13 @@ export default function DistributorsPage() {
                                                                                                 <span className="font-semibold text-gray-800 text-xs">Rebuy Email</span>
                                                                                               </div>
                                                                                               <div className="text-gray-600 ml-4 text-xs">
-                                                                                                <div>
-                                                                                                  {matchingConfig.config.button5SendRebuyEmail ? (
-                                                                                                    (() => {
-                                                                                                      const rebuyEmailConfig = typeof window !== 'undefined' ? localStorage.getItem('elocalpass-rebuy-email-config') : null
-                                                                                                      try {
-                                                                                                        return rebuyEmailConfig && JSON.parse(rebuyEmailConfig) 
-                                                                                                          ? 'Yes - Customized' 
-                                                                                                          : 'Yes - Default'
-                                                                                                      } catch {
-                                                                                                        return 'Yes - Default'
-                                                                                                      }
-                                                                                                    })()
+                                                                                                {matchingConfig.config.button5SendRebuyEmail ? (
+                                                                                                  (() => {
+                                                                                                    // Check if this configuration has a custom rebuy email template
+                                                                                                    const hasCustomRebuyTemplate = matchingConfig.emailTemplates?.rebuyEmail;
+                                                                                                    return hasCustomRebuyTemplate ? 'Customized' : 'Default';
+                                                                                                  })()
                                                                                                   ) : 'No'}
-                                                                                                </div>
                                                                                               </div>
                                                                                             </div>
                                                                                             
@@ -2628,7 +2621,7 @@ export default function DistributorsPage() {
                                 <h5 className="font-semibold text-gray-900">Welcome Email</h5>
                               </div>
                               <div className="text-sm text-gray-700 space-y-1">
-                                <p><strong>Enabled:</strong> {config.config.button4LandingPageRequired ? 'Yes' : 'No'}</p>
+                                <p><strong>Enabled:</strong> {config.config.button4LandingPageRequired ? 'Customized' : 'Default'}</p>
                                 {config.config.button4LandingPageRequired && (
                                   <>
                                     <div className="flex items-center">
@@ -2669,33 +2662,38 @@ export default function DistributorsPage() {
                                 <h5 className="font-semibold text-gray-900">Rebuy Email</h5>
                               </div>
                               <div className="text-sm text-gray-700 space-y-1">
-                                <p><strong>Enabled:</strong> {config.config.button5SendRebuyEmail ? 'Yes' : 'No'}</p>
-                                {config.config.button5SendRebuyEmail && (
+                                <p><strong>Enabled:</strong> {config.config.button5SendRebuyEmail ? (
+                                  (() => {
+                                    // Check if this configuration has a custom rebuy email template
+                                    const hasCustomRebuyTemplate = config.emailTemplates?.rebuyEmail;
+                                    return hasCustomRebuyTemplate ? 'Customized' : 'Default';
+                                  })()
+                                  ) : 'No'}
+                                </p>
+                                {config.config.button5SendRebuyEmail && config.emailTemplates?.rebuyEmail && (
                                   <>
                                     <div className="flex items-center">
                                       <span className="text-green-600 mr-1">✓</span>
-                                      <span>{config.emailTemplates?.rebuyEmail ? 'Custom template configured' : 'Default template'}</span>
+                                      <span>Custom template configured</span>
                                     </div>
-                                    {config.emailTemplates?.rebuyEmail && (
-                                      <div className="mt-2 space-y-1">
-                                        <p><strong>Template:</strong> 
-                                          <button 
-                                            onClick={() => {
-                                              // First, restore this configuration's rebuy template data to localStorage
-                                              if (config.emailTemplates?.rebuyEmail) {
-                                                localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(config.emailTemplates.rebuyEmail))
-                                              }
-                                              // Then navigate to rebuy-config page in EDIT mode to load the template
-                                              window.open('/admin/qr-config/rebuy-config?mode=edit', '_blank')
-                                            }}
-                                            className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
-                                          >
-                                            Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}
-                                          </button>
-                                        </p>
-                                        <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
-                                      </div>
-                                    )}
+                                    <div className="mt-2 space-y-1">
+                                      <p><strong>Template:</strong> 
+                                        <button 
+                                          onClick={() => {
+                                            // First, restore this configuration's rebuy template data to localStorage
+                                            if (config.emailTemplates?.rebuyEmail) {
+                                              localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(config.emailTemplates.rebuyEmail))
+                                            }
+                                            // Then navigate to rebuy-config page in EDIT mode to load the template
+                                            window.open('/admin/qr-config/rebuy-config?mode=edit', '_blank')
+                                          }}
+                                          className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                        >
+                                          Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}
+                                        </button>
+                                      </p>
+                                      <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                    </div>
                                   </>
                                 )}
                               </div>
