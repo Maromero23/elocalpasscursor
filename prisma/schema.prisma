@@ -26,6 +26,10 @@ model User {
   configurationId    String?      // ID of the assigned QR configuration
   configurationName  String?      // Name of the assigned QR configuration for display
   
+  // New relation to saved configurations
+  savedConfigId      String?      // ID of saved configuration from library
+  savedConfig        SavedQRConfiguration? @relation("UserSavedConfig", fields: [savedConfigId], references: [id])
+  
   distributorProfile Distributor? @relation("DistributorUser")
   locationProfile    Location?    @relation("LocationUser")
   sellerConfigs      QRConfig?    @relation("SellerConfig")
@@ -291,4 +295,24 @@ model Location {
   user          User        @relation("LocationUser", fields: [userId], references: [id], onDelete: Cascade)
   distributor   Distributor @relation("DistributorLocations", fields: [distributorId], references: [id], onDelete: Cascade)
   sellers       User[]      @relation("LocationSellers")
+}
+
+model SavedQRConfiguration {
+  id                 String   @id @default(cuid())
+  name               String
+  description        String?
+  
+  // Complete configuration data stored as JSON strings (SQLite compatible)
+  config             String   // Stores the complete QRGlobalConfig object as JSON string
+  emailTemplates     String?  // Welcome and rebuy email templates as JSON string
+  landingPageConfig  String?  // Landing page configurations as JSON string
+  selectedUrlIds     String?  // Array of selected URL IDs as JSON string
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  // Users assigned to this configuration
+  assignedUsers      User[]   @relation("UserSavedConfig")
+
+  @@map("saved_qr_configurations")
 }

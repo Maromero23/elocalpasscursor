@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         cost: calculatedPrice, // Hidden pricing stored
         expiresAt: expiresAt,
         isActive: true,
-        landingUrl: requestedDelivery === 'DIRECT' ? null : 'https://example.com'
+        landingUrl: requestedDelivery === 'DIRECT' ? null : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/landing/${qrCode}`
       }
     })
     

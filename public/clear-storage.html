@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear localStorage - ELocalPass</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #155724;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        .safe-btn {
+            background: #28a745;
+        }
+        .safe-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear Old localStorage Data</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Ready to switch to Database storage!</strong>
+            <p>This will clear old localStorage QR configurations and prepare your system for proper database storage.</p>
+        </div>
+        
+        <div id="status"></div>
+        
+        <button onclick="clearStorage()">🗑️ Clear localStorage</button>
+        <button onclick="checkStorage()" class="safe-btn">🔍 Check Storage</button>
+    </div>
+
+    <script>
+        function checkStorage() {
+            const statusDiv = document.getElementById('status');
+            
+            const keysToCheck = [
+                'elocalpass-saved-configurations',
+                'elocalpass-landing-templates', 
+                'elocalpass-landing-config',
+                'elocalpass-welcome-email-config',
+                'elocalpass-rebuy-email-config',
+                'elocalpass-current-qr-progress',
+                'savedConfigurations',
+                'landingPageUrls'
+            ];
+            
+            let found = [];
+            keysToCheck.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    let size = data.length;
+                    found.push(`${key} (${size} chars)`);
+                }
+            });
+            
+            if (found.length === 0) {
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        <strong>✅ localStorage is clean!</strong>
+                        <p>No old QR configuration data found. Ready for database storage!</p>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="warning">
+                        <strong>📊 Found ${found.length} localStorage items:</strong>
+                        <ul style="text-align: left; margin: 10px 0;">
+                            ${found.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+        
+        function clearStorage() {
+            const keysToRemove = [
+                'elocalpass-saved-configurations',
+                'elocalpass-landing-templates', 
+                'elocalpass-landing-config',
+                'elocalpass-welcome-email-config',
+                'elocalpass-rebuy-email-config',
+                'elocalpass-current-qr-progress',
+                'savedConfigurations',
+                'landingPageUrls'
+            ];
+            
+            let cleared = 0;
+            keysToRemove.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    cleared++;
+                }
+            });
+            
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `
+                <div class="success">
+                    <strong>🎉 Cleared ${cleared} localStorage items!</strong>
+                    <p>✨ Your system is now ready for database-first QR configurations!</p>
+                    <p><strong>Next:</strong> Go to <a href="/admin/qr-config" style="color: #007bff;">QR Config Dashboard</a> to create new database-stored configurations.</p>
+                </div>
+            `;
+        }
+        
+        // Auto-check on page load
+        window.addEventListener('load', checkStorage);
+    </script>
+</body>
+</html>

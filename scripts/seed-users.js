@@ -30,9 +30,23 @@ async function main() {
     },
   })
 
+  // Create Pedrita Gomez seller
+  const pedritaPassword = await bcrypt.hash('pedrita123', 12)
+  const pedrita = await prisma.user.upsert({
+    where: { email: 'seller@riucancun.com' },
+    update: {},
+    create: {
+      email: 'seller@riucancun.com',
+      name: 'Pedrita Gomez',
+      password: pedritaPassword,
+      role: 'SELLER',
+    },
+  })
+
   console.log('✅ Test users created:')
   console.log('📧 Admin: admin@elocalpass.com / password: admin123')
   console.log('📧 Seller: seller@elocalpass.com / password: seller123')
+  console.log('📧 Pedrita: seller@riucancun.com / password: pedrita123')
 }
 
 main()
