@@ -52,6 +52,73 @@ export async function GET(
   }
 }
 
+// PUT update saved configuration
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const body = await request.json()
+    const { name, description, config, emailTemplates, landingPageConfig, selectedUrlIds } = body
+    
+    // Check if configuration exists
+    const existingConfig = await prisma.savedQRConfiguration.findUnique({
+      where: { id: params.id }
+    })
+    
+    if (!existingConfig) {
+      return NextResponse.json({ error: 'Configuration not found' }, { status: 404 })
+    }
+    
+    // Update the configuration
+    const updatedConfig = await prisma.savedQRConfiguration.update({
+      where: { id: params.id },
+      data: {
+        name: name || existingConfig.name,
+        description: description || existingConfig.description,
+        config: config ? JSON.stringify(config) : existingConfig.config,
+        emailTemplates: emailTemplates ? JSON.stringify(emailTemplates) : existingConfig.emailTemplates,
+        landingPageConfig: landingPageConfig ? JSON.stringify(landingPageConfig) : existingConfig.landingPageConfig,
+        selectedUrlIds: selectedUrlIds ? JSON.stringify(selectedUrlIds) : existingConfig.selectedUrlIds,
+        updatedAt: new Date()
+      },
+      include: {
+        assignedUsers: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    })
+    
+    // Parse JSON strings back to objects for response
+    const parsedConfig = {
+      ...updatedConfig,
+      config: JSON.parse(updatedConfig.config),
+      emailTemplates: updatedConfig.emailTemplates ? JSON.parse(updatedConfig.emailTemplates) : null,
+      landingPageConfig: updatedConfig.landingPageConfig ? JSON.parse(updatedConfig.landingPageConfig) : null,
+      selectedUrlIds: updatedConfig.selectedUrlIds ? JSON.parse(updatedConfig.selectedUrlIds) : null,
+    }
+    
+    return NextResponse.json(parsedConfig)
+    
+  } catch (error) {
+    console.error('Error updating saved configuration:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
 // DELETE saved configuration
 export async function DELETE(
   request: NextRequest,

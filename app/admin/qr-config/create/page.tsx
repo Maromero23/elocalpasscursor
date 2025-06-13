@@ -219,39 +219,9 @@ export default function CreateEnhancedLandingPage() {
       // Only load saved templates when editing existing configurations
       loadSavedTemplates()
       
-      // Load URL-specific settings from saved configurations (same storage as save function)
-      const savedConfigsData = localStorage.getItem('elocalpass-saved-configurations')
-      console.log('🔧 LANDING EDITOR: Raw saved configs data:', savedConfigsData)
-      
-      if (savedConfigsData && qrId && urlId) {
-        try {
-          const savedConfigs = JSON.parse(savedConfigsData)
-          console.log('🔧 LANDING EDITOR: Parsed saved configs:', savedConfigs)
-          
-          // Find the specific configuration by QR ID
-          const config = savedConfigs.find((config: any) => config.id === qrId)
-          console.log('🔧 LANDING EDITOR: Found config for QR ID', qrId, ':', config)
-          
-          if (config) {
-            // Load URL-specific settings from templates.landingPage.urlCustomContent[urlId]
-            const urlSpecificConfig = config?.templates?.landingPage?.urlCustomContent?.[urlId]
-            console.log('🔧 LANDING EDITOR: URL-specific config for', urlId, ':', urlSpecificConfig)
-            
-            if (urlSpecificConfig) {
-              setFormData(urlSpecificConfig)
-              console.log('✅ Loaded URL-specific landing page configuration for edit mode')
-              console.log('✅ Current form data after load:', urlSpecificConfig)
-            } else {
-              console.log('⚠️ No URL-specific config found, using default form data')
-            }
-          } else {
-            console.log('⚠️ No configuration found for QR ID:', qrId)
-          }
-        } catch (error) {
-          console.log('Could not load saved configurations:', error)
-        }
-      } else {
-        console.log('⚠️ Missing required parameters for loading URL config:', { qrId, urlId })
+      // Load configuration from database instead of localStorage
+      if (qrId) {
+        loadConfigurationForEdit(qrId, urlId)
       }
     } else {
       // For fresh/new configurations, start with empty templates
@@ -330,82 +300,147 @@ export default function CreateEnhancedLandingPage() {
 
     try {
       console.log('💾 SAVE DEBUG: Starting save process for QR ID:', editQrId)
+      console.log('💾 SAVE DEBUG: URL ID:', editUrlId)
       console.log('💾 SAVE DEBUG: Current form data:', formData)
       
-      // Load existing saved configurations
-      const savedConfigsData = localStorage.getItem('elocalpass-saved-configurations')
-      console.log('💾 SAVE DEBUG: Raw saved configs:', savedConfigsData)
-      
-      let savedConfigs = []
-      
-      if (savedConfigsData) {
-        savedConfigs = JSON.parse(savedConfigsData)
-        console.log('💾 SAVE DEBUG: Parsed saved configs:', savedConfigs.length, 'configurations')
-      } else {
-        console.log('💾 SAVE DEBUG: No saved configurations found')
+      // First, let's check what configurations exist in the database
+      console.log('🔍 SAVE DEBUG: Checking available configurations in database...')
+      try {
+        const listResponse = await fetch('/api/admin/saved-configs', {
+          credentials: 'include'
+        })
+        if (listResponse.ok) {
+          const allConfigs = await listResponse.json()
+          console.log('🔍 SAVE DEBUG: Available configs in database:', allConfigs.map((c: any) => ({ id: c.id, name: c.name })))
+          console.log('🔍 SAVE DEBUG: Looking for QR ID:', editQrId)
+          const foundConfig = allConfigs.find((c: any) => c.id === editQrId)
+          console.log('🔍 SAVE DEBUG: Found matching config:', foundConfig ? 'YES' : 'NO')
+          if (foundConfig) {
+            console.log('🔍 SAVE DEBUG: Found config details:', foundConfig)
+          }
+        }
+      } catch (listError) {
+        console.log('⚠️ SAVE DEBUG: Could not list configs:', listError)
       }
       
-      // Find the specific configuration
-      const configIndex = savedConfigs.findIndex((config: any) => config.id === editQrId)
-      console.log('💾 SAVE DEBUG: Found config at index:', configIndex)
+      // Load existing saved configuration from database
+      const response = await fetch(`/api/admin/saved-configs/${editQrId}`, {
+        credentials: 'include'
+      })
       
-      if (configIndex === -1) {
-        console.log('❌ SAVE DEBUG: Configuration not found for ID:', editQrId)
-        toast.error('Configuration Not Found', 'Could not find the QR configuration to update')
+      let existingConfig = null
+      let useDatabase = false
+      
+      if (response.ok) {
+        existingConfig = await response.json()
+        useDatabase = true
+        console.log('💾 SAVE DEBUG: Loaded config from database:', existingConfig)
+      } else {
+        console.log('❌ SAVE DEBUG: Configuration not found in database')
+        console.log('❌ SAVE DEBUG: Response status:', response.status)
+        toast.error('Configuration Not Found', 'Could not find the QR configuration to update in database')
         return
       }
       
       // Update the configuration with landing page content
-      const updatedConfig = { ...savedConfigs[configIndex] }
-      console.log('💾 SAVE DEBUG: Original config:', updatedConfig)
+      const updatedConfig = { ...existingConfig }
       
-      // Ensure templates structure exists
-      if (!updatedConfig.templates) {
-        updatedConfig.templates = {}
+      // Ensure landingPageConfig structure exists
+      if (!updatedConfig.landingPageConfig) {
+        updatedConfig.landingPageConfig = {}
       }
-      if (!updatedConfig.templates.landingPage) {
-        updatedConfig.templates.landingPage = {}
+      
+      // Ensure templates structure exists within landingPageConfig
+      if (!updatedConfig.landingPageConfig.templates) {
+        updatedConfig.landingPageConfig.templates = {}
       }
-      if (!updatedConfig.templates.landingPage.urlCustomContent) {
-        updatedConfig.templates.landingPage.urlCustomContent = {}
+      if (!updatedConfig.landingPageConfig.templates.landingPage) {
+        updatedConfig.landingPageConfig.templates.landingPage = {}
+      }
+      if (!updatedConfig.landingPageConfig.templates.landingPage.urlCustomContent) {
+        updatedConfig.landingPageConfig.templates.landingPage.urlCustomContent = {}
       }
       
       // Save the current form data as custom content FOR THIS SPECIFIC URL
       if (editUrlId) {
-        updatedConfig.templates.landingPage.urlCustomContent[editUrlId] = { ...formData }
+        updatedConfig.landingPageConfig.templates.landingPage.urlCustomContent[editUrlId] = { ...formData }
+        console.log('💾 SAVE DEBUG: Saved URL-specific content for:', editUrlId)
+      } else {
+        // If no specific URL ID, save to the main landing page config
+        Object.assign(updatedConfig.landingPageConfig, formData)
+        console.log('💾 SAVE DEBUG: Saved to main landing page config')
       }
-      updatedConfig.updatedAt = new Date().toISOString()
       
+      console.log('💾 SAVE DEBUG: Form data being saved:', formData)
       console.log('💾 SAVE DEBUG: Updated config with new content:', updatedConfig)
-      console.log('💾 SAVE DEBUG: Custom content saved:', updatedConfig.templates.landingPage.urlCustomContent)
       
-      // Update the configuration in the array
-      savedConfigs[configIndex] = updatedConfig
-      
-      // Save back to localStorage
-      localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(savedConfigs))
-      console.log('💾 SAVE DEBUG: Saved to localStorage successfully')
-      
-      // Also save to API if available
-      try {
-        const response = await fetch(`/api/qr-config/${editQrId}`, {
+      if (useDatabase) {
+        // Try to save to database
+        console.log('💾 SAVE DEBUG: Attempting database save...')
+        console.log('💾 SAVE DEBUG: Payload being sent:', {
+          name: updatedConfig.name,
+          description: updatedConfig.description,
+          config: updatedConfig.config,
+          emailTemplates: updatedConfig.emailTemplates,
+          landingPageConfig: updatedConfig.landingPageConfig,
+          selectedUrlIds: updatedConfig.selectedUrlIds
+        })
+        
+        const updateResponse = await fetch(`/api/admin/saved-configs/${editQrId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(updatedConfig)
+          credentials: 'include',
+          body: JSON.stringify({
+            name: updatedConfig.name,
+            description: updatedConfig.description,
+            config: updatedConfig.config,
+            emailTemplates: updatedConfig.emailTemplates,
+            landingPageConfig: updatedConfig.landingPageConfig,
+            selectedUrlIds: updatedConfig.selectedUrlIds
+          })
         })
         
-        if (response.ok) {
-          console.log('✅ SAVE DEBUG: Successfully saved to API')
+        console.log('💾 SAVE DEBUG: Database response status:', updateResponse.status)
+        
+        if (updateResponse.ok) {
+          console.log('✅ SAVE DEBUG: Successfully saved to database')
+          toast.success('Configuration Saved', 'Landing page configuration saved to database successfully!')
         } else {
-          console.log('⚠️ SAVE DEBUG: API save failed, status:', response.status)
+          const errorData = await updateResponse.json()
+          console.log('❌ SAVE DEBUG: Database save failed, response:', errorData)
+          toast.error('Save Failed', 'Failed to save configuration to database')
+          return
         }
-      } catch (apiError) {
-        console.log('⚠️ SAVE DEBUG: API error:', apiError)
       }
       
-      toast.success('Landing Page Saved', 'Your changes have been saved to the QR configuration!')
+      // Always try to update qrConfigurations Map for landing page display
+      try {
+        console.log('💾 SAVE DEBUG: Updating qrConfigurations Map with form data:', formData)
+        const mapUpdateResponse = await fetch('/api/admin/qr-config/update-map', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            qrId: editQrId,
+            configData: formData
+          })
+        })
+        
+        if (mapUpdateResponse.ok) {
+          console.log('✅ SAVE DEBUG: Successfully updated qrConfigurations Map')
+          const mapResult = await mapUpdateResponse.json()
+          console.log('✅ SAVE DEBUG: Map update result:', mapResult)
+        } else {
+          const mapError = await mapUpdateResponse.text()
+          console.log('⚠️ SAVE DEBUG: Failed to update Map, response:', mapError)
+        }
+      } catch (mapError) {
+        console.log('⚠️ SAVE DEBUG: Map update error (save still succeeded):', mapError)
+      }
       
       // Navigate back to QR configuration page with the specific config expanded
       setTimeout(() => {
@@ -416,6 +451,67 @@ export default function CreateEnhancedLandingPage() {
       console.error('❌ SAVE DEBUG: Error saving:', error)
       toast.error('Save Failed', 'Failed to save landing page changes')
     }
+  }
+
+  // Load configuration for editing from database
+  const loadConfigurationForEdit = async (qrId: string, urlId?: string | null) => {
+    console.log('✅ LOAD DEBUG: Loading config from database for QR ID:', qrId)
+    console.log('✅ LOAD DEBUG: URL ID:', urlId)
+    
+    try {
+      // Load configuration from database first (prioritize database)
+      const response = await fetch(`/api/admin/saved-configs/${qrId}`, {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const config = await response.json()
+        console.log('✅ LOAD DEBUG: Loaded config from database:', config)
+        
+        let configToLoad = null
+        
+        if (urlId) {
+          // Check for URL-specific content first - check both new structure and legacy
+          let urlSpecificContent = null
+          
+          // New structure: templates stored in landingPageConfig.templates
+          if (config.landingPageConfig?.templates?.landingPage?.urlCustomContent?.[urlId]) {
+            urlSpecificContent = config.landingPageConfig.templates.landingPage.urlCustomContent[urlId]
+            console.log('✅ LOAD DEBUG: Found URL-specific content in landingPageConfig.templates for', urlId)
+          }
+          // Legacy structure: templates at root level
+          else if (config.templates?.landingPage?.urlCustomContent?.[urlId]) {
+            urlSpecificContent = config.templates.landingPage.urlCustomContent[urlId]
+            console.log('✅ LOAD DEBUG: Found URL-specific content in root templates for', urlId)
+          }
+          
+          if (urlSpecificContent) {
+            configToLoad = urlSpecificContent
+            console.log('✅ LOAD DEBUG: Using URL-specific content for', urlId, urlSpecificContent)
+          } else if (config.landingPageConfig) {
+            configToLoad = config.landingPageConfig
+            console.log('✅ LOAD DEBUG: Using general landing page config as fallback')
+          }
+        } else if (config.landingPageConfig) {
+          configToLoad = config.landingPageConfig
+          console.log('✅ LOAD DEBUG: Using general landing page config')
+        }
+        
+        if (configToLoad) {
+          console.log('✅ LOAD DEBUG: Setting form data from database:', configToLoad)
+          setFormData(configToLoad)
+          return // Successfully loaded from database, no need to check localStorage
+        }
+      } else {
+        console.error('❌ LOAD DEBUG: Failed to load config from database:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ LOAD DEBUG: Error loading config from database:', error)
+    }
+    
+    // Database load failed - use default values
+    console.log('❌ LOAD DEBUG: Database load failed, using default form values')
+    // The form will use its default state values
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

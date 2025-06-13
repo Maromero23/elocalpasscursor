@@ -81,6 +81,7 @@ export async function GET(
     console.log(`🗂️ Total stored configs: ${qrConfigurations.size}`)
     
     const storedConfig = qrConfigurations.get(qrId)
+    console.log(`🔍 Raw stored config for ${qrId}:`, storedConfig ? 'FOUND' : 'NOT FOUND')
     
     if (storedConfig) {
       console.log(`✅ Found stored config for ${qrId}:`, JSON.stringify(storedConfig, null, 2))

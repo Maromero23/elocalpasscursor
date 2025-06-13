@@ -65,22 +65,29 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json()
-    const { name, description, config, emailTemplates, landingPageConfig, selectedUrlIds } = body
+    const { id, name, description, config, emailTemplates, landingPageConfig, selectedUrlIds } = body
     
     if (!name || !config) {
       return NextResponse.json({ error: 'Name and config are required' }, { status: 400 })
     }
     
-    // Create new saved configuration
+    // Create new saved configuration (with custom ID if provided for migration)
+    const createData: any = {
+      name,
+      description: description || '',
+      config: JSON.stringify(config),
+      emailTemplates: emailTemplates ? JSON.stringify(emailTemplates) : null,
+      landingPageConfig: landingPageConfig ? JSON.stringify(landingPageConfig) : null,
+      selectedUrlIds: selectedUrlIds ? JSON.stringify(selectedUrlIds) : null,
+    }
+    
+    // If custom ID is provided (for migration), use it
+    if (id) {
+      createData.id = id
+    }
+    
     const savedConfig = await prisma.savedQRConfiguration.create({
-      data: {
-        name,
-        description: description || '',
-        config: JSON.stringify(config),
-        emailTemplates: emailTemplates ? JSON.stringify(emailTemplates) : null,
-        landingPageConfig: landingPageConfig ? JSON.stringify(landingPageConfig) : null,
-        selectedUrlIds: selectedUrlIds ? JSON.stringify(selectedUrlIds) : null,
-      }
+      data: createData
     })
     
     return NextResponse.json({

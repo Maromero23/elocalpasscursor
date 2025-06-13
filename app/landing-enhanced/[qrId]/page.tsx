@@ -80,20 +80,108 @@ export default function EnhancedLandingPage() {
 
   const fetchQRConfigData = async () => {
     try {
-      console.log('🔍 Fetching QR config for ID:', qrId)
+      console.log('🔍 Enhanced Landing Page - Fetching QR config for ID:', qrId)
+      
+      // First try to load from database
+      try {
+        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}`, {
+          credentials: 'include'
+        })
+        
+        if (dbResponse.ok) {
+          const dbConfig = await dbResponse.json()
+          console.log('✅ Enhanced Landing - Loaded config from database:', dbConfig)
+          
+          // Use landingPageConfig from database
+          if (dbConfig.landingPageConfig) {
+            const landingConfig = dbConfig.landingPageConfig
+            console.log('✅ Enhanced Landing - Using database landing page config:', landingConfig)
+            
+            setConfigData({
+              id: qrId,
+              businessName: landingConfig.businessName || 'Elocalpass Business',
+              logoUrl: landingConfig.logoUrl,
+              
+              // Header Text with Typography
+              headerText: landingConfig.headerText || 'Welcome to Our Business',
+              headerTextColor: landingConfig.headerTextColor,
+              headerFontFamily: landingConfig.headerFontFamily,
+              headerFontSize: landingConfig.headerFontSize,
+              
+              // Description Text with Typography
+              descriptionText: landingConfig.descriptionText || 'Experience our amazing services',
+              descriptionTextColor: landingConfig.descriptionTextColor,
+              descriptionFontFamily: landingConfig.descriptionFontFamily,
+              descriptionFontSize: landingConfig.descriptionFontSize,
+              
+              // CTA Button Text with Typography
+              ctaButtonText: landingConfig.ctaButtonText || 'Get Started',
+              ctaButtonTextColor: landingConfig.ctaButtonTextColor,
+              ctaButtonFontFamily: landingConfig.ctaButtonFontFamily,
+              ctaButtonFontSize: landingConfig.ctaButtonFontSize,
+              
+              // Form Title Text with Typography
+              formTitleText: landingConfig.formTitleText,
+              formTitleTextColor: landingConfig.formTitleTextColor,
+              formTitleFontFamily: landingConfig.formTitleFontFamily,
+              formTitleFontSize: landingConfig.formTitleFontSize,
+              
+              // Form Instructions Text with Typography
+              formInstructionsText: landingConfig.formInstructionsText,
+              formInstructionsTextColor: landingConfig.formInstructionsTextColor,
+              formInstructionsFontFamily: landingConfig.formInstructionsFontFamily,
+              formInstructionsFontSize: landingConfig.formInstructionsFontSize,
+              
+              // Footer Disclaimer Text with Typography
+              footerDisclaimerText: landingConfig.footerDisclaimerText,
+              footerDisclaimerTextColor: landingConfig.footerDisclaimerTextColor,
+              footerDisclaimerFontFamily: landingConfig.footerDisclaimerFontFamily,
+              footerDisclaimerFontSize: landingConfig.footerDisclaimerFontSize,
+              
+              // Brand Colors
+              primaryColor: landingConfig.primaryColor || '#3b82f6',
+              secondaryColor: landingConfig.secondaryColor || '#6366f1',
+              backgroundColor: landingConfig.backgroundColor || '#ffffff',
+              
+              // Individual Box Colors
+              guestSelectionBoxColor: landingConfig.guestSelectionBoxColor,
+              daySelectionBoxColor: landingConfig.daySelectionBoxColor,
+              footerDisclaimerBoxColor: landingConfig.footerDisclaimerBoxColor,
+              
+              // QR Configuration Rules from parent config
+              allowCustomGuests: dbConfig.config?.allowCustomGuests ?? true,
+              defaultGuests: dbConfig.config?.defaultGuests ?? 2,
+              maxGuests: dbConfig.config?.maxGuests ?? 10,
+              allowCustomDays: dbConfig.config?.allowCustomDays ?? true,
+              defaultDays: dbConfig.config?.defaultDays ?? 3,
+              maxDays: dbConfig.config?.maxDays ?? 10
+            })
+            
+            setLoading(false)
+            return
+          }
+        } else {
+          console.log('⚠️ Enhanced Landing - Database config not found, trying qrConfigurations Map')
+        }
+      } catch (dbError) {
+        console.log('⚠️ Enhanced Landing - Database error, trying qrConfigurations Map:', dbError)
+      }
+      
+      // Fallback to qrConfigurations Map API
+      console.log('📡 Enhanced Landing - Falling back to qrConfigurations Map API for qrId:', qrId)
       const response = await fetch(`/api/qr-config/${qrId}`)
       
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ Received config data:', data)
-        console.log('🖼️ Logo URL:', data.logoUrl)
+        console.log('✅ Enhanced Landing - Received config data from Map:', data)
+        console.log('🖼️ Enhanced Landing - Logo URL:', data.logoUrl)
         setConfigData(data)
       } else {
-        console.error('❌ API response not ok:', response.status, response.statusText)
+        console.error('❌ Enhanced Landing - API response not ok:', response.status, response.statusText)
         throw new Error('Failed to fetch configuration')
       }
     } catch (error) {
-      console.error('💥 Error fetching QR config:', error)
+      console.error('💥 Enhanced Landing - Error fetching QR config:', error)
       setError('Failed to load landing page configuration')
     } finally {
       setLoading(false)
