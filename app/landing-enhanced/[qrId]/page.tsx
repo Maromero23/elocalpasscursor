@@ -72,11 +72,22 @@ export default function EnhancedLandingPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Get urlId from URL parameters
+  const [urlId, setUrlId] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Get urlId from URL search params
+    const searchParams = new URLSearchParams(window.location.search)
+    const urlIdParam = searchParams.get('urlId')
+    setUrlId(urlIdParam)
+    console.log('🔍 Enhanced Landing - URL ID from query:', urlIdParam)
+  }, [])
+
   useEffect(() => {
     if (qrId) {
       fetchQRConfigData()
     }
-  }, [qrId])
+  }, [qrId, urlId])
 
   const fetchQRConfigData = async () => {
     try {
@@ -92,10 +103,43 @@ export default function EnhancedLandingPage() {
           const dbConfig = await dbResponse.json()
           console.log('✅ Enhanced Landing - Loaded config from database:', dbConfig)
           
-          // Use landingPageConfig from database
-          if (dbConfig.landingPageConfig) {
-            const landingConfig = dbConfig.landingPageConfig
-            console.log('✅ Enhanced Landing - Using database landing page config:', landingConfig)
+          // Check for URL-specific customizations first
+          let landingConfig = dbConfig.landingPageConfig
+          
+          if (urlId) {
+            console.log('🔍 Enhanced Landing - Looking for URL-specific content for urlId:', urlId)
+            
+            // Check for URL-specific customizations in temporaryUrls array (NEW CORRECT STRUCTURE)
+            if (dbConfig.landingPageConfig?.temporaryUrls) {
+              const urlEntry = dbConfig.landingPageConfig.temporaryUrls.find((url: any) => url.id === urlId)
+              if (urlEntry?.customizations) {
+                landingConfig = urlEntry.customizations
+                console.log('✅ Enhanced Landing - Using URL-specific customizations from temporaryUrls for URL:', urlId)
+                console.log('✅ Enhanced Landing - Customizations loaded:', urlEntry.customizations)
+              } else {
+                console.log('⚠️ Enhanced Landing - No customizations found in temporaryUrls for URL:', urlId)
+              }
+            }
+            
+            // Fallback: Check legacy structures if new structure doesn't have data
+            if (!landingConfig || landingConfig === dbConfig.landingPageConfig) {
+              if (dbConfig.landingPageConfig?.templates?.landingPage?.urlCustomContent?.[urlId]) {
+                landingConfig = dbConfig.landingPageConfig.templates.landingPage.urlCustomContent[urlId]
+                console.log('✅ Enhanced Landing - Using URL-specific content from legacy templates structure for URL:', urlId)
+              }
+              else if (dbConfig.templates?.landingPage?.urlCustomContent?.[urlId]) {
+                landingConfig = dbConfig.templates.landingPage.urlCustomContent[urlId]
+                console.log('✅ Enhanced Landing - Using URL-specific content from legacy structure for URL:', urlId)
+              }
+              else {
+                console.log('⚠️ Enhanced Landing - No URL-specific content found for URL:', urlId, '- using general config')
+              }
+            }
+          }
+          
+          // Use landingPageConfig from database (either general or URL-specific)
+          if (landingConfig) {
+            console.log('✅ Enhanced Landing - Using landing page config:', landingConfig)
             
             setConfigData({
               id: qrId,

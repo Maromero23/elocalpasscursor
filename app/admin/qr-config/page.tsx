@@ -81,7 +81,7 @@ export default function QRConfigPage() {
     button1DaysLocked: false,
     button1DaysDefault: 3,
     button1DaysRangeMax: 30,
-    button2PricingType: 'FIXED' as const,
+    button2PricingType: 'FIXED',
     button2FixedPrice: 0,
     button2VariableBasePrice: 0,
     button2VariableGuestIncrease: 0,
@@ -89,11 +89,25 @@ export default function QRConfigPage() {
     button2VariableCommission: 0,
     button2IncludeTax: false,
     button2TaxPercentage: 0,
-    button3DeliveryMethod: 'DIRECT' as const,
-    button4LandingPageRequired: true,
+    button3DeliveryMethod: 'DIRECT',
+    button4LandingPageRequired: false,
     button5SendRebuyEmail: false,
-    updatedAt: new Date(),
+    updatedAt: new Date()
   })
+
+  // Current session management for direct database saving
+  const [currentSessionId, setCurrentSessionId] = useState<string>('')
+  
+  // Generate or load current session ID
+  useEffect(() => {
+    let sessionId = localStorage.getItem('elocalpass-current-session-id')
+    if (!sessionId) {
+      sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      localStorage.setItem('elocalpass-current-session-id', sessionId)
+    }
+    setCurrentSessionId(sessionId)
+    console.log('🔄 Current session ID:', sessionId)
+  }, [])
 
   const [loading, setLoading] = useState(false)
   const [activeButton, setActiveButton] = useState<number>(1)
@@ -119,6 +133,7 @@ export default function QRConfigPage() {
   const [newConfigName, setNewConfigName] = useState('')
   const [newConfigDescription, setNewConfigDescription] = useState('')
   const [progressRestored, setProgressRestored] = useState(false)
+  const [showClearConfirmModal, setShowClearConfirmModal] = useState(false)
 
   // Search and filter states for QR Configuration Library
   const [searchQuery, setSearchQuery] = useState('')
@@ -142,17 +157,19 @@ export default function QRConfigPage() {
   const [sellerUrls, setSellerUrls] = useState<Array<{
     id: string
     name: string
-    url: string
-    description?: string
-    isActive: boolean
-    createdAt: string
+    url: string | null
+    description?: string | null
+    isActive?: boolean
+    createdAt?: string
+    isTemp?: boolean
   }>>([])
   const [showUrlModal, setShowUrlModal] = useState(false)
   const [editingUrl, setEditingUrl] = useState<{
     id: string
     name: string
-    url: string
-    description?: string
+    url: string | null
+    description?: string | null
+    isTemp?: boolean
   } | null>(null)
   const [urlFormData, setUrlFormData] = useState({
     name: '',
@@ -241,61 +258,130 @@ export default function QRConfigPage() {
     }
   }
 
-  // Reset all configurations to defaults
-  const resetToDefaults = async () => {
-    const defaultConfig = {
-      // OLD Button 1 fields (keep for backward compatibility)
-      button1AllowCustomGuestsDays: false,
-      button1DefaultGuests: 2,
-      button1DefaultDays: 3,
-      button1MaxGuests: 10,
-      button1MaxDays: 30,
-      
-      // NEW Button 1 fields (reset to defaults)
-      button1GuestsLocked: false,
-      button1GuestsDefault: 2,
-      button1GuestsRangeMax: 10,
-      button1DaysLocked: false,
-      button1DaysDefault: 3,
-      button1DaysRangeMax: 30,
-      
-      button2PricingType: 'FIXED' as const,
-      button2FixedPrice: 0,
-      button2VariableBasePrice: 0,
-      button2VariableGuestIncrease: 0,
-      button2VariableDayIncrease: 0,
-      button2VariableCommission: 0,
-      button2IncludeTax: false,
-      button2TaxPercentage: 0,
-      button3DeliveryMethod: 'DIRECT' as const,
-      button4LandingPageRequired: true,
-      button5SendRebuyEmail: false,
-      updatedAt: new Date(),
-    }
-    
-    await updateConfig(defaultConfig)
-    
-    // Clear ONLY current working templates - NOT saved configurations
-    localStorage.removeItem('elocalpass-welcome-email-config')
-    localStorage.removeItem('elocalpass-rebuy-email-config')
-    localStorage.removeItem('elocalpass-landing-config')
-    localStorage.removeItem('elocalpass-current-qr-progress')
-    console.log('🧹 Reset cleared current working templates - saved configurations preserved')
-    
-    // DO NOT delete URLs from database - Reset should only affect current working session
-    // The original code was too aggressive and deleted user's saved URLs
-    
-    // Clear all configured button states so they return to original colors
-    setConfiguredButtons(new Set())
+  // Clear current progress and return to starting point
+  const clearProgress = async () => {
+    setShowClearConfirmModal(true)
+  }
+
+  // EMERGENCY CLEANUP: Clear leftover URLs from previous sessions
+  const clearLeftoverUrls = () => {
+    console.log('🧹 EMERGENCY CLEANUP: Clearing leftover URLs from previous sessions')
+    setSellerUrls([])
     setSelectedUrlIds([])
-    setSaveStatus('🔄 Reset to defaults - All current working values reset, saved configurations preserved')
-    setTimeout(() => setSaveStatus(''), 3000)
+    localStorage.removeItem('elocalpass-button3-urls')
+    localStorage.removeItem('elocalpass-current-qr-progress')
+    localStorage.removeItem('elocalpass-new-temp-urls')
+    localStorage.removeItem('elocalpass-new-temp-url')
+    console.log('✅ EMERGENCY CLEANUP: All leftover URLs cleared')
+    toast.success('Cleanup Complete', 'All leftover URLs from previous sessions have been cleared')
+  }
+
+  const handleConfirmClear = async () => {
+    setShowClearConfirmModal(false)
+    
+    try {
+      // STEP 1: Reset database configuration to default values
+      const defaultConfig = {
+        // Button 1 defaults
+        button1AllowCustomGuestsDays: false,
+        button1DefaultGuests: 2,
+        button1DefaultDays: 3,
+        button1MaxGuests: 10,
+        button1MaxDays: 30,
+        button1GuestsLocked: true,
+        button1GuestsDefault: 2,
+        button1GuestsRangeMax: 10,
+        button1DaysLocked: true,
+        button1DaysDefault: 3,
+        button1DaysRangeMax: 30,
+        
+        // Button 2 defaults
+        button2PricingType: 'FIXED' as const,
+        button2FixedPrice: 0,
+        button2VariableBasePrice: 0,
+        button2VariableGuestIncrease: 0,
+        button2VariableDayIncrease: 0,
+        button2VariableCommission: 0,
+        button2IncludeTax: false,
+        button2TaxPercentage: 0,
+        
+        // Button 3 defaults
+        button3DeliveryMethod: 'DIRECT' as const,
+        
+        // Button 4 defaults
+        button4LandingPageRequired: false,
+        
+        // Button 5 defaults
+        button5SendRebuyEmail: false,
+        
+        updatedAt: new Date()
+      }
+      
+      // Save default config to database
+      const response = await fetch('/api/admin/qr-global-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(defaultConfig),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to reset database configuration')
+      }
+      
+      // STEP 2: Clear database session (temporary URLs and progress)
+      if (currentSessionId) {
+        try {
+          const deleteResponse = await fetch(`/api/admin/saved-configs/${currentSessionId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          })
+          console.log('🗑️ CLEAR PROGRESS: Database session cleared:', deleteResponse.ok ? 'SUCCESS' : 'FAILED')
+        } catch (error) {
+          console.warn('⚠️ CLEAR PROGRESS: Could not clear database session:', error)
+        }
+      }
+      
+      // STEP 3: Clear ALL progress-related localStorage items
+      localStorage.removeItem('elocalpass-current-qr-progress')
+      localStorage.removeItem('elocalpass-current-welcome-template')
+      localStorage.removeItem('elocalpass-current-rebuy-template')
+      localStorage.removeItem('elocalpass-current-landing-template')
+      localStorage.removeItem('elocalpass-welcome-email-config')
+      localStorage.removeItem('elocalpass-rebuy-email-config')
+      localStorage.removeItem('elocalpass-landing-config')
+      localStorage.removeItem('elocalpass-button1-config')
+      localStorage.removeItem('elocalpass-button2-config')
+      localStorage.removeItem('elocalpass-button3-config')
+      localStorage.removeItem('elocalpass-button3-urls')
+      localStorage.removeItem('elocalpass-new-temp-urls')
+      localStorage.removeItem('elocalpass-new-temp-url')
+      
+      // STEP 4: Reset visual states to starting point
+      setGlobalConfig(defaultConfig)
+      setConfiguredButtons(new Set())
+      setSelectedUrlIds([])
+      setSellerUrls([]) // Clear temporary URLs
+      setActiveButton(1)
+      setSaveStatus('')
+      setProgressRestored(false)
+      
+      console.log('🧹 CLEAR PROGRESS: All progress and database configuration reset to defaults')
+      
+      // STEP 5: Clear URL parameters and refresh to ensure clean state
+      window.history.replaceState({}, document.title, window.location.pathname)
+      window.location.reload()
+      
+    } catch (error) {
+      console.error('❌ Failed to clear progress:', error)
+      alert('Failed to clear progress. Please try again.')
+    }
   }
 
   // Load existing configuration
   useEffect(() => {
     fetchGlobalConfig()
-    loadSavedConfigurations() // 🔧 FIX: Load saved configurations on page mount
   }, [])
 
   const fetchGlobalConfig = async () => {
@@ -320,9 +406,91 @@ export default function QRConfigPage() {
     const updatedConfig = { ...globalConfig, ...updates }
     setGlobalConfig(updatedConfig)
     
-    // Auto-save the configuration
+    // BUTTON 1 PERSISTENCE: Save Button 1 data to localStorage when it changes
+    const button1Fields = [
+      'button1GuestsLocked', 'button1GuestsDefault', 'button1GuestsRangeMax',
+      'button1DaysLocked', 'button1DaysDefault', 'button1DaysRangeMax',
+      'button1AllowCustomGuestsDays', 'button1DefaultGuests', 'button1DefaultDays', 'button1MaxGuests', 'button1MaxDays'
+    ]
+    
+    const hasButton1Changes = Object.keys(updates).some(key => button1Fields.includes(key))
+    
+    if (hasButton1Changes) {
+      const button1Data = {
+        button1GuestsLocked: updatedConfig.button1GuestsLocked,
+        button1GuestsDefault: updatedConfig.button1GuestsDefault,
+        button1GuestsRangeMax: updatedConfig.button1GuestsRangeMax,
+        button1DaysLocked: updatedConfig.button1DaysLocked,
+        button1DaysDefault: updatedConfig.button1DaysDefault,
+        button1DaysRangeMax: updatedConfig.button1DaysRangeMax,
+        button1AllowCustomGuestsDays: updatedConfig.button1AllowCustomGuestsDays,
+        button1DefaultGuests: updatedConfig.button1DefaultGuests,
+        button1DefaultDays: updatedConfig.button1DefaultDays,
+        button1MaxGuests: updatedConfig.button1MaxGuests,
+        button1MaxDays: updatedConfig.button1MaxDays,
+        timestamp: new Date().toISOString()
+      }
+      
+      try {
+        localStorage.setItem('elocalpass-button1-config', JSON.stringify(button1Data))
+        console.log('💾 Button 1 data saved to localStorage:', button1Data)
+      } catch (error) {
+        console.error('Failed to save Button 1 to localStorage:', error)
+      }
+    }
+
+    // BUTTON 2 PERSISTENCE: Save Button 2 data to localStorage when it changes
+    const button2Fields = [
+      'button2PricingType', 'button2FixedPrice', 'button2VariableBasePrice',
+      'button2VariableGuestIncrease', 'button2VariableDayIncrease', 'button2VariableCommission',
+      'button2IncludeTax', 'button2TaxPercentage'
+    ]
+    
+    const hasButton2Changes = Object.keys(updates).some(key => button2Fields.includes(key))
+    
+    if (hasButton2Changes) {
+      const button2Data = {
+        button2PricingType: updatedConfig.button2PricingType,
+        button2FixedPrice: updatedConfig.button2FixedPrice,
+        button2VariableBasePrice: updatedConfig.button2VariableBasePrice,
+        button2VariableGuestIncrease: updatedConfig.button2VariableGuestIncrease,
+        button2VariableDayIncrease: updatedConfig.button2VariableDayIncrease,
+        button2VariableCommission: updatedConfig.button2VariableCommission,
+        button2IncludeTax: updatedConfig.button2IncludeTax,
+        button2TaxPercentage: updatedConfig.button2TaxPercentage,
+        timestamp: new Date().toISOString()
+      }
+      
+      try {
+        localStorage.setItem('elocalpass-button2-config', JSON.stringify(button2Data))
+        console.log('💾 Button 2 data saved to localStorage:', button2Data)
+      } catch (error) {
+        console.error('Failed to save Button 2 to localStorage:', error)
+      }
+    }
+
+    // BUTTON 3 PERSISTENCE: Save Button 3 delivery method to localStorage when it changes
+    const button3Fields = ['button3DeliveryMethod']
+    
+    const hasButton3Changes = Object.keys(updates).some(key => button3Fields.includes(key))
+    
+    if (hasButton3Changes) {
+      const button3Data = {
+        button3DeliveryMethod: updatedConfig.button3DeliveryMethod,
+        timestamp: new Date().toISOString()
+      }
+      
+      try {
+        localStorage.setItem('elocalpass-button3-config', JSON.stringify(button3Data))
+        console.log('💾 Button 3 delivery method saved to localStorage:', button3Data)
+      } catch (error) {
+        console.error('Failed to save Button 3 to localStorage:', error)
+      }
+    }
+    
+    // Manual save only
     setIsAutoSaving(true)
-    setSaveStatus('Auto-saving...')
+    setSaveStatus('Saving...')
     
     try {
       const response = await fetch('/api/admin/qr-global-config', {
@@ -334,15 +502,15 @@ export default function QRConfigPage() {
       })
 
       if (response.ok) {
-        setSaveStatus('✅ Auto-saved successfully')
+        // Auto-save removed
         setTimeout(() => setSaveStatus(''), 2000)
       } else {
-        setSaveStatus('❌ Auto-save failed')
+        // Auto-save removed
         setTimeout(() => setSaveStatus(''), 3000)
       }
     } catch (error) {
-      console.error('Auto-save error:', error)
-      setSaveStatus('❌ Auto-save error')
+      // Auto-save removed
+      // Auto-save removed
       setTimeout(() => setSaveStatus(''), 3000)
     } finally {
       setIsAutoSaving(false)
@@ -351,73 +519,219 @@ export default function QRConfigPage() {
 
   // Load saved configurations on component mount
   useEffect(() => {
-    loadCurrentProgress()
-    loadSavedConfigurations()
+    const initializeData = async () => {
+      if (currentSessionId) {
+        await loadCurrentProgress()
+      }
+      await loadSavedConfigurations()
+    }
+    
+    initializeData()
+  }, [currentSessionId]) // Add currentSessionId as dependency
+
+  // Check for new temporary URLs from landing page creation
+  useEffect(() => {
+    console.log('🔄 useEffect triggered - checking for new temporary URLs')
+    console.log('🔍 Current sellerUrls state:', sellerUrls)
+    const checkForNewTempUrl = () => {
+      // Check for new list-based approach first
+      const newTempUrls = localStorage.getItem('elocalpass-new-temp-urls')
+      // Also check for old single-URL approach for backward compatibility
+      const newTempUrl = localStorage.getItem('elocalpass-new-temp-url')
+      
+      let newUrlsToProcess = []
+      
+      // Process list-based approach
+      if (newTempUrls) {
+        try {
+          const urlsList = JSON.parse(newTempUrls)
+          newUrlsToProcess = Array.isArray(urlsList) ? urlsList : []
+          console.log('🔍 Found', newUrlsToProcess.length, 'new temporary URLs in list')
+        } catch (error) {
+          console.error('Error parsing new temp URLs list:', error)
+        }
+      }
+      
+      // Process old single-URL approach
+      if (newTempUrl) {
+        try {
+          const tempUrlData = JSON.parse(newTempUrl)
+          newUrlsToProcess.push(tempUrlData)
+          console.log('🔍 Found 1 new temporary URL in old format')
+        } catch (error) {
+          console.error('Error parsing new temp URL data:', error)
+        }
+      }
+      
+      if (newUrlsToProcess.length > 0) {
+        // Get existing temporary URLs from saved progress
+        const savedProgress = localStorage.getItem('elocalpass-current-qr-progress')
+        let existingTempUrls: any[] = []
+        
+        if (savedProgress) {
+          try {
+            const progressData = JSON.parse(savedProgress)
+            existingTempUrls = progressData.temporaryUrls || []
+          } catch (error) {
+            console.error('Error parsing saved progress:', error)
+          }
+        }
+        
+        console.log('🔍 PROCESSING: New URLs to process:', newUrlsToProcess)
+        console.log('🔍 PROCESSING: Existing temp URLs:', existingTempUrls)
+        
+        // Process each new URL
+        let urlsAdded = 0
+        const finalTempUrls = [...existingTempUrls]
+        
+        newUrlsToProcess.forEach(tempUrlData => {
+          const existsInProgress = finalTempUrls.some(url => url.id === tempUrlData.id)
+          
+          if (!existsInProgress) {
+            console.log('✅ Adding new temporary URL:', tempUrlData.name)
+            finalTempUrls.push(tempUrlData)
+            urlsAdded++
+          } else {
+            console.log('⚠️ Temporary URL already exists, skipping:', tempUrlData.name)
+          }
+        })
+        
+        if (urlsAdded > 0) {
+          console.log('🔍 FINAL TEMP URLS after processing:', finalTempUrls)
+          
+          setSellerUrls(prev => {
+            // Remove any existing temp URLs and add all temp URLs
+            const nonTempUrls = prev.filter(url => !url.isTemp)
+            const result = [...nonTempUrls, ...finalTempUrls]
+            console.log('🔍 FINAL SELLER URLS:', result)
+            return result
+          })
+          
+          setConfiguredButtons(prev => new Set(prev).add(3))
+        }
+        
+        // Clean up both storage keys
+        localStorage.removeItem('elocalpass-new-temp-urls')
+        localStorage.removeItem('elocalpass-new-temp-url')
+      }
+    }
+
+    // Check immediately on mount
+    checkForNewTempUrl()
+    
+    // Also check when the window gains focus (when returning from landing page editor)
+    const handleFocus = () => {
+      console.log('🔄 Window focused - checking for new temporary URLs')
+      console.log('🔍 DEBUG: Current localStorage contents:')
+      console.log('- elocalpass-new-temp-urls:', localStorage.getItem('elocalpass-new-temp-urls'))
+      console.log('- elocalpass-new-temp-url:', localStorage.getItem('elocalpass-new-temp-url'))
+      console.log('- elocalpass-current-qr-progress:', localStorage.getItem('elocalpass-current-qr-progress'))
+      checkForNewTempUrl()
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    
+    // Also check periodically in case focus events are missed
+    const interval = setInterval(() => {
+      console.log('🔄 Periodic check for new temporary URLs')
+      checkForNewTempUrl()
+    }, 2000)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      clearInterval(interval)
+    }
   }, [])
 
   const loadSavedConfigurations = async () => {
     try {
-      console.log('🗄️ Loading configurations from database only...')
+      console.log('🔄 Loading configurations from database first...')
       
-      // Load ONLY from DATABASE (no more localStorage dependency)
+      // PRIORITY 1: Load from DATABASE (where proper data is saved)
       const dbResponse = await fetch('/api/admin/saved-configs', {
         credentials: 'include'
       })
       
       if (dbResponse.ok) {
-        const dbData = await dbResponse.json()
-        const dbConfigs = dbData.map((config: any) => ({
-          id: config.id,
-          name: config.name,
-          description: config.description,
-          config: config.config,
-          selectedUrlIds: config.selectedUrlIds || [],
-          emailTemplates: config.emailTemplates || { welcomeEmail: null, rebuyEmail: null },
-          landingPageConfig: config.landingPageConfig,
-          createdAt: new Date(config.createdAt),
-          source: 'database'
-        }))
+        const dbConfigs = await dbResponse.json()
+        console.log('✅ Loaded', dbConfigs.length, 'configurations from database')
+        console.log('🔍 Database configs:', dbConfigs)
         
-        console.log(`✅ Loaded ${dbConfigs.length} configurations from database`)
+        // DO NOT extract URLs from saved configurations - they belong to those specific configs
+        // URLs should only appear in current session when creating new configurations
+        
+        // Use database configurations directly - they have the proper structure
         setSavedConfigurations(dbConfigs)
+        
+        // Run data consistency check after loading configurations
+        setTimeout(() => validateDataConsistency(), 1000)
+        
+        return // Exit early - database is the source of truth
       } else {
-        console.error('❌ Failed to load from database, status:', dbResponse.status)
+        console.log('⚠️ Could not load from database, status:', dbResponse.status)
+      }
+      
+      // FALLBACK: Only use localStorage if database fails
+      console.log('📦 Falling back to localStorage...')
+      const saved = localStorage.getItem('elocalpass-saved-configurations')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          const localConfigs = parsed.map((config: any) => ({
+            ...config,
+            createdAt: new Date(config.createdAt),
+            source: 'localStorage'
+          }))
+          console.log('✅ Loaded', localConfigs.length, 'configurations from localStorage')
+          
+          // DO NOT extract URLs from saved configurations - they belong to those specific configs
+          // URLs should only appear in current session when creating new configurations
+          
+          setSavedConfigurations(localConfigs)
+        } catch (error) {
+          console.error('Error parsing saved configurations:', error)
+          setSavedConfigurations([])
+        }
+      } else {
+        console.log('❌ No configurations found anywhere')
         setSavedConfigurations([])
       }
+      
     } catch (error) {
       console.error('❌ Error loading configurations:', error)
       setSavedConfigurations([])
     }
   }
 
-  const loadCurrentProgress = () => {
-    // Try to restore previous progress from localStorage
-    const savedProgress = localStorage.getItem('elocalpass-current-qr-progress')
-    console.log('🔄 RESTORE: Raw localStorage data:', savedProgress)
-    
-    if (savedProgress) {
-      try {
-        const progressData = JSON.parse(savedProgress)
-        console.log('🔄 RESTORE: Parsed progress data:', progressData)
+  const loadCurrentProgress = async () => {
+    try {
+      console.log('🔄 RESTORE: Loading current session from database...')
+      
+      // Load temporary URLs from database using current session ID
+      if (currentSessionId) {
+        const response = await fetch(`/api/admin/saved-configs/${currentSessionId}`, {
+          credentials: 'include'
+        })
         
-        // Only restore if the progress is recent (within last 24 hours)
-        const savedTime = new Date(progressData.timestamp)
-        const now = new Date()
-        const hoursDiff = (now.getTime() - savedTime.getTime()) / (1000 * 60 * 60)
-        
-        console.log('🔄 RESTORE: Time check - Hours diff:', hoursDiff)
-        
-        if (hoursDiff < 24) {
-          console.log('🔄 RESTORE: Restoring data:', {
-            globalConfig: progressData.globalConfig,
-            configuredButtons: progressData.configuredButtons,
-            selectedUrlIds: progressData.selectedUrlIds
-          })
-          setGlobalConfig(progressData.globalConfig)
-          setConfiguredButtons(new Set(progressData.configuredButtons))
-          setSelectedUrlIds(progressData.selectedUrlIds || [])
+        if (response.ok) {
+          const sessionConfig = await response.json()
+          console.log('✅ RESTORE: Loaded session config from database:', sessionConfig)
+          
+          // Restore temporary URLs if they exist
+          if (sessionConfig.landingPageConfig?.temporaryUrls) {
+            setSellerUrls(sessionConfig.landingPageConfig.temporaryUrls)
+            console.log('✅ RESTORE: Loaded', sessionConfig.landingPageConfig.temporaryUrls.length, 'temporary URLs from database')
+            setConfiguredButtons(prev => new Set(prev).add(3)) // Mark button 3 as configured
+          }
+          
+          // Restore selected URL IDs if they exist
+          if (sessionConfig.selectedUrlIds) {
+            setSelectedUrlIds(sessionConfig.selectedUrlIds)
+            console.log('✅ RESTORE: Loaded', sessionConfig.selectedUrlIds.length, 'selected URL IDs from database')
+          }
+          
           setProgressRestored(true)
-          console.log('✅ Restored QR configuration progress from previous session')
+          console.log('✅ Restored QR configuration progress from database')
           
           // Hide the progress restored indicator after 5 seconds
           setTimeout(() => {
@@ -425,16 +739,11 @@ export default function QRConfigPage() {
             console.log('Progress restored indicator hidden')
           }, 5000)
         } else {
-          // Clear old progress
-          localStorage.removeItem('elocalpass-current-qr-progress')
-          console.log('🗑️ RESTORE: Cleared old progress (older than 24 hours)')
+          console.log('ℹ️ RESTORE: No existing session configuration found in database')
         }
-      } catch (error) {
-        console.log('❌ RESTORE: Could not restore previous progress:', error)
-        localStorage.removeItem('elocalpass-current-qr-progress')
       }
-    } else {
-      console.log('🔄 RESTORE: No saved progress found in localStorage')
+    } catch (error) {
+      console.error('❌ RESTORE: Error loading current progress from database:', error)
     }
   }
 
@@ -442,6 +751,143 @@ export default function QRConfigPage() {
   const areAllButtonsConfigured = (): boolean => {
     return configuredButtons.size === 5
   }
+
+  // BUTTON 3: Save URL data to localStorage
+  const saveButton3UrlData = () => {
+    const button3UrlData = {
+      temporaryUrls: sellerUrls.filter(url => url.isTemp),
+      selectedUrlIds: selectedUrlIds,
+      timestamp: new Date().toISOString()
+    }
+    
+    try {
+      localStorage.setItem('elocalpass-button3-urls', JSON.stringify(button3UrlData))
+      console.log('💾 Button 3 URL data saved to localStorage:', button3UrlData)
+    } catch (error) {
+      console.error('Failed to save Button 3 URL data to localStorage:', error)
+    }
+  }
+
+  // IMMEDIATE DATABASE SAVE: Save selectedUrlIds to database session immediately
+  const saveSelectedUrlsToDatabase = async (newSelectedUrlIds: string[]) => {
+    if (!currentSessionId) return
+    
+    try {
+      // Get current session data
+      const response = await fetch(`/api/admin/saved-configs/${currentSessionId}`, {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const sessionConfig = await response.json()
+        
+        // Update selectedUrlIds in the session
+        const updatedConfig = {
+          ...sessionConfig,
+          selectedUrlIds: newSelectedUrlIds
+        }
+        
+        // Save back to database
+        const saveResponse = await fetch(`/api/admin/saved-configs/${currentSessionId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(updatedConfig)
+        })
+        
+        if (saveResponse.ok) {
+          console.log('✅ IMMEDIATE SAVE: selectedUrlIds saved to database:', newSelectedUrlIds)
+        } else {
+          console.error('❌ IMMEDIATE SAVE: Failed to save selectedUrlIds to database')
+        }
+      }
+    } catch (error) {
+      console.error('❌ IMMEDIATE SAVE: Error saving selectedUrlIds to database:', error)
+    }
+  }
+
+  // Save current progress to localStorage
+  const saveCurrentProgress = () => {
+    if (!globalConfig) return // Don't save if no config loaded yet
+    
+    const progressData = {
+      globalConfig,
+      configuredButtons: Array.from(configuredButtons),
+      selectedUrlIds,
+      temporaryUrls: sellerUrls.filter(url => url.isTemp), // Save temporary URLs
+      timestamp: new Date().toISOString()
+    }
+    
+    try {
+      localStorage.setItem('elocalpass-current-qr-progress', JSON.stringify(progressData))
+      console.log('💾 Progress saved with', progressData.temporaryUrls.length, 'temporary URLs')
+    } catch (error) {
+      console.error('Failed to save progress:', error)
+    }
+  }
+
+  // Auto-save progress when state changes
+  useEffect(() => {
+    if (globalConfig) { // Only save if config is loaded
+      const timeoutId = setTimeout(saveCurrentProgress, 500) // Debounce saves
+      return () => clearTimeout(timeoutId)
+    }
+  }, [globalConfig, configuredButtons, selectedUrlIds, sellerUrls])
+
+  // BUTTON 3: Auto-save URL data when it changes
+  useEffect(() => {
+    if (sellerUrls.length > 0 || selectedUrlIds.length > 0) {
+      const timeoutId = setTimeout(saveButton3UrlData, 500) // Debounce saves
+      return () => clearTimeout(timeoutId)
+    }
+  }, [sellerUrls, selectedUrlIds])
+
+  // Separate useEffect to continuously check for new temporary URLs
+  useEffect(() => {
+    const checkForNewUrls = () => {
+      const newTempUrls = localStorage.getItem('elocalpass-new-temp-urls')
+      if (newTempUrls) {
+        try {
+          const urlsList = JSON.parse(newTempUrls)
+          if (Array.isArray(urlsList) && urlsList.length > 0) {
+            console.log('🔍 CONTINUOUS CHECK: Found new URLs to process:', urlsList)
+            
+            setSellerUrls(prev => {
+              const currentTempUrls = prev.filter(url => url.isTemp)
+              const nonTempUrls = prev.filter(url => !url.isTemp)
+              
+              // Check which URLs are actually new
+              const newUrls = urlsList.filter(newUrl => 
+                !currentTempUrls.some(existing => existing.id === newUrl.id)
+              )
+              
+              if (newUrls.length > 0) {
+                console.log('✅ CONTINUOUS CHECK: Adding', newUrls.length, 'new URLs')
+                const allTempUrls = [...currentTempUrls, ...newUrls]
+                localStorage.removeItem('elocalpass-new-temp-urls') // Clean up
+                setConfiguredButtons(prev => new Set(prev).add(3))
+                return [...nonTempUrls, ...allTempUrls]
+              }
+              
+              return prev
+            })
+          }
+        } catch (error) {
+          console.error('Error in continuous check:', error)
+        }
+      }
+    }
+    
+    // Check immediately
+    checkForNewUrls()
+    
+         // Check every 500ms for faster detection
+     const interval = setInterval(checkForNewUrls, 500)
+    
+    return () => clearInterval(interval)
+  }, []) // Empty dependency array so it runs once and sets up the interval
 
   // Detect configuration status after state changes (runs after restoration)
   useEffect(() => {
@@ -471,41 +917,47 @@ export default function QRConfigPage() {
       configuredButtonsSet.add(1)
     }
     
-    // Check Button 2 (Pricing) - mark as configured if pricing settings are non-default
+    // Check Button 2 (Pricing) - mark as configured only if meaningful pricing changes are made
     const hasButton2Config = 
-      globalConfig.button2PricingType !== 'FIXED' ||
-      globalConfig.button2FixedPrice !== 0 ||
-      globalConfig.button2VariableBasePrice !== 0 ||
-      globalConfig.button2VariableGuestIncrease !== 0 ||
-      globalConfig.button2VariableDayIncrease !== 0 ||
-      globalConfig.button2VariableCommission !== 0 ||
-      globalConfig.button2IncludeTax !== false ||
-      globalConfig.button2TaxPercentage !== 0
-    console.log('- Button 2 detection:', { hasButton2Config, inConfiguredButtons: configuredButtons.has(2) })
+      (globalConfig.button2PricingType === 'FIXED' && (globalConfig.button2FixedPrice || 0) > 0) ||
+      (globalConfig.button2PricingType === 'VARIABLE' && (
+        globalConfig.button2VariableBasePrice > 0 ||
+        globalConfig.button2VariableGuestIncrease > 0 ||
+        globalConfig.button2VariableDayIncrease > 0 ||
+        globalConfig.button2VariableCommission > 0
+      )) ||
+      globalConfig.button2PricingType === 'FREE' ||
+      globalConfig.button2IncludeTax === true ||
+      globalConfig.button2TaxPercentage > 0
+    console.log('- Button 2 detection:', { 
+      hasButton2Config, 
+      pricingType: globalConfig.button2PricingType,
+      fixedPrice: globalConfig.button2FixedPrice,
+      includeTax: globalConfig.button2IncludeTax,
+      inConfiguredButtons: configuredButtons.has(2) 
+    })
     if (hasButton2Config || configuredButtons.has(2)) {
       configuredButtonsSet.add(2)
     }
     
-    // Check Button 3 (Delivery Method) - mark as configured if delivery method is set or URLs selected
-    const hasButton3Config = 
-      globalConfig.button3DeliveryMethod !== 'DIRECT' ||
-      selectedUrlIds.length > 0
-    console.log('- Button 3 detection:', { hasButton3Config, deliveryMethod: globalConfig.button3DeliveryMethod, urlsSelected: selectedUrlIds.length, inConfiguredButtons: configuredButtons.has(3) })
+    // Check Button 3 (Delivery Method) - mark as configured ONLY if delivery method is intentionally changed from default
+    const hasButton3Config = globalConfig.button3DeliveryMethod !== 'DIRECT'
+    console.log('- Button 3 detection:', { hasButton3Config, deliveryMethod: globalConfig.button3DeliveryMethod, tempUrlsCount: sellerUrls.filter(url => url.isTemp).length, inConfiguredButtons: configuredButtons.has(3) })
     if (hasButton3Config || configuredButtons.has(3)) {
       configuredButtonsSet.add(3)
     }
     
-    // Check Button 4 (Welcome Email) - mark as configured if template exists
-    const hasWelcomeTemplate = !!localStorage.getItem('elocalpass-welcome-email-config')
-    console.log('- Button 4 detection:', { hasWelcomeTemplate, inConfiguredButtons: configuredButtons.has(4) })
-    if (hasWelcomeTemplate || configuredButtons.has(4)) {
+    // Check Button 4 (Welcome Email) - mark as configured only if button4LandingPageRequired is true
+    const hasButton4Config = globalConfig.button4LandingPageRequired === true
+    console.log('- Button 4 detection:', { hasButton4Config, button4Required: globalConfig.button4LandingPageRequired, inConfiguredButtons: configuredButtons.has(4) })
+    if (hasButton4Config || configuredButtons.has(4)) {
       configuredButtonsSet.add(4)
     }
     
-    // Check Button 5 (Rebuy Email) - mark as configured if rebuy is enabled or already marked as configured  
-    const hasRebuyTemplate = !!localStorage.getItem('elocalpass-rebuy-email-config')
-    console.log('- Button 5 detection:', { rebuyEnabled: globalConfig.button5SendRebuyEmail, hasRebuyTemplate, inConfiguredButtons: configuredButtons.has(5) })
-    if (configuredButtons.has(5) || globalConfig.button5SendRebuyEmail === true) {
+    // Check Button 5 (Rebuy Email) - mark as configured only if rebuy is enabled
+    const hasButton5Config = globalConfig.button5SendRebuyEmail === true
+    console.log('- Button 5 detection:', { hasButton5Config, rebuyEnabled: globalConfig.button5SendRebuyEmail, inConfiguredButtons: configuredButtons.has(5) })
+    if (hasButton5Config || configuredButtons.has(5)) {
       configuredButtonsSet.add(5)
     }
     
@@ -517,10 +969,10 @@ export default function QRConfigPage() {
       console.log('🔄 DETECTION: Updating configuredButtons state')
       setConfiguredButtons(configuredButtonsSet)
     }
-  }, [globalConfig, selectedUrlIds]) // Run when these change
+  }, [globalConfig, sellerUrls]) // Run when these change
 
   // Save current configuration with a name
-  const saveNamedConfiguration = () => {
+  const saveNamedConfiguration = async () => {
     if (!areAllButtonsConfigured()) {
       toast.error('Configuration Incomplete', 'Please complete all 5 button configurations before saving')
       return
@@ -531,19 +983,59 @@ export default function QRConfigPage() {
       return
     }
 
+    // BUTTON 1: Gather Button 1 data from localStorage
+    const button1Config = localStorage.getItem('elocalpass-button1-config')
+    let parsedButton1Config = null
+    
+    try {
+      if (button1Config) {
+        parsedButton1Config = JSON.parse(button1Config)
+        console.log('💾 SAVE: Button 1 data loaded from localStorage:', parsedButton1Config)
+      }
+    } catch (error) {
+      console.warn('Warning: Could not parse Button 1 configuration:', error)
+    }
+
+    // BUTTON 2: Gather Button 2 data from localStorage
+    const button2Config = localStorage.getItem('elocalpass-button2-config')
+    let parsedButton2Config = null
+    
+    try {
+      if (button2Config) {
+        parsedButton2Config = JSON.parse(button2Config)
+        console.log('💾 SAVE: Button 2 data loaded from localStorage:', parsedButton2Config)
+      }
+    } catch (error) {
+      console.warn('Warning: Could not parse Button 2 configuration:', error)
+    }
+
+    // BUTTON 3: Gather Button 3 data from localStorage
+    const button3Config = localStorage.getItem('elocalpass-button3-config')
+    const button3UrlsConfig = localStorage.getItem('elocalpass-button3-urls')
+    let parsedButton3Config = null
+    let parsedButton3UrlsConfig = null
+    
+    try {
+      if (button3Config) {
+        parsedButton3Config = JSON.parse(button3Config)
+        console.log('💾 SAVE: Button 3 delivery method loaded from localStorage:', parsedButton3Config)
+      }
+      if (button3UrlsConfig) {
+        parsedButton3UrlsConfig = JSON.parse(button3UrlsConfig)
+        console.log('💾 SAVE: Button 3 URL data loaded from localStorage:', parsedButton3UrlsConfig)
+      }
+    } catch (error) {
+      console.warn('Warning: Could not parse Button 3 configuration:', error)
+    }
+
     // Gather template configurations - including email templates if they exist
-    const landingPageConfig = localStorage.getItem('elocalpass-landing-config')
     const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
     const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
     
-    let parsedLandingPage = null
     let parsedWelcomeEmail = null
     let parsedRebuyEmail = null
     
     try {
-      if (landingPageConfig) {
-        parsedLandingPage = JSON.parse(landingPageConfig)
-      }
       if (welcomeEmailConfig) {
         parsedWelcomeEmail = JSON.parse(welcomeEmailConfig)
       }
@@ -554,33 +1046,94 @@ export default function QRConfigPage() {
       console.warn('Warning: Could not parse template configurations:', error)
     }
 
+    // Get landing page data from localStorage (Button 3 URLs) instead of React state
+    const temporaryUrls = parsedButton3UrlsConfig?.temporaryUrls || []
+    const selectedUrlIdsFromStorage = parsedButton3UrlsConfig?.selectedUrlIds || []
+    
+    const landingPageData = {
+      temporaryUrls: temporaryUrls,
+      selectedUrlIds: selectedUrlIdsFromStorage,
+      urlMappings: {} as any
+    }
+    
+    // Create URL mappings for each temporary URL
+    temporaryUrls.forEach((url: any) => {
+      const urlWithQrId = url as any // Type assertion to access qrId
+      if (urlWithQrId.qrId) {
+        landingPageData.urlMappings[urlWithQrId.qrId] = {
+          name: url.name,
+          url: url.url,
+          description: url.description,
+          createdAt: url.createdAt,
+          isTemp: url.isTemp
+        }
+      }
+    })
+    
+    console.log('💾 SAVE: Landing page data being saved from localStorage:', landingPageData)
+
     const newConfig = {
       id: Date.now().toString(),
       name: newConfigName.trim(),
       description: newConfigDescription.trim() || 'No description provided',
       config: { ...globalConfig },
-      selectedUrlIds: selectedUrlIds, // Preserve selected URL IDs for multi-URL support
+      selectedUrlIds: selectedUrlIdsFromStorage, // Use selected URL IDs from localStorage
+      button1Config: parsedButton1Config, // Include Button 1 localStorage data
+      button2Config: parsedButton2Config, // Include Button 2 localStorage data
+      button3Config: parsedButton3Config, // Include Button 3 delivery method
+      button3UrlsConfig: parsedButton3UrlsConfig, // Include Button 3 URL data
       emailTemplates: {
         welcomeEmail: parsedWelcomeEmail,  // Preserve custom welcome email template
         rebuyEmail: parsedRebuyEmail       // Preserve custom rebuy email template
       },
-      landingPageConfig: parsedLandingPage,
+      landingPageConfig: landingPageData,
       createdAt: new Date()
     }
     
     console.log('🐛 DEBUG: Saving configuration with selectedUrlIds:', selectedUrlIds)
     console.log('🐛 DEBUG: newConfig being saved:', newConfig)
     
-    const updatedConfigs = [...savedConfigurations, newConfig]
-    setSavedConfigurations(updatedConfigs)
-    
-    // Robust localStorage saving with error handling
+    // Save to DATABASE instead of localStorage
     try {
-      localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigs))
-      console.log('✅ Configuration saved to localStorage successfully')
+      console.log('💾 SAVE: Saving configuration to database...')
+      console.log('💾 SAVE: Configuration data:', newConfig)
+      
+      const response = await fetch('/api/admin/saved-configs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: newConfig.name,
+          description: newConfig.description,
+          config: newConfig.config,
+          button1Config: newConfig.button1Config,
+          button2Config: newConfig.button2Config,
+          button3Config: newConfig.button3Config,
+          button3UrlsConfig: newConfig.button3UrlsConfig,
+          emailTemplates: newConfig.emailTemplates,
+          landingPageConfig: newConfig.landingPageConfig,
+          selectedUrlIds: newConfig.selectedUrlIds
+        })
+      })
+      
+      if (response.ok) {
+        const savedConfig = await response.json()
+        console.log('✅ Configuration saved to database successfully:', savedConfig)
+        
+        // Update local state with the saved configuration
+        const updatedConfigs = [...savedConfigurations, savedConfig]
+        setSavedConfigurations(updatedConfigs)
+      } else {
+        const errorData = await response.json()
+        console.error('❌ Failed to save to database:', errorData)
+        toast.error('Save Failed', 'Failed to save configuration to database')
+        return
+      }
     } catch (error) {
-      console.error('❌ Failed to save to localStorage:', error)
-      toast.error('Save Failed', 'Failed to save configuration to browser storage')
+      console.error('❌ Database save error:', error)
+      toast.error('Save Failed', 'Failed to save configuration to database')
       return
     }
     
@@ -588,7 +1141,65 @@ export default function QRConfigPage() {
     setNewConfigDescription('')
     setShowSaveModal(false)
     
-    toast.success('Configuration Saved!', `Configuration "${newConfig.name}" saved successfully!`)
+    // Clear all temporary data and reset to fresh state
+    console.log('🧹 CLEANUP: Starting post-save cleanup...')
+    
+    // Clear temporary URLs
+    setSellerUrls([])
+    setSelectedUrlIds([])
+    
+    // Reset configured buttons and set Button #1 as active starting point
+    setConfiguredButtons(new Set())
+    setActiveButton(1) // Set Button #1 as the active button to start the process
+    
+    // Clear current progress
+    localStorage.removeItem('elocalpass-current-qr-progress')
+    
+    // Clear temporary templates and button configurations
+    localStorage.removeItem('elocalpass-button1-config') // Clear Button 1 localStorage
+    localStorage.removeItem('elocalpass-button2-config') // Clear Button 2 localStorage
+    localStorage.removeItem('elocalpass-button3-config') // Clear Button 3 delivery method
+    localStorage.removeItem('elocalpass-button3-urls') // Clear Button 3 URL data
+    localStorage.removeItem('elocalpass-landing-config')
+    localStorage.removeItem('elocalpass-welcome-email-config')
+    localStorage.removeItem('elocalpass-rebuy-email-config')
+    
+    // Clear any pending new URLs
+    localStorage.removeItem('elocalpass-new-temp-urls')
+    localStorage.removeItem('elocalpass-new-temp-url')
+    
+    // Reset global config to defaults
+    const defaultConfig = {
+      button1AllowCustomGuestsDays: false,
+      button1DefaultGuests: 2,
+      button1DefaultDays: 3,
+      button1MaxGuests: 10,
+      button1MaxDays: 30,
+      button1GuestsLocked: false,
+      button1GuestsDefault: 2,
+      button1GuestsRangeMax: 10,
+      button1DaysLocked: false,
+      button1DaysDefault: 3,
+      button1DaysRangeMax: 30,
+      button2PricingType: 'FIXED' as const,
+      button2FixedPrice: 0,
+      button2VariableBasePrice: 10,
+      button2VariableGuestIncrease: 5,
+      button2VariableDayIncrease: 3,
+      button2VariableCommission: 0,
+      button2IncludeTax: false,
+      button2TaxPercentage: 0,
+      button3DeliveryMethod: 'DIRECT' as const,
+      button4LandingPageRequired: false,
+      button5SendRebuyEmail: false,
+      updatedAt: new Date()
+    }
+    
+    setGlobalConfig(defaultConfig)
+    
+    console.log('✅ CLEANUP: All temporary data cleared, ready for next configuration')
+    
+    toast.success('Configuration Saved!', `Configuration "${newConfig.name}" saved successfully! Ready for next configuration.`)
   }
 
   // Delete a saved configuration
@@ -782,110 +1393,75 @@ export default function QRConfigPage() {
     }
   }
 
-  // URL Management Functions
-  const fetchSellerUrls = async () => {
-    console.log('🌐 FETCH: Starting fetchSellerUrls...')
-    try {
-      const response = await fetch('/api/seller/landing-urls')
-      console.log('🌐 FETCH: Response status:', response.status)
-      if (response.ok) {
-        const urls = await response.json()
-        console.log('🌐 FETCH: Retrieved URLs from API:', urls.length, urls.map((u: any) => ({id: u.id, name: u.name})))
-        setSellerUrls(urls)
-        console.log('🌐 FETCH: Set sellerUrls state with', urls.length, 'URLs')
-      } else {
-        console.error('🌐 FETCH: Failed to fetch seller URLs, status:', response.status)
-      }
-    } catch (error) {
-      console.error('🌐 FETCH: Error fetching seller URLs:', error)
-    }
-  }
-
-  const handleCreateUrl = async () => {
+  // Temporary URL Management Functions (for current configuration session only)
+  const handleCreateTempUrl = () => {
     if (!urlFormData.name.trim()) {
       toast.error('Missing Information', 'Please enter a name for the URL')
       return
     }
 
-    try {
-      const response = await fetch('/api/seller/landing-urls', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(urlFormData)
-      })
-
-      if (response.ok) {
-        toast.success('URL Created', 'Landing page URL created successfully')
-        setUrlFormData({ name: '', url: '', description: '' })
-        setShowUrlModal(false)
-        fetchSellerUrls()
-        setConfiguredButtons((prev) => new Set(prev).add(3))
-      } else {
-        const error = await response.json()
-        toast.error('Creation Failed', `Error: ${error.error}`)
-      }
-    } catch (error) {
-      toast.error('Creation Failed', 'Error creating URL')
+    // Create temporary URL with unique ID
+    const tempUrl = {
+      id: `temp-${Date.now()}`,
+      name: urlFormData.name.trim(),
+      url: urlFormData.url.trim() || null,
+      description: urlFormData.description.trim() || null,
+      isTemp: true
     }
+
+    // Add to temporary URLs list
+    setSellerUrls(prev => [...prev, tempUrl])
+    
+    // Clear form and close modal
+    setUrlFormData({ name: '', url: '', description: '' })
+    setShowUrlModal(false)
+    
+    // Mark Button 3 as configured
+    setConfiguredButtons((prev) => new Set(prev).add(3))
+    
+    toast.success('Temporary URL Created', 'URL added to current configuration session')
   }
 
-  const handleUpdateUrl = async () => {
+  const handleUpdateTempUrl = () => {
     if (!editingUrl || !urlFormData.name.trim()) {
       toast.error('Missing Information', 'Please enter a name for the URL')
       return
     }
 
-    try {
-      const response = await fetch(`/api/seller/landing-urls/${editingUrl.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(urlFormData)
-      })
+    // Update the temporary URL
+    setSellerUrls(prev => prev.map(url => 
+      url.id === editingUrl.id 
+        ? {
+            ...url,
+            name: urlFormData.name.trim(),
+            url: urlFormData.url.trim() || null,
+            description: urlFormData.description.trim() || null
+          }
+        : url
+    ))
 
-      if (response.ok) {
-        toast.success('URL Updated', 'Landing page URL updated successfully')
-        setUrlFormData({ name: '', url: '', description: '' })
-        setEditingUrl(null)
-        setShowUrlModal(false)
-        fetchSellerUrls()
-      } else {
-        const error = await response.json()
-        toast.error('Update Failed', `Error: ${error.error}`)
-      }
-    } catch (error) {
-      toast.error('Update Failed', 'Error updating URL')
-    }
+    // Clear form and close modal
+    setUrlFormData({ name: '', url: '', description: '' })
+    setEditingUrl(null)
+    setShowUrlModal(false)
+    
+    toast.success('Temporary URL Updated', 'URL updated in current configuration session')
   }
 
-  const handleDeleteUrl = async (urlId: string) => {
-    if (!confirm('Are you sure you want to delete this URL?')) {
+  const handleDeleteTempUrl = (urlId: string) => {
+    if (!confirm('Are you sure you want to remove this URL from the current configuration?')) {
       return
     }
 
-    try {
-      const response = await fetch(`/api/seller/landing-urls/${urlId}`, {
-        method: 'DELETE'
-      })
-
-      if (response.ok) {
-        toast.success('URL Deleted', 'Landing page URL deleted successfully')
-        fetchSellerUrls()
-        
-        // If this was the selected URL, clear the selection
-        if (selectedUrlIds.includes(urlId)) {
-          setSelectedUrlIds(selectedUrlIds.filter(id => id !== urlId))
-        }
-      } else {
-        const error = await response.json()
-        toast.error('Deletion Failed', `Error: ${error.error}`)
-      }
-    } catch (error) {
-      toast.error('Deletion Failed', 'Error deleting URL')
+    // Remove from temporary URLs list
+    setSellerUrls(prev => prev.filter(url => url.id !== urlId))
+    
+    // Remove from selected URLs if it was selected
+    if (selectedUrlIds.includes(urlId)) {
+      setSelectedUrlIds(selectedUrlIds.filter(id => id !== urlId))
     }
+    
+    toast.success('Temporary URL Removed', 'URL removed from current configuration session')
   }
 
   const openUrlModal = (url?: any) => {
@@ -893,7 +1469,7 @@ export default function QRConfigPage() {
       setEditingUrl(url)
       setUrlFormData({
         name: url.name,
-        url: url.url,
+        url: url.url || '',
         description: url.description || ''
       })
     } else {
@@ -903,40 +1479,7 @@ export default function QRConfigPage() {
     setShowUrlModal(true)
   }
 
-  // Load seller URLs when component mounts
-  useEffect(() => {
-    fetchSellerUrls()
-    
-    // Reload URLs when returning from editor (window regains focus)
-    const handleWindowFocus = () => {
-      console.log('🔄 Window focused - refreshing seller URLs')
-      fetchSellerUrls()
-    }
-    
-    window.addEventListener('focus', handleWindowFocus)
-    
-    return () => {
-      window.removeEventListener('focus', handleWindowFocus)
-    }
-  }, [])
-
-  // Auto-save current progress to localStorage
-  useEffect(() => {
-    const saveCurrentProgress = () => {
-      const progressData = {
-        globalConfig,
-        configuredButtons: Array.from(configuredButtons),
-        selectedUrlIds,
-        timestamp: new Date().toISOString()
-      }
-      console.log('💾 AUTO-SAVE: Saving progress data:', progressData)
-      localStorage.setItem('elocalpass-current-qr-progress', JSON.stringify(progressData))
-    }
-
-    // Save progress whenever globalConfig, configuredButtons, or selectedUrlIds changes
-    const timeoutId = setTimeout(saveCurrentProgress, 500) // Debounce saves
-    return () => clearTimeout(timeoutId)
-  }, [globalConfig, configuredButtons, selectedUrlIds])
+  // AUTO-SAVE REMOVED: No longer auto-saving on every change for stability
 
   // Handle URL parameters to open specific configuration
   useEffect(() => {
@@ -967,6 +1510,104 @@ export default function QRConfigPage() {
       }, 100)
     }
   }, [searchParams, savedConfigurations])
+
+  // DATA CONSISTENCY CHECK: Verify URL entries have correct configuration IDs
+  const validateDataConsistency = async () => {
+    try {
+      console.log('🔍 Running data consistency check...')
+      
+      const response = await fetch('/api/admin/saved-configs', {
+        credentials: 'include'
+      })
+      
+      if (!response.ok) return
+      
+      const configs = await response.json()
+      let inconsistenciesFound = 0
+      const configsToFix = []
+      
+      for (const config of configs) {
+        if (config.landingPageConfig?.temporaryUrls) {
+          let configNeedsFix = false
+          const fixedUrls = config.landingPageConfig.temporaryUrls.map((url: {
+            id: string
+            name: string
+            url: string | null
+            description?: string | null
+            isActive?: boolean
+            createdAt?: string
+            isTemp?: boolean
+          }) => {
+            if (url.url && url.url.includes('/landing-enhanced/')) {
+              const urlMatch = url.url.match(/\/landing-enhanced\/([^?]+)\?/)
+              if (urlMatch) {
+                const urlConfigId = urlMatch[1]
+                if (urlConfigId !== config.id) {
+                  console.warn(`⚠️ INCONSISTENCY DETECTED: Config ${config.id} has URL with wrong ID: ${urlConfigId}`)
+                  inconsistenciesFound++
+                  configNeedsFix = true
+                  
+                  // Fix the URL
+                  const urlParams = url.url.split('?')[1]
+                  return {
+                    ...url,
+                    url: `${window.location.origin}/landing-enhanced/${config.id}?${urlParams}`,
+                    qrId: config.id
+                  }
+                }
+              }
+            }
+            return url
+          })
+          
+          if (configNeedsFix) {
+            configsToFix.push({
+              ...config,
+              landingPageConfig: {
+                ...config.landingPageConfig,
+                temporaryUrls: fixedUrls
+              }
+            })
+          }
+        }
+      }
+      
+      // Auto-fix inconsistencies if found
+      if (configsToFix.length > 0) {
+        console.log(`🔧 AUTO-FIXING ${configsToFix.length} configurations with URL inconsistencies...`)
+        
+        for (const configToFix of configsToFix) {
+          try {
+            const fixResponse = await fetch(`/api/admin/saved-configs/${configToFix.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify(configToFix)
+            })
+            
+            if (fixResponse.ok) {
+              console.log(`✅ AUTO-FIX: Fixed configuration ${configToFix.id}`)
+            } else {
+              console.error(`❌ AUTO-FIX: Failed to fix configuration ${configToFix.id}`)
+            }
+          } catch (error) {
+            console.error(`❌ AUTO-FIX: Error fixing configuration ${configToFix.id}:`, error)
+          }
+        }
+        
+        // Reload configurations after fixes
+        setTimeout(() => loadSavedConfigurations(), 2000)
+        
+      } else if (inconsistenciesFound === 0) {
+        console.log('✅ Data consistency check passed - all URLs have correct configuration IDs')
+      }
+      
+    } catch (error) {
+      console.error('❌ Data consistency check failed:', error)
+    }
+  }
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
@@ -1018,7 +1659,7 @@ export default function QRConfigPage() {
                 </div>
                 <div className="flex items-center space-x-3">
                   {/* Auto-save status indicator */}
-                  {isAutoSaving && (
+                  {false && (
                     <div className="flex items-center space-x-2 text-blue-600">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                       <span className="text-sm">Auto-saving...</span>
@@ -1052,18 +1693,31 @@ export default function QRConfigPage() {
                   
                   {/* Auto-save info */}
                   <div className="text-sm text-gray-500">
-                    Auto-save enabled
+                    Manual save only
                   </div>
                   
-                  {/* Reset to Defaults button */}
+                  {/* Clear Progress button */}
                   <button
-                    onClick={resetToDefaults}
-                    disabled={isAutoSaving}
-                    className="flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+                    onClick={clearProgress}
+                    className="flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors"
                   >
                     <Settings className="h-4 w-4 mr-2" />
-                    Reset to Defaults
+                    Clear Progress
                   </button>
+                  
+                  {/* Emergency cleanup button for leftover URLs */}
+                  {sellerUrls.length > 0 && (
+                    <button
+                      onClick={clearLeftoverUrls}
+                      className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+                      title="Clear leftover URLs from previous sessions"
+                    >
+                      <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Clear Leftover URLs
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1222,7 +1876,7 @@ export default function QRConfigPage() {
                         <div className="font-medium text-sm">{button.title}</div>
                         <div className="text-xs mt-1 leading-tight">{button.value}</div>
                         {isButtonConfigured(button.num) ? (
-                          <div className="text-green-600 text-xs mt-1 font-medium">✓ Auto-saved</div>
+                          <div className="text-green-600 text-xs mt-1 font-medium">✓ Saved</div>
                         ) : (
                           <div className="text-gray-500 text-xs mt-1">Need to configure</div>
                         )}
@@ -1881,16 +2535,20 @@ export default function QRConfigPage() {
                       <h4 className="font-medium text-blue-900 mb-2">Landing Page System</h4>
                       <p className="text-sm text-blue-800">
                         When URLs method is selected, each QR code will generate a unique landing page where guests can enter their details. 
-                        This landing page will be customizable per seller/location.
+                        Create temporary URLs below for this configuration session - they will be saved when you save the complete configuration.
                       </p>
-                      {sellerUrls.length === 0 && (
-                        <button 
-                          onClick={() => router.push('/admin/qr-config/create')}
-                          className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                        >
-                          Create Custom Landing Page →
-                        </button>
-                      )}
+                      <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                        <p className="text-xs text-amber-800">
+                          <strong>Note:</strong> URLs created here are temporary and only exist during this configuration session. 
+                          They will be permanently saved only when you save the complete 5-button configuration.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => router.push(`/admin/qr-config/create?sessionId=${currentSessionId}`)}
+                        className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      >
+                        Create Custom Landing Page →
+                      </button>
                     </div>
                   )}
                   
@@ -1914,37 +2572,42 @@ export default function QRConfigPage() {
                           <p className="text-xs text-gray-600">Custom landing page with guest details form</p>
                         </div>
                       </div>
-                      {sellerUrls.length === 0 && (
-                        <button 
-                          onClick={() => router.push('/admin/qr-config/create')}
-                          className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                        >
-                          Create Custom Landing Page →
-                        </button>
-                      )}
+                      <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                        <p className="text-xs text-amber-800">
+                          <strong>Note:</strong> URLs created here are temporary and only exist during this configuration session. 
+                          They will be permanently saved only when you save the complete 5-button configuration.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => router.push(`/admin/qr-config/create?sessionId=${currentSessionId}`)}
+                        className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                      >
+                        Create Custom Landing Page →
+                      </button>
                     </div>
                   )}
                   
                   {(globalConfig.button3DeliveryMethod === 'URLS' || globalConfig.button3DeliveryMethod === 'BOTH') && (
                     <div className="mt-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-lg font-semibold text-gray-900">Manage Landing Page URLs</h4>
-                        <button
-                          onClick={() => sellerUrls.length === 0 ? openUrlModal() : router.push('/admin/qr-config/create')}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                        >
-                          + Add New URL
-                        </button>
+                        <h4 className="text-lg font-semibold text-gray-900">Temporary URLs (Current Session)</h4>
                       </div>
 
+                      {(() => {
+                        console.log('🔍 UI RENDER: sellerUrls state:', sellerUrls)
+                        console.log('🔍 UI RENDER: sellerUrls length:', sellerUrls.length)
+                        console.log('🔍 UI RENDER: Temporary URLs only:', sellerUrls.filter(url => url.isTemp))
+                        return null
+                      })()}
+                      
                       {sellerUrls.length === 0 ? (
                         <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                          <p className="text-gray-500 mb-2">No landing page URLs configured yet</p>
-                          <p className="text-sm text-gray-400 mt-1">Create your first URL to start using the landing page delivery method</p>
+                          <p className="text-gray-500 mb-2">No temporary URLs created yet</p>
+                          <p className="text-sm text-gray-400 mt-1">Add temporary URLs for this configuration session</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          {sellerUrls.map((url) => (
+                          {sellerUrls.filter(url => url.isTemp).map((url) => (
                             <div 
                               key={url.id} 
                               className={`p-4 border rounded-lg ${
@@ -1957,12 +2620,17 @@ export default function QRConfigPage() {
                                     <input
                                       type="checkbox"
                                       checked={selectedUrlIds.includes(url.id)}
-                                      onChange={(e) => {
+                                      onChange={async (e) => {
+                                        let newSelectedUrlIds: string[]
                                         if (e.target.checked) {
-                                          setSelectedUrlIds(prev => [...prev, url.id])
+                                          newSelectedUrlIds = [...selectedUrlIds, url.id]
+                                          setSelectedUrlIds(newSelectedUrlIds)
                                         } else {
-                                          setSelectedUrlIds(prev => prev.filter(id => id !== url.id))
+                                          newSelectedUrlIds = selectedUrlIds.filter(id => id !== url.id)
+                                          setSelectedUrlIds(newSelectedUrlIds)
                                         }
+                                        // Immediately save to database
+                                        await saveSelectedUrlsToDatabase(newSelectedUrlIds)
                                       }}
                                       className="h-4 w-4 text-blue-600"
                                     />
@@ -1991,7 +2659,7 @@ export default function QRConfigPage() {
                                     </svg>
                                   </button>
                                   <button
-                                    onClick={() => handleDeleteUrl(url.id)}
+                                    onClick={() => handleDeleteTempUrl(url.id)}
                                     className="p-1 text-gray-400 hover:text-red-600"
                                     title="Delete URL"
                                   >
@@ -2294,7 +2962,7 @@ export default function QRConfigPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
-              {editingUrl ? 'Edit Landing Page URL' : 'Add New Landing Page URL'}
+              {editingUrl ? 'Edit Temporary URL' : 'Add Temporary URL'}
             </h3>
             
             <div className="space-y-4">
@@ -2306,7 +2974,7 @@ export default function QRConfigPage() {
                   type="text"
                   value={urlFormData.name}
                   onChange={(e) => setUrlFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Main Landing Page, Special Offer Page"
+                  placeholder="e.g., Summer Promo, Weekend Special"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
@@ -2320,12 +2988,12 @@ export default function QRConfigPage() {
                   type="url"
                   value={urlFormData.url}
                   onChange={(e) => setUrlFormData(prev => ({ ...prev, url: e.target.value }))}
-                  placeholder="https://example.com/landing-page (leave empty if not created yet)"
+                  placeholder="https://example.com/landing-page (optional)"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  💡 You can create this URL entry now and add/edit the actual URL later when your landing page is ready.
-                </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                    💡 Temporary URLs are only for this configuration session. They'll be saved when you save the complete configuration.
+                  </p>
               </div>
 
               <div>
@@ -2335,7 +3003,7 @@ export default function QRConfigPage() {
                 <textarea
                   value={urlFormData.description}
                   onChange={(e) => setUrlFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Brief description of this landing page..."
+                  placeholder="Brief description of this temporary URL..."
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
@@ -2354,11 +3022,11 @@ export default function QRConfigPage() {
                 Cancel
               </button>
               <button
-                onClick={editingUrl ? handleUpdateUrl : handleCreateUrl}
+                onClick={editingUrl ? handleUpdateTempUrl : handleCreateTempUrl}
                 disabled={!urlFormData.name.trim()}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
-                {editingUrl ? 'Update URL' : 'Create URL'}
+                {editingUrl ? 'Update URL' : 'Add URL'}
               </button>
             </div>
           </div>
@@ -2640,32 +3308,35 @@ export default function QRConfigPage() {
                                   }</p>
                                   <p><strong>Available delivery options configured</strong></p>
                                   {/* Only show landing page info for URLS or BOTH delivery methods, NOT for DIRECT */}
-                                  {(config.selectedUrlIds?.length > 0 || config.landingPageConfig) && config.config.button3DeliveryMethod !== 'DIRECT' && (
+                                  {(config.selectedUrlIds?.length > 0 || config.landingPageConfig?.temporaryUrls?.length > 0 || config.landingPageConfig) && config.config.button3DeliveryMethod !== 'DIRECT' && (
                                     <div className="mt-2 space-y-1">
                                       {/* Show selected URLs if available (new multi-URL system) */}
-                                      {config.selectedUrlIds?.length > 0 ? (
-                                        <div>
-                                          <p><strong>Landing Page{config.selectedUrlIds.length > 1 ? 's' : ''}:</strong></p>
-                                          {config.selectedUrlIds.map((urlId, index) => {
-                                            // Find the URL details from sellerUrls
-                                            const urlDetails = sellerUrls.find(url => url.id === urlId);
-                                            console.log('🔍 URL Lookup Debug:', {
+                                                                              {(config.selectedUrlIds?.length > 0 || config.landingPageConfig?.temporaryUrls?.length > 0) ? (
+                                          <div>
+                                            <p><strong>Landing Page{(config.selectedUrlIds?.length || config.landingPageConfig?.temporaryUrls?.length || 0) > 1 ? 's' : ''}:</strong></p>
+                                            {/* Display URLs from selectedUrlIds (legacy) or temporaryUrls (new system) */}
+                                            {(config.selectedUrlIds || config.landingPageConfig?.temporaryUrls || []).map((urlIdOrUrl: any, index) => {
+                                              // Handle both legacy selectedUrlIds format and new temporaryUrls format
+                                              const urlId = typeof urlIdOrUrl === 'string' ? urlIdOrUrl : urlIdOrUrl.id;
+                                            // Find the URL details from SAVED CONFIGURATION DATA, not current session
+                                            const configWithUrls = config as any; // Type assertion to access button3UrlsConfig
+                                            const urlDetails = configWithUrls.button3UrlsConfig?.temporaryUrls?.find((url: any) => url.id === urlId) ||
+                                                             config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
+                                            console.log('🔍 URL Lookup Debug (FIXED):', {
                                               urlId,
-                                              sellerUrls: sellerUrls.length,
+                                              configButton3Urls: configWithUrls.button3UrlsConfig?.temporaryUrls?.length || 0,
+                                              configLandingUrls: config.landingPageConfig?.temporaryUrls?.length || 0,
                                               urlDetails: urlDetails ? 'FOUND' : 'NOT FOUND',
-                                              allSellerUrlIds: sellerUrls.map(u => u.id),
-                                              allSellerUrlNames: sellerUrls.map(u => u.name),
-                                              searchingFor: urlId,
                                               urlDetailsData: urlDetails
                                             });
-                                            const hasCustomEdits = config.landingPageConfig?.templates?.landingPage?.urlCustomContent?.[urlId];
+                                            const hasCustomEdits = (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
                                             const displayUrl = hasCustomEdits 
                                               ? `/landing/custom/${config.id}?urlId=${urlId}` 
                                               : (urlDetails?.url || '#');
                                             
                                             // Get the configuration name from the custom content if available
                                             const customConfigName = hasCustomEdits 
-                                              ? config.landingPageConfig?.templates?.landingPage?.urlCustomContent?.[urlId]?.configurationName 
+                                              ? (config as any).templates?.landingPage?.urlCustomContent?.[urlId]?.configurationName 
                                               : null;
                                             
                                             // Display priority: 1. Custom config name, 2. URL name, 3. Fallback to URL number
@@ -2690,9 +3361,12 @@ export default function QRConfigPage() {
                                                       console.log('🎯 EDIT: Loading latest content for URL ID:', urlId);
                                                       console.log('🎯 EDIT: Config ID:', config.id);
                                                       
-                                                      // Check if URL-specific custom content exists
-                                                      const urlSpecificContent = config.landingPageConfig?.templates?.landingPage?.urlCustomContent?.[urlId];
+                                                      // Check if URL-specific custom content exists in the new structure
+                                                      const urlEntry = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
+                                                      const urlSpecificContent = urlEntry?.customizations;
                                                       console.log('🎯 EDIT: Found URL-specific content for', urlId, ':', urlSpecificContent ? 'YES' : 'NO');
+                                                      console.log('🎯 EDIT: URL entry:', urlEntry);
+                                                      console.log('🎯 EDIT: Customizations:', urlSpecificContent);
                                                       
                                                       if (urlSpecificContent) {
                                                         // Use the latest URL-specific custom content
@@ -2973,6 +3647,57 @@ export default function QRConfigPage() {
                 className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Progress Confirmation Modal */}
+      {showClearConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-lg font-medium text-gray-900">Clear All Progress</h3>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-sm text-gray-600">
+                This will permanently clear all current progress and reset the configuration to default values. This action cannot be undone.
+              </p>
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  <strong>What will be cleared:</strong>
+                </p>
+                <ul className="text-sm text-yellow-700 mt-1 list-disc list-inside">
+                  <li>All button configurations</li>
+                  <li>Temporary URLs</li>
+                  <li>Email templates</li>
+                  <li>Landing page configurations</li>
+                  <li>Database settings reset to defaults</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowClearConfirmModal(false)}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmClear}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Clear Progress
               </button>
             </div>
           </div>

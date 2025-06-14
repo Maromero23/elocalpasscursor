@@ -363,21 +363,32 @@ export default function CreateEnhancedLandingPage() {
         updatedConfig.landingPageConfig = {}
       }
       
-      // Ensure templates structure exists within landingPageConfig
-      if (!updatedConfig.landingPageConfig.templates) {
-        updatedConfig.landingPageConfig.templates = {}
-      }
-      if (!updatedConfig.landingPageConfig.templates.landingPage) {
-        updatedConfig.landingPageConfig.templates.landingPage = {}
-      }
-      if (!updatedConfig.landingPageConfig.templates.landingPage.urlCustomContent) {
-        updatedConfig.landingPageConfig.templates.landingPage.urlCustomContent = {}
-      }
-      
       // Save the current form data as custom content FOR THIS SPECIFIC URL
       if (editUrlId) {
-        updatedConfig.landingPageConfig.templates.landingPage.urlCustomContent[editUrlId] = { ...formData }
-        console.log('💾 SAVE DEBUG: Saved URL-specific content for:', editUrlId)
+        // NEW STRUCTURE: Save to temporaryUrls array where the landing page will look for it
+        if (!updatedConfig.landingPageConfig.temporaryUrls) {
+          updatedConfig.landingPageConfig.temporaryUrls = []
+        }
+        
+        // Find the URL entry in temporaryUrls array
+        const urlIndex = updatedConfig.landingPageConfig.temporaryUrls.findIndex((url: any) => url.id === editUrlId)
+        
+        if (urlIndex !== -1) {
+          // Update existing URL entry with new customizations
+          updatedConfig.landingPageConfig.temporaryUrls[urlIndex].customizations = { ...formData }
+          console.log('💾 SAVE DEBUG: Updated existing URL entry customizations for:', editUrlId)
+        } else {
+          // Create new URL entry (shouldn't happen in edit mode, but just in case)
+          updatedConfig.landingPageConfig.temporaryUrls.push({
+            id: editUrlId,
+            name: formData.configurationName || 'Edited Landing Page',
+            url: `${window.location.origin}/landing-enhanced/${editQrId}?urlId=${editUrlId}`,
+            customizations: { ...formData },
+            isTemp: true,
+            createdAt: new Date().toISOString()
+          })
+          console.log('💾 SAVE DEBUG: Created new URL entry with customizations for:', editUrlId)
+        }
       } else {
         // If no specific URL ID, save to the main landing page config
         Object.assign(updatedConfig.landingPageConfig, formData)
@@ -484,39 +495,33 @@ export default function CreateEnhancedLandingPage() {
         let configToLoad = null
         
         if (urlId) {
-          // For URL-specific editing: Check for URL-specific content first
-          let urlSpecificContent = null
-          
-          console.log('🔍 LOAD DEBUG: Looking for URL-specific content for urlId:', urlId)
+          // For URL-specific editing: Look for customizations in temporaryUrls array
+          console.log('🔍 LOAD DEBUG: Looking for URL-specific customizations for urlId:', urlId)
           console.log('🔍 LOAD DEBUG: landingPageConfig structure:', config.landingPageConfig)
-          console.log('🔍 LOAD DEBUG: landingPageConfig.templates:', config.landingPageConfig?.templates)
-          console.log('🔍 LOAD DEBUG: landingPageConfig.templates.landingPage:', config.landingPageConfig?.templates?.landingPage)
-          console.log('🔍 LOAD DEBUG: urlCustomContent object:', config.landingPageConfig?.templates?.landingPage?.urlCustomContent)
-          console.log('🔍 LOAD DEBUG: Available URL IDs in urlCustomContent:', Object.keys(config.landingPageConfig?.templates?.landingPage?.urlCustomContent || {}))
+          console.log('🔍 LOAD DEBUG: temporaryUrls array:', config.landingPageConfig?.temporaryUrls)
           
-          // New structure: templates stored in landingPageConfig.templates
-          if (config.landingPageConfig?.templates?.landingPage?.urlCustomContent?.[urlId]) {
-            urlSpecificContent = config.landingPageConfig.templates.landingPage.urlCustomContent[urlId]
-            console.log('✅ LOAD DEBUG: Found URL-specific content in landingPageConfig.templates for', urlId)
-          }
-          // Legacy structure: templates at root level
-          else if (config.templates?.landingPage?.urlCustomContent?.[urlId]) {
-            urlSpecificContent = config.templates.landingPage.urlCustomContent[urlId]
-            console.log('✅ LOAD DEBUG: Found URL-specific content in root templates for', urlId)
-          }
-          
-          if (urlSpecificContent) {
-            configToLoad = urlSpecificContent
-            console.log('✅ LOAD DEBUG: Using URL-specific content for', urlId, urlSpecificContent)
+          // Look for the specific URL in temporaryUrls array
+          if (config.landingPageConfig?.temporaryUrls) {
+            const urlEntry = config.landingPageConfig.temporaryUrls.find((url: any) => url.id === urlId)
+            console.log('🔍 LOAD DEBUG: Found URL entry:', urlEntry)
+            
+            if (urlEntry && urlEntry.customizations) {
+              configToLoad = urlEntry.customizations
+              console.log('✅ LOAD DEBUG: Found customizations for URL:', urlId, configToLoad)
+            } else {
+              console.log('❌ LOAD DEBUG: No customizations found for URL:', urlId)
+              // Fallback to general landing page config
+              if (config.landingPageConfig) {
+                configToLoad = config.landingPageConfig
+                console.log('✅ LOAD DEBUG: Using general landing page config as fallback')
+              }
+            }
           } else {
-            console.log('❌ LOAD DEBUG: No URL-specific content found for', urlId)
-            console.log('❌ LOAD DEBUG: This means customizations for this URL have not been saved yet')
-            // No URL-specific content found, use general landing page config as fallback
+            console.log('❌ LOAD DEBUG: No temporaryUrls array found')
+            // Fallback to general landing page config
             if (config.landingPageConfig) {
               configToLoad = config.landingPageConfig
-              console.log('✅ LOAD DEBUG: No URL-specific content found, using general landing page config as fallback')
-            } else {
-              console.log('❌ LOAD DEBUG: No URL-specific content AND no general landing page config found')
+              console.log('✅ LOAD DEBUG: Using general landing page config as fallback')
             }
           }
         } else {
@@ -605,29 +610,137 @@ export default function CreateEnhancedLandingPage() {
         const landingUrl = `/landing-enhanced/${result.qrId}`
         setGeneratedUrl(landingUrl)
         
-        // Save the named configuration as a landing page URL entry
+        // DIRECT DATABASE SAVING: Save landing page URL and customizations directly to database
+        console.log('💾 DIRECT SAVE: Saving landing page directly to database...')
+        
         try {
-          const urlResponse = await fetch('/api/seller/landing-urls', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              name: formData.configurationName.trim(),
-              url: `${window.location.origin}${landingUrl}`,
-              description: `Custom landing page configuration created on ${new Date().toLocaleDateString()}`
-            })
-          })
+          // Check if we're creating this from a QR configuration context
+          const sessionId = new URLSearchParams(window.location.search).get('sessionId')
           
-          if (urlResponse.ok) {
-            toast.success('Landing Page Configuration Saved', `"${formData.configurationName}" created and saved to your URL management! URL: ${landingUrl}`)
+          if (sessionId) {
+            console.log('💾 DIRECT SAVE: Found session ID:', sessionId, '- saving to temporary configuration')
+            
+            // VALIDATION: Ensure sessionId is valid
+            if (!sessionId || sessionId.length < 10) {
+              console.error('❌ VALIDATION ERROR: Invalid session ID:', sessionId)
+              toast.error('Configuration Error', 'Invalid session ID - please refresh and try again')
+              return
+            }
+            
+            // Create URL entry with complete customization data
+            const urlId = `url-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+            const urlEntry = {
+              id: urlId,
+              name: formData.configurationName.trim(),
+              url: `${window.location.origin}/landing-enhanced/${sessionId}?urlId=${urlId}`,
+              description: `Custom landing page configuration created on ${new Date().toLocaleDateString()}`,
+              isTemp: true,
+              createdAt: new Date().toISOString(),
+              qrId: sessionId, // Use session ID (configuration ID) instead of individual landing page ID
+              // Include complete form data for customizations
+              customizations: configData
+            }
+            
+            // VALIDATION: Ensure URL contains correct configuration ID
+            if (!urlEntry.url.includes(`/landing-enhanced/${sessionId}`)) {
+              console.error('❌ VALIDATION ERROR: URL does not contain correct configuration ID')
+              console.error('Expected:', sessionId, 'Found in URL:', urlEntry.url)
+              toast.error('Configuration Error', 'URL generation failed - please try again')
+              return
+            }
+            
+            console.log('✅ VALIDATION PASSED: URL entry created with correct configuration ID:', sessionId)
+            
+            // Try to find existing temporary configuration
+            let tempConfigResponse = await fetch(`/api/admin/saved-configs/${sessionId}`, {
+              credentials: 'include'
+            })
+            
+            let tempConfig
+            if (tempConfigResponse.ok) {
+              // Update existing configuration
+              tempConfig = await tempConfigResponse.json()
+              console.log('💾 DIRECT SAVE: Found existing temp config:', tempConfig)
+              
+              // Ensure landingPageConfig structure exists
+              if (!tempConfig.landingPageConfig) {
+                tempConfig.landingPageConfig = {}
+              }
+              if (!tempConfig.landingPageConfig.temporaryUrls) {
+                tempConfig.landingPageConfig.temporaryUrls = []
+              }
+              
+              // Add the new URL to the configuration
+              tempConfig.landingPageConfig.temporaryUrls.push(urlEntry)
+              
+              // Also save the form data as the general landing page configuration
+              Object.assign(tempConfig.landingPageConfig, configData)
+              
+            } else {
+              // Create new temporary configuration
+              console.log('💾 DIRECT SAVE: Creating new temp config for session:', sessionId)
+              tempConfig = {
+                id: sessionId,
+                name: `Temp Session ${sessionId.slice(-8)}`,
+                description: 'Temporary configuration for current session',
+                config: {},
+                landingPageConfig: {
+                  ...configData,
+                  temporaryUrls: [urlEntry]
+                }
+              }
+            }
+            
+            // Save to database (use PUT for updates, POST for new)
+            const saveResponse = await fetch(
+              tempConfigResponse.ok 
+                ? `/api/admin/saved-configs/${sessionId}` // Update existing
+                : '/api/admin/saved-configs', // Create new
+              {
+                method: tempConfigResponse.ok ? 'PUT' : 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(tempConfig)
+              }
+            )
+            
+            if (saveResponse.ok) {
+              console.log('✅ DIRECT SAVE: Successfully saved landing page directly to database!')
+              toast.success('Landing Page Created & Saved', `"${formData.configurationName}" created and saved directly to QR configuration database!`)
+            } else {
+              console.log('⚠️ DIRECT SAVE: Failed to save to database')
+              toast.error('Save Error', 'Landing page created but failed to save to database')
+            }
+            
           } else {
-            toast.error('Save Error', 'Landing page created but failed to save to URL management')
+            console.log('💾 DIRECT SAVE: No session ID found - creating standalone landing page')
+            
+            // For standalone landing pages, still save to seller URLs for management
+            const urlResponse = await fetch('/api/seller/landing-urls', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                name: formData.configurationName.trim(),
+                url: `${window.location.origin}${landingUrl}`,
+                description: `Custom landing page configuration created on ${new Date().toLocaleDateString()}`,
+                customizations: configData // Include customizations
+              })
+            })
+            
+            if (urlResponse.ok) {
+              toast.success('Landing Page Created', `"${formData.configurationName}" created and saved to your URL management!`)
+            } else {
+              toast.error('Save Error', 'Landing page created but failed to save to URL management')
+            }
           }
-        } catch (urlError) {
-          console.error('Error saving landing page URL:', urlError)
-          toast.error('Save Error', 'Landing page created but failed to save to URL management')
+        } catch (saveError) {
+          console.error('Error in direct database save:', saveError)
+          toast.error('Save Error', 'Landing page created but failed to save customizations')
         }
         
         // Save landing page config to localStorage for QR Config Library display

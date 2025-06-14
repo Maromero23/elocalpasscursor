@@ -432,10 +432,17 @@ export default function EmailConfigPage() {
             return // Stop here - don't fall back to localStorage
           }
       } else {
-        // No qrId provided - this shouldn't happen in normal flow
-        toast.error('Missing Configuration ID', 'Cannot save email template without a configuration ID')
-        setIsSubmitting(false)
-        return
+        // No qrId provided - save as standalone template to localStorage for later use
+        console.log('✅ EMAIL SAVE DEBUG: No qrId provided, saving as standalone template')
+        localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(welcomeEmailConfig))
+        
+        setGeneratedEmailConfig(welcomeEmailConfig.id)
+        toast.success('Email Template Saved', `Welcome Email Template saved successfully! This template will be used for new QR configurations.`)
+        
+        // Redirect back to QR config after 2 seconds
+        setTimeout(() => {
+          router.push('/admin/qr-config')
+        }, 2000)
       }
       
     } catch (error) {
