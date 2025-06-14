@@ -295,6 +295,7 @@ export default function QRConfigPage() {
   // Load existing configuration
   useEffect(() => {
     fetchGlobalConfig()
+    loadSavedConfigurations() // 🔧 FIX: Load saved configurations on page mount
   }, [])
 
   const fetchGlobalConfig = async () => {

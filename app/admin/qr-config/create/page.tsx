@@ -181,6 +181,7 @@ export default function CreateEnhancedLandingPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [generatedUrl, setGeneratedUrl] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   
   // Template Management State
   const [templateType, setTemplateType] = useState<'landing' | 'email'>('landing')
@@ -226,13 +227,18 @@ export default function CreateEnhancedLandingPage() {
       // Load configuration from database instead of localStorage
       if (qrId) {
         console.log('🚀 CALLING loadConfigurationForEdit with qrId:', qrId, 'urlId:', urlId)
-        loadConfigurationForEdit(qrId, urlId)
+        loadConfigurationForEdit(qrId, urlId).finally(() => {
+          // Small delay to ensure form data is properly updated before showing the form
+          setTimeout(() => setIsLoading(false), 100)
+        })
       } else {
         console.log('❌ Missing qrId for edit mode!')
+        setIsLoading(false)
       }
     } else {
       // For fresh/new configurations, start with empty templates
       console.log('✅ Starting fresh configuration - not loading saved templates')
+      setIsLoading(false)
     }
   }, [])
 
@@ -525,7 +531,12 @@ export default function CreateEnhancedLandingPage() {
         
         if (configToLoad) {
           console.log('✅ LOAD DEBUG: Setting form data from database:', configToLoad)
-          setFormData(configToLoad)
+          // Merge loaded config with existing formData to preserve defaults for missing fields
+          setFormData(prevFormData => ({
+            ...prevFormData,
+            ...configToLoad
+          }))
+          console.log('✅ LOAD DEBUG: Form data updated successfully')
           return // Successfully loaded from database
         } else {
           console.log('❌ LOAD DEBUG: No suitable configuration found in database')
@@ -643,6 +654,26 @@ export default function CreateEnhancedLandingPage() {
     }
 
     setIsSubmitting(false)
+  }
+
+  // Show loading screen while data is being loaded to prevent hydration errors
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white rounded-lg shadow-lg p-8">
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading landing page editor...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

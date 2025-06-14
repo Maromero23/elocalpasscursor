@@ -416,55 +416,27 @@ export default function EmailConfigPage() {
               
               return // Successfully saved to database
             } else {
-              console.error('❌ EMAIL SAVE DEBUG: Failed to update config in database. Status:', updateResponse.status)
               const errorText = await updateResponse.text()
-              console.error('❌ EMAIL SAVE DEBUG: Error response:', errorText)
+              console.error('❌ EMAIL SAVE DEBUG: Failed to update config in database. Status:', updateResponse.status, 'Error:', errorText)
+              throw new Error(`Database update failed: ${updateResponse.status} - ${errorText}`)
             }
           } else {
             console.error('❌ EMAIL SAVE DEBUG: Failed to load existing config from database. Status:', response.status)
+            throw new Error(`Failed to load existing config: ${response.status}`)
           }
-        } catch (error) {
-          console.error('❌ EMAIL SAVE DEBUG: Error saving to database:', error)
-        }
-        
-        // Database save failed - fallback to localStorage
-        console.log('❌ EMAIL SAVE DEBUG: Database save failed, falling back to localStorage')
+                  } catch (error) {
+            console.error('❌ EMAIL SAVE DEBUG: Error saving to database:', error)
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+            toast.error('Database Save Failed', `Failed to save welcome email to database: ${errorMessage}`)
+            setIsSubmitting(false)
+            return // Stop here - don't fall back to localStorage
+          }
+      } else {
+        // No qrId provided - this shouldn't happen in normal flow
+        toast.error('Missing Configuration ID', 'Cannot save email template without a configuration ID')
+        setIsSubmitting(false)
+        return
       }
-      
-      // FALLBACK: Save to localStorage (legacy or when no qrId)
-      console.log('✅ EMAIL SAVE DEBUG: Saving to localStorage')
-      localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(welcomeEmailConfig))
-      
-      // CRITICAL: Also update the saved configurations library if this template belongs to a saved config
-      const savedConfigurations = JSON.parse(localStorage.getItem('elocalpass-saved-configurations') || '[]')
-      const updatedConfigurations = savedConfigurations.map((config: any) => {
-        // If this config has email templates, update the welcome email template
-        if (config.emailTemplates?.welcomeEmail) {
-          return {
-            ...config,
-            emailTemplates: {
-              ...config.emailTemplates,
-              welcomeEmail: welcomeEmailConfig
-            }
-          }
-        }
-        return config
-      })
-      localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigurations))
-      
-      setGeneratedEmailConfig(welcomeEmailConfig.id)
-      toast.success('Email Configuration Saved', `Welcome Email Template "${welcomeEmailConfig.name}" saved successfully! Returning to QR Config...`)
-      
-      // Optional: Redirect back to QR config after 2 seconds
-      setTimeout(() => {
-        if (qrId) {
-          // Redirect back to specific QR config and expand it
-          router.push(`/admin/qr-config?expand=${qrId}`)
-        } else {
-          // Redirect to main QR config page
-          router.push('/admin/qr-config')
-        }
-      }, 2000)
       
     } catch (error) {
       console.error('Error creating email configuration:', error)
