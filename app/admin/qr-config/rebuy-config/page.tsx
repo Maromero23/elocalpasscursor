@@ -217,20 +217,29 @@ export default function RebuyEmailConfigPage() {
     // Check if we're in edit mode or preview mode and load existing rebuy email config
     const urlParams = new URLSearchParams(window.location.search)
     const mode = urlParams.get('mode')
+    const qrId = urlParams.get('qrId')
     
     if (mode === 'edit' || mode === 'preview') {
-      const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
-      if (rebuyEmailConfig) {
-        try {
-          const savedConfig = JSON.parse(rebuyEmailConfig)
-          // Convert createdAt string back to Date object if it exists
-          if (savedConfig.createdAt && typeof savedConfig.createdAt === 'string') {
-            savedConfig.createdAt = new Date(savedConfig.createdAt)
+      console.log('🔧 REBUY CONFIG: Edit/Preview mode detected, qrId:', qrId)
+      
+      if (qrId) {
+        // NEW: Load from database first (prioritize database)
+        loadConfigurationForEdit(qrId)
+      } else {
+        // FALLBACK: Load from localStorage (legacy)
+        const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+        if (rebuyEmailConfig) {
+          try {
+            const savedConfig = JSON.parse(rebuyEmailConfig)
+            // Convert createdAt string back to Date object if it exists
+            if (savedConfig.createdAt && typeof savedConfig.createdAt === 'string') {
+              savedConfig.createdAt = new Date(savedConfig.createdAt)
+            }
+            setRebuyConfig(savedConfig.rebuyConfig)
+            console.log('✅ Loaded existing rebuy email configuration from localStorage for', mode)
+          } catch (error) {
+            console.log('Could not load rebuy email configuration from localStorage:', error)
           }
-          setRebuyConfig(savedConfig.rebuyConfig)
-          console.log('✅ Loaded existing rebuy email configuration for', mode)
-        } catch (error) {
-          console.log('Could not load rebuy email configuration:', error)
         }
       }
     }
@@ -248,6 +257,56 @@ export default function RebuyEmailConfigPage() {
       } catch (error) {
         console.log('Error loading rebuy templates:', error)
         setRebuyTemplates([])
+      }
+    }
+  }
+
+  // NEW: Load configuration for editing from database
+  const loadConfigurationForEdit = async (qrId: string) => {
+    console.log('✅ REBUY LOAD DEBUG: Loading config from database for QR ID:', qrId)
+    
+    try {
+      // Load configuration from database
+      const response = await fetch(`/api/admin/saved-configs/${qrId}`, {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const config = await response.json()
+        console.log('✅ REBUY LOAD DEBUG: Loaded config from database:', config)
+        
+        // Extract rebuy email template from the configuration
+        if (config.emailTemplates?.rebuyEmail?.rebuyConfig) {
+          console.log('✅ REBUY LOAD DEBUG: Found rebuy email template in database config')
+          setRebuyConfig(config.emailTemplates.rebuyEmail.rebuyConfig)
+          console.log('✅ REBUY LOAD DEBUG: Setting rebuy config from database:', config.emailTemplates.rebuyEmail.rebuyConfig)
+          return // Successfully loaded from database
+        } else {
+          console.log('❌ REBUY LOAD DEBUG: No rebuy email template found in database config')
+        }
+      } else {
+        console.error('❌ REBUY LOAD DEBUG: Failed to load config from database. Status:', response.status)
+        const errorText = await response.text()
+        console.error('❌ REBUY LOAD DEBUG: Error response:', errorText)
+      }
+    } catch (error) {
+      console.error('❌ REBUY LOAD DEBUG: Error loading config from database:', error)
+    }
+    
+    // Database load failed - fallback to localStorage
+    console.log('❌ REBUY LOAD DEBUG: Database load failed, falling back to localStorage')
+    const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+    if (rebuyEmailConfig) {
+      try {
+        const savedConfig = JSON.parse(rebuyEmailConfig)
+        // Convert createdAt string back to Date object if it exists
+        if (savedConfig.createdAt && typeof savedConfig.createdAt === 'string') {
+          savedConfig.createdAt = new Date(savedConfig.createdAt)
+        }
+        setRebuyConfig(savedConfig.rebuyConfig)
+        console.log('✅ REBUY LOAD DEBUG: Loaded from localStorage fallback')
+      } catch (error) {
+        console.log('❌ REBUY LOAD DEBUG: Could not load from localStorage either:', error)
       }
     }
   }
@@ -321,14 +380,17 @@ export default function RebuyEmailConfigPage() {
     e.preventDefault()
     setIsSubmitting(true)
     
-    try {
-      // Simulate API call for now
+    const saveToLocalStorage = () => {
+      // Simulate API call for localStorage save
       setTimeout(() => {
-        const configId = Math.random().toString(36).substr(2, 9)
+        console.log('✅ REBUY SAVE DEBUG: Saving to localStorage')
         
-        // Save the rebuy email configuration to indicate Button 5 is complete
+        const urlParams = new URLSearchParams(window.location.search)
+        const qrId = urlParams.get('qrId')
+        
+        // Create the rebuy email configuration object
         const rebuyEmailConfig = {
-          id: configId,
+          id: qrId || Math.random().toString(36).substr(2, 9),
           name: `Rebuy Email Template - ${new Date().toLocaleDateString()}`,
           rebuyConfig: { ...rebuyConfig },
           createdAt: new Date(),
@@ -356,10 +418,10 @@ export default function RebuyEmailConfigPage() {
         localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigurations))
         
         // Set the generated config ID to display success message with ID
-        setGeneratedConfig(configId)
+        setGeneratedConfig(rebuyEmailConfig.id)
         
         console.log('Rebuy email configuration saved:', rebuyConfig)
-        toast.success('Rebuy Email Template Created', `Template "${rebuyEmailConfig.name}" created successfully! ID: ${configId}`)
+        toast.success('Rebuy Email Template Created', `Template "${rebuyEmailConfig.name}" created successfully! ID: ${rebuyEmailConfig.id}`)
         
         // Optional: Redirect back to QR config after 2 seconds
         setTimeout(() => {
@@ -377,6 +439,88 @@ export default function RebuyEmailConfigPage() {
         
         setIsSubmitting(false)
       }, 1000)
+    }
+    
+    try {
+      const urlParams = new URLSearchParams(window.location.search)
+      const qrId = urlParams.get('qrId')
+      
+      // Create the rebuy email configuration object
+      const rebuyEmailConfig = {
+        id: qrId || Math.random().toString(36).substr(2, 9),
+        name: `Rebuy Email Template - ${new Date().toLocaleDateString()}`,
+        rebuyConfig: { ...rebuyConfig },
+        createdAt: new Date(),
+        isActive: true
+      }
+      
+      if (qrId) {
+        // NEW: Save to database (prioritize database)
+        console.log('✅ REBUY SAVE DEBUG: Saving to database for QR ID:', qrId)
+        
+        // Load existing configuration from database and update it
+        fetch(`/api/admin/saved-configs/${qrId}`, {
+          credentials: 'include'
+        })
+        .then(response => {
+          if (response.ok) {
+            return response.json()
+          } else {
+            throw new Error(`Failed to load config from database. Status: ${response.status}`)
+          }
+        })
+        .then(existingConfig => {
+          console.log('✅ REBUY SAVE DEBUG: Loaded existing config from database:', existingConfig)
+          
+          // Update the configuration with the new rebuy email template
+          const updatedConfig = {
+            ...existingConfig,
+            emailTemplates: {
+              ...existingConfig.emailTemplates,
+              rebuyEmail: rebuyEmailConfig
+            }
+          }
+          
+          // Save updated configuration back to database
+          return fetch(`/api/admin/saved-configs/${qrId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(updatedConfig)
+          })
+        })
+        .then(updateResponse => {
+          if (updateResponse.ok) {
+            console.log('✅ REBUY SAVE DEBUG: Successfully saved to database')
+            setGeneratedConfig(qrId)
+            toast.success('Rebuy Email Configuration Saved', `Rebuy Email Template saved to database successfully! Returning to QR Config...`)
+            
+            // Redirect back to QR config after 2 seconds
+            setTimeout(() => {
+              console.log('Rebuy Config - qrId for redirect:', qrId)
+              router.push(`/admin/qr-config?expand=${qrId}`)
+            }, 2000)
+            
+            setIsSubmitting(false)
+            return // Successfully saved to database
+          } else {
+            throw new Error(`Failed to update config in database. Status: ${updateResponse.status}`)
+          }
+        })
+        .catch(error => {
+          console.error('❌ REBUY SAVE DEBUG: Error saving to database:', error)
+          
+          // Database save failed - fallback to localStorage
+          console.log('❌ REBUY SAVE DEBUG: Database save failed, falling back to localStorage')
+          saveToLocalStorage()
+        })
+      } else {
+        // No qrId - save to localStorage
+        saveToLocalStorage()
+      }
+      
     } catch (error) {
       console.error('Error creating rebuy email configuration:', error)
       toast.error('Error Creating Rebuy Email Template', 'Error creating rebuy email configuration')

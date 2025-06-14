@@ -217,17 +217,72 @@ export default function EmailConfigPage() {
     // Check if we're in edit mode or preview mode and load existing welcome email config
     const urlParams = new URLSearchParams(window.location.search)
     const mode = urlParams.get('mode')
+    const qrId = urlParams.get('qrId')
     
     if (mode === 'edit' || mode === 'preview') {
-      const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
-      if (welcomeEmailConfig) {
-        try {
-          const savedConfig = JSON.parse(welcomeEmailConfig)
-          setEmailConfig(savedConfig.emailConfig)
-          console.log('✅ Loaded existing welcome email configuration for', mode)
-        } catch (error) {
-          console.log('Could not load welcome email configuration:', error)
+      console.log('🔧 EMAIL CONFIG: Edit/Preview mode detected, qrId:', qrId)
+      
+      if (qrId) {
+        // NEW: Load from database first (prioritize database)
+        loadConfigurationForEdit(qrId)
+      } else {
+        // FALLBACK: Load from localStorage (legacy)
+        const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+        if (welcomeEmailConfig) {
+          try {
+            const savedConfig = JSON.parse(welcomeEmailConfig)
+            setEmailConfig(savedConfig.emailConfig)
+            console.log('✅ Loaded existing welcome email configuration from localStorage for', mode)
+          } catch (error) {
+            console.log('Could not load welcome email configuration from localStorage:', error)
+          }
         }
+      }
+    }
+  }
+
+  // NEW: Load configuration for editing from database
+  const loadConfigurationForEdit = async (qrId: string) => {
+    console.log('✅ EMAIL LOAD DEBUG: Loading config from database for QR ID:', qrId)
+    
+    try {
+      // Load configuration from database
+      const response = await fetch(`/api/admin/saved-configs/${qrId}`, {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const config = await response.json()
+        console.log('✅ EMAIL LOAD DEBUG: Loaded config from database:', config)
+        
+        // Extract welcome email template from the configuration
+        if (config.emailTemplates?.welcomeEmail?.emailConfig) {
+          console.log('✅ EMAIL LOAD DEBUG: Found welcome email template in database config')
+          setEmailConfig(config.emailTemplates.welcomeEmail.emailConfig)
+          console.log('✅ EMAIL LOAD DEBUG: Setting email config from database:', config.emailTemplates.welcomeEmail.emailConfig)
+          return // Successfully loaded from database
+        } else {
+          console.log('❌ EMAIL LOAD DEBUG: No welcome email template found in database config')
+        }
+      } else {
+        console.error('❌ EMAIL LOAD DEBUG: Failed to load config from database. Status:', response.status)
+        const errorText = await response.text()
+        console.error('❌ EMAIL LOAD DEBUG: Error response:', errorText)
+      }
+    } catch (error) {
+      console.error('❌ EMAIL LOAD DEBUG: Error loading config from database:', error)
+    }
+    
+    // Database load failed - fallback to localStorage
+    console.log('❌ EMAIL LOAD DEBUG: Database load failed, falling back to localStorage')
+    const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+    if (welcomeEmailConfig) {
+      try {
+        const savedConfig = JSON.parse(welcomeEmailConfig)
+        setEmailConfig(savedConfig.emailConfig)
+        console.log('✅ EMAIL LOAD DEBUG: Loaded from localStorage fallback')
+      } catch (error) {
+        console.log('❌ EMAIL LOAD DEBUG: Could not load from localStorage either:', error)
       }
     }
   }
@@ -304,21 +359,80 @@ export default function EmailConfigPage() {
     setIsSubmitting(true)
 
     try {
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const urlParams = new URLSearchParams(window.location.search)
+      const qrId = urlParams.get('qrId')
       
-      const configId = Math.random().toString(36).substr(2, 9)
-      
-      // Save the welcome email configuration to indicate Button 4 is complete
+      // Create the welcome email configuration object
       const welcomeEmailConfig = {
-        id: configId,
+        id: qrId || Math.random().toString(36).substr(2, 9),
         name: `Welcome Email Template - ${new Date().toLocaleDateString()}`,
         emailConfig: { ...emailConfig },
         createdAt: new Date(),
         isActive: true
       }
       
-      // Save to localStorage so main QR config page knows Button 4 is configured
+      if (qrId) {
+        // NEW: Save to database (prioritize database)
+        console.log('✅ EMAIL SAVE DEBUG: Saving to database for QR ID:', qrId)
+        
+        try {
+          // Load existing configuration from database
+          const response = await fetch(`/api/admin/saved-configs/${qrId}`, {
+            credentials: 'include'
+          })
+          
+          if (response.ok) {
+            const existingConfig = await response.json()
+            console.log('✅ EMAIL SAVE DEBUG: Loaded existing config from database:', existingConfig)
+            
+            // Update the configuration with the new welcome email template
+            const updatedConfig = {
+              ...existingConfig,
+              emailTemplates: {
+                ...existingConfig.emailTemplates,
+                welcomeEmail: welcomeEmailConfig
+              }
+            }
+            
+            // Save updated configuration back to database
+            const updateResponse = await fetch(`/api/admin/saved-configs/${qrId}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify(updatedConfig)
+            })
+            
+            if (updateResponse.ok) {
+              console.log('✅ EMAIL SAVE DEBUG: Successfully saved to database')
+              setGeneratedEmailConfig(qrId)
+              toast.success('Email Configuration Saved', `Welcome Email Template saved to database successfully! Returning to QR Config...`)
+              
+              // Redirect back to QR config after 2 seconds
+              setTimeout(() => {
+                router.push(`/admin/qr-config?expand=${qrId}`)
+              }, 2000)
+              
+              return // Successfully saved to database
+            } else {
+              console.error('❌ EMAIL SAVE DEBUG: Failed to update config in database. Status:', updateResponse.status)
+              const errorText = await updateResponse.text()
+              console.error('❌ EMAIL SAVE DEBUG: Error response:', errorText)
+            }
+          } else {
+            console.error('❌ EMAIL SAVE DEBUG: Failed to load existing config from database. Status:', response.status)
+          }
+        } catch (error) {
+          console.error('❌ EMAIL SAVE DEBUG: Error saving to database:', error)
+        }
+        
+        // Database save failed - fallback to localStorage
+        console.log('❌ EMAIL SAVE DEBUG: Database save failed, falling back to localStorage')
+      }
+      
+      // FALLBACK: Save to localStorage (legacy or when no qrId)
+      console.log('✅ EMAIL SAVE DEBUG: Saving to localStorage')
       localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(welcomeEmailConfig))
       
       // CRITICAL: Also update the saved configurations library if this template belongs to a saved config
@@ -338,7 +452,7 @@ export default function EmailConfigPage() {
       })
       localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigurations))
       
-      setGeneratedEmailConfig(configId)
+      setGeneratedEmailConfig(welcomeEmailConfig.id)
       toast.success('Email Configuration Saved', `Welcome Email Template "${welcomeEmailConfig.name}" saved successfully! Returning to QR Config...`)
       
       // Optional: Redirect back to QR config after 2 seconds

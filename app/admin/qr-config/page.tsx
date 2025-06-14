@@ -355,62 +355,38 @@ export default function QRConfigPage() {
   }, [])
 
   const loadSavedConfigurations = async () => {
-    // Load from localStorage (named configurations)
-    const saved = localStorage.getItem('elocalpass-saved-configurations')
-    let localConfigs: any[] = []
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        localConfigs = parsed.map((config: any) => ({
-          ...config,
-          createdAt: new Date(config.createdAt)
-        }))
-      } catch (error) {
-        console.error('Error parsing saved configurations:', error)
-      }
-    }
-
-    // Load from API (global configurations)
-    let apiConfigs: any[] = []
     try {
-      const response = await fetch('/api/admin/qr-global-config', {
+      console.log('🗄️ Loading configurations from database only...')
+      
+      // Load ONLY from DATABASE (no more localStorage dependency)
+      const dbResponse = await fetch('/api/admin/saved-configs', {
         credentials: 'include'
       })
-      if (response.ok) {
-        const data = await response.json()
-        // If data is an array, use it; if it's a single object, wrap it in an array
-        if (Array.isArray(data)) {
-          apiConfigs = data.map((config: any) => ({
-            id: config.id || 'global-config',
-            name: `Global Config ${config.id?.slice(-8) || 'API'}`,
-            description: 'Global configuration from API',
-            config: config,
-            createdAt: new Date(config.updatedAt || Date.now()),
-            source: 'api'
-          }))
-        } else if (data && typeof data === 'object') {
-          // Single global config object
-          apiConfigs = [{
-            id: data.id || 'global-config',
-            name: `Global Config ${data.id?.slice(-8) || 'API'}`,
-            description: 'Global configuration from API',
-            config: data,
-            createdAt: new Date(data.updatedAt || Date.now()),
-            source: 'api'
-          }]
-        }
+      
+      if (dbResponse.ok) {
+        const dbData = await dbResponse.json()
+        const dbConfigs = dbData.map((config: any) => ({
+          id: config.id,
+          name: config.name,
+          description: config.description,
+          config: config.config,
+          selectedUrlIds: config.selectedUrlIds || [],
+          emailTemplates: config.emailTemplates || { welcomeEmail: null, rebuyEmail: null },
+          landingPageConfig: config.landingPageConfig,
+          createdAt: new Date(config.createdAt),
+          source: 'database'
+        }))
+        
+        console.log(`✅ Loaded ${dbConfigs.length} configurations from database`)
+        setSavedConfigurations(dbConfigs)
+      } else {
+        console.error('❌ Failed to load from database, status:', dbResponse.status)
+        setSavedConfigurations([])
       }
     } catch (error) {
-      console.error('Error fetching global configurations:', error)
+      console.error('❌ Error loading configurations:', error)
+      setSavedConfigurations([])
     }
-
-    // Combine both sources, removing duplicates by ID
-    const allConfigs = [...localConfigs, ...apiConfigs]
-    const uniqueConfigs = allConfigs.filter((config, index, self) => 
-      index === self.findIndex(c => c.id === config.id)
-    )
-    
-    setSavedConfigurations(uniqueConfigs)
   }
 
   const loadCurrentProgress = () => {
@@ -2681,14 +2657,14 @@ export default function QRConfigPage() {
                                               searchingFor: urlId,
                                               urlDetailsData: urlDetails
                                             });
-                                            const hasCustomEdits = (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
+                                            const hasCustomEdits = config.landingPageConfig?.templates?.landingPage?.urlCustomContent?.[urlId];
                                             const displayUrl = hasCustomEdits 
                                               ? `/landing/custom/${config.id}?urlId=${urlId}` 
                                               : (urlDetails?.url || '#');
                                             
                                             // Get the configuration name from the custom content if available
                                             const customConfigName = hasCustomEdits 
-                                              ? (config as any).templates?.landingPage?.urlCustomContent?.[urlId]?.configurationName 
+                                              ? config.landingPageConfig?.templates?.landingPage?.urlCustomContent?.[urlId]?.configurationName 
                                               : null;
                                             
                                             // Display priority: 1. Custom config name, 2. URL name, 3. Fallback to URL number
@@ -2714,7 +2690,7 @@ export default function QRConfigPage() {
                                                       console.log('🎯 EDIT: Config ID:', config.id);
                                                       
                                                       // Check if URL-specific custom content exists
-                                                      const urlSpecificContent = (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
+                                                      const urlSpecificContent = config.landingPageConfig?.templates?.landingPage?.urlCustomContent?.[urlId];
                                                       console.log('🎯 EDIT: Found URL-specific content for', urlId, ':', urlSpecificContent ? 'YES' : 'NO');
                                                       
                                                       if (urlSpecificContent) {

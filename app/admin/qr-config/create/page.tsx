@@ -201,6 +201,8 @@ export default function CreateEnhancedLandingPage() {
 
   // Fetch global configuration on component mount
   useEffect(() => {
+    console.log('🎯 CREATE PAGE: useEffect triggered!')
+    
     fetchGlobalConfig()
     
     // Check for edit mode and load existing configurations only for edit
@@ -210,8 +212,10 @@ export default function CreateEnhancedLandingPage() {
     const urlId = urlParams.get('urlId')
     
     console.log('🔧 LANDING EDITOR: URL params:', { mode, qrId, urlId })
+    console.log('🔧 LANDING EDITOR: Current URL:', window.location.href)
     
     if (mode === 'edit') {
+      console.log('✅ EDIT MODE DETECTED! Setting up edit mode...')
       setEditMode(true)
       setEditQrId(qrId)
       setEditUrlId(urlId)
@@ -221,7 +225,10 @@ export default function CreateEnhancedLandingPage() {
       
       // Load configuration from database instead of localStorage
       if (qrId) {
+        console.log('🚀 CALLING loadConfigurationForEdit with qrId:', qrId, 'urlId:', urlId)
         loadConfigurationForEdit(qrId, urlId)
+      } else {
+        console.log('❌ Missing qrId for edit mode!')
       }
     } else {
       // For fresh/new configurations, start with empty templates
@@ -471,8 +478,15 @@ export default function CreateEnhancedLandingPage() {
         let configToLoad = null
         
         if (urlId) {
-          // Check for URL-specific content first - check both new structure and legacy
+          // For URL-specific editing: Check for URL-specific content first
           let urlSpecificContent = null
+          
+          console.log('🔍 LOAD DEBUG: Looking for URL-specific content for urlId:', urlId)
+          console.log('🔍 LOAD DEBUG: landingPageConfig structure:', config.landingPageConfig)
+          console.log('🔍 LOAD DEBUG: landingPageConfig.templates:', config.landingPageConfig?.templates)
+          console.log('🔍 LOAD DEBUG: landingPageConfig.templates.landingPage:', config.landingPageConfig?.templates?.landingPage)
+          console.log('🔍 LOAD DEBUG: urlCustomContent object:', config.landingPageConfig?.templates?.landingPage?.urlCustomContent)
+          console.log('🔍 LOAD DEBUG: Available URL IDs in urlCustomContent:', Object.keys(config.landingPageConfig?.templates?.landingPage?.urlCustomContent || {}))
           
           // New structure: templates stored in landingPageConfig.templates
           if (config.landingPageConfig?.templates?.landingPage?.urlCustomContent?.[urlId]) {
@@ -488,22 +502,38 @@ export default function CreateEnhancedLandingPage() {
           if (urlSpecificContent) {
             configToLoad = urlSpecificContent
             console.log('✅ LOAD DEBUG: Using URL-specific content for', urlId, urlSpecificContent)
-          } else if (config.landingPageConfig) {
-            configToLoad = config.landingPageConfig
-            console.log('✅ LOAD DEBUG: Using general landing page config as fallback')
+          } else {
+            console.log('❌ LOAD DEBUG: No URL-specific content found for', urlId)
+            console.log('❌ LOAD DEBUG: This means customizations for this URL have not been saved yet')
+            // No URL-specific content found, use general landing page config as fallback
+            if (config.landingPageConfig) {
+              configToLoad = config.landingPageConfig
+              console.log('✅ LOAD DEBUG: No URL-specific content found, using general landing page config as fallback')
+            } else {
+              console.log('❌ LOAD DEBUG: No URL-specific content AND no general landing page config found')
+            }
           }
-        } else if (config.landingPageConfig) {
-          configToLoad = config.landingPageConfig
-          console.log('✅ LOAD DEBUG: Using general landing page config')
+        } else {
+          // For general landing page editing: Use general landing page config
+          if (config.landingPageConfig) {
+            configToLoad = config.landingPageConfig
+            console.log('✅ LOAD DEBUG: Using general landing page config for non-URL-specific edit')
+          } else {
+            console.log('❌ LOAD DEBUG: No general landing page config found')
+          }
         }
         
         if (configToLoad) {
           console.log('✅ LOAD DEBUG: Setting form data from database:', configToLoad)
           setFormData(configToLoad)
-          return // Successfully loaded from database, no need to check localStorage
+          return // Successfully loaded from database
+        } else {
+          console.log('❌ LOAD DEBUG: No suitable configuration found in database')
         }
       } else {
-        console.error('❌ LOAD DEBUG: Failed to load config from database:', response.status)
+        console.error('❌ LOAD DEBUG: Failed to load config from database. Status:', response.status)
+        const errorText = await response.text()
+        console.error('❌ LOAD DEBUG: Error response:', errorText)
       }
     } catch (error) {
       console.error('❌ LOAD DEBUG: Error loading config from database:', error)
