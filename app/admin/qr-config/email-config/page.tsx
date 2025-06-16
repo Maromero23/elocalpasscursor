@@ -494,10 +494,18 @@ export default function EmailConfigPage() {
               </p>
             </div>
             <button
-              onClick={() => router.push('/admin/qr-config')}
+              onClick={() => {
+                if (qrId) {
+                  // If we have a qrId, navigate back to QR config with library open and config expanded
+                  router.push(`/admin/qr-config?showLibrary=true&expandConfig=${qrId}`)
+                } else {
+                  // Otherwise just go back to the main QR config page
+                  router.push('/admin/qr-config')
+                }
+              }}
               className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
             >
-              ← Back to QR Config
+              ← {qrId ? 'Back to QR Config Library' : 'Back to QR Config'}
             </button>
           </div>
         </div>

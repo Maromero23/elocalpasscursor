@@ -106,3 +106,52 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// DELETE multiple saved configurations (bulk delete)
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+    
+    const body = await request.json()
+    const { configIds } = body
+    
+    if (!configIds || !Array.isArray(configIds) || configIds.length === 0) {
+      return NextResponse.json({ error: 'Configuration IDs are required' }, { status: 400 })
+    }
+    
+    console.log('🗑️ BULK DELETE: Deleting configurations:', configIds)
+    
+    // First unassign all users from these configurations
+    await prisma.user.updateMany({
+      where: { savedConfigId: { in: configIds } },
+      data: { savedConfigId: null }
+    })
+    
+    // Then delete the configurations
+    const deleteResult = await prisma.savedQRConfiguration.deleteMany({
+      where: { id: { in: configIds } }
+    })
+    
+    console.log('✅ BULK DELETE: Successfully deleted', deleteResult.count, 'configurations')
+    
+    return NextResponse.json({ 
+      success: true, 
+      deletedCount: deleteResult.count 
+    })
+    
+  } catch (error) {
+    console.error('Error bulk deleting saved configurations:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

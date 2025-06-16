@@ -128,6 +128,7 @@ export default function CreateEnhancedLandingPage() {
   const [editMode, setEditMode] = useState(false)
   const [editQrId, setEditQrId] = useState<string | null>(null)
   const [editUrlId, setEditUrlId] = useState<string | null>(null)
+  const [cameFromLibrary, setCameFromLibrary] = useState(false)
   const [formData, setFormData] = useState({
     businessName: '',
     logoUrl: '',
@@ -204,41 +205,63 @@ export default function CreateEnhancedLandingPage() {
   useEffect(() => {
     console.log('🎯 CREATE PAGE: useEffect triggered!')
     
-    fetchGlobalConfig()
-    
-    // Check for edit mode and load existing configurations only for edit
-    const urlParams = new URLSearchParams(window.location.search)
-    const mode = urlParams.get('mode')
-    const qrId = urlParams.get('qrId')
-    const urlId = urlParams.get('urlId')
-    
-    console.log('🔧 LANDING EDITOR: URL params:', { mode, qrId, urlId })
-    console.log('🔧 LANDING EDITOR: Current URL:', window.location.href)
-    
-    if (mode === 'edit') {
-      console.log('✅ EDIT MODE DETECTED! Setting up edit mode...')
-      setEditMode(true)
-      setEditQrId(qrId)
-      setEditUrlId(urlId)
-      
-      // Only load saved templates when editing existing configurations
-      loadSavedTemplates()
-      
-      // Load configuration from database instead of localStorage
-      if (qrId) {
-        console.log('🚀 CALLING loadConfigurationForEdit with qrId:', qrId, 'urlId:', urlId)
-        loadConfigurationForEdit(qrId, urlId).finally(() => {
-          // Small delay to ensure form data is properly updated before showing the form
-          setTimeout(() => setIsLoading(false), 100)
-        })
-      } else {
-        console.log('❌ Missing qrId for edit mode!')
+    const initializePage = async () => {
+      try {
+        // Always fetch global config first
+        await fetchGlobalConfig()
+        
+        // Check for edit mode and load existing configurations only for edit
+        const urlParams = new URLSearchParams(window.location.search)
+        const mode = urlParams.get('mode')
+        const qrId = urlParams.get('qrId')
+        const urlId = urlParams.get('urlId')
+        
+        console.log('🔧 LANDING EDITOR: URL params:', { mode, qrId, urlId })
+        console.log('🔧 LANDING EDITOR: Current URL:', window.location.href)
+        
+        if (mode === 'edit') {
+          console.log('✅ EDIT MODE DETECTED! Setting up edit mode...')
+          setEditMode(true)
+          setEditQrId(qrId)
+          setEditUrlId(urlId)
+          setCameFromLibrary(true) // We came from the library if in edit mode
+          
+          // Only load saved templates when editing existing configurations
+          loadSavedTemplates()
+          
+          // Load configuration from database instead of localStorage
+          if (qrId) {
+            console.log('🚀 CALLING loadConfigurationForEdit with qrId:', qrId, 'urlId:', urlId)
+            await loadConfigurationForEdit(qrId, urlId)
+          } else {
+            console.log('❌ Missing qrId for edit mode!')
+          }
+        } else {
+          // For fresh/new configurations, start with empty templates
+          console.log('✅ Starting fresh configuration - not loading saved templates')
+        }
+      } catch (error) {
+        console.error('❌ Error initializing page:', error)
+      } finally {
+        // Always set loading to false when done
+        console.log('✅ Initialization complete, setting loading to false')
         setIsLoading(false)
       }
-    } else {
-      // For fresh/new configurations, start with empty templates
-      console.log('✅ Starting fresh configuration - not loading saved templates')
+    }
+    
+    // Add a safety timeout to prevent infinite loading
+    const safetyTimeout = setTimeout(() => {
+      console.log('⚠️ Safety timeout triggered - forcing loading to false')
       setIsLoading(false)
+    }, 5000) // 5 second timeout
+    
+    initializePage().finally(() => {
+      clearTimeout(safetyTimeout)
+    })
+    
+    // Cleanup timeout on unmount
+    return () => {
+      clearTimeout(safetyTimeout)
     }
   }, [])
 
@@ -250,11 +273,14 @@ export default function CreateEnhancedLandingPage() {
       if (response.ok) {
         const data = await response.json()
         setGlobalConfig(data)
+        console.log('✅ Global config loaded successfully')
       } else {
         console.error('Failed to fetch global config:', response.status)
+        throw new Error(`Failed to fetch global config: ${response.status}`)
       }
     } catch (error) {
       console.error('Error fetching global config:', error)
+      throw error
     }
   }
 
@@ -374,8 +400,13 @@ export default function CreateEnhancedLandingPage() {
         const urlIndex = updatedConfig.landingPageConfig.temporaryUrls.findIndex((url: any) => url.id === editUrlId)
         
         if (urlIndex !== -1) {
-          // Update existing URL entry with new customizations
+          // Update existing URL entry with new customizations AND name
           updatedConfig.landingPageConfig.temporaryUrls[urlIndex].customizations = { ...formData }
+          // IMPORTANT: Also update the URL name to match the configuration name
+          if (formData.configurationName) {
+            updatedConfig.landingPageConfig.temporaryUrls[urlIndex].name = formData.configurationName
+            console.log('💾 SAVE DEBUG: Updated URL name to:', formData.configurationName)
+          }
           console.log('💾 SAVE DEBUG: Updated existing URL entry customizations for:', editUrlId)
         } else {
           // Create new URL entry (shouldn't happen in edit mode, but just in case)
@@ -468,7 +499,13 @@ export default function CreateEnhancedLandingPage() {
       
       // Navigate back to QR configuration page with the specific config expanded
       setTimeout(() => {
-        router.push(`/admin/qr-config?expand=${editQrId}`)
+        if (cameFromLibrary && editQrId) {
+          // If we came from the library, go back to library with config expanded
+          router.push(`/admin/qr-config?showLibrary=true&expandConfig=${editQrId}`)
+        } else {
+          // Otherwise use the old expand parameter
+          router.push(`/admin/qr-config?expand=${editQrId}`)
+        }
       }, 1500) // Wait for toast to be visible
       
     } catch (error) {
@@ -708,7 +745,52 @@ export default function CreateEnhancedLandingPage() {
             
             if (saveResponse.ok) {
               console.log('✅ DIRECT SAVE: Successfully saved landing page directly to database!')
-              toast.success('Landing Page Created & Saved', `"${formData.configurationName}" created and saved directly to QR configuration database!`)
+              
+              // IMPORTANT: Mark Button 3 as configured and auto-select the new URL
+              console.log('🔧 AUTO-CONFIG: Setting Button 3 as configured and auto-selecting URL')
+              
+              // 1. Save Button 3 configuration to localStorage (so it shows as green)
+              const button3Config = {
+                deliveryMethod: 'URLS',
+                configured: true,
+                timestamp: new Date().toISOString()
+              }
+              localStorage.setItem('elocalpass-button3-config', JSON.stringify(button3Config))
+              
+              // 2. Auto-select the newly created URL (add to selectedUrlIds)
+              const existingButton3Urls = localStorage.getItem('elocalpass-button3-urls')
+              let button3UrlsData: {
+                temporaryUrls: any[]
+                selectedUrlIds: string[]
+              } = {
+                temporaryUrls: [],
+                selectedUrlIds: []
+              }
+              
+              if (existingButton3Urls) {
+                try {
+                  button3UrlsData = JSON.parse(existingButton3Urls)
+                } catch (error) {
+                  console.warn('Could not parse existing Button 3 URLs:', error)
+                }
+              }
+              
+              // Add the new URL to temporaryUrls if not already there
+              const existingUrl = button3UrlsData.temporaryUrls.find((url: any) => url.id === urlId)
+              if (!existingUrl) {
+                button3UrlsData.temporaryUrls.push(urlEntry)
+              }
+              
+              // Auto-select the new URL (add to selectedUrlIds)
+              if (!button3UrlsData.selectedUrlIds.includes(urlId)) {
+                button3UrlsData.selectedUrlIds.push(urlId)
+                console.log('🔧 AUTO-SELECT: Added URL to selectedUrlIds:', urlId)
+              }
+              
+              // Save updated Button 3 URLs data
+              localStorage.setItem('elocalpass-button3-urls', JSON.stringify(button3UrlsData))
+              
+              toast.success('Landing Page Created & Saved', `"${formData.configurationName}" created and automatically attached to Button 3 configuration!`)
             } else {
               console.log('⚠️ DIRECT SAVE: Failed to save to database')
               toast.error('Save Error', 'Landing page created but failed to save to database')
@@ -754,9 +836,15 @@ export default function CreateEnhancedLandingPage() {
         }
         localStorage.setItem('elocalpass-landing-config', JSON.stringify(landingConfig))
         
-        // Redirect back to QR config after 2 seconds
+        // Redirect back to appropriate location after 2 seconds
         setTimeout(() => {
-          window.location.href = '/admin/qr-config'
+          if (cameFromLibrary && editQrId) {
+            // If we came from the library, go back to library with config expanded
+            window.location.href = `/admin/qr-config?showLibrary=true&expandConfig=${editQrId}`
+          } else {
+            // Otherwise go to Button 3 view
+            window.location.href = '/admin/qr-config?activeButton=3'
+          }
         }, 2000)
       } else {
         throw new Error('Failed to create landing page')
@@ -801,10 +889,18 @@ export default function CreateEnhancedLandingPage() {
                   <p className="text-gray-600 mt-2">Complete control over text content, colors, fonts, and sizes for your landing page.</p>
                 </div>
                 <button
-                  onClick={() => router.push('/admin/qr-config')}
+                  onClick={() => {
+                    if (cameFromLibrary && editQrId) {
+                      // Navigate back to QR config with library open and config expanded
+                      router.push(`/admin/qr-config?showLibrary=true&expandConfig=${editQrId}`)
+                    } else {
+                      // Otherwise just go back to the main QR config page
+                      router.push('/admin/qr-config')
+                    }
+                  }}
                   className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
                 >
-                  ← Back to QR Config
+                  ← {cameFromLibrary ? 'Back to QR Config Library' : 'Back to QR Config'}
                 </button>
               </div>
             </div>
