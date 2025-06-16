@@ -43,8 +43,8 @@ interface QRGlobalConfig {
   button2IncludeTax: boolean
   button2TaxPercentage: number
   button3DeliveryMethod: 'DIRECT' | 'URLS' | 'BOTH'
-  button4LandingPageRequired: boolean
-  button5SendRebuyEmail: boolean
+  button4LandingPageRequired: boolean | undefined
+  button5SendRebuyEmail: boolean | undefined
   updatedAt: Date
 }
 
@@ -94,6 +94,12 @@ export default function QRConfigPage() {
     button5SendRebuyEmail: false,
     updatedAt: new Date()
   })
+
+  // Track if user has made a choice for Button 4 (separate from database value)
+  const [button4UserChoice, setButton4UserChoice] = useState<boolean | null>(null)
+  
+  // Track if user has made a choice for Button 5 (separate from database value)
+  const [button5UserChoice, setButton5UserChoice] = useState<boolean | null>(null)
 
   // Current session management for direct database saving
   const [currentSessionId, setCurrentSessionId] = useState<string>('')
@@ -268,7 +274,6 @@ export default function QRConfigPage() {
     console.log('🧹 EMERGENCY CLEANUP: Clearing leftover URLs from previous sessions')
     setSellerUrls([])
     setSelectedUrlIds([])
-    localStorage.removeItem('elocalpass-button3-urls')
     localStorage.removeItem('elocalpass-current-qr-progress')
     localStorage.removeItem('elocalpass-new-temp-urls')
     localStorage.removeItem('elocalpass-new-temp-url')
@@ -309,10 +314,10 @@ export default function QRConfigPage() {
         button3DeliveryMethod: 'DIRECT' as const,
         
         // Button 4 defaults
-        button4LandingPageRequired: false,
+        button4LandingPageRequired: undefined,
         
         // Button 5 defaults
-        button5SendRebuyEmail: false,
+        button5SendRebuyEmail: undefined,
         
         updatedAt: new Date()
       }
@@ -351,12 +356,18 @@ export default function QRConfigPage() {
       localStorage.removeItem('elocalpass-welcome-email-config')
       localStorage.removeItem('elocalpass-rebuy-email-config')
       localStorage.removeItem('elocalpass-landing-config')
-      localStorage.removeItem('elocalpass-button1-config')
-      localStorage.removeItem('elocalpass-button2-config')
-      localStorage.removeItem('elocalpass-button3-config')
-      localStorage.removeItem('elocalpass-button3-urls')
       localStorage.removeItem('elocalpass-new-temp-urls')
       localStorage.removeItem('elocalpass-new-temp-url')
+      
+      // STEP 3.1: Clear button configuration localStorage items
+          localStorage.removeItem('elocalpass-button1-config')
+    localStorage.removeItem('elocalpass-button2-config')
+    localStorage.removeItem('elocalpass-button3-config')
+    localStorage.removeItem('elocalpass-button3-urls')
+    localStorage.removeItem('elocalpass-button4-config')
+    localStorage.removeItem('elocalpass-button5-config')
+      
+      console.log('🧹 CLEAR PROGRESS: All button configurations cleared from localStorage')
       
       // STEP 4: Reset visual states to starting point
       setGlobalConfig(defaultConfig)
@@ -366,6 +377,8 @@ export default function QRConfigPage() {
       setActiveButton(1)
       setSaveStatus('')
       setProgressRestored(false)
+      setButton4UserChoice(null) // Reset Button 4 user choice to "no selection"
+    setButton5UserChoice(null) // Reset Button 5 user choice to "no selection"
       
       console.log('🧹 CLEAR PROGRESS: All progress and database configuration reset to defaults')
       
@@ -392,6 +405,8 @@ export default function QRConfigPage() {
       if (response.ok) {
         const data = await response.json()
         if (data) {
+          console.log('🔍 FETCH: Received globalConfig from API:', data)
+          console.log('🔍 FETCH: button4LandingPageRequired value:', data.button4LandingPageRequired)
           setGlobalConfig(data)
         }
       } else {
@@ -721,7 +736,12 @@ export default function QRConfigPage() {
           if (sessionConfig.landingPageConfig?.temporaryUrls) {
             setSellerUrls(sessionConfig.landingPageConfig.temporaryUrls)
             console.log('✅ RESTORE: Loaded', sessionConfig.landingPageConfig.temporaryUrls.length, 'temporary URLs from database')
-            setConfiguredButtons(prev => new Set(prev).add(3)) // Mark button 3 as configured
+            setConfiguredButtons(prev => {
+              const newSet = new Set(prev)
+              newSet.add(3) // Mark button 3 as configured
+              console.log('🔧 RESTORE: Preserving existing configured buttons and adding button 3:', Array.from(newSet))
+              return newSet
+            })
           }
           
           // Restore selected URL IDs if they exist
@@ -831,6 +851,7 @@ export default function QRConfigPage() {
   // Auto-save progress when state changes
   useEffect(() => {
     if (globalConfig) { // Only save if config is loaded
+      console.log('🔄 AUTO-SAVE: useEffect triggered, configuredButtons:', Array.from(configuredButtons))
       const timeoutId = setTimeout(saveCurrentProgress, 500) // Debounce saves
       return () => clearTimeout(timeoutId)
     }
@@ -889,76 +910,154 @@ export default function QRConfigPage() {
     return () => clearInterval(interval)
   }, []) // Empty dependency array so it runs once and sets up the interval
 
-  // Detect configuration status after state changes (runs after restoration)
+  // Helper function to check Button 4 configuration from database
+  const checkButton4Configuration = (): boolean => {
+    try {
+      // Check if Button 4 choice is stored in globalConfig (database)
+      if (globalConfig.button4LandingPageRequired === false) {
+        // Default template chosen - always configured
+        console.log('🔧 BUTTON 4: Default template configured in database')
+        return true
+      } else if (globalConfig.button4LandingPageRequired === true) {
+        // Custom template chosen - check if template exists
+        // TODO: Move this to database check instead of localStorage
+        const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+        const hasTemplate = !!(welcomeEmailConfig && welcomeEmailConfig !== 'null')
+        console.log('🔧 BUTTON 4: Custom template configured in database, template exists:', hasTemplate)
+        return hasTemplate
+      }
+      
+      // No choice made yet - check localStorage for temporary state
+      const button4Config = localStorage.getItem('elocalpass-button4-config')
+      if (button4Config) {
+        try {
+          const parsed = JSON.parse(button4Config)
+          if (parsed && parsed.choice) {
+            console.log('🔧 BUTTON 4: Found temporary choice in localStorage:', parsed.choice)
+            return parsed.choice === 'default' || (parsed.choice === 'custom' && parsed.hasTemplate)
+          }
+        } catch (error) {
+          console.warn('Error parsing Button 4 localStorage config:', error)
+        }
+      }
+      
+      console.log('🔧 BUTTON 4: No configuration found')
+      return false
+    } catch (error) {
+      console.warn('Error checking Button 4 configuration:', error)
+      return false
+    }
+  }
+
+  // Detect configuration status from database and localStorage (runs after page load)
   useEffect(() => {
     // Skip if this is the initial render before any restoration
     if (!globalConfig) return
 
-    console.log('🔍 DETECTION: Checking configuration status after state change')
-    console.log('- Current globalConfig:', globalConfig)
-    console.log('- Current configuredButtons:', Array.from(configuredButtons))
-    console.log('- Current selectedUrlIds:', selectedUrlIds)
+    console.log('🔍 DETECTION: Checking configuration status from database and localStorage')
+    console.log('🔍 DETECTION: Current globalConfig.button4LandingPageRequired:', globalConfig.button4LandingPageRequired)
+    console.log('🔍 DETECTION: Current button4UserChoice:', button4UserChoice)
     
-    // DEBUG: Show all Button 1 related fields
-    const button1Fields = Object.keys(globalConfig).filter(key => key.includes('button1'))
-    console.log('🔍 BUTTON 1 FIELDS:', button1Fields.map(field => ({ [field]: (globalConfig as any)[field] })))
+    const configuredButtonsSet = new Set<number>()
     
-    const configuredButtonsSet = new Set(configuredButtons)
-    
-    // Check Button 1 (Personalization) - mark as configured if any personalization settings are non-default
-    const hasButton1Config = 
-      globalConfig.button1AllowCustomGuestsDays !== false ||
-      globalConfig.button1GuestsDefault !== 2 ||
-      globalConfig.button1DaysDefault !== 3 ||
-      globalConfig.button1GuestsRangeMax !== 10 ||
-      globalConfig.button1DaysRangeMax !== 30
-    console.log('- Button 1 detection:', { hasButton1Config, inConfiguredButtons: configuredButtons.has(1) })
-    if (hasButton1Config || configuredButtons.has(1)) {
-      configuredButtonsSet.add(1)
+    // Check Button 1 (Personalization) - check if localStorage has config
+    const button1Config = localStorage.getItem('elocalpass-button1-config')
+    if (button1Config) {
+      try {
+        const parsed = JSON.parse(button1Config)
+        if (parsed && Object.keys(parsed).length > 0) {
+          configuredButtonsSet.add(1)
+          console.log('🔧 DETECTION: Button 1 configured (localStorage found)')
+        }
+      } catch (error) {
+        console.warn('Warning: Could not parse Button 1 config:', error)
+      }
     }
     
-    // Check Button 2 (Pricing) - mark as configured only if meaningful pricing changes are made
-    const hasButton2Config = 
-      (globalConfig.button2PricingType === 'FIXED' && (globalConfig.button2FixedPrice || 0) > 0) ||
-      (globalConfig.button2PricingType === 'VARIABLE' && (
-        globalConfig.button2VariableBasePrice > 0 ||
-        globalConfig.button2VariableGuestIncrease > 0 ||
-        globalConfig.button2VariableDayIncrease > 0 ||
-        globalConfig.button2VariableCommission > 0
-      )) ||
-      globalConfig.button2PricingType === 'FREE' ||
-      globalConfig.button2IncludeTax === true ||
-      globalConfig.button2TaxPercentage > 0
-    console.log('- Button 2 detection:', { 
-      hasButton2Config, 
-      pricingType: globalConfig.button2PricingType,
-      fixedPrice: globalConfig.button2FixedPrice,
-      includeTax: globalConfig.button2IncludeTax,
-      inConfiguredButtons: configuredButtons.has(2) 
-    })
-    if (hasButton2Config || configuredButtons.has(2)) {
-      configuredButtonsSet.add(2)
+    // Check Button 2 (Pricing) - check if localStorage has config
+    const button2Config = localStorage.getItem('elocalpass-button2-config')
+    if (button2Config) {
+      try {
+        const parsed = JSON.parse(button2Config)
+        if (parsed && Object.keys(parsed).length > 0) {
+          configuredButtonsSet.add(2)
+          console.log('🔧 DETECTION: Button 2 configured (localStorage found)')
+        }
+      } catch (error) {
+        console.warn('Warning: Could not parse Button 2 config:', error)
+      }
     }
     
-    // Check Button 3 (Delivery Method) - mark as configured ONLY if delivery method is intentionally changed from default
-    const hasButton3Config = globalConfig.button3DeliveryMethod !== 'DIRECT'
-    console.log('- Button 3 detection:', { hasButton3Config, deliveryMethod: globalConfig.button3DeliveryMethod, tempUrlsCount: sellerUrls.filter(url => url.isTemp).length, inConfiguredButtons: configuredButtons.has(3) })
-    if (hasButton3Config || configuredButtons.has(3)) {
-      configuredButtonsSet.add(3)
+    // Check Button 3 (Delivery Method) - check if localStorage has config
+    const button3Config = localStorage.getItem('elocalpass-button3-config')
+    if (button3Config) {
+      try {
+        const parsed = JSON.parse(button3Config)
+        if (parsed && Object.keys(parsed).length > 0) {
+          configuredButtonsSet.add(3)
+          console.log('🔧 DETECTION: Button 3 configured (localStorage found)')
+        }
+      } catch (error) {
+        console.warn('Warning: Could not parse Button 3 config:', error)
+      }
     }
     
-    // Check Button 4 (Welcome Email) - mark as configured only if button4LandingPageRequired is true
-    const hasButton4Config = globalConfig.button4LandingPageRequired === true
-    console.log('- Button 4 detection:', { hasButton4Config, button4Required: globalConfig.button4LandingPageRequired, inConfiguredButtons: configuredButtons.has(4) })
-    if (hasButton4Config || configuredButtons.has(4)) {
-      configuredButtonsSet.add(4)
+    // Check Button 4 (Welcome Email) - IGNORE database defaults, only use explicit user choices
+    // Check localStorage first for explicit user choice
+    const button4Config = localStorage.getItem('elocalpass-button4-config')
+    if (button4Config) {
+      try {
+        const parsed = JSON.parse(button4Config)
+        if (parsed && parsed.choice) {
+          setButton4UserChoice(parsed.choice === 'custom' ? true : false)
+          
+          // Check for template existence in real-time (not from stored hasTemplate flag)
+          const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+          const hasTemplate = !!(welcomeEmailConfig && welcomeEmailConfig !== 'null')
+          
+          const isConfigured = parsed.choice === 'default' || (parsed.choice === 'custom' && hasTemplate)
+          if (isConfigured) {
+            configuredButtonsSet.add(4)
+          }
+          console.log('🔧 DETECTION: Button 4 explicit user choice found:', parsed.choice, 'hasTemplate:', hasTemplate, 'configured:', isConfigured)
+        } else {
+          // localStorage exists but no valid choice - treat as no selection
+          setButton4UserChoice(null)
+          console.log('🔧 DETECTION: Button 4 localStorage exists but no valid choice - no selection')
+        }
+      } catch (error) {
+        console.warn('Error parsing Button 4 localStorage config:', error)
+        setButton4UserChoice(null)
+      }
+    } else {
+      // No localStorage choice - check if database has been explicitly set by user
+      // We'll only trust database values if localStorage confirms user made a choice
+      // Since there's no localStorage, treat as no selection regardless of database value
+      setButton4UserChoice(null)
+      console.log('🔧 DETECTION: Button 4 no explicit user choice found - showing no selection')
     }
     
-    // Check Button 5 (Rebuy Email) - mark as configured only if rebuy is enabled
-    const hasButton5Config = globalConfig.button5SendRebuyEmail === true
-    console.log('- Button 5 detection:', { hasButton5Config, rebuyEnabled: globalConfig.button5SendRebuyEmail, inConfiguredButtons: configuredButtons.has(5) })
-    if (hasButton5Config || configuredButtons.has(5)) {
-      configuredButtonsSet.add(5)
+    // Check Button 5 (Rebuy Email) - database-first approach like Button 4
+    const button5LocalConfig = localStorage.getItem('elocalpass-button5-config')
+    if (button5LocalConfig) {
+      try {
+        const parsed = JSON.parse(button5LocalConfig)
+        if (parsed && parsed.choice) {
+          // User has made a choice - set the user choice state
+          const userChoice = parsed.choice === 'yes' ? true : false
+          setButton5UserChoice(userChoice)
+          configuredButtonsSet.add(5)
+          console.log('🔧 DETECTION: Button 5 user choice found in localStorage:', parsed.choice, '- marking as configured')
+        }
+      } catch (error) {
+        console.warn('Warning: Could not parse Button 5 config:', error)
+      }
+    } else {
+      // No localStorage choice - check if database has been explicitly set by user
+      // We'll only trust database values if localStorage confirms user made a choice
+      // Since there's no localStorage, treat as no selection regardless of database value
+      setButton5UserChoice(null)
+      console.log('🔧 DETECTION: Button 5 no explicit user choice found - showing no selection')
     }
     
     console.log('🎯 DETECTION: Final configuredButtonsSet:', Array.from(configuredButtonsSet))
@@ -969,7 +1068,52 @@ export default function QRConfigPage() {
       console.log('🔄 DETECTION: Updating configuredButtons state')
       setConfiguredButtons(configuredButtonsSet)
     }
-  }, [globalConfig, sellerUrls]) // Run when these change
+  }, [globalConfig]) // Run when globalConfig changes
+
+  // Re-run detection when user returns to the page (e.g., after creating a template)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('🔄 FOCUS: Page focused - re-running Button 4 detection')
+      
+      // Re-check Button 4 configuration when page gets focus
+      const button4Config = localStorage.getItem('elocalpass-button4-config')
+      if (button4Config) {
+        try {
+          const parsed = JSON.parse(button4Config)
+          if (parsed && parsed.choice === 'custom') {
+            // Check if template now exists
+            const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+            const hasTemplate = !!(welcomeEmailConfig && welcomeEmailConfig !== 'null')
+            
+            if (hasTemplate) {
+              // Template now exists - mark as configured
+              setConfiguredButtons((prev) => new Set(prev).add(4))
+              console.log('🔧 FOCUS: Button 4 template detected - marking as configured')
+            }
+          }
+        } catch (error) {
+          console.warn('Error parsing Button 4 config on focus:', error)
+        }
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+    
+    // Also listen for localStorage changes (for same-tab updates)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'elocalpass-welcome-email-config') {
+        console.log('🔄 STORAGE: Welcome email config changed - re-running Button 4 detection')
+        handleFocus() // Reuse the same logic
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [])
 
   // Save current configuration with a name
   const saveNamedConfiguration = async () => {
@@ -1148,18 +1292,19 @@ export default function QRConfigPage() {
     setSellerUrls([])
     setSelectedUrlIds([])
     
-    // Reset configured buttons and set Button #1 as active starting point
-    setConfiguredButtons(new Set())
-    setActiveButton(1) // Set Button #1 as the active button to start the process
+    // Keep Button #3 configured and set as active to stay on current view
+    // Keep all currently configured buttons (don't clear them after saving)
+    setActiveButton(3) // Keep Button #3 active to stay on the current view
     
     // Clear current progress
     localStorage.removeItem('elocalpass-current-qr-progress')
     
     // Clear temporary templates and button configurations
-    localStorage.removeItem('elocalpass-button1-config') // Clear Button 1 localStorage
-    localStorage.removeItem('elocalpass-button2-config') // Clear Button 2 localStorage
-    localStorage.removeItem('elocalpass-button3-config') // Clear Button 3 delivery method
-    localStorage.removeItem('elocalpass-button3-urls') // Clear Button 3 URL data
+          localStorage.removeItem('elocalpass-button1-config') // Clear Button 1 localStorage
+      localStorage.removeItem('elocalpass-button2-config') // Clear Button 2 localStorage
+      localStorage.removeItem('elocalpass-button3-config') // Clear Button 3 delivery method
+      localStorage.removeItem('elocalpass-button3-urls') // Clear Button 3 URL data
+      localStorage.removeItem('elocalpass-button5-config') // Clear Button 5 localStorage
     localStorage.removeItem('elocalpass-landing-config')
     localStorage.removeItem('elocalpass-welcome-email-config')
     localStorage.removeItem('elocalpass-rebuy-email-config')
@@ -1411,13 +1556,26 @@ export default function QRConfigPage() {
 
     // Add to temporary URLs list
     setSellerUrls(prev => [...prev, tempUrl])
+
+    // Automatically select the newly created URL
+    const newSelectedUrlIds = [...selectedUrlIds, tempUrl.id]
+    setSelectedUrlIds(newSelectedUrlIds)
+
+    // Save the updated selectedUrlIds to database immediately
+    saveSelectedUrlsToDatabase(newSelectedUrlIds)
     
     // Clear form and close modal
     setUrlFormData({ name: '', url: '', description: '' })
     setShowUrlModal(false)
     
-    // Mark Button 3 as configured
-    setConfiguredButtons((prev) => new Set(prev).add(3))
+    // Mark Button 3 as configured and preserve existing configured buttons
+    setConfiguredButtons((prev) => {
+      const newSet = new Set(prev)
+      newSet.add(3)
+      console.log('🔧 PRESERVE: Explicitly preserving configured buttons after URL creation:', Array.from(newSet))
+      console.log('🔧 PRESERVE: Previous configured buttons were:', Array.from(prev))
+      return newSet
+    })
     
     toast.success('Temporary URL Created', 'URL added to current configuration session')
   }
@@ -1816,7 +1974,7 @@ export default function QRConfigPage() {
                         onClick={() => setShowSaveModal(true)}
                         className="text-xs px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                       >
-                        💾 Save Configuration
+                        💾 Save Master Configuration
                       </button>
                     )}
                     <button
@@ -1925,7 +2083,11 @@ export default function QRConfigPage() {
                               checked={globalConfig.button1GuestsLocked}
                               onChange={(e) => {
                                 updateConfig({ button1GuestsLocked: e.target.checked })
-                                setConfiguredButtons((prev) => new Set(prev).add(1))
+                                setConfiguredButtons((prev) => {
+                                  const newSet = new Set(prev).add(1)
+                                  console.log('🔧 BUTTON 1: Configured! New set:', Array.from(newSet))
+                                  return newSet
+                                })
                               }}
                               className="sr-only"
                             />
@@ -2071,7 +2233,11 @@ export default function QRConfigPage() {
                         checked={globalConfig.button2PricingType === 'FIXED'}
                         onChange={() => {
                           updateConfig({ button2PricingType: 'FIXED' })
-                          setConfiguredButtons((prev) => new Set(prev).add(2))
+                          setConfiguredButtons((prev) => {
+                            const newSet = new Set(prev).add(2)
+                            console.log('🔧 BUTTON 2: Configured! New set:', Array.from(newSet))
+                            return newSet
+                          })
                         }}
                         className="mt-1 h-4 w-4 text-yellow-600"
                       />
@@ -2716,21 +2882,59 @@ export default function QRConfigPage() {
                     <label className="flex items-start space-x-3 cursor-pointer">
                       <input
                         type="radio"
-                        checked={globalConfig.button4LandingPageRequired === true}
-                        onChange={() => {
-                          updateConfig({ button4LandingPageRequired: true })
-                          setConfiguredButtons((prev) => new Set(prev).add(4))
+                        checked={button4UserChoice === true}
+                        onChange={async () => {
+                          // Set user choice first
+                          setButton4UserChoice(true)
+                          
+                          // Update database immediately - this ensures cross-device compatibility
+                          await updateConfig({ button4LandingPageRequired: true })
+                          
+                          const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+                          const hasTemplate = !!(welcomeEmailConfig && welcomeEmailConfig !== 'null')
+                          
+                          // Also save to localStorage for immediate UI feedback
+                          localStorage.setItem('elocalpass-button4-config', JSON.stringify({
+                            choice: 'custom',
+                            hasTemplate: hasTemplate,
+                            timestamp: new Date().toISOString()
+                          }))
+                          
+                          if (hasTemplate) {
+                            setConfiguredButtons((prev) => new Set(prev).add(4))
+                            console.log('🔧 BUTTON 4: Custom template selected with existing template - saved to database and marked as configured')
+                          } else {
+                            // Remove from configured buttons since no template exists yet
+                            setConfiguredButtons((prev) => {
+                              const newSet = new Set(prev)
+                              newSet.delete(4)
+                              return newSet
+                            })
+                            console.log('🔧 BUTTON 4: Custom template selected but no template exists - saved to database but not marked as configured')
+                          }
                         }}
                         className="mt-1 h-4 w-4 text-purple-600"
                       />
                       <div>
                         <span className="font-medium text-gray-900">Custom Template</span>
                         <p className="text-sm text-gray-600">Use seller-specific template with custom branding, messages, and promotions</p>
+                        {(() => {
+                          const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
+                          const hasTemplate = welcomeEmailConfig && welcomeEmailConfig !== 'null'
+                          if (!hasTemplate) {
+                            return (
+                              <p className="text-xs text-orange-600 mt-1">
+                                ⚠️ You must create a custom welcome email template first
+                              </p>
+                            )
+                          }
+                          return null
+                        })()}
                       </div>
                     </label>
 
                     {/* Custom Template Features - Show immediately when Custom Template is selected */}
-                    {globalConfig.button4LandingPageRequired && (
+                    {button4UserChoice === true && (
                       <div className="ml-7 p-4 bg-purple-50 rounded-lg border border-purple-200">
                         {(() => {
                           const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
@@ -2776,10 +2980,22 @@ export default function QRConfigPage() {
                     <label className="flex items-start space-x-3 cursor-pointer">
                       <input
                         type="radio"
-                        checked={globalConfig.button4LandingPageRequired === false}
-                        onChange={() => {
-                          updateConfig({ button4LandingPageRequired: false })
+                        checked={button4UserChoice === false}
+                        onChange={async () => {
+                          // Set user choice first
+                          setButton4UserChoice(false)
+                          
+                          // Update database immediately - this ensures cross-device compatibility
+                          await updateConfig({ button4LandingPageRequired: false })
+                          
+                          // Also save to localStorage for immediate UI feedback
+                          localStorage.setItem('elocalpass-button4-config', JSON.stringify({
+                            choice: 'default',
+                            timestamp: new Date().toISOString()
+                          }))
+                          
                           setConfiguredButtons((prev) => new Set(prev).add(4))
+                          console.log('🔧 BUTTON 4: Default template selected - saved to database and marked as configured')
                         }}
                         className="mt-1 h-4 w-4 text-purple-600"
                       />
@@ -2790,7 +3006,7 @@ export default function QRConfigPage() {
                     </label>
 
                     {/* Default Template Button - Show when Default Template is selected */}
-                    {!globalConfig.button4LandingPageRequired && (
+                    {button4UserChoice === false && (
                       <div className="ml-7 p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <button 
                           onClick={() => router.push('/admin/qr-config/email-config?mode=default')}
@@ -2816,10 +3032,22 @@ export default function QRConfigPage() {
                     <label className="flex items-start space-x-3 cursor-pointer">
                       <input
                         type="radio"
-                        checked={globalConfig.button5SendRebuyEmail === true}
-                        onChange={() => {
-                          updateConfig({ button5SendRebuyEmail: true })
+                        checked={button5UserChoice === true}
+                        onChange={async () => {
+                          // Set user choice first
+                          setButton5UserChoice(true)
+                          
+                          // Update database immediately - this ensures cross-device compatibility
+                          await updateConfig({ button5SendRebuyEmail: true })
+                          
+                          // Also save to localStorage for immediate UI feedback
+                          localStorage.setItem('elocalpass-button5-config', JSON.stringify({
+                            choice: 'yes',
+                            timestamp: new Date().toISOString()
+                          }))
+                          
                           setConfiguredButtons((prev) => new Set(prev).add(5))
+                          console.log('🔧 BUTTON 5: Yes selected - saved to database and marked as configured')
                         }}
                         className="mt-1 h-4 w-4 text-blue-600"
                       />
@@ -2831,7 +3059,7 @@ export default function QRConfigPage() {
                       </div>
                     </label>
 
-                    {globalConfig.button5SendRebuyEmail && (
+                    {button5UserChoice === true && (
                       <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                         <h4 className="font-medium text-blue-900 mb-2">Rebuy Email System</h4>
                         <p className="text-sm text-blue-800 mb-3">
@@ -2874,10 +3102,22 @@ export default function QRConfigPage() {
                     <label className="flex items-start space-x-3 cursor-pointer">
                       <input
                         type="radio"
-                        checked={globalConfig.button5SendRebuyEmail === false}
-                        onChange={() => {
-                          updateConfig({ button5SendRebuyEmail: false })
+                        checked={button5UserChoice === false}
+                        onChange={async () => {
+                          // Set user choice first
+                          setButton5UserChoice(false)
+                          
+                          // Update database immediately - this ensures cross-device compatibility
+                          await updateConfig({ button5SendRebuyEmail: false })
+                          
+                          // Also save to localStorage for immediate UI feedback
+                          localStorage.setItem('elocalpass-button5-config', JSON.stringify({
+                            choice: 'no',
+                            timestamp: new Date().toISOString()
+                          }))
+                          
                           setConfiguredButtons((prev) => new Set(prev).add(5))
+                          console.log('🔧 BUTTON 5: No selected - saved to database and marked as configured')
                         }}
                         className="mt-1 h-4 w-4 text-blue-600"
                       />
@@ -2894,7 +3134,7 @@ export default function QRConfigPage() {
         </div>
       </div>
 
-      {/* Save Configuration Modal */}
+      {/* Save Master Configuration Modal */}
       {showSaveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
@@ -2950,7 +3190,7 @@ export default function QRConfigPage() {
                 disabled={!newConfigName.trim()}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
-                Save Configuration
+                Save Master Configuration
               </button>
             </div>
           </div>
