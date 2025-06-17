@@ -13,6 +13,7 @@ const getNavItems = (userRole: string) => {
       { href: "/admin/locations", label: "Locations", icon: MapPin },
       { href: "/admin/sellers", label: "Sellers", icon: Users },
       { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
+      { href: "/admin/analytics", label: "Analytics", icon: TrendingUp },
     ]
   }
   return []

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../../components/auth/protected-route"
 import Link from "next/link"
 import { 
@@ -40,17 +40,23 @@ interface AnalyticsSummary {
   expiredQRCodes: number
 }
 
-const getNavItems = () => [
-  { href: "/admin", label: "Dashboard", icon: Building2 },
-  { href: "/admin/distributors", label: "Distributors", icon: Users },
-  { href: "/admin/locations", label: "Locations", icon: MapPin },
-  { href: "/admin/sellers", label: "Sellers", icon: Users },
-  { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
-  { href: "/admin/analytics", label: "Analytics", icon: BarChart3, active: true },
-]
+const getNavItems = (userRole: string) => {
+  if (userRole === "ADMIN") {
+    return [
+      { href: "/admin", label: "Dashboard", icon: Building2 },
+      { href: "/admin/distributors", label: "Distributors", icon: Users },
+      { href: "/admin/locations", label: "Locations", icon: MapPin },
+      { href: "/admin/sellers", label: "Sellers", icon: Users },
+      { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
+      { href: "/admin/analytics", label: "Analytics", icon: TrendingUp },
+    ]
+  }
+  return []
+}
 
 export default function AnalyticsPage() {
   const { data: session } = useSession()
+  const navItems = getNavItems(session?.user?.role || "")
   const [analytics, setAnalytics] = useState<QRAnalytics[]>([])
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -178,18 +184,57 @@ export default function AnalyticsPage() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+      <div className="min-h-screen bg-gray-100">
+
+        {/* Navigation */}
+        <nav className="bg-orange-400 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  Comprehensive QR code performance and revenue analytics
-                </p>
+            <div className="flex justify-between h-16">
+              <div className="flex items-center space-x-8">
+                <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
+                <div className="flex space-x-4">
+                  {navItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = item.href === '/admin/analytics'
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                          isActive
+                            ? "text-white bg-orange-500"
+                            : "text-orange-100 hover:text-white hover:bg-orange-500"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {item.label}
+                      </Link>
+                    )
+                  })}
+                </div>
               </div>
               <div className="flex items-center space-x-4">
+                <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
+                <button
+                  onClick={() => signOut()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="px-4 py-6 sm:px-0">
+            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
+              <div className="mb-8 flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics Dashboard</h2>
+                  <p className="text-gray-600">Comprehensive QR code performance and revenue analytics</p>
+                </div>
                 <button
                   onClick={exportToCSV}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
@@ -197,48 +242,13 @@ export default function AnalyticsPage() {
                   <Download className="h-4 w-4 mr-2" />
                   Export CSV
                 </button>
-                <Link
-                  href="/admin"
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Back to Dashboard
-                </Link>
               </div>
-            </div>
-          </div>
-        </header>
 
-        {/* Navigation */}
-        <nav className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex space-x-8">
-              {getNavItems().map((item) => {
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center px-1 pt-1 pb-4 text-sm font-medium border-b-2 ${
-                      item.active
-                        ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {item.label}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        </nav>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
-              {error}
-            </div>
-          )}
+              {error && (
+                <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+                  {error}
+                </div>
+              )}
 
           {/* Summary Cards */}
           {summary && (
@@ -536,6 +546,8 @@ export default function AnalyticsPage() {
                 </p>
               </div>
             )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
