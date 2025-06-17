@@ -111,9 +111,12 @@ export default function SellerDashboard() {
   
   // Handle QR generation
   const handleGenerateQR = async () => {
-    if (!clientName || !clientEmail || !confirmEmail || clientEmail !== confirmEmail) {
-      alert('Please fill in client name and email, and ensure emails match')
-      return
+    // Only validate client info if it should be shown
+    if (shouldShowClientInfo()) {
+      if (!clientName || !clientEmail || !confirmEmail || clientEmail !== confirmEmail) {
+        alert('Please fill in client name and email, and ensure emails match')
+        return
+      }
     }
     
     setGenerating(true)
@@ -151,6 +154,20 @@ export default function SellerDashboard() {
     } finally {
       setGenerating(false)
     }
+  }
+
+  // Helper function to determine if client info should be shown
+  const shouldShowClientInfo = () => {
+    if (!config) return true
+    
+    if (config.button3DeliveryMethod === 'DIRECT') {
+      return true // Always show for direct email
+    } else if (config.button3DeliveryMethod === 'URLS') {
+      return false // Never show for URLs only
+    } else if (config.button3DeliveryMethod === 'BOTH') {
+      return selectedDeliveryOption === 'DIRECT' // Show only if direct email is selected
+    }
+    return true
   }
 
   if (loading) {
@@ -215,65 +232,135 @@ export default function SellerDashboard() {
                       </h4>
                     </div>
                     
-                    {/* Step 1: Client Information */}
+                    {/* Step 1: QR Delivery */}
                     <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
                       <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                        Step 1: Client Information
+                        Step 1: QR Delivery ({config.button3DeliveryMethod === 'DIRECT' ? 'Direct Email Only' : 
+                                            config.button3DeliveryMethod === 'URLS' ? 'Landing Pages Only' : 
+                                            'Direct Email + Landing Pages'})
                       </h4>
-                      <div className="space-y-2">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Client Name *
-                          </label>
-                          <input
-                            type="text"
-                            value={clientName}
-                            onChange={(e) => setClientName(e.target.value)}
-                            className="w-full focus:ring-blue-500 focus:border-blue-500 block shadow-sm text-sm border-gray-300 rounded-md px-3 py-2"
-                            placeholder="Enter client's full name"
-                          />
-                        </div>
+                      <div className="space-y-3">
+                        {config.button3DeliveryMethod === 'DIRECT' && (
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-gray-700 flex-shrink-0">
+                              Method:
+                            </label>
+                            <div className="ml-3 px-3 py-2 bg-gray-100 rounded-md text-sm text-gray-900 min-w-0 flex-shrink-0">
+                              Direct Email Fixed
+                            </div>
+                          </div>
+                        )}
                         
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Client Email *
-                          </label>
-                          <input
-                            type="email"
-                            value={clientEmail}
-                            onChange={(e) => setClientEmail(e.target.value)}
-                            className="w-full focus:ring-blue-500 focus:border-blue-500 block shadow-sm text-sm border-gray-300 rounded-md px-3 py-2"
-                            placeholder="client@email.com"
-                          />
-                        </div>
+                        {config.button3DeliveryMethod === 'URLS' && config.landingPageUrls && config.landingPageUrls.length > 0 && (
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-gray-700 flex-shrink-0">
+                              Landing Page:
+                            </label>
+                            <select
+                              value={selectedLandingPage || ''}
+                              onChange={(e) => setSelectedLandingPage(e.target.value)}
+                              className="ml-3 flex-1 max-w-xs py-2 px-2 border border-gray-300 bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              {config.landingPageUrls.map(lp => (
+                                <option key={lp.id} value={lp.id}>{lp.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                         
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Confirm Email *
-                          </label>
-                          <input
-                            type="email"
-                            value={confirmEmail}
-                            onChange={(e) => setConfirmEmail(e.target.value)}
-                            className={`w-full focus:ring-blue-500 focus:border-blue-500 block shadow-sm text-sm border-gray-300 rounded-md px-3 py-2 ${
-                              confirmEmail && clientEmail !== confirmEmail ? 'border-red-500 bg-red-50' : ''
-                            }`}
-                            placeholder="Confirm email address"
-                          />
-                          {confirmEmail && clientEmail !== confirmEmail && (
-                            <p className="text-red-600 text-xs mt-1">Emails don't match</p>
-                          )}
-                          {confirmEmail && clientEmail === confirmEmail && confirmEmail.length > 0 && (
-                            <p className="text-green-600 text-xs mt-1">Emails confirmed</p>
-                          )}
-                        </div>
+                        {config.button3DeliveryMethod === 'BOTH' && (
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium text-gray-700 flex-shrink-0">
+                              Send via:
+                            </label>
+                            <select
+                              value={selectedDeliveryOption}
+                              onChange={(e) => {
+                                setSelectedDeliveryOption(e.target.value)
+                                // Clear client info when switching to URL delivery
+                                if (e.target.value !== 'DIRECT') {
+                                  setClientName('')
+                                  setClientEmail('')
+                                  setConfirmEmail('')
+                                }
+                              }}
+                              className="ml-3 flex-1 max-w-xs py-2 px-2 border border-gray-300 bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="DIRECT">Direct Email</option>
+                              {config.landingPageUrls && config.landingPageUrls.map(lp => (
+                                <option key={lp.id} value={lp.id}>{lp.name}</option>
+                              ))}
+                            </select>
+                            {/* Debug info */}
+                            <div className="ml-2 text-xs text-gray-500">
+                              URLs: {config.landingPageUrls ? config.landingPageUrls.length : 0}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
-                    {/* Step 2: Guest & Day Limits */}
+                    {/* Step 2: Client Information */}
+                    {shouldShowClientInfo() && (
+                      <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
+                        <h4 className="text-lg font-semibold text-blue-900 mb-2">
+                          Step 2: Client Information
+                        </h4>
+                        <div className="space-y-2">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Client Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={clientName}
+                              onChange={(e) => setClientName(e.target.value)}
+                              className="w-full focus:ring-blue-500 focus:border-blue-500 block shadow-sm text-sm border-gray-300 rounded-md px-3 py-2"
+                              placeholder="Enter client's full name"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Client Email *
+                            </label>
+                            <input
+                              type="email"
+                              value={clientEmail}
+                              onChange={(e) => setClientEmail(e.target.value)}
+                              className="w-full focus:ring-blue-500 focus:border-blue-500 block shadow-sm text-sm border-gray-300 rounded-md px-3 py-2"
+                              placeholder="client@email.com"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Confirm Email *
+                            </label>
+                            <input
+                              type="email"
+                              value={confirmEmail}
+                              onChange={(e) => setConfirmEmail(e.target.value)}
+                              className={`w-full focus:ring-blue-500 focus:border-blue-500 block shadow-sm text-sm border-gray-300 rounded-md px-3 py-2 ${
+                                confirmEmail && clientEmail !== confirmEmail ? 'border-red-500 bg-red-50' : ''
+                              }`}
+                              placeholder="Confirm email address"
+                            />
+                            {confirmEmail && clientEmail !== confirmEmail && (
+                              <p className="text-red-600 text-xs mt-1">Emails don't match</p>
+                            )}
+                            {confirmEmail && clientEmail === confirmEmail && confirmEmail.length > 0 && (
+                              <p className="text-green-600 text-xs mt-1">Emails confirmed</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Step 3: Guest & Day Limits */}
                     <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
                       <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                        Step 2: Guest & Day Limits
+                        Step {shouldShowClientInfo() ? '3' : '2'}: Guest & Day Limits
                       </h4>
                       <div className="space-y-3">
                         {/* Guests - Inline */}
@@ -328,64 +415,10 @@ export default function SellerDashboard() {
                       </div>
                     </div>
                     
-                    {/* Step 3: QR Delivery */}
+                    {/* Step 4: Customer Communication Language */}
                     <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
                       <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                        Step 3: QR Delivery {config.button3DeliveryMethod}
-                      </h4>
-                      <div className="space-y-3">
-                        {config.button3DeliveryMethod === 'DIRECT' && (
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-gray-700 flex-shrink-0">
-                              Method:
-                            </label>
-                            <div className="ml-3 px-3 py-2 bg-gray-100 rounded-md text-sm text-gray-900 min-w-0 flex-shrink-0">
-                              Direct Email Fixed
-                            </div>
-                          </div>
-                        )}
-                        
-                        {config.button3DeliveryMethod === 'URLS' && config.landingPageUrls && config.landingPageUrls.length > 0 && (
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-gray-700 flex-shrink-0">
-                              Landing Page:
-                            </label>
-                            <select
-                              value={selectedLandingPage || ''}
-                              onChange={(e) => setSelectedLandingPage(e.target.value)}
-                              className="ml-3 flex-1 max-w-xs py-2 px-2 border border-gray-300 bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                              {config.landingPageUrls.map(lp => (
-                                <option key={lp.id} value={lp.id}>{lp.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                        
-                        {config.button3DeliveryMethod === 'BOTH' && (
-                          <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium text-gray-700 flex-shrink-0">
-                              Send via:
-                            </label>
-                            <select
-                              value={selectedDeliveryOption}
-                              onChange={(e) => setSelectedDeliveryOption(e.target.value)}
-                              className="ml-3 flex-1 max-w-xs py-2 px-2 border border-gray-300 bg-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                              <option value="DIRECT">Direct Email</option>
-                              {config.landingPageUrls && config.landingPageUrls.map(lp => (
-                                <option key={lp.id} value={lp.id}>{lp.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Step 3B: Customer Communication Language */}
-                    <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
-                      <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                        Step 3B: Customer Communication Language
+                        Step {shouldShowClientInfo() ? '4' : '3'}: Customer Communication Language
                       </h4>
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
@@ -410,18 +443,22 @@ export default function SellerDashboard() {
                         Summary
                       </h4>
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-700">Client Name:</span>
-                          <span className="font-medium text-gray-900 text-sm">
-                            {clientName || 'Not specified'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-700">Client Email:</span>
-                          <span className="font-medium text-gray-900 text-sm">
-                            {clientEmail || 'Not specified'}
-                          </span>
-                        </div>
+                        {shouldShowClientInfo() && (
+                          <>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-700">Client Name:</span>
+                              <span className="font-medium text-gray-900 text-sm">
+                                {clientName || 'Not specified'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-700">Client Email:</span>
+                              <span className="font-medium text-gray-900 text-sm">
+                                {clientEmail || 'Not specified'}
+                              </span>
+                            </div>
+                          </>
+                        )}
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-700">Pass:</span>
                           <span className="font-medium text-gray-900 text-sm">
@@ -450,11 +487,11 @@ export default function SellerDashboard() {
                     {/* Step 5: Generate & Send */}
                     <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
                       <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                        Step 5: Generate & Send
+                        Step {shouldShowClientInfo() ? '5' : '4'}: Generate & Send
                       </h4>
                       <button
                         onClick={handleGenerateQR}
-                        disabled={generating || !clientName || !clientEmail || !confirmEmail || clientEmail !== confirmEmail}
+                        disabled={generating || (shouldShowClientInfo() && (!clientName || !clientEmail || !confirmEmail || clientEmail !== confirmEmail))}
                         className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                       >
                         {generating ? (

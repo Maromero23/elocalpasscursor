@@ -798,67 +798,57 @@ export default function DistributorsPage() {
   const fetchQRConfigurations = async () => {
     setLoadingQRConfigs(true)
     try {
-      // Load from localStorage (named configurations)
+      console.log('🔄 DISTRIBUTORS: Loading configurations from database...')
+      
+      // PRIORITY 1: Load from DATABASE (same as main QR config page)
+      const dbResponse = await fetch('/api/admin/saved-configs', {
+        credentials: 'include'
+      })
+      
+      if (dbResponse.ok) {
+        const dbConfigs = await dbResponse.json()
+        console.log('✅ DISTRIBUTORS: Loaded', dbConfigs.length, 'configurations from database')
+        console.log('🔍 DISTRIBUTORS: Database configs:', dbConfigs)
+        
+        // Use database configurations directly - they have the proper structure
+        // Ensure createdAt is consistently handled as a string that can be converted to Date
+        const processedConfigs = dbConfigs.map((config: any) => ({
+          ...config,
+          createdAt: config.createdAt || new Date().toISOString() // Ensure createdAt exists
+        }))
+        setAvailableQRConfigs(processedConfigs)
+        
+        return // Exit early - database is the source of truth
+      } else {
+        console.log('⚠️ DISTRIBUTORS: Could not load from database, status:', dbResponse.status)
+      }
+      
+      // FALLBACK: Only use localStorage if database fails
+      console.log('📦 DISTRIBUTORS: Falling back to localStorage...')
       const saved = localStorage.getItem('elocalpass-saved-configurations')
-      let localConfigs: any[] = []
       if (saved) {
         try {
           const parsed = JSON.parse(saved)
-          localConfigs = parsed.map((config: any) => ({
+          const localConfigs = parsed.map((config: any) => ({
             ...config,
             createdAt: new Date(config.createdAt),
             source: 'localStorage'
           }))
+          console.log('✅ DISTRIBUTORS: Loaded', localConfigs.length, 'configurations from localStorage')
+          
+          setAvailableQRConfigs(localConfigs)
         } catch (error) {
           console.error('Error parsing saved configurations:', error)
+          setAvailableQRConfigs([])
         }
+      } else {
+        console.log('❌ DISTRIBUTORS: No configurations found anywhere')
+        setAvailableQRConfigs([])
       }
-
-      // Load from API (global configurations)
-      let apiConfigs: any[] = []
-      try {
-        const response = await fetch('/api/admin/qr-global-config', {
-          credentials: 'include'
-        })
-        if (response.ok) {
-          const data = await response.json()
-          // If data is an array, use it; if it's a single object, wrap it in an array
-          if (Array.isArray(data)) {
-            apiConfigs = data.map((config: any) => ({
-              id: config.id || 'global-config',
-              name: `Global Config ${config.id?.slice(-8) || 'API'}`,
-              description: 'Global configuration from API',
-              config: config,
-              createdAt: new Date(config.updatedAt || Date.now()),
-              source: 'api'
-            }))
-          } else if (data && typeof data === 'object') {
-            // Single global config object
-            apiConfigs = [{
-              id: data.id || 'global-config',
-              name: `Global Config ${data.id?.slice(-8) || 'API'}`,
-              description: 'Global configuration from API',
-              config: data,
-              createdAt: new Date(data.updatedAt || Date.now()),
-              source: 'api'
-            }]
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching global configurations:', error)
-      }
-
-      // Combine both sources, removing duplicates by ID
-      const allConfigs = [...localConfigs, ...apiConfigs]
-      const uniqueConfigs = allConfigs.filter((config, index, self) => {
-        const firstIndex = self.findIndex(c => c.id === config.id)
-        const isFirstOccurrence = index === firstIndex
-        return isFirstOccurrence
-      })
       
-      setAvailableQRConfigs(uniqueConfigs)
     } catch (error) {
-      console.error('Error loading QR configurations:', error)
+      console.error('❌ DISTRIBUTORS: Error loading configurations:', error)
+      setAvailableQRConfigs([])
     } finally {
       setLoadingQRConfigs(false)
     }
@@ -2486,7 +2476,7 @@ export default function DistributorsPage() {
                           </div>
                           <p className="text-sm text-gray-600 mt-1">{config.description}</p>
                           <p className="text-xs text-gray-500 mt-1">
-                            Created: {config.createdAt.toLocaleDateString()}
+                            Created: {new Date(config.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                       </div>

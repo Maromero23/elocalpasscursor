@@ -8,36 +8,32 @@ datasource db {
 }
 
 model User {
-  id                 String       @id @default(cuid())
-  email              String       @unique
+  id                 String                 @id @default(cuid())
+  email              String                 @unique
   password           String
   name               String?
   telephone          String?
   whatsapp           String?
   notes              String?
-  role               String       @default("SELLER")
-  isActive           Boolean      @default(true)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  role               String                 @default("SELLER")
+  isActive           Boolean                @default(true)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
   locationId         String?
   distributorId      String?
-  
-  // Configuration identifiers for pairing
-  configurationId    String?      // ID of the assigned QR configuration
-  configurationName  String?      // Name of the assigned QR configuration for display
-  
-  // New relation to saved configurations
-  savedConfigId      String?      // ID of saved configuration from library
-  savedConfig        SavedQRConfiguration? @relation("UserSavedConfig", fields: [savedConfigId], references: [id])
-  
-  distributorProfile Distributor? @relation("DistributorUser")
-  locationProfile    Location?    @relation("LocationUser")
-  sellerConfigs      QRConfig?    @relation("SellerConfig")
-  landingPageUrls    SellerLandingPageUrl[] @relation("SellerLandingUrls")
+  configurationId    String?
+  configurationName  String?
+  savedConfigId      String?
+  distributorProfile Distributor?           @relation("DistributorUser")
+  locationProfile    Location?              @relation("LocationUser")
+  sellerConfigs      QRConfig?              @relation("SellerConfig")
   accounts           Account[]
-  qrCodes            QRCode[]
+  sellerQRCodes      QRCode[]               @relation("SellerQRCodes")
+  landingPageUrls    SellerLandingPageUrl[] @relation("SellerLandingUrls")
   sessions           Session[]
-  location           Location?    @relation("LocationSellers", fields: [locationId], references: [id])
+  location           Location?              @relation("LocationSellers", fields: [locationId], references: [id])
+  savedConfig        SavedQRConfiguration?  @relation("UserSavedConfig", fields: [savedConfigId], references: [id])
+  analytics          QRCodeAnalytics[]      @relation("SellerAnalytics")
 
   @@map("users")
 }
@@ -105,9 +101,9 @@ model QRConfig {
   button2VariableCommission    Float    @default(0)
   button2IncludeTax            Boolean  @default(false)
   button2TaxPercentage         Float    @default(0)
-  button3DeliveryMethod        String   @default("DIRECT")
-  button4LandingPageRequired   Boolean  @default(true)
-  button5SendRebuyEmail        Boolean  @default(false)
+  button3DeliveryMethod        String?
+  button4LandingPageRequired   Boolean?
+  button5SendRebuyEmail        Boolean?
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt
   seller                       User     @relation("SellerConfig", fields: [sellerId], references: [id], onDelete: Cascade)
@@ -134,9 +130,9 @@ model QrGlobalConfig {
   button2VariableCommission    Float    @default(0)
   button2IncludeTax            Boolean  @default(false)
   button2TaxPercentage         Float    @default(0)
-  button3DeliveryMethod        String   @default("DIRECT")
-  button4LandingPageRequired   Boolean  @default(true)
-  button5SendRebuyEmail        Boolean  @default(false)
+  button3DeliveryMethod        String?
+  button4LandingPageRequired   Boolean?
+  button5SendRebuyEmail        Boolean?
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt
 
@@ -204,19 +200,17 @@ model RebuyEmailTemplate {
 }
 
 model SellerLandingPageUrl {
-  id              String   @id @default(cuid())
-  sellerId        String
-  name            String   // User-friendly name for the URL (e.g., "Summer Promotion", "Weekend Special")
-  url             String?  // The actual landing page URL (optional - can be added later)
-  description     String?  // Optional description
-  isActive        Boolean  @default(true)
-  clickCount      Int      @default(0)  // Track usage
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  seller          User     @relation("SellerLandingUrls", fields: [sellerId], references: [id], onDelete: Cascade)
-  
+  id          String   @id @default(cuid())
+  sellerId    String
+  name        String
+  url         String?
+  description String?
+  isActive    Boolean  @default(true)
+  clickCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  seller      User     @relation("SellerLandingUrls", fields: [sellerId], references: [id], onDelete: Cascade)
+
   @@map("seller_landing_page_urls")
 }
 
@@ -235,19 +229,25 @@ model LandingPageSubmission {
 }
 
 model QRCode {
-  id          String                  @id @default(cuid())
-  code        String                  @unique
-  sellerId    String
-  guests      Int                     @default(2)
-  days        Int                     @default(3)
-  cost        Float                   @default(0.0)
-  expiresAt   DateTime
-  isActive    Boolean                 @default(true)
-  landingUrl  String?
-  createdAt   DateTime                @default(now())
-  submissions LandingPageSubmission[]
-  seller      User                    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  scans       QRScan[]
+  id            String                  @id @default(cuid())
+  code          String                  @unique
+  sellerId      String
+  customerName  String?                 // Customer name for magic link access
+  customerEmail String?                 // Customer email for magic link access
+  guests        Int                     @default(2)
+  days          Int                     @default(3)
+  cost          Float                   @default(0.0)
+  expiresAt     DateTime
+  isActive      Boolean                 @default(true)
+  landingUrl    String?
+  createdAt     DateTime                @default(now())
+  submissions   LandingPageSubmission[]
+  seller        User                    @relation("SellerQRCodes", fields: [sellerId], references: [id], onDelete: Cascade)
+  scans         QRScan[]
+  accessTokens  CustomerAccessToken[]
+  usage         QRCodeUsage[]
+  activations   QRCodeActivation[]
+  analytics     QRCodeAnalytics?
 
   @@map("qr_codes")
 }
@@ -264,55 +264,172 @@ model QRScan {
 }
 
 model Distributor {
-  id            String     @id @default(cuid())
+  id            String              @id @default(cuid())
   name          String
-  isActive      Boolean    @default(true)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  userId        String     @unique
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  userId        String              @unique
   contactPerson String?
   email         String?
   notes         String?
   telephone     String?
   whatsapp      String?
-  user          User       @relation("DistributorUser", fields: [userId], references: [id], onDelete: Cascade)
-  locations     Location[] @relation("DistributorLocations")
+  user          User                @relation("DistributorUser", fields: [userId], references: [id], onDelete: Cascade)
+  locations     Location[]          @relation("DistributorLocations")
+  analytics     QRCodeAnalytics[]   @relation("DistributorAnalytics")
 }
 
 model Location {
-  id            String      @id @default(cuid())
+  id            String              @id @default(cuid())
   name          String
-  isActive      Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
   distributorId String
-  userId        String      @unique
+  userId        String              @unique
   contactPerson String?
   email         String?
   notes         String?
   telephone     String?
   whatsapp      String?
-  user          User        @relation("LocationUser", fields: [userId], references: [id], onDelete: Cascade)
-  distributor   Distributor @relation("DistributorLocations", fields: [distributorId], references: [id], onDelete: Cascade)
-  sellers       User[]      @relation("LocationSellers")
+  user          User                @relation("LocationUser", fields: [userId], references: [id], onDelete: Cascade)
+  distributor   Distributor         @relation("DistributorLocations", fields: [distributorId], references: [id], onDelete: Cascade)
+  sellers       User[]              @relation("LocationSellers")
+  analytics     QRCodeAnalytics[]   @relation("LocationAnalytics")
 }
 
 model SavedQRConfiguration {
-  id                 String   @id @default(cuid())
-  name               String
-  description        String?
-  
-  // Complete configuration data stored as JSON strings (SQLite compatible)
-  config             String   // Stores the complete QRGlobalConfig object as JSON string
-  emailTemplates     String?  // Welcome and rebuy email templates as JSON string
-  landingPageConfig  String?  // Landing page configurations as JSON string
-  selectedUrlIds     String?  // Array of selected URL IDs as JSON string
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  
-  // Users assigned to this configuration
-  assignedUsers      User[]   @relation("UserSavedConfig")
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  config            String
+  emailTemplates    String?
+  landingPageConfig String?
+  selectedUrlIds    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  assignedUsers     User[]   @relation("UserSavedConfig")
 
   @@map("saved_qr_configurations")
+}
+
+model CustomerAccessToken {
+  id            String   @id @default(cuid())
+  token         String   @unique
+  qrCodeId      String
+  customerEmail String
+  customerName  String
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdAt     DateTime @default(now())
+  
+  qrCode        QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  
+  @@map("customer_access_tokens")
+}
+
+model QRCodeUsage {
+  id            String   @id @default(cuid())
+  qrCodeId      String
+  customerEmail String
+  customerName  String
+  affiliateName String?  // Name of restaurant/store/service
+  affiliateType String?  // Type: restaurant, store, service, etc.
+  discountType  String?  // Type of discount received
+  discountValue String?  // Value/description of discount
+  usedAt        DateTime @default(now())
+  notes         String?  // Additional notes about the usage
+  
+  qrCode        QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  
+  @@map("qr_code_usage")
+}
+
+model QRCodeActivation {
+  id            String   @id @default(cuid())
+  qrCodeId      String
+  customerEmail String
+  customerName  String
+  guests        Int
+  days          Int
+  cost          Float
+  activatedAt   DateTime @default(now())
+  expiresAt     DateTime
+  isActive      Boolean  @default(true)
+  sellerId      String?  // Who processed this activation
+  
+  qrCode        QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  
+  @@map("qr_code_activations")
+}
+
+model QRCodeAnalytics {
+  id                    String   @id @default(cuid())
+  qrCodeId              String   @unique
+  qrCode                String   // The actual QR code string
+  
+  // Customer Information
+  customerName          String
+  customerEmail         String
+  
+  // QR Code Details
+  guests                Int
+  days                  Int
+  cost                  Float
+  expiresAt             DateTime
+  isActive              Boolean  @default(true)
+  deliveryMethod        String   // DIRECT, URLS, BOTH
+  language              String   @default("en")
+  
+  // Seller Information
+  sellerId              String
+  sellerName            String?
+  sellerEmail           String
+  
+  // Location Information (via seller)
+  locationId            String?
+  locationName          String?
+  
+  // Distributor Information (via location)
+  distributorId         String?
+  distributorName       String?
+  
+  // Configuration Information
+  configurationId       String
+  configurationName     String?
+  pricingType           String   // FIXED, VARIABLE
+  fixedPrice            Float?
+  variableBasePrice     Float?
+  variableGuestIncrease Float?
+  variableDayIncrease   Float?
+  variableCommission    Float?
+  includeTax            Boolean  @default(false)
+  taxPercentage         Float?
+  
+  // Revenue Breakdown
+  baseAmount            Float    @default(0)
+  guestAmount           Float    @default(0)
+  dayAmount             Float    @default(0)
+  commissionAmount      Float    @default(0)
+  taxAmount             Float    @default(0)
+  totalAmount           Float    @default(0)
+  
+  // Tracking & Analytics
+  landingUrl            String?
+  magicLinkUrl          String?
+  welcomeEmailSent      Boolean  @default(false)
+  rebuyEmailScheduled   Boolean  @default(false)
+  
+  // Timestamps
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relations
+  qrCodeRecord          QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  seller                User     @relation("SellerAnalytics", fields: [sellerId], references: [id], onDelete: Cascade)
+  location              Location? @relation("LocationAnalytics", fields: [locationId], references: [id], onDelete: SetNull)
+  distributor           Distributor? @relation("DistributorAnalytics", fields: [distributorId], references: [id], onDelete: SetNull)
+  
+  @@map("qr_code_analytics")
 }

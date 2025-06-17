@@ -198,7 +198,10 @@ export default function AdminPage() {
                   </p>
                 </Link>
 
-                <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group">
+                <Link
+                  href="/admin/analytics"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                >
                   <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-4 group-hover:bg-purple-200 transition-colors">
                     <Eye className="w-6 h-6 text-purple-600" />
                   </div>
@@ -206,7 +209,7 @@ export default function AdminPage() {
                   <p className="text-sm text-gray-600">
                     View detailed reports and analytics across the entire network
                   </p>
-                </div>
+                </Link>
               </div>
 
               {/* Recent Activity Section */}

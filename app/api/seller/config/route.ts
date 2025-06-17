@@ -40,20 +40,19 @@ export async function GET(request: NextRequest) {
       const selectedUrlIds = savedConfig.selectedUrlIds ? JSON.parse(savedConfig.selectedUrlIds) : []
       
       // Get landing page URLs if any are selected
+      // URLs are stored in the configuration's landingPageConfig, not in a separate table
       let landingPageUrls = []
-      if (selectedUrlIds.length > 0) {
-        landingPageUrls = await prisma.sellerLandingPageUrl.findMany({
-          where: {
-            id: { in: selectedUrlIds },
-            isActive: true
-          },
-          select: {
-            id: true,
-            name: true,
-            url: true,
-            description: true
-          }
-        })
+      if (selectedUrlIds.length > 0 && landingPageConfig) {
+        // Get URLs from the configuration's temporaryUrls
+        const temporaryUrls = landingPageConfig.temporaryUrls || []
+        landingPageUrls = temporaryUrls
+          .filter((url: any) => selectedUrlIds.includes(url.id))
+          .map((url: any) => ({
+            id: url.id,
+            name: url.name,
+            url: url.url,
+            description: url.description
+          }))
       }
       
       // Transform to match frontend interface
@@ -80,7 +79,7 @@ export async function GET(request: NextRequest) {
         button2TaxPercentage: config.button2TaxPercentage || 0,
         
         // Button 3 fields
-        button3DeliveryMethod: config.button3DeliveryMethod as 'DIRECT' | 'URLS' | 'BOTH' || 'DIRECT',
+        button3DeliveryMethod: (config.button3DeliveryMethod as 'DIRECT' | 'URLS' | 'BOTH') || 'DIRECT',
         
         // Landing page URLs from configuration
         landingPageUrls: landingPageUrls
@@ -171,7 +170,7 @@ export async function GET(request: NextRequest) {
           button2TaxPercentage: config.button2TaxPercentage,
           
           // Button 3 fields
-          button3DeliveryMethod: config.button3DeliveryMethod as 'DIRECT' | 'URLS' | 'BOTH',
+          button3DeliveryMethod: (config.button3DeliveryMethod as 'DIRECT' | 'URLS' | 'BOTH') || 'DIRECT',
           
           landingPageUrls: landingPageUrls
         }

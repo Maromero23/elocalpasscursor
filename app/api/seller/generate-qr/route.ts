@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,31 +32,34 @@ export async function POST(request: NextRequest) {
       where: { id: session.user.id },
       select: { 
         id: true,
-        configurationId: true,
+        savedConfigId: true,
         configurationName: true 
       }
     })
     
-    if (!seller?.configurationId) {
+    if (!seller?.savedConfigId) {
       return NextResponse.json(
         { error: 'No configuration assigned to seller' },
         { status: 400 }
       )
     }
     
-    // Get the QR global configuration that this seller is paired to
-    const config = await prisma.qrGlobalConfig.findUnique({
+    // Get the saved QR configuration that this seller is paired to
+    const savedConfig = await prisma.savedQRConfiguration.findUnique({
       where: {
-        id: seller.configurationId
+        id: seller.savedConfigId
       }
     })
     
-    if (!config) {
+    if (!savedConfig) {
       return NextResponse.json(
         { error: 'Configuration not found' },
         { status: 400 }
       )
     }
+    
+    // Parse the configuration JSON
+    const config = JSON.parse(savedConfig.config)
     
     // Validate delivery method based on configuration
     const requestedDelivery = deliveryMethod || config.button3DeliveryMethod
@@ -106,21 +110,132 @@ export async function POST(request: NextRequest) {
     }
     
     // Generate unique QR code
-    const qrCode = `EL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const qrCodeId = `EL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + days)
     
+    // Get seller details with location and distributor info for analytics
+    const sellerDetails = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        location: {
+          include: {
+            distributor: true
+          }
+        }
+      }
+    })
+
     // Store QR record with calculated price (hidden from seller)
-    const qrRecord = await prisma.qRCode.create({
+    const qrCode = await prisma.qRCode.create({
       data: {
-        code: qrCode,
+        code: qrCodeId,
         sellerId: session.user.id,
+        customerName: clientName,
+        customerEmail: clientEmail,
         guests: guests,
         days: days,
         cost: calculatedPrice, // Hidden pricing stored
         expiresAt: expiresAt,
         isActive: true,
-        landingUrl: requestedDelivery === 'DIRECT' ? null : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/landing/${qrCode}`
+        landingUrl: requestedDelivery === 'DIRECT' ? null : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/landing/${qrCodeId}`
+      }
+    })
+    
+    // Generate magic link token for customer access
+    const accessToken = crypto.randomBytes(32).toString('hex')
+    const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    
+    await prisma.customerAccessToken.create({
+      data: {
+        token: accessToken,
+        qrCodeId: qrCode.id,
+        customerEmail: clientEmail,
+        customerName: clientName,
+        expiresAt: tokenExpiresAt
+      }
+    })
+
+    // Create magic link URL
+    const magicLinkUrl = `${process.env.NEXTAUTH_URL}/customer/access?token=${accessToken}`
+    
+    // Calculate revenue breakdown for analytics
+    const basePrice = config.button2PricingType === 'FIXED' 
+      ? config.button2FixedPrice || 0 
+      : config.button2VariableBasePrice || 0
+    
+    const extraGuests = Math.max(0, guests - 1)
+    const extraDays = Math.max(0, days - 1)
+    const guestAmount = config.button2PricingType === 'VARIABLE' 
+      ? (config.button2VariableGuestIncrease || 0) * extraGuests 
+      : 0
+    const dayAmount = config.button2PricingType === 'VARIABLE' 
+      ? (config.button2VariableDayIncrease || 0) * extraDays 
+      : 0
+    const commissionAmount = config.button2PricingType === 'VARIABLE' 
+      ? config.button2VariableCommission || 0 
+      : 0
+    const taxAmount = config.button2IncludeTax && config.button2TaxPercentage > 0
+      ? calculatedPrice * (config.button2TaxPercentage / 100)
+      : 0
+    
+    // Create comprehensive analytics record
+    await prisma.qRCodeAnalytics.create({
+      data: {
+        qrCodeId: qrCode.id,
+        qrCode: qrCodeId,
+        
+        // Customer Information
+        customerName: clientName,
+        customerEmail: clientEmail,
+        
+        // QR Code Details
+        guests: guests,
+        days: days,
+        cost: calculatedPrice,
+        expiresAt: expiresAt,
+        isActive: true,
+        deliveryMethod: requestedDelivery,
+        language: language || 'en',
+        
+        // Seller Information
+        sellerId: session.user.id,
+        sellerName: sellerDetails?.name,
+        sellerEmail: sellerDetails?.email || '',
+        
+        // Location Information
+        locationId: sellerDetails?.locationId,
+        locationName: sellerDetails?.location?.name,
+        
+        // Distributor Information
+        distributorId: sellerDetails?.location?.distributorId,
+        distributorName: sellerDetails?.location?.distributor?.name,
+        
+        // Configuration Information
+        configurationId: seller.savedConfigId,
+        configurationName: seller.configurationName,
+        pricingType: config.button2PricingType,
+        fixedPrice: config.button2PricingType === 'FIXED' ? config.button2FixedPrice : null,
+        variableBasePrice: config.button2PricingType === 'VARIABLE' ? config.button2VariableBasePrice : null,
+        variableGuestIncrease: config.button2PricingType === 'VARIABLE' ? config.button2VariableGuestIncrease : null,
+        variableDayIncrease: config.button2PricingType === 'VARIABLE' ? config.button2VariableDayIncrease : null,
+        variableCommission: config.button2PricingType === 'VARIABLE' ? config.button2VariableCommission : null,
+        includeTax: config.button2IncludeTax || false,
+        taxPercentage: config.button2TaxPercentage,
+        
+        // Revenue Breakdown
+        baseAmount: basePrice,
+        guestAmount: guestAmount,
+        dayAmount: dayAmount,
+        commissionAmount: commissionAmount,
+        taxAmount: taxAmount,
+        totalAmount: calculatedPrice,
+        
+        // Tracking & Analytics
+        landingUrl: qrCode.landingUrl,
+        magicLinkUrl: magicLinkUrl,
+        welcomeEmailSent: false, // Will be updated when email is actually sent
+        rebuyEmailScheduled: config.button5SendRebuyEmail || false
       }
     })
     
@@ -143,13 +258,17 @@ Hola ${clientName},
 ¡Su ELocalPass está listo para usar! 
 
 📋 DETALLES DE SU PASE:
-• Código: ${qrCode}
+• Código: ${qrCodeId}
 • Huéspedes: ${guests} personas
 • Válido por: ${days} días
 
 🎯 ACCESO DIRECTO:
 Este código le da acceso inmediato a su experiencia local.
 Solo muestre este código QR en el punto de acceso.
+
+📱 ACCEDA A SU PORTAL DE CLIENTE:
+Vea y descargue su código QR en cualquier momento:
+${magicLinkUrl}
 
 ⏰ VÁLIDO HASTA: ${expiresAt.toLocaleDateString('es-ES')}
 
@@ -163,13 +282,17 @@ Hello ${clientName},
 Your ELocalPass is ready to use!
 
 📋 PASS DETAILS:
-• Code: ${qrCode}
+• Code: ${qrCodeId}
 • Guests: ${guests} people
 • Valid for: ${days} days
 
 🎯 DIRECT ACCESS:
 This code gives you immediate access to your local experience.
 Simply show this QR code at the access point.
+
+📱 ACCESS YOUR CUSTOMER PORTAL:
+View and download your QR code anytime:
+${magicLinkUrl}
 
 ⏰ VALID UNTIL: ${expiresAt.toLocaleDateString('en-US')}
 
@@ -211,9 +334,10 @@ The ELocalPass Team
     
     return NextResponse.json({
       success: true,
-      qrCode: qrCode,
+      qrCode: qrCodeId,
       expiresAt: expiresAt,
-      message: 'QR code generated and email sent successfully'
+      message: 'QR code generated and email sent successfully',
+      magicLinkUrl: magicLinkUrl
     })
     
   } catch (error) {
