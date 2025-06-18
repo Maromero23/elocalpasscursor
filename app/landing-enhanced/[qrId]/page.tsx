@@ -192,13 +192,13 @@ export default function EnhancedLandingPage() {
               daySelectionBoxColor: landingConfig.daySelectionBoxColor,
               footerDisclaimerBoxColor: landingConfig.footerDisclaimerBoxColor,
               
-              // QR Configuration Rules from parent config
-              allowCustomGuests: dbConfig.config?.allowCustomGuests ?? true,
-              defaultGuests: dbConfig.config?.defaultGuests ?? 2,
-              maxGuests: dbConfig.config?.maxGuests ?? 10,
-              allowCustomDays: dbConfig.config?.allowCustomDays ?? true,
-              defaultDays: dbConfig.config?.defaultDays ?? 3,
-              maxDays: dbConfig.config?.maxDays ?? 10
+              // QR Configuration Rules from parent config - Use Button 1 values
+              allowCustomGuests: dbConfig.config?.button1GuestsAllowCustom ?? true,
+              defaultGuests: dbConfig.config?.button1GuestsDefault ?? 2,
+              maxGuests: dbConfig.config?.button1GuestsMax ?? 10,
+              allowCustomDays: dbConfig.config?.button1DaysAllowCustom ?? true,
+              defaultDays: dbConfig.config?.button1DaysDefault ?? 3,
+              maxDays: dbConfig.config?.button1DaysMax ?? 10
             })
             
             setLoading(false)

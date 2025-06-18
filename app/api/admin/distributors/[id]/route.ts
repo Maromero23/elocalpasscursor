@@ -69,7 +69,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       ORDER BY l.createdAt DESC
     `
 
-    // Get sellers for these locations
+    // Get sellers for these locations with their saved configurations
     const sellersData = await prisma.$queryRaw`
       SELECT 
         s.id,
@@ -83,58 +83,29 @@ export async function GET(request: Request, { params }: { params: { id: string }
         s.createdAt,
         s.locationId,
         s.configurationId,
-        s.configurationName
+        s.configurationName,
+        s.savedConfigId,
+        sc.name as savedConfigName
       FROM users s
+      LEFT JOIN saved_qr_configurations sc ON s.savedConfigId = sc.id
       WHERE s.locationId IN (
         SELECT l.id FROM Location l WHERE l.distributorId = ${id}
       ) AND s.role = 'SELLER'
       ORDER BY s.createdAt DESC
     `
 
-    // Get QR configurations for all sellers
-    const qrConfigsData = await prisma.$queryRaw`
-      SELECT 
-        qr.id,
-        qr.sellerId,
-        qr.button1GuestsLocked,
-        qr.button1GuestsDefault,
-        qr.button1GuestsRangeMax,
-        qr.button1DaysLocked,
-        qr.button1DaysDefault,
-        qr.button1DaysRangeMax,
-        qr.button2PricingType,
-        qr.button2FixedPrice,
-        qr.button2VariableBasePrice,
-        qr.button2VariableGuestIncrease,
-        qr.button2VariableDayIncrease,
-        qr.button2VariableCommission,
-        qr.button2IncludeTax,
-        qr.button2TaxPercentage,
-        qr.button3DeliveryMethod,
-        qr.button4LandingPageRequired,
-        qr.button5SendRebuyEmail,
-        qr.createdAt,
-        qr.updatedAt
-      FROM QRConfig qr
-      WHERE qr.sellerId IN (
-        SELECT s.id FROM users s 
-        WHERE s.locationId IN (
-          SELECT l.id FROM Location l WHERE l.distributorId = ${id}
-        ) AND s.role = 'SELLER'
-      )
-    `
+    // Create a map to track which sellers have configurations
+    const configsBySellerMap: any = {}
 
-    // Create a map of seller configs by sellerId
-    const configsBySellerMap = (qrConfigsData as any[]).reduce((acc: any, config: any) => {
-      acc[config.sellerId] = config
-      return acc
-    }, {})
-
-    // Group sellers by location and include their QR configurations
+    // Group sellers by location and include their configuration status
     const sellersByLocation = (sellersData as any[]).reduce((acc: any, seller: any) => {
       if (!acc[seller.locationId]) {
         acc[seller.locationId] = []
       }
+      
+      // Determine if seller has a configuration (either saved config or legacy config)
+      const hasConfiguration = seller.savedConfigId || seller.configurationId
+      
       acc[seller.locationId].push({
         id: seller.id,
         name: seller.name,
@@ -147,7 +118,13 @@ export async function GET(request: Request, { params }: { params: { id: string }
         createdAt: seller.createdAt,
         configurationId: seller.configurationId,
         configurationName: seller.configurationName,
-        sellerConfigs: configsBySellerMap[seller.id] || null // Set actual QR config if exists
+        savedConfigId: seller.savedConfigId,
+        savedConfigName: seller.savedConfigName,
+        sellerConfigs: hasConfiguration ? {
+          id: seller.savedConfigId || seller.configurationId,
+          name: seller.savedConfigName || seller.configurationName,
+          type: seller.savedConfigId ? 'saved' : 'legacy'
+        } : null
       })
       return acc
     }, {})

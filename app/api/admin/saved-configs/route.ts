@@ -130,9 +130,14 @@ export async function DELETE(request: NextRequest) {
     console.log('🗑️ BULK DELETE: Deleting configurations:', configIds)
     
     // First unassign all users from these configurations
+    // Clear all configuration-related fields to completely unpair sellers
     await prisma.user.updateMany({
       where: { savedConfigId: { in: configIds } },
-      data: { savedConfigId: null }
+      data: { 
+        savedConfigId: null,
+        configurationId: null,
+        configurationName: null
+      }
     })
     
     // Then delete the configurations

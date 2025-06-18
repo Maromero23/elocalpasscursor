@@ -42,23 +42,27 @@ export async function GET(request: NextRequest) {
       // Get landing page URLs if any are selected
       // URLs are stored in the configuration's landingPageConfig, not in a separate table
       let landingPageUrls = []
+      
       if (selectedUrlIds.length > 0 && landingPageConfig) {
         // Get URLs from the configuration's temporaryUrls
         const temporaryUrls = landingPageConfig.temporaryUrls || []
+        
         landingPageUrls = temporaryUrls
           .filter((url: any) => selectedUrlIds.includes(url.id))
           .map((url: any) => ({
             id: url.id,
             name: url.name,
             url: url.url,
-            description: url.description
+            description: url.description,
+            // Generate the full landing page URL - Use correct port 3003
+            fullLandingUrl: `http://localhost:3003/landing-enhanced/${savedConfig.id}?urlId=${url.id}`
           }))
       }
       
       // Transform to match frontend interface
       const transformedConfig = {
         configName: savedConfig.name,
-        configDescription: savedConfig.description || `${config.button1GuestsDefault} guests × ${config.button1DaysDefault} days - ${config.button3DeliveryMethod.toLowerCase()} delivery`,
+        configDescription: savedConfig.description || `${config.button1GuestsDefault} guests × ${config.button1DaysDefault} days - ${(config.button3DeliveryMethod || 'DIRECT').toLowerCase()} delivery`,
         
         // Button 1 fields
         button1GuestsLocked: config.button1GuestsLocked || false,
@@ -149,7 +153,7 @@ export async function GET(request: NextRequest) {
         // Transform the QrGlobalConfig to match the expected interface
         const transformedConfig = {
           configName: seller.configurationName || `Configuration ${config.id.slice(-6)}`,
-          configDescription: `${config.button1GuestsDefault} guests × ${config.button1DaysDefault} days - ${config.button3DeliveryMethod.toLowerCase()} delivery`,
+          configDescription: `${config.button1GuestsDefault} guests × ${config.button1DaysDefault} days - ${(config.button3DeliveryMethod || 'DIRECT').toLowerCase()} delivery`,
           
           // Button 1 fields
           button1GuestsLocked: config.button1GuestsLocked,
@@ -169,10 +173,10 @@ export async function GET(request: NextRequest) {
           button2IncludeTax: config.button2IncludeTax,
           button2TaxPercentage: config.button2TaxPercentage,
           
-          // Button 3 fields
-          button3DeliveryMethod: (config.button3DeliveryMethod as 'DIRECT' | 'URLS' | 'BOTH') || 'DIRECT',
-          
-          landingPageUrls: landingPageUrls
+        // Button 3 fields
+        button3DeliveryMethod: (config?.button3DeliveryMethod || 'DIRECT') as 'DIRECT' | 'URLS' | 'BOTH',
+        
+        landingPageUrls: landingPageUrls
         }
         
         return NextResponse.json(transformedConfig)

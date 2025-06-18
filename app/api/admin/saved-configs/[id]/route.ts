@@ -136,9 +136,14 @@ export async function DELETE(
     }
     
     // First unassign all users from this configuration
+    // Clear all configuration-related fields to completely unpair sellers
     await prisma.user.updateMany({
       where: { savedConfigId: params.id },
-      data: { savedConfigId: null }
+      data: { 
+        savedConfigId: null,
+        configurationId: null,
+        configurationName: null
+      }
     })
     
     // Then delete the configuration

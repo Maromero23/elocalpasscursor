@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { detectLanguage, t, getPlural, type SupportedLanguage } from '@/lib/translations'
 
 interface EnhancedLandingPageTemplateProps {
   // QR Configuration Data (from admin settings)
@@ -77,15 +78,15 @@ export function EnhancedLandingPageTemplate({
   ctaButtonTextColor = '#ffffff',
   ctaButtonFontFamily = 'Arial, sans-serif',
   ctaButtonFontSize = '18',
-  formTitleText = 'SIGN UP TO GET YOUR FREE ELOCALPASS!',
+  formTitleText,
   formTitleTextColor = '#ffffff',
   formTitleFontFamily = 'Arial, sans-serif',
   formTitleFontSize = '24',
-  formInstructionsText = 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+  formInstructionsText,
   formInstructionsTextColor = '#f97316',
   formInstructionsFontFamily = 'Arial, sans-serif',
   formInstructionsFontSize = '16',
-  footerDisclaimerText = 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
+  footerDisclaimerText,
   footerDisclaimerTextColor = '#f97316',
   footerDisclaimerFontFamily = 'Arial, sans-serif',
   footerDisclaimerFontSize = '14',
@@ -102,8 +103,18 @@ export function EnhancedLandingPageTemplate({
   defaultDays,
   maxDays
 }: EnhancedLandingPageTemplateProps) {
-  const [selectedGuests, setSelectedGuests] = useState(defaultGuests)
-  const [selectedDays, setSelectedDays] = useState(defaultDays)
+  // Detect user language
+  const [language, setLanguage] = useState<SupportedLanguage>('en')
+  
+  useEffect(() => {
+    const detectedLang = detectLanguage()
+    setLanguage(detectedLang)
+  }, [])
+  
+  // Use preset values from admin configuration
+  const selectedGuests = defaultGuests
+  const selectedDays = defaultDays
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -121,50 +132,64 @@ export function EnhancedLandingPageTemplate({
     }
   }, [formData.email, formData.emailConfirmation])
 
-  const handleGuestChange = (guests: number) => {
-    if (allowCustomGuests && guests >= 1 && guests <= maxGuests) {
-      setSelectedGuests(guests)
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (emailMatchError) {
-      alert('Email addresses do not match. Please check and try again.')
+      alert(t('landing.error.email.mismatch', language))
       return
     }
 
     if (!formData.name || !formData.email || !formData.emailConfirmation) {
-      alert('Please fill in all required fields.')
+      alert(t('landing.error.fill.fields', language))
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      // TODO: Implement actual form submission to your backend
-      console.log('Form submission:', {
+      console.log('Submitting landing page form:', {
         qrConfigId,
         guests: selectedGuests,
         days: selectedDays,
         userData: formData
       })
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      alert('Thank you! Your eLocalPass request has been submitted successfully. You will receive your pass via email shortly.')
-      
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        emailConfirmation: ''
+      const response = await fetch('/api/landing-page/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          qrConfigId,
+          formData: {
+            name: formData.name,
+            email: formData.email,
+            guests: selectedGuests,
+            days: selectedDays,
+            language: language // Pass detected language
+          }
+        })
       })
+
+      if (response.ok) {
+        const result = await response.json()
+        
+        alert(t('landing.success.message', language))
+        
+        // Reset form
+        setFormData({
+          name: '',
+          email: '',
+          emailConfirmation: ''
+        })
+      } else {
+        const errorData = await response.json()
+        alert(`${t('general.error', language)}: ${errorData.error || t('landing.error.general', language)}`)
+      }
     } catch (error) {
       console.error('Submission error:', error)
-      alert('There was an error submitting your request. Please try again.')
+      alert(t('landing.error.general', language))
     } finally {
       setIsSubmitting(false)
     }
@@ -231,7 +256,7 @@ export function EnhancedLandingPageTemplate({
                 fontSize: `${formTitleFontSize}px`
               }}
             >
-              {formTitleText}
+              {formTitleText || t('landing.form.title', language)}
             </h2>
             
             {/* Form Instructions with Custom Typography */}
@@ -243,70 +268,25 @@ export function EnhancedLandingPageTemplate({
                 fontSize: `${formInstructionsFontSize}px`
               }}
             >
-              {formInstructionsText}
+              {formInstructionsText || t('landing.form.instructions', language)}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               
-              {/* Guest Selection */}
-              <div 
-                className="bg-white bg-opacity-20 p-4 rounded-lg max-w-md mx-auto"
-                style={{ backgroundColor: guestSelectionBoxColor }}
-              >
-                <div className="flex items-center justify-center mb-3">
-                  <h3 className="text-white font-medium text-sm">CHOOSE THE NUMBER OF PEOPLE BETWEEN 1 AND {maxGuests}</h3>
-                </div>
-                
-                <div className="flex items-center justify-center space-x-4">
-                  <label className="text-white text-xs">Enter number of guests (1-{maxGuests}):</label>
-                  {allowCustomGuests ? (
-                    <input
-                      key="guest-input"
-                      type="number"
-                      min="1"
-                      max={maxGuests}
-                      value={selectedGuests}
-                      onChange={(e) => handleGuestChange(parseInt(e.target.value))}
-                      className="px-2 py-1 rounded border-0 bg-white text-gray-900 font-medium text-center"
-                      style={{ width: '60px' }}
-                    />
-                  ) : (
-                    <div className="px-2 py-1 rounded bg-white text-gray-900 font-medium text-center" style={{ width: '60px' }}>
-                      {selectedGuests}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Day Selection */}
-              <div 
-                className="bg-white bg-opacity-20 p-4 rounded-lg max-w-md mx-auto"
-                style={{ backgroundColor: daySelectionBoxColor }}
-              >
-                <div className="flex items-center justify-center mb-3">
-                  <h3 className="text-white font-medium text-sm">CHOOSE NUMBER OF DAYS (up to {maxDays})</h3>
-                </div>
-                
-                <div className="flex items-center justify-center">
-                  {allowCustomDays ? (
-                    <div className="text-white flex items-center">
-                      <span className="text-xs">Days selected: </span>
-                      <input
-                        key="days-input"
-                        type="number"
-                        min="1"
-                        max={maxDays}
-                        value={selectedDays}
-                        onChange={(e) => setSelectedDays(parseInt(e.target.value))}
-                        className="px-2 py-1 rounded border-0 bg-white text-gray-900 font-medium text-center ml-2"
-                        style={{ width: '60px' }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="px-3 py-1 rounded bg-white bg-opacity-30 text-white font-medium text-sm">
-                      {selectedDays} Days (Fixed)
-                    </div>
-                  )}
+              {/* Configuration Info Display */}
+              <div className="bg-white bg-opacity-20 p-4 rounded-lg max-w-md mx-auto text-center">
+                <div className="text-white space-y-2">
+                  <div className="text-sm font-medium">
+                    {t('landing.pass.details', language, {
+                      guests: selectedGuests.toString(),
+                      guestPlural: getPlural(selectedGuests, language, 'guest'),
+                      days: selectedDays.toString(),
+                      dayPlural: getPlural(selectedDays, language, 'day')
+                    })}
+                  </div>
+                  <div className="text-xs text-white text-opacity-80">
+                    {t('landing.pass.preset', language)}
+                  </div>
                 </div>
               </div>
 
@@ -315,7 +295,7 @@ export function EnhancedLandingPageTemplate({
                 <div>
                   <input
                     type="text"
-                    placeholder="Name: (IT MUST MATCH YOUR ID)"
+                    placeholder={t('landing.form.name.placeholder', language)}
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     className="w-full px-3 py-2 rounded border-0 text-gray-900 placeholder-gray-500 text-sm"
@@ -326,7 +306,7 @@ export function EnhancedLandingPageTemplate({
                 <div>
                   <input
                     type="email"
-                    placeholder="Email: (TO RECEIVE YOUR ELOCALPASS)"
+                    placeholder={t('landing.form.email.placeholder', language)}
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     className="w-full px-3 py-2 rounded border-0 text-gray-900 placeholder-gray-500 text-sm"
@@ -337,7 +317,7 @@ export function EnhancedLandingPageTemplate({
                 <div>
                   <input
                     type="email"
-                    placeholder="Email confirmation: (TO RECEIVE YOUR ELOCALPASS)"
+                    placeholder={t('landing.form.email.confirm.placeholder', language)}
                     value={formData.emailConfirmation}
                     onChange={(e) => setFormData({...formData, emailConfirmation: e.target.value})}
                     className={`w-full px-3 py-2 rounded border-0 text-gray-900 placeholder-gray-500 text-sm ${
@@ -346,7 +326,7 @@ export function EnhancedLandingPageTemplate({
                     required
                   />
                   {emailMatchError && (
-                    <p className="text-red-200 text-sm mt-1">Email addresses do not match</p>
+                    <p className="text-red-200 text-xs mt-1">{t('landing.form.email.mismatch', language)}</p>
                   )}
                 </div>
               </div>
@@ -355,7 +335,7 @@ export function EnhancedLandingPageTemplate({
               <div className="text-center">
                 <button
                   type="submit"
-                  disabled={isSubmitting || emailMatchError}
+                  disabled={isSubmitting}
                   className="px-8 py-4 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     backgroundColor: secondaryColor,
@@ -364,7 +344,7 @@ export function EnhancedLandingPageTemplate({
                     fontSize: `${ctaButtonFontSize}px`
                   }}
                 >
-                  {isSubmitting ? 'Processing...' : ctaButtonText}
+                  {isSubmitting ? t('landing.form.submit.processing', language) : (ctaButtonText || t('landing.form.submit.default', language))}
                 </button>
               </div>
             </form>
@@ -382,7 +362,7 @@ export function EnhancedLandingPageTemplate({
                   fontSize: `${footerDisclaimerFontSize}px`
                 }}
               >
-                {footerDisclaimerText}
+                {footerDisclaimerText || t('landing.disclaimer', language)}
               </p>
               
               <div className="text-center mt-4">
@@ -390,7 +370,7 @@ export function EnhancedLandingPageTemplate({
                   href="/privacy" 
                   className="text-white underline text-sm hover:text-opacity-80"
                 >
-                  Click HERE to read the privacy notice and data usage
+                  {t('landing.privacy.link', language)}
                 </a>
               </div>
             </div>

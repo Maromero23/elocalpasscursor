@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { detectLanguage, t, getPlural, formatDate, type SupportedLanguage } from '@/lib/translations'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json()
-    const { clientName, clientEmail, guests, days, language, deliveryMethod } = body
+    const { clientName, clientEmail, guests, days, deliveryMethod } = body
     
     // Validate required fields
     if (!clientName || !clientEmail || !guests || !days) {
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest) {
         expiresAt: expiresAt,
         isActive: true,
         deliveryMethod: requestedDelivery,
-        language: language || 'en',
+        language: 'en',
         
         // Seller Information
         sellerId: session.user.id,
@@ -240,66 +241,39 @@ export async function POST(request: NextRequest) {
     })
     
     // Button 4: Welcome Email Template Logic
-    const isSpanish = language === 'es'
-    let emailContent = ''
-    let subject = ''
+    // Detect customer language from Accept-Language headers
+    const acceptLanguage = request.headers.get('accept-language') || undefined
+    const customerLanguage: SupportedLanguage = detectLanguage(acceptLanguage)
     
-    // For now, Button 4 just determines if landing page is required
-    // In the future, we can add button4WelcomeEmailTemplate field to schema
-    // Currently using default welcome email template
+    console.log(`🌍 Customer language detected: ${customerLanguage}`)
     
-    subject = isSpanish 
-      ? 'Su ELocalPass está listo - Acceso Inmediato' 
-      : 'Your ELocalPass is Ready - Immediate Access'
-      
-    emailContent = isSpanish ? `
-Hola ${clientName},
+    // Generate email content using translation system
+    const subject = t('email.welcome.subject', customerLanguage)
+    
+    const guestPlural = getPlural(guests, customerLanguage, 'guest')
+    const dayPlural = getPlural(days, customerLanguage, 'day')
+    const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
+    
+    const emailContent = `${t('email.welcome.greeting', customerLanguage, { customerName: clientName })}
 
-¡Su ELocalPass está listo para usar! 
+${t('email.welcome.ready', customerLanguage)}
 
-📋 DETALLES DE SU PASE:
-• Código: ${qrCodeId}
-• Huéspedes: ${guests} personas
-• Válido por: ${days} días
+${t('email.welcome.details.header', customerLanguage)}
+${t('email.welcome.details.code', customerLanguage, { qrCode: qrCodeId })}
+${t('email.welcome.details.guests', customerLanguage, { guests: guests.toString() })}
+${t('email.welcome.details.days', customerLanguage, { days: days.toString() })}
 
-🎯 ACCESO DIRECTO:
-Este código le da acceso inmediato a su experiencia local.
-Solo muestre este código QR en el punto de acceso.
+${t('email.welcome.access.direct.header', customerLanguage)}
+${t('email.welcome.access.direct.text', customerLanguage)}
 
-📱 ACCEDA A SU PORTAL DE CLIENTE:
-Vea y descargue su código QR en cualquier momento:
-${magicLinkUrl}
+${t('email.welcome.access.portal.header', customerLanguage)}
+${t('email.welcome.access.portal.text', customerLanguage, { magicLink: magicLinkUrl })}
 
-⏰ VÁLIDO HASTA: ${expiresAt.toLocaleDateString('es-ES')}
+${t('email.welcome.validity', customerLanguage, { expirationDate: formattedExpirationDate })}
 
-¡Disfrute su experiencia ELocalPass!
+${t('email.welcome.closing', customerLanguage)}
 
-Saludos,
-El equipo ELocalPass
-` : `
-Hello ${clientName},
-
-Your ELocalPass is ready to use!
-
-📋 PASS DETAILS:
-• Code: ${qrCodeId}
-• Guests: ${guests} people
-• Valid for: ${days} days
-
-🎯 DIRECT ACCESS:
-This code gives you immediate access to your local experience.
-Simply show this QR code at the access point.
-
-📱 ACCESS YOUR CUSTOMER PORTAL:
-View and download your QR code anytime:
-${magicLinkUrl}
-
-⏰ VALID UNTIL: ${expiresAt.toLocaleDateString('en-US')}
-
-We hope you enjoy your local experience!
-
-Best regards,
-The ELocalPass Team
+${t('email.welcome.signature', customerLanguage)}
 `
     
     // Button 5: Rebuy Email Logic (Hidden from seller)
@@ -326,7 +300,6 @@ The ELocalPass Team
     console.log(' 📧 WELCOME EMAIL TO SEND:')
     console.log(`To: ${clientEmail}`)
     console.log(`Subject: ${subject}`)
-    console.log(`Language: ${language}`)
     console.log(`Delivery Method: ${requestedDelivery}`)
     console.log(`Rebuy Email Scheduled: ${rebuyEmailScheduled}`)
     console.log('Content:')

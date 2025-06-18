@@ -36,26 +36,34 @@ export async function DELETE(
       return NextResponse.json({ error: 'Seller not found' }, { status: 404 })
     }
 
-    // Delete the QR configuration for this seller
-    const deletedConfig = await prisma.qRConfig.delete({
-      where: { sellerId: sellerId }
-    })
-
-    // Also clear the configuration identifiers from the seller
+    // Clear all configuration identifiers from the seller (for saved configurations)
     await prisma.user.update({
       where: { id: sellerId },
       data: {
+        savedConfigId: null,        // This is the key field for saved configurations
         configurationId: null,
         configurationName: null
       }
     })
 
-    console.log(' QR config unpaired successfully:', deletedConfig.id)
+    // Also try to delete old QRConfig if it exists (for backward compatibility)
+    try {
+      await prisma.qRConfig.delete({
+        where: { sellerId: sellerId }
+      })
+    } catch (error: any) {
+      // Ignore if no old config exists
+      if (error.code !== 'P2025') {
+        console.warn('Error deleting old QRConfig:', error.message)
+      }
+    }
+
+    console.log(' QR config unpaired successfully for seller:', sellerId)
 
     return NextResponse.json({ 
       success: true, 
       message: 'QR configuration unpaired successfully',
-      deletedConfigId: deletedConfig.id
+      sellerId: sellerId
     })
 
   } catch (error: any) {

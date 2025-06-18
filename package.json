@@ -13,7 +13,9 @@
     "db:reset-confirmed": "prisma migrate reset",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "db:status": "prisma migrate status"
+    "db:status": "prisma migrate status",
+    "deploy:check": "node scripts/deploy-check.js",
+    "deploy:prepare": "npm run deploy:check && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

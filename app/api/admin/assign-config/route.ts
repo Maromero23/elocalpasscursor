@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
       await (prisma.user as any).update({
         where: { id: seller.id },
         data: {
+          savedConfigId: configId,  // This is the key field for saved configurations
           configurationId: configId,
           configurationName: configName
         }
@@ -129,6 +130,7 @@ export async function POST(request: NextRequest) {
       await (prisma.user as any).update({
         where: { id: seller.id },
         data: {
+          savedConfigId: configId,  // This is the key field for saved configurations
           configurationId: configId,
           configurationName: configName
         }

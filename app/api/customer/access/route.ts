@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { detectServerLanguage } from '@/lib/language-detection';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,6 +13,11 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Detect customer's language from browser headers
+    const acceptLanguage = request.headers.get('accept-language') || undefined;
+    const customerLanguage = detectServerLanguage(acceptLanguage);
+    console.log(`🌍 Customer language detected: ${customerLanguage}`);
 
     // Find the access token
     const accessToken = await prisma.customerAccessToken.findUnique({
@@ -57,6 +63,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       name: accessToken.customerName,
       email: accessToken.customerEmail,
+      language: customerLanguage, // Include detected language for frontend
       qrCodes: qrCodes
     });
 

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
         role: "SELLER"
       },
       include: {
-        sellerConfigs: true,
+        savedConfig: true,
         location: {
           select: {
             id: true,
@@ -43,13 +43,14 @@ export async function GET(request: NextRequest) {
     console.log(`📊 Found ${sellers.length} sellers`)
     
     // Transform the data to include qrConfig at the top level
+    // Now checking for savedConfig instead of the old sellerConfigs
     const sellersWithConfigs = sellers.map((seller) => ({
       id: seller.id,
       name: seller.name,
       email: seller.email,
       role: seller.role,
       location: seller.location,
-      qrConfig: seller.sellerConfigs || null
+      qrConfig: seller.savedConfig || null  // Use savedConfig instead of sellerConfigs
     }))
     
     console.log('✅ Successfully transformed sellers data')
