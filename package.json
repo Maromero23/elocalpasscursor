@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
+    "postinstall": "prisma generate",
     "lint": "next lint",
     "db:push": "echo '🚫 BLOCKED: Use db:push-confirmed only with explicit approval' && exit 1",
     "db:push-confirmed": "prisma db push",
