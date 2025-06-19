@@ -431,7 +431,7 @@ export default function AnalyticsPage() {
                       Showing all QR codes ever created ({analytics.length} total)
                     </p>
                     <p className="text-sm text-blue-600">
-                      You clicked on "Total QR Codes" to view the complete history
+                      You clicked on &quot;Total QR Codes&quot; to view the complete history
                     </p>
                   </div>
                 </div>

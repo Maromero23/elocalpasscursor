@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { qrConfigurations } from '../../../../../lib/qr-storage'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '../../../auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {

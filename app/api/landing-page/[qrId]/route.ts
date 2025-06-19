@@ -48,7 +48,7 @@ export async function GET(
     }
 
     // Get global QR configuration for pricing
-    const globalConfig = await prisma.qRGlobalConfig.findFirst()
+    const globalConfig = await prisma.qrGlobalConfig.findFirst()
 
     // Prepare QR data
     const qrData = {
@@ -80,14 +80,14 @@ export async function GET(
 
     // Prepare pricing data if configured
     let pricingData = null
-    if (globalConfig && globalConfig.button4PricingType !== 'FREE') {
-      if (globalConfig.button4PricingType === 'FIXED') {
+    if (globalConfig && globalConfig.button2PricingType !== 'FREE') {
+      if (globalConfig.button2PricingType === 'FIXED') {
         pricingData = {
-          amount: globalConfig.button4FixedPrice || 0,
+          amount: globalConfig.button2FixedPrice || 0,
           currency: 'USD',
           description: `Per person, valid ${qrCode.days} days`
         }
-      } else if (globalConfig.button4PricingType === 'VARIABLE') {
+      } else if (globalConfig.button2PricingType === 'VARIABLE') {
         const totalCost = qrCode.cost
         pricingData = {
           amount: totalCost,

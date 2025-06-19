@@ -192,7 +192,7 @@ export default function CreateDistributorPage() {
                     placeholder="Leave blank to use primary email for contact"
                   />
                   <p className="mt-1 text-sm text-gray-600">
-                    If left blank, we'll use the primary email for both login and contact purposes.
+                    If left blank, we&apos;ll use the primary email for both login and contact purposes.
                   </p>
                 </div>
 

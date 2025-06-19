@@ -264,7 +264,7 @@ export default function SellerDashboard() {
                     {/* Configuration Name */}
                     <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
                       <h4 className="text-lg font-semibold text-blue-900">
-                        CONFIGURATION NAME: "{config.configName}"
+                        CONFIGURATION NAME: &quot;{config.configName}&quot;
                       </h4>
                     </div>
 
@@ -366,7 +366,7 @@ export default function SellerDashboard() {
                                               onClick={() => generateQRCodeForURL(selectedUrl.fullLandingUrl!, selectedUrl.name)}
                                               className="w-full px-3 py-2 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                                             >
-                                              📱 Generate QR Code for "{selectedUrl.name}"
+                                              📱 Generate QR Code for &quot;{selectedUrl.name}&quot;
                                             </button>
                                           </div>
                                         </div>
@@ -481,7 +481,7 @@ export default function SellerDashboard() {
                                                   onClick={() => generateQRCodeForURL(selectedUrl.fullLandingUrl!, selectedUrl.name)}
                                                   className="w-full px-3 py-2 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                                                 >
-                                                  📱 Generate QR Code for "{selectedUrl.name}"
+                                                  📱 Generate QR Code for &quot;{selectedUrl.name}&quot;
                                                 </button>
                                               </div>
                                             </div>
@@ -545,7 +545,7 @@ export default function SellerDashboard() {
                               placeholder="Confirm email address"
                             />
                             {confirmEmail && clientEmail !== confirmEmail && (
-                              <p className="text-red-600 text-xs mt-1">Emails don't match</p>
+                              <p className="text-red-600 text-xs mt-1">Emails don&apos;t match</p>
                             )}
                             {confirmEmail && clientEmail === confirmEmail && confirmEmail.length > 0 && (
                               <p className="text-green-600 text-xs mt-1">Emails confirmed</p>
