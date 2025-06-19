@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import EmailTemplatePreview from '@/components/email-template-preview'
 import { ToastNotifications } from '@/components/toast-notification'
@@ -106,7 +106,20 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
   )
 }
 
-export default function RebuyEmailConfigPage() {
+// Loading component for Suspense fallback
+function RebuyConfigLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading Rebuy Configuration...</p>
+      </div>
+    </div>
+  )
+}
+
+// Main component that uses useSearchParams
+function RebuyEmailConfigPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const toast = useToast()
@@ -1193,5 +1206,13 @@ export default function RebuyEmailConfigPage() {
         onRemove={toast.removeToast} 
       />
     </div>
+  )
+}
+
+export default function RebuyEmailConfigPage() {
+  return (
+    <Suspense fallback={<RebuyConfigLoading />}>
+      <RebuyEmailConfigPageContent />
+    </Suspense>
   )
 }

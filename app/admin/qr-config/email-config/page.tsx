@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import EmailTemplatePreview from '@/components/email-template-preview'
 import { ToastNotifications } from '@/components/toast-notification'
@@ -102,7 +102,20 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
   )
 }
 
-export default function EmailConfigPage() {
+// Loading component for Suspense fallback
+function EmailConfigLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading Email Configuration...</p>
+      </div>
+    </div>
+  )
+}
+
+// Main component that uses useSearchParams
+function EmailConfigPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const toast = useToast()
@@ -424,13 +437,13 @@ export default function EmailConfigPage() {
             console.error('❌ EMAIL SAVE DEBUG: Failed to load existing config from database. Status:', response.status)
             throw new Error(`Failed to load existing config: ${response.status}`)
           }
-                  } catch (error) {
-            console.error('❌ EMAIL SAVE DEBUG: Error saving to database:', error)
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-            toast.error('Database Save Failed', `Failed to save welcome email to database: ${errorMessage}`)
-            setIsSubmitting(false)
-            return // Stop here - don't fall back to localStorage
-          }
+        } catch (error) {
+          console.error('❌ EMAIL SAVE DEBUG: Error saving to database:', error)
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+          toast.error('Database Save Failed', `Failed to save welcome email to database: ${errorMessage}`)
+          setIsSubmitting(false)
+          return // Stop here - don't fall back to localStorage
+        }
       } else {
         // No qrId provided - save as standalone template to localStorage for later use
         console.log('✅ EMAIL SAVE DEBUG: No qrId provided, saving as standalone template')
@@ -444,7 +457,6 @@ export default function EmailConfigPage() {
           router.push('/admin/qr-config')
         }, 2000)
       }
-      
     } catch (error) {
       console.error('Error creating email configuration:', error)
       toast.error('Error Creating Email Configuration', 'Error creating email configuration')
@@ -1171,5 +1183,13 @@ export default function EmailConfigPage() {
         onRemove={toast.removeToast} 
       />
     </div>
+  )
+}
+
+export default function EmailConfigPage() {
+  return (
+    <Suspense fallback={<EmailConfigLoading />}>
+      <EmailConfigPageContent />
+    </Suspense>
   )
 }
