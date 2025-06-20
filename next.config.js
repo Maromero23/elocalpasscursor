@@ -9,8 +9,6 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  // Force dynamic rendering for all pages to avoid static generation issues
-  output: 'standalone',
 }
 
 module.exports = nextConfig
