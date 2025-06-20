@@ -1,3 +1,5 @@
+import React, { useState } from 'react';
+
 // SAVED BUTTON 5 ANALYTICS CONFIGURATION
 // This code was removed from landing page config but saved for future analytics implementation
 

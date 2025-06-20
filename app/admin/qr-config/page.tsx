@@ -9,6 +9,9 @@ import { ProtectedRoute } from '@/components/auth/protected-route'
 import { ToastNotifications } from '@/components/toast-notification'
 import Link from 'next/link'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 // Configuration interfaces
 interface QRButtonConfig {
   id: string
