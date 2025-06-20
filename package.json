@@ -15,7 +15,10 @@
     "db:studio": "prisma studio",
     "db:status": "prisma migrate status",
     "deploy:check": "node scripts/deploy-check.js",
-    "deploy:prepare": "npm run deploy:check && npm run build"
+    "deploy:prepare": "npm run deploy:check && npm run build",
+    "planetscale:setup": "node setup-planetscale.js",
+    "supabase:setup": "node setup-supabase-simple.js",
+    "migrate:data": "node migrate-production-data.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -33,6 +36,7 @@
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.53.2",
+    "sqlite3": "^5.1.7",
     "uuid": "^10.0.0",
     "zod": "^3.23.8"
   },

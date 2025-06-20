@@ -1,65 +1,42 @@
+#!/usr/bin/env node
+
 const { PrismaClient } = require('@prisma/client');
 
-// Test Supabase connection
-const testSupabaseConnection = async () => {
-  console.log('🧪 Testing Supabase PostgreSQL connection...');
+async function testConnection() {
+  const prisma = new PrismaClient();
   
-  const prisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: "postgresql://postgres:basededatos23@db.jthbuhmygodmzjbhoplo.supabase.co:5432/postgres"
-      }
-    }
-  });
-
   try {
+    console.log('🔗 Testing Supabase connection...');
+    
     // Test basic connection
-    console.log('📡 Attempting to connect to Supabase...');
     await prisma.$connect();
     console.log('✅ Connected to Supabase successfully!');
     
-    // Test if we can query users
-    console.log('🔍 Checking users table...');
-    const users = await prisma.user.findMany({
-      take: 5,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true
-      }
-    });
+    // Test if tables exist by counting users
+    const userCount = await prisma.user.count();
+    console.log(`✅ Database schema exists! Found ${userCount} users.`);
     
-    console.log(`📊 Found ${users.length} users in Supabase database:`);
-    users.forEach(user => {
-      console.log(`  - ${user.email} (${user.role}) - ${user.name || 'No name'}`);
-    });
+    // Test if we can query other tables
+    const distributorCount = await prisma.distributor.count();
+    console.log(`✅ Found ${distributorCount} distributors.`);
     
-    // Test if we can query distributors
-    console.log('🏢 Checking distributors table...');
-    const distributors = await prisma.distributor.findMany({
-      take: 5,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        createdAt: true
-      }
-    });
+    const locationCount = await prisma.location.count();
+    console.log(`✅ Found ${locationCount} locations.`);
     
-    console.log(`📊 Found ${distributors.length} distributors in Supabase database:`);
-    distributors.forEach(dist => {
-      console.log(`  - ${dist.name} (${dist.email})`);
-    });
+    const qrCodeCount = await prisma.qRCode.count();
+    console.log(`✅ Found ${qrCodeCount} QR codes.`);
     
-    await prisma.$disconnect();
-    console.log('✅ Test completed successfully!');
+    console.log('\n🎉 SUCCESS: Supabase is fully connected and working!');
+    console.log('📊 Your database is ready for production testing.');
     
   } catch (error) {
-    console.error('❌ Error connecting to Supabase:', error.message);
+    console.error('❌ Connection failed:', error.message);
+    if (error.code) {
+      console.error('Error code:', error.code);
+    }
+  } finally {
     await prisma.$disconnect();
   }
-};
+}
 
-testSupabaseConnection(); 
+testConnection(); 
