@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { PrismaClient } from "@prisma/client"
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 const prisma = new PrismaClient()
 
 // Simple test endpoint to check if basic distributor access works

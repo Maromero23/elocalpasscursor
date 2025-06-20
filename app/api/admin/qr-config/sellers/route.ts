@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { PrismaClient } from "@prisma/client"
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 declare global {
   var prisma: PrismaClient | undefined
 }

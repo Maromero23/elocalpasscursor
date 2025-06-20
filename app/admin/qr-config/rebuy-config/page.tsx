@@ -3,7 +3,7 @@
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import EmailTemplatePreview from '@/components/email-template-preview'
 import { ToastNotifications } from '@/components/toast-notification'
@@ -109,7 +109,7 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
   )
 }
 
-export default function RebuyEmailConfigPage() {
+function RebuyEmailConfigPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const toast = useToast()
@@ -1196,5 +1196,13 @@ export default function RebuyEmailConfigPage() {
         onRemove={toast.removeToast} 
       />
     </div>
+  )
+}
+
+export default function RebuyEmailConfigPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+      <RebuyEmailConfigPageContent />
+    </Suspense>
   )
 }
