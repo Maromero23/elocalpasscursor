@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "prisma generate",
     "db:push": "echo '🚫 BLOCKED: Use db:push-confirmed only with explicit approval' && exit 1",
     "db:push-confirmed": "prisma db push",
     "db:reset": "echo '🚫 BLOCKED: Use db:reset-confirmed only with explicit approval' && exit 1",
