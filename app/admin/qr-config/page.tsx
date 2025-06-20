@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useToast } from '@/hooks/use-toast'
@@ -64,7 +64,7 @@ const getNavItems = (userRole: string) => {
   return []
 }
 
-export default function QRConfigPage() {
+function QRConfigPageContent() {
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -4587,6 +4587,14 @@ export default function QRConfigPage() {
         onRemove={toast.removeToast} 
       />
     </ProtectedRoute>
+  )
+}
+
+export default function QRConfigPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+      <QRConfigPageContent />
+    </Suspense>
   )
 }
 
