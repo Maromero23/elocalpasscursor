@@ -1454,6 +1454,24 @@ function QRConfigPageContent() {
         setNewConfigDescription('')
         setShowSaveModal(false)
         
+        // CRITICAL: Delete the current session configuration from database
+        if (currentSessionId) {
+          try {
+            console.log('🗑️ CLEANUP: Deleting current session from database:', currentSessionId)
+            const deleteResponse = await fetch(`/api/admin/saved-configs/${currentSessionId}`, {
+              method: 'DELETE',
+              credentials: 'include'
+            })
+            if (deleteResponse.ok) {
+              console.log('✅ CLEANUP: Current session deleted from database successfully')
+            } else {
+              console.warn('⚠️ CLEANUP: Failed to delete current session from database')
+            }
+          } catch (error) {
+            console.warn('⚠️ CLEANUP: Error deleting current session from database:', error)
+          }
+        }
+        
         // Clear all temporary data and reset to fresh state
         console.log('🧹 CLEANUP: Starting post-save cleanup...')
         
@@ -1514,6 +1532,11 @@ function QRConfigPageContent() {
         // Reset button choice states
         setButton4UserChoice(null)
         setButton5UserChoice(null)
+        
+        // Generate a new session ID for the next configuration
+        const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        setCurrentSessionId(newSessionId)
+        console.log('🆕 CLEANUP: Generated new session ID for next configuration:', newSessionId)
         
         console.log('✅ CLEANUP: All temporary data cleared, ready for next configuration')
         
