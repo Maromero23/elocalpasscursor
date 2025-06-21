@@ -158,6 +158,13 @@ function QRConfigPageContent() {
           loadSavedConfigurations(true) // Force refresh after editing
         }, 500)
       }
+      
+      // Clear the URL parameters after processing to prevent auto-opening on page refresh
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('showLibrary')
+      newUrl.searchParams.delete('expandConfig')
+      window.history.replaceState({}, '', newUrl.toString())
+      console.log('🧹 URL REDIRECT: Cleaned up URL parameters to prevent auto-opening on refresh')
     }
   }, [searchParams])
   
@@ -2133,7 +2140,7 @@ function QRConfigPageContent() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-xs text-gray-300">2:49 AM</span>
+                <span className="text-xs text-gray-300">2:57 AM</span>
                 <span className="text-white">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
