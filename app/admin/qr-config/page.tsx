@@ -4184,15 +4184,17 @@ function QRConfigPageContent() {
                                               // Handle both legacy selectedUrlIds format and new temporaryUrls format
                                               const urlId = typeof urlIdOrUrl === 'string' ? urlIdOrUrl : urlIdOrUrl.id;
                                             // Find the URL details from SAVED CONFIGURATION DATA, not current session
-                                            const configWithUrls = config as any; // Type assertion to access button3UrlsConfig
-                                            const urlDetails = configWithUrls.button3UrlsConfig?.temporaryUrls?.find((url: any) => url.id === urlId) ||
-                                                             config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
+                                            // PRIORITY: Always check the new structure first (landingPageConfig) as it gets updated on edits
+                                            const urlDetails = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId) ||
+                                                             (config as any).button3UrlsConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
                                             console.log('🔍 URL Lookup Debug (FIXED):', {
                                               urlId,
-                                              configButton3Urls: configWithUrls.button3UrlsConfig?.temporaryUrls?.length || 0,
+                                              configButton3Urls: (config as any).button3UrlsConfig?.temporaryUrls?.length || 0,
                                               configLandingUrls: config.landingPageConfig?.temporaryUrls?.length || 0,
                                               urlDetails: urlDetails ? 'FOUND' : 'NOT FOUND',
-                                              urlDetailsData: urlDetails
+                                              urlDetailsData: urlDetails,
+                                              foundInNewStructure: !!config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId),
+                                              foundInLegacyStructure: !!(config as any).button3UrlsConfig?.temporaryUrls?.find((url: any) => url.id === urlId)
                                             });
                                             // Check for custom edits in the correct data structure (NEW structure first, then legacy)
                                             const urlEntry = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
