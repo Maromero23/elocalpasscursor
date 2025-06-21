@@ -152,7 +152,11 @@ function QRConfigPageContent() {
         
         // Reload configurations to ensure we have the latest data after editing
         console.log('🔄 URL REDIRECT: Reloading configurations to get latest data')
-        loadSavedConfigurations()
+        
+        // Add a small delay to ensure any database writes have completed
+        setTimeout(() => {
+          loadSavedConfigurations(true) // Force refresh after editing
+        }, 500)
       }
     }
   }, [searchParams])
@@ -728,13 +732,23 @@ function QRConfigPageContent() {
     }
   }, [])
 
-  const loadSavedConfigurations = async () => {
+  const loadSavedConfigurations = async (forceRefresh: boolean = false) => {
     try {
-      console.log('🔄 Loading configurations from database first...')
+      console.log('🔄 Loading configurations from database first...', forceRefresh ? '(force refresh)' : '')
+      
+      // Add cache-busting timestamp, especially important when force refreshing after edits
+      const timestamp = Date.now()
+      const cacheBuster = forceRefresh ? `?t=${timestamp}&force=true` : `?t=${timestamp}`
       
       // PRIORITY 1: Load from DATABASE (where proper data is saved)
-      const dbResponse = await fetch('/api/admin/saved-configs', {
-        credentials: 'include'
+      const dbResponse = await fetch(`/api/admin/saved-configs${cacheBuster}`, {
+        credentials: 'include',
+        cache: forceRefresh ? 'no-store' : 'default',
+        headers: forceRefresh ? {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        } : {}
       })
       
       if (dbResponse.ok) {
@@ -3755,7 +3769,11 @@ function QRConfigPageContent() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-medium text-gray-900">QR Configuration Library</h3>
+              <div>
+                <h3 className="text-xl font-medium text-gray-900">QR Configuration Library</h3>
+                {/* Deployment timestamp for debugging */}
+                <p className="text-xs text-gray-400">v2.24 - 2025-01-21 02:10 AM EST - URL Edit Cache Fix</p>
+              </div>
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setShowConfigLibrary(false)}
@@ -4223,7 +4241,8 @@ function QRConfigPageContent() {
                                             const hasCustomEdits = urlEntry?.customizations || (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
                                             
                                             // Add cache-busting timestamp to prevent browser caching of edited content
-                                            const cacheBreaker = config.updatedAt ? `&t=${new Date(config.updatedAt).getTime()}` : '';
+                                            // Use current timestamp for stronger cache busting after edits
+                                            const cacheBreaker = `&t=${Date.now()}&updated=${config.updatedAt ? new Date(config.updatedAt).getTime() : Date.now()}`;
                                             
                                             // CRITICAL FIX: Always use the saved configuration ID for database-saved URLs
                                             // Never use the potentially stale urlDetails.url which may contain session-based URLs

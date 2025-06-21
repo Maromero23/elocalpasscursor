@@ -96,10 +96,18 @@ export default function EnhancedLandingPage() {
       // First try to load from database
       try {
         // Add cache-busting timestamp to prevent stale data
+        // Include URL parameters in cache key to ensure fresh data after edits
+        const searchParams = new URLSearchParams(window.location.search)
         const timestamp = Date.now()
-        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?t=${timestamp}`, {
+        const updateParam = searchParams.get('updated') || timestamp
+        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?t=${timestamp}&updated=${updateParam}&urlId=${urlId || ''}`, {
           credentials: 'include',
-          cache: 'no-store' // Force fresh data
+          cache: 'no-store', // Force fresh data
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
         })
         
         if (dbResponse.ok) {
@@ -241,6 +249,8 @@ export default function EnhancedLandingPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading your landing page...</p>
+          {/* Deployment timestamp for debugging */}
+          <p className="text-xs text-gray-400 mt-2">v2.24 - 2025-01-21 02:10 AM EST - URL Edit Cache Fix</p>
         </div>
       </div>
     )
