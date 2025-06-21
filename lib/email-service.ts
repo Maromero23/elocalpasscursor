@@ -56,7 +56,7 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     let fromAddress = options.from || process.env.FROM_EMAIL
     
     // If using Resend, force use of verified default domain (ignore EMAIL_FROM_ADDRESS)
-    if (process.env.RESEND_API_KEY) {
+    if (false && process.env.RESEND_API_KEY) {
       fromAddress = 'ELocalPass <onboarding@resend.dev>'
     } else if (!fromAddress) {
       fromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@elocalpass.com'
@@ -89,7 +89,7 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
 }
 
 const getEmailServiceName = (): string => {
-  if (process.env.RESEND_API_KEY) return 'Resend'
+  if (false && process.env.RESEND_API_KEY) return 'Resend'
   if (process.env.SENDGRID_API_KEY) return 'SendGrid'
   return 'Gmail/SMTP'
 }
