@@ -97,8 +97,10 @@ export default function EnhancedLandingPage() {
       try {
         // Add cache-busting timestamp to prevent stale data
         // Add cache-busting timestamp to prevent stale data
+        const searchParams = new URLSearchParams(window.location.search)
         const timestamp = Date.now()
-        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?t=${timestamp}`, {
+        const updateParam = searchParams.get('updated') || timestamp
+        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?t=${timestamp}&updated=${updateParam}&urlId=${urlId || ''}`, {
           credentials: 'include',
           cache: 'no-store', // Force fresh data
           headers: {
