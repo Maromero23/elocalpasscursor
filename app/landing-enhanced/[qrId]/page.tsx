@@ -95,8 +95,11 @@ export default function EnhancedLandingPage() {
       
       // First try to load from database
       try {
-        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}`, {
-          credentials: 'include'
+        // Add cache-busting timestamp to prevent stale data
+        const timestamp = Date.now()
+        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?t=${timestamp}`, {
+          credentials: 'include',
+          cache: 'no-store' // Force fresh data
         })
         
         if (dbResponse.ok) {

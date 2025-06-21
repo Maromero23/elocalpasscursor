@@ -41,7 +41,13 @@ export async function GET(
       selectedUrlIds: savedConfig.selectedUrlIds ? JSON.parse(savedConfig.selectedUrlIds) : null,
     }
     
-    return NextResponse.json(parsedConfig)
+    // Set cache headers to prevent stale data when content is edited
+    const response = NextResponse.json(parsedConfig)
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
     
   } catch (error) {
     console.error('Error fetching saved configuration:', error)
@@ -108,7 +114,13 @@ export async function PUT(
       selectedUrlIds: updatedConfig.selectedUrlIds ? JSON.parse(updatedConfig.selectedUrlIds) : null,
     }
     
-    return NextResponse.json(parsedConfig)
+    // Set cache headers to ensure updated data is immediately available
+    const response = NextResponse.json(parsedConfig)
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
     
   } catch (error) {
     console.error('Error updating saved configuration:', error)
