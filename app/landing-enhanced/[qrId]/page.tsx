@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { EnhancedLandingPageTemplate } from '../../../components/enhanced-landing-page-template'
 
-// Force dynamic rendering - prevent Vercel from caching this page
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// Remove problematic server directives that cause render errors
 
 interface QRConfigData {
   id: string
@@ -96,13 +94,20 @@ export default function EnhancedLandingPage() {
   useEffect(() => {
     if (qrId) {
       console.log('🔄 Enhanced Landing - Fetching data with qrId:', qrId, 'urlId:', urlId)
-      fetchQRConfigData()
+      try {
+        fetchQRConfigData()
+      } catch (error) {
+        console.error('🚨 Enhanced Landing - Critical error in useEffect:', error)
+        setError('Critical error loading page')
+        setLoading(false)
+      }
     }
   }, [qrId]) // Remove urlId dependency to prevent double-fetch
 
   const fetchQRConfigData = async () => {
     try {
       console.log('🔍 Enhanced Landing Page - Fetching QR config for ID:', qrId)
+      console.log('🔍 Enhanced Landing Page - URL ID:', urlId)
       
       // First try to load from database
       try {
