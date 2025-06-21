@@ -4211,8 +4211,8 @@ function QRConfigPageContent() {
                                               const urlId = typeof urlIdOrUrl === 'string' ? urlIdOrUrl : urlIdOrUrl.id;
                                             // Find the URL details from SAVED CONFIGURATION DATA, not current session
                                             // PRIORITY: Always check the new structure first (landingPageConfig) as it gets updated on edits
-                                            const urlDetails = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId) ||
-                                                             (config as any).button3UrlsConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
+                                            // Only use the new structure - ignore legacy button3UrlsConfig completely to avoid stale data
+                                            const urlDetails = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
                                             console.log('🔍 URL Lookup Debug (FIXED):', {
                                               urlId,
                                               configButton3Urls: (config as any).button3UrlsConfig?.temporaryUrls?.length || 0,
