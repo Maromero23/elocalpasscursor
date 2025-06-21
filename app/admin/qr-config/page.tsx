@@ -4190,19 +4190,22 @@ function QRConfigPageContent() {
                                               urlDetails: urlDetails ? 'FOUND' : 'NOT FOUND',
                                               urlDetailsData: urlDetails
                                             });
-                                            const hasCustomEdits = (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
+                                            // Check for custom edits in the correct data structure (NEW structure first, then legacy)
+                                            const urlEntry = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
+                                            const hasCustomEdits = urlEntry?.customizations || (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
                                             
                                             // Add cache-busting timestamp to prevent browser caching of edited content
                                             const cacheBreaker = config.updatedAt ? `&t=${new Date(config.updatedAt).getTime()}` : '';
                                             
+                                            // Always use the enhanced landing page route for URLs with customizations
                                             const displayUrl = hasCustomEdits 
-                                              ? `/landing/custom/${config.id}?urlId=${urlId}${cacheBreaker}` 
+                                              ? `/landing-enhanced/${config.id}?urlId=${urlId}${cacheBreaker}` 
                                               : (urlDetails?.url ? `${urlDetails.url}${cacheBreaker}` : '#');
                                             
-                                            // Get the configuration name from the custom content if available
-                                            const customConfigName = hasCustomEdits 
-                                              ? (config as any).templates?.landingPage?.urlCustomContent?.[urlId]?.configurationName 
-                                              : null;
+                                            // Get the configuration name from the custom content (check new structure first, then legacy)
+                                            const customConfigName = urlEntry?.customizations?.configurationName 
+                                              || (config as any).templates?.landingPage?.urlCustomContent?.[urlId]?.configurationName 
+                                              || null;
                                             
                                             // Display priority: 1. Custom config name, 2. URL name, 3. Fallback to URL number
                                             const displayName = customConfigName || urlDetails?.name || `URL ${index + 1}`;
