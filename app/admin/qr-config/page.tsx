@@ -146,6 +146,10 @@ function QRConfigPageContent() {
       if (expandConfigParam) {
         console.log('🔗 URL REDIRECT: Expanding configuration:', expandConfigParam)
         setExpandedConfigs(new Set([expandConfigParam]))
+        
+        // Reload configurations to ensure we have the latest data after editing
+        console.log('🔄 URL REDIRECT: Reloading configurations to get latest data')
+        loadSavedConfigurations()
       }
     }
   }, [searchParams])
