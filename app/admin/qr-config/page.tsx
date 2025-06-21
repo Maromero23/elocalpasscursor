@@ -165,6 +165,7 @@ function QRConfigPageContent() {
     };
     landingPageConfig: any;
     createdAt: Date;
+    updatedAt: Date;
   }>>([])
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showConfigLibrary, setShowConfigLibrary] = useState(false)
@@ -4190,9 +4191,13 @@ function QRConfigPageContent() {
                                               urlDetailsData: urlDetails
                                             });
                                             const hasCustomEdits = (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
+                                            
+                                            // Add cache-busting timestamp to prevent browser caching of edited content
+                                            const cacheBreaker = config.updatedAt ? `&t=${new Date(config.updatedAt).getTime()}` : '';
+                                            
                                             const displayUrl = hasCustomEdits 
-                                              ? `/landing/custom/${config.id}?urlId=${urlId}` 
-                                              : (urlDetails?.url || '#');
+                                              ? `/landing/custom/${config.id}?urlId=${urlId}${cacheBreaker}` 
+                                              : (urlDetails?.url ? `${urlDetails.url}${cacheBreaker}` : '#');
                                             
                                             // Get the configuration name from the custom content if available
                                             const customConfigName = hasCustomEdits 

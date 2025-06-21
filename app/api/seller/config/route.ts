@@ -52,14 +52,19 @@ export async function GET(request: NextRequest) {
         
         landingPageUrls = temporaryUrls
           .filter((url: any) => selectedUrlIds.includes(url.id))
-          .map((url: any) => ({
-            id: url.id,
-            name: url.name,
-            url: url.url,
-            description: url.description,
-            // Generate the full landing page URL - Use correct port 3003
-            fullLandingUrl: `http://localhost:3003/landing-enhanced/${savedConfig.id}?urlId=${url.id}`
-          }))
+          .map((url: any) => {
+            // Add cache-busting timestamp to prevent browser caching of edited content
+            const cacheBreaker = savedConfig.updatedAt ? `&t=${new Date(savedConfig.updatedAt).getTime()}` : '';
+            
+            return {
+              id: url.id,
+              name: url.name,
+              url: url.url,
+              description: url.description,
+              // Generate the full landing page URL with cache-busting timestamp
+              fullLandingUrl: `http://localhost:3003/landing-enhanced/${savedConfig.id}?urlId=${url.id}${cacheBreaker}`
+            }
+          })
       }
       
       // Transform to match frontend interface

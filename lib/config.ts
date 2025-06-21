@@ -46,8 +46,16 @@ export const getCustomerPortalUrl = (token: string) => {
   return `${config.customerPortalUrl}?token=${token}`
 }
 
-export const getLandingPageUrl = (configId: string, urlId: string) => {
-  return getFullUrl(`/landing-enhanced/${configId}?urlId=${urlId}`)
+export const getLandingPageUrl = (configId: string, urlId: string, timestamp?: string | Date) => {
+  const baseUrl = `/landing-enhanced/${configId}?urlId=${urlId}`
+  
+  // Add cache-busting timestamp if provided
+  if (timestamp) {
+    const ts = timestamp instanceof Date ? timestamp.getTime() : new Date(timestamp).getTime()
+    return getFullUrl(`${baseUrl}&t=${ts}`)
+  }
+  
+  return getFullUrl(baseUrl)
 }
 
 export const isProduction = () => {
