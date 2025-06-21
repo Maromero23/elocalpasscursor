@@ -72,7 +72,7 @@ function QRConfigPageContent() {
   const navItems = getNavItems(session?.user?.role || "")
 
   // DEPLOYMENT TIMESTAMP - Version deployed at specific time
-  const DEPLOYMENT_TIMESTAMP = "2025-01-20 11:45 AM PST - localStorage Fix Deployment"
+  const DEPLOYMENT_TIMESTAMP = "2025-06-21 01:35 AM EST - CORRECT REPO localStorage Fix Deployment"
 
   // State for global configuration
   const [globalConfig, setGlobalConfig] = useState<QRGlobalConfig>({
