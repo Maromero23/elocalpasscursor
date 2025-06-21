@@ -2906,8 +2906,21 @@ function QRConfigPageContent() {
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                       onClick={() => {
+                        // Clear any existing URLs from previous configurations
+                        console.log('🧹 URLS: Clearing previous configuration URLs')
+                        setSellerUrls([])
+                        setSelectedUrlIds([])
+                        
+                        // Clear localStorage URL data from previous sessions
+                        localStorage.removeItem('elocalpass-button3-urls')
+                        localStorage.removeItem('elocalpass-current-qr-progress')
+                        localStorage.removeItem('elocalpass-new-temp-urls')
+                        localStorage.removeItem('elocalpass-new-temp-url')
+                        
                         updateConfig({ button3DeliveryMethod: 'URLS' })
                         setConfiguredButtons((prev) => new Set(prev).add(3))
+                        
+                        console.log('✅ URLS: Clean slate ready for new configuration')
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
@@ -2917,8 +2930,21 @@ function QRConfigPageContent() {
                             type="radio"
                             checked={globalConfig.button3DeliveryMethod === 'URLS'}
                             onChange={() => {
+                              // Clear any existing URLs from previous configurations
+                              console.log('🧹 URLS: Clearing previous configuration URLs')
+                              setSellerUrls([])
+                              setSelectedUrlIds([])
+                              
+                              // Clear localStorage URL data from previous sessions
+                              localStorage.removeItem('elocalpass-button3-urls')
+                              localStorage.removeItem('elocalpass-current-qr-progress')
+                              localStorage.removeItem('elocalpass-new-temp-urls')
+                              localStorage.removeItem('elocalpass-new-temp-url')
+                              
                               updateConfig({ button3DeliveryMethod: 'URLS' })
                               setConfiguredButtons((prev) => new Set(prev).add(3))
+                              
+                              console.log('✅ URLS: Clean slate ready for new configuration')
                             }}
                             className="h-4 w-4 text-blue-600"
                           />
@@ -2952,8 +2978,21 @@ function QRConfigPageContent() {
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                       onClick={() => {
+                        // Clear any existing URLs from previous configurations
+                        console.log('🧹 BOTH: Clearing previous configuration URLs')
+                        setSellerUrls([])
+                        setSelectedUrlIds([])
+                        
+                        // Clear localStorage URL data from previous sessions
+                        localStorage.removeItem('elocalpass-button3-urls')
+                        localStorage.removeItem('elocalpass-current-qr-progress')
+                        localStorage.removeItem('elocalpass-new-temp-urls')
+                        localStorage.removeItem('elocalpass-new-temp-url')
+                        
                         updateConfig({ button3DeliveryMethod: 'BOTH' })
                         setConfiguredButtons((prev) => new Set(prev).add(3))
+                        
+                        console.log('✅ BOTH: Clean slate ready for new configuration')
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
@@ -2963,8 +3002,21 @@ function QRConfigPageContent() {
                             type="radio"
                             checked={globalConfig.button3DeliveryMethod === 'BOTH'}
                             onChange={() => {
+                              // Clear any existing URLs from previous configurations
+                              console.log('🧹 BOTH: Clearing previous configuration URLs')
+                              setSellerUrls([])
+                              setSelectedUrlIds([])
+                              
+                              // Clear localStorage URL data from previous sessions
+                              localStorage.removeItem('elocalpass-button3-urls')
+                              localStorage.removeItem('elocalpass-current-qr-progress')
+                              localStorage.removeItem('elocalpass-new-temp-urls')
+                              localStorage.removeItem('elocalpass-new-temp-url')
+                              
                               updateConfig({ button3DeliveryMethod: 'BOTH' })
                               setConfiguredButtons((prev) => new Set(prev).add(3))
+                              
+                              console.log('✅ BOTH: Clean slate ready for new configuration')
                             }}
                             className="h-4 w-4 text-blue-600"
                           />
