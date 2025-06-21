@@ -29,9 +29,9 @@ export async function PATCH(
 
     const prisma = new PrismaClient()
 
-    // Get current location status using raw query
+    // Get current location status using PostgreSQL syntax
     const location = await prisma.$queryRaw`
-      SELECT isActive FROM Location WHERE id = ${id}
+      SELECT "isActive" FROM "Location" WHERE id = ${id}
     ` as any[]
 
     if (!location || location.length === 0) {
@@ -45,28 +45,28 @@ export async function PATCH(
 
     // Update location and cascade to sellers only (don't affect distributor)
     await prisma.$transaction(async (tx) => {
-      // Update location
+      // Update location using PostgreSQL syntax
       await tx.$executeRaw`
-        UPDATE Location SET isActive = ${newStatus} WHERE id = ${id}
+        UPDATE "Location" SET "isActive" = ${newStatus}, "updatedAt" = NOW() WHERE id = ${id}
       `
       console.log("✅ Location updated")
       
-      // Update location's user
+      // Update location's user using PostgreSQL syntax
       await tx.$executeRaw`
-        UPDATE users SET isActive = ${newStatus} WHERE id = (SELECT userId FROM Location WHERE id = ${id})
+        UPDATE users SET "isActive" = ${newStatus}, "updatedAt" = NOW() WHERE id = (SELECT "userId" FROM "Location" WHERE id = ${id})
       `
       console.log("✅ Location user updated")
 
-      // Get all sellers for this location and update them
+      // Get all sellers for this location and update them using PostgreSQL syntax
       const sellers = await tx.$queryRaw`
-        SELECT id FROM users WHERE locationId = ${id} AND role = 'SELLER'
+        SELECT id FROM users WHERE "locationId" = ${id} AND role = 'SELLER'
       `
       
       console.log("📋 Found", (sellers as any[]).length, "sellers to update")
       
       for (const seller of sellers as any[]) {
         await tx.$executeRaw`
-          UPDATE users SET isActive = ${newStatus} WHERE id = ${seller.id}
+          UPDATE users SET "isActive" = ${newStatus}, "updatedAt" = NOW() WHERE id = ${seller.id}
         `
       }
       console.log("✅ All sellers updated")

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Use raw SQL to get sellers with location and distributor info including isActive
+    // Use raw SQL with PostgreSQL syntax
     const sellers = await prisma.$queryRaw`
       SELECT 
         u.id,
@@ -22,22 +22,22 @@ export async function GET(request: NextRequest) {
         u.telephone,
         u.whatsapp,
         u.role,
-        u.isActive,
-        u.createdAt,
-        u.locationId,
-        u.configurationId,
-        u.configurationName,
-        l.id as locationId,
-        l.name as locationName,
-        l.isActive as locationIsActive,
-        d.id as distributorId,
-        d.name as distributorName,
-        d.isActive as distributorIsActive
+        u."isActive",
+        u."createdAt",
+        u."locationId",
+        u."configurationId",
+        u."configurationName",
+        l.id as "locationId",
+        l.name as "locationName",
+        l."isActive" as "locationIsActive",
+        d.id as "distributorId",
+        d.name as "distributorName",
+        d."isActive" as "distributorIsActive"
       FROM users u
-      LEFT JOIN Location l ON u.locationId = l.id
-      LEFT JOIN Distributor d ON l.distributorId = d.id
+      LEFT JOIN "Location" l ON u."locationId" = l.id
+      LEFT JOIN "Distributor" d ON l."distributorId" = d.id
       WHERE u.role = 'SELLER'
-      ORDER BY u.createdAt DESC
+      ORDER BY u."createdAt" DESC
     `
 
     // Transform the result to match expected structure

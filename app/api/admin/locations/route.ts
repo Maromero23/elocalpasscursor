@@ -13,34 +13,34 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Use raw SQL to get all location data including isActive fields
+    // Use raw SQL with PostgreSQL syntax
     const locations = await prisma.$queryRaw`
       SELECT 
         l.id,
         l.name,
-        l.contactPerson,
+        l."contactPerson",
         l.email,
         l.telephone,
-        l.isActive,
-        l.createdAt,
-        l.updatedAt,
-        l.distributorId,
-        u.id as userId,
-        u.name as userName,
-        u.email as userEmail,
-        u.role as userRole,
-        u.isActive as userIsActive,
-        u.createdAt as userCreatedAt,
-        d.id as distId,
-        d.name as distName,
-        du.id as distUserId,
-        du.name as distUserName,
-        du.email as distUserEmail
-      FROM Location l
-      LEFT JOIN users u ON l.userId = u.id
-      LEFT JOIN Distributor d ON l.distributorId = d.id
-      LEFT JOIN users du ON d.userId = du.id
-      ORDER BY l.createdAt DESC
+        l."isActive",
+        l."createdAt",
+        l."updatedAt",
+        l."distributorId",
+        u.id as "userId",
+        u.name as "userName",
+        u.email as "userEmail",
+        u.role as "userRole",
+        u."isActive" as "userIsActive",
+        u."createdAt" as "userCreatedAt",
+        d.id as "distId",
+        d.name as "distName",
+        du.id as "distUserId",
+        du.name as "distUserName",
+        du.email as "distUserEmail"
+      FROM "Location" l
+      LEFT JOIN users u ON l."userId" = u.id
+      LEFT JOIN "Distributor" d ON l."distributorId" = d.id
+      LEFT JOIN users du ON d."userId" = du.id
+      ORDER BY l."createdAt" DESC
     `
 
     // Transform the result to match expected structure
