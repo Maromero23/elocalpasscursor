@@ -56,9 +56,9 @@ export function LandingPageTemplate({
     setSelectedDays(defaultDays)
   }, [defaultGuests, defaultDays])
 
-  // Check email match in real time
+  // Check email match in real time (case-insensitive)
   useEffect(() => {
-    if (formData.emailConfirmation && formData.email !== formData.emailConfirmation) {
+    if (formData.emailConfirmation && formData.email.toLowerCase() !== formData.emailConfirmation.toLowerCase()) {
       setEmailMatchError(true)
     } else {
       setEmailMatchError(false)
@@ -68,7 +68,7 @@ export function LandingPageTemplate({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (formData.email !== formData.emailConfirmation) {
+    if (formData.email.toLowerCase() !== formData.emailConfirmation.toLowerCase()) {
       alert('Email addresses do not match')
       return
     }

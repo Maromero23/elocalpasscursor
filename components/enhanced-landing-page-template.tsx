@@ -123,10 +123,10 @@ export function EnhancedLandingPageTemplate({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [emailMatchError, setEmailMatchError] = useState(false)
 
-  // Validate email confirmation in real-time
+  // Validate email confirmation in real-time (case-insensitive)
   useEffect(() => {
     if (formData.emailConfirmation && formData.email) {
-      setEmailMatchError(formData.email !== formData.emailConfirmation)
+      setEmailMatchError(formData.email.toLowerCase() !== formData.emailConfirmation.toLowerCase())
     } else {
       setEmailMatchError(false)
     }

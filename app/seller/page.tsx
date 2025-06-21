@@ -541,14 +541,14 @@ export default function SellerDashboard() {
                               value={confirmEmail}
                               onChange={(e) => setConfirmEmail(e.target.value)}
                               className={`w-full focus:ring-blue-500 focus:border-blue-500 block shadow-sm text-sm border-gray-300 rounded-md px-3 py-2 ${
-                                confirmEmail && clientEmail !== confirmEmail ? 'border-red-500 bg-red-50' : ''
+                                confirmEmail && clientEmail.toLowerCase() !== confirmEmail.toLowerCase() ? 'border-red-500 bg-red-50' : ''
                               }`}
                               placeholder="Confirm email address"
                             />
-                            {confirmEmail && clientEmail !== confirmEmail && (
+                            {confirmEmail && clientEmail.toLowerCase() !== confirmEmail.toLowerCase() && (
                               <p className="text-red-600 text-xs mt-1">Emails don't match</p>
                             )}
-                            {confirmEmail && clientEmail === confirmEmail && confirmEmail.length > 0 && (
+                            {confirmEmail && clientEmail.toLowerCase() === confirmEmail.toLowerCase() && confirmEmail.length > 0 && (
                               <p className="text-green-600 text-xs mt-1">Emails confirmed</p>
                             )}
                           </div>
