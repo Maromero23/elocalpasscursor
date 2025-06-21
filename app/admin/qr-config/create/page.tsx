@@ -460,7 +460,17 @@ export default function CreateEnhancedLandingPage() {
         console.log('💾 SAVE DEBUG: Database response status:', updateResponse.status)
         
         if (updateResponse.ok) {
+          const savedConfigData = await updateResponse.json()
           console.log('✅ SAVE DEBUG: Successfully saved to database')
+          console.log('✅ SAVE DEBUG: Saved config data:', savedConfigData)
+          
+          // Update editQrId to use the correct saved configuration ID
+          const actualConfigId = savedConfigData.id
+          console.log('✅ SAVE DEBUG: Using actual config ID for redirect:', actualConfigId)
+          
+          // Store the correct ID for redirect
+          window.sessionStorage.setItem('redirectConfigId', actualConfigId)
+          
           toast.success('Configuration Saved', 'Landing page configuration saved to database successfully!')
         } else {
           const errorData = await updateResponse.json()
@@ -499,13 +509,20 @@ export default function CreateEnhancedLandingPage() {
       
       // Navigate back to QR configuration page with the specific config expanded
       setTimeout(() => {
-        if (cameFromLibrary && editQrId) {
+        // Use the correct saved configuration ID for redirect
+        const redirectConfigId = window.sessionStorage.getItem('redirectConfigId') || editQrId
+        console.log('✅ REDIRECT DEBUG: Using config ID for redirect:', redirectConfigId)
+        
+        if (cameFromLibrary && redirectConfigId) {
           // If we came from the library, go back to library with config expanded
-          router.push(`/admin/qr-config?showLibrary=true&expandConfig=${editQrId}`)
+          router.push(`/admin/qr-config?showLibrary=true&expandConfig=${redirectConfigId}`)
         } else {
           // Otherwise use the old expand parameter
-          router.push(`/admin/qr-config?expand=${editQrId}`)
+          router.push(`/admin/qr-config?expand=${redirectConfigId}`)
         }
+        
+        // Clean up session storage
+        window.sessionStorage.removeItem('redirectConfigId')
       }, 1500) // Wait for toast to be visible
       
     } catch (error) {
