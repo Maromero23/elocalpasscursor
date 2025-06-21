@@ -15,27 +15,27 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const { id } = params
 
-    // Get distributor details with raw SQL
+    // Get distributor details with PostgreSQL syntax
     const distributorData = await prisma.$queryRaw`
       SELECT 
         d.id,
         d.name,
-        d.contactPerson,
+        d."contactPerson",
         d.email,
         d.telephone,
         d.whatsapp,
         d.notes,
-        d.isActive,
-        d.createdAt,
-        d.updatedAt,
-        u.id as userId,
-        u.name as userName,
-        u.email as userEmail,
-        u.role as userRole,
-        u.isActive as userIsActive,
-        u.createdAt as userCreatedAt
-      FROM Distributor d
-      LEFT JOIN users u ON d.userId = u.id
+        d."isActive",
+        d."createdAt",
+        d."updatedAt",
+        u.id as "userId",
+        u.name as "userName",
+        u.email as "userEmail",
+        u.role as "userRole",
+        u."isActive" as "userIsActive",
+        u."createdAt" as "userCreatedAt"
+      FROM "Distributor" d
+      LEFT JOIN users u ON d."userId" = u.id
       WHERE d.id = ${id}
     `
 
@@ -45,31 +45,31 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const distRow = (distributorData as any[])[0]
 
-    // Get locations with their sellers
+    // Get locations with their sellers using PostgreSQL syntax
     const locationsData = await prisma.$queryRaw`
       SELECT 
         l.id,
         l.name,
-        l.contactPerson,
+        l."contactPerson",
         l.email,
         l.telephone,
         l.whatsapp,
         l.notes,
-        l.isActive,
-        l.createdAt,
-        l.updatedAt,
-        lu.id as locationUserId,
-        lu.name as locationUserName,
-        lu.email as locationUserEmail,
-        lu.isActive as locationUserIsActive,
-        lu.createdAt as locationUserCreatedAt
-      FROM Location l
-      LEFT JOIN users lu ON l.userId = lu.id
-      WHERE l.distributorId = ${id}
-      ORDER BY l.createdAt DESC
+        l."isActive",
+        l."createdAt",
+        l."updatedAt",
+        lu.id as "locationUserId",
+        lu.name as "locationUserName",
+        lu.email as "locationUserEmail",
+        lu."isActive" as "locationUserIsActive",
+        lu."createdAt" as "locationUserCreatedAt"
+      FROM "Location" l
+      LEFT JOIN users lu ON l."userId" = lu.id
+      WHERE l."distributorId" = ${id}
+      ORDER BY l."createdAt" DESC
     `
 
-    // Get sellers for these locations with their saved configurations
+    // Get sellers for these locations with their saved configurations using PostgreSQL syntax
     const sellersData = await prisma.$queryRaw`
       SELECT 
         s.id,
@@ -79,19 +79,19 @@ export async function GET(request: Request, { params }: { params: { id: string }
         s.whatsapp,
         s.notes,
         s.role,
-        s.isActive,
-        s.createdAt,
-        s.locationId,
-        s.configurationId,
-        s.configurationName,
-        s.savedConfigId,
-        sc.name as savedConfigName
+        s."isActive",
+        s."createdAt",
+        s."locationId",
+        s."configurationId",
+        s."configurationName",
+        s."savedConfigId",
+        sc.name as "savedConfigName"
       FROM users s
-      LEFT JOIN saved_qr_configurations sc ON s.savedConfigId = sc.id
-      WHERE s.locationId IN (
-        SELECT l.id FROM Location l WHERE l.distributorId = ${id}
+      LEFT JOIN saved_qr_configurations sc ON s."savedConfigId" = sc.id
+      WHERE s."locationId" IN (
+        SELECT l.id FROM "Location" l WHERE l."distributorId" = ${id}
       ) AND s.role = 'SELLER'
-      ORDER BY s.createdAt DESC
+      ORDER BY s."createdAt" DESC
     `
 
     // Create a map to track which sellers have configurations

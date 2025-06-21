@@ -23,9 +23,9 @@ export async function PATCH(
 
     const { id } = params
 
-    // Get current distributor status using raw query to avoid model issues
+    // Get current distributor status using PostgreSQL syntax
     const distributor = await prisma.$queryRaw`
-      SELECT id, name, isActive, userId FROM Distributor WHERE id = ${id}
+      SELECT id, name, "isActive", "userId" FROM "Distributor" WHERE id = ${id}
     `
 
     if (!distributor || (distributor as any[]).length === 0) {
@@ -35,58 +35,24 @@ export async function PATCH(
     const currentDistributor = (distributor as any[])[0]
     const newStatus = !currentDistributor.isActive
 
-    // Update distributor and cascade to all locations and sellers
-    await prisma.$transaction(async (tx) => {
-      // Update distributor
-      await tx.$executeRaw`
-        UPDATE Distributor SET isActive = ${newStatus} WHERE id = ${id}
-      `
-      
-      // Update distributor's user
-      await tx.$executeRaw`
-        UPDATE users SET isActive = ${newStatus} WHERE id = ${currentDistributor.userId}
-      `
+    // Update distributor status using PostgreSQL syntax
+    await prisma.$executeRaw`
+      UPDATE "Distributor" SET "isActive" = ${newStatus}, "updatedAt" = NOW() WHERE id = ${id}
+    `
 
-      // Get all locations for this distributor and update them
-      const locations = await tx.$queryRaw`
-        SELECT id, userId FROM Location WHERE distributorId = ${id}
-      `
-      
-      for (const location of locations as any[]) {
-        // Update location
-        await tx.$executeRaw`
-          UPDATE Location SET isActive = ${newStatus} WHERE id = ${location.id}
-        `
-        
-        // Update location's user
-        await tx.$executeRaw`
-          UPDATE users SET isActive = ${newStatus} WHERE id = ${location.userId}
-        `
+    // Also update the associated user status using PostgreSQL syntax
+    await prisma.$executeRaw`
+      UPDATE users SET "isActive" = ${newStatus}, "updatedAt" = NOW() WHERE id = ${currentDistributor.userId}
+    `
 
-        // Get all sellers for this location and update them
-        const sellers = await tx.$queryRaw`
-          SELECT id FROM users WHERE locationId = ${location.id} AND role = 'SELLER'
-        `
-        
-        for (const seller of sellers as any[]) {
-          await tx.$executeRaw`
-            UPDATE users SET isActive = ${newStatus} WHERE id = ${seller.id}
-          `
-        }
-      }
-    })
-
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       isActive: newStatus,
-      message: `Distributor ${newStatus ? 'activated' : 'deactivated'} successfully with all related locations and sellers`
+      message: `Distributor ${newStatus ? 'activated' : 'deactivated'} successfully`
     })
 
   } catch (error) {
-    console.error("Toggle distributor status error:", error)
-    return NextResponse.json(
-      { error: "Failed to toggle distributor status" },
-      { status: 500 }
-    )
+    console.error("Error toggling distributor status:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

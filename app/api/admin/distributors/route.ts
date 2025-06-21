@@ -17,27 +17,27 @@ export async function GET() {
 
     console.log('✅ Admin access confirmed, fetching distributors...')
     
-    // Use raw SQL to avoid Prisma model issues
+    // Use raw SQL with PostgreSQL syntax
     const distributors = await prisma.$queryRaw`
       SELECT 
         d.id,
         d.name,
-        d.contactPerson,
+        d."contactPerson",
         d.email,
         d.telephone,
         d.whatsapp,
-        d.isActive,
-        d.createdAt,
-        d.updatedAt,
-        u.id as userId,
-        u.name as userName,
-        u.email as userEmail,
-        u.role as userRole,
-        u.isActive as userIsActive,
-        u.createdAt as userCreatedAt
-      FROM Distributor d
-      LEFT JOIN users u ON d.userId = u.id
-      ORDER BY d.createdAt DESC
+        d."isActive",
+        d."createdAt",
+        d."updatedAt",
+        u.id as "userId",
+        u.name as "userName",
+        u.email as "userEmail",
+        u.role as "userRole",
+        u."isActive" as "userIsActive",
+        u."createdAt" as "userCreatedAt"
+      FROM "Distributor" d
+      LEFT JOIN users u ON d."userId" = u.id
+      ORDER BY d."createdAt" DESC
     `
 
     // Transform the result to match the expected structure
@@ -93,18 +93,18 @@ export async function POST(request: NextRequest) {
 
     // Create user and distributor in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Create user with raw SQL
+      // Create user with PostgreSQL syntax
       const userId = `user_${Date.now()}_${Math.random().toString(36).substring(7)}`
       await tx.$executeRaw`
-        INSERT INTO users (id, name, email, password, role, isActive, createdAt, updatedAt)
-        VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, 'DISTRIBUTOR', 1, datetime('now'), datetime('now'))
+        INSERT INTO users (id, name, email, password, role, "isActive", "createdAt", "updatedAt")
+        VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, 'DISTRIBUTOR', true, NOW(), NOW())
       `
 
-      // Create distributor with raw SQL
+      // Create distributor with PostgreSQL syntax
       const distributorId = `dist_${Date.now()}_${Math.random().toString(36).substring(7)}`
       await tx.$executeRaw`
-        INSERT INTO Distributor (id, name, contactPerson, email, telephone, whatsapp, notes, userId, isActive, createdAt, updatedAt)
-        VALUES (${distributorId}, ${name}, ${contactPerson || null}, ${alternativeEmail || email}, ${telephone || null}, ${whatsapp || null}, ${notes || null}, ${userId}, 1, datetime('now'), datetime('now'))
+        INSERT INTO "Distributor" (id, name, "contactPerson", email, telephone, whatsapp, notes, "userId", "isActive", "createdAt", "updatedAt")
+        VALUES (${distributorId}, ${name}, ${contactPerson}, ${alternativeEmail || email}, ${telephone}, ${whatsapp}, ${notes}, ${userId}, true, NOW(), NOW())
       `
 
       return { distributorId, userId }
