@@ -4225,10 +4225,11 @@ function QRConfigPageContent() {
                                             // Add cache-busting timestamp to prevent browser caching of edited content
                                             const cacheBreaker = config.updatedAt ? `&t=${new Date(config.updatedAt).getTime()}` : '';
                                             
-                                            // Always use the enhanced landing page route for URLs with customizations
-                                            const displayUrl = hasCustomEdits 
+                                            // CRITICAL FIX: Always use the saved configuration ID for database-saved URLs
+                                            // Never use the potentially stale urlDetails.url which may contain session-based URLs
+                                            const displayUrl = urlDetails 
                                               ? `/landing-enhanced/${config.id}?urlId=${urlId}${cacheBreaker}` 
-                                              : (urlDetails?.url ? `${urlDetails.url}${cacheBreaker}` : '#');
+                                              : '#';
                                             
                                             // Get the configuration name from the custom content (check new structure first, then legacy)
                                             const customConfigName = urlEntry?.customizations?.configurationName 
