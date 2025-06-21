@@ -76,28 +76,9 @@ export default function EnhancedLandingPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  // Force cache clearing on page load
+  // Add simple cache-busting log
   useEffect(() => {
-    // Clear any potential browser cache for this page
-    if (typeof window !== 'undefined') {
-      // Add cache-busting meta tags
-      const metaNoCache = document.createElement('meta')
-      metaNoCache.httpEquiv = 'Cache-Control'
-      metaNoCache.content = 'no-cache, no-store, must-revalidate'
-      document.head.appendChild(metaNoCache)
-      
-      const metaPragma = document.createElement('meta')
-      metaPragma.httpEquiv = 'Pragma'
-      metaPragma.content = 'no-cache'
-      document.head.appendChild(metaPragma)
-      
-      const metaExpires = document.createElement('meta')
-      metaExpires.httpEquiv = 'Expires'
-      metaExpires.content = '0'
-      document.head.appendChild(metaExpires)
-      
-      console.log('🔄 Enhanced Landing - Cache-busting headers added')
-    }
+    console.log('🔄 Enhanced Landing - Page loaded with force-dynamic and revalidate=0')
   }, [])
 
   // Get urlId from URL parameters immediately (synchronously)
@@ -125,10 +106,10 @@ export default function EnhancedLandingPage() {
       
       // First try to load from database
       try {
-        // Add cache-busting timestamp and URL parameters to prevent stale data
+        // Add cache-busting timestamp to prevent stale data
         const timestamp = Date.now()
-        const urlParams = new URLSearchParams(window.location.search)
-        const cacheBreaker = `t=${timestamp}&cb=${Math.random()}&urlId=${urlId || 'none'}`
+        const cacheBreaker = `t=${timestamp}&cb=${Math.random()}`
+        console.log('🔄 Enhanced Landing - Fetching with cache breaker:', cacheBreaker)
         const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?${cacheBreaker}`, {
           credentials: 'include',
           cache: 'no-store', // Force fresh data
@@ -245,10 +226,11 @@ export default function EnhancedLandingPage() {
             return
           }
         } else {
-          console.log('⚠️ Enhanced Landing - Database config not found, trying qrConfigurations Map')
+          console.log('⚠️ Enhanced Landing - Database config not found, status:', dbResponse.status)
+          console.log('⚠️ Enhanced Landing - Response text:', await dbResponse.text())
         }
       } catch (dbError) {
-        console.log('⚠️ Enhanced Landing - Database error, trying qrConfigurations Map:', dbError)
+        console.error('⚠️ Enhanced Landing - Database error:', dbError)
       }
       
       // Fallback to qrConfigurations Map API
