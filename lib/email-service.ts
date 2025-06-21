@@ -38,8 +38,8 @@ const getEmailTransporter = () => {
       port: parseInt(process.env.EMAIL_PORT || '587'),
       secure: false, // true for 465, false for other ports
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.EMAIL_USER || process.env.GMAIL_USER,
+        pass: process.env.EMAIL_PASS || process.env.GMAIL_PASS,
       },
     })
   }
@@ -50,7 +50,7 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     const transporter = getEmailTransporter()
     
     const mailOptions = {
-      from: options.from || process.env.FROM_EMAIL || process.env.EMAIL_USER || 'noreply@elocalpass.com',
+      from: options.from || process.env.FROM_EMAIL || process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || process.env.GMAIL_USER || 'noreply@elocalpass.com',
       to: options.to,
       subject: options.subject,
       html: options.html,
