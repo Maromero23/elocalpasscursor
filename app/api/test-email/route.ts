@@ -3,7 +3,7 @@ import { sendEmail, createWelcomeEmailHtml } from '@/lib/email-service'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🧪 Testing email service in production with personal Gmail...')
+    console.log('🧪 Testing Resend email service with default domain...')
     
     // Check environment variables
     const envCheck = {
