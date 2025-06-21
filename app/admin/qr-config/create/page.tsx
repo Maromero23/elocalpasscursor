@@ -847,16 +847,21 @@ export default function CreateEnhancedLandingPage() {
           toast.error('Save Error', 'Landing page created but failed to save customizations')
         }
         
-        // Save landing page config to localStorage for QR Config Library display
-        const landingConfig = {
-          id: result.qrId,
-          name: formData.configurationName.trim(),
-          landingConfig: { ...configData },
-          landingUrl: landingUrl,
-          createdAt: new Date(),
-          isActive: true
+        // IMPORTANT: Only save to localStorage when CREATING new URLs, not when EDITING existing database-saved URLs
+        if (!editMode) {
+          console.log('💾 LOCALSTORAGE: Creating new URL - saving to localStorage for QR Config Library display')
+          const landingConfig = {
+            id: result.qrId,
+            name: formData.configurationName.trim(),
+            landingConfig: { ...configData },
+            landingUrl: landingUrl,
+            createdAt: new Date(),
+            isActive: true
+          }
+          localStorage.setItem('elocalpass-landing-config', JSON.stringify(landingConfig))
+        } else {
+          console.log('💾 EDIT MODE: Editing existing URL - NOT saving to localStorage (database-only update)')
         }
-        localStorage.setItem('elocalpass-landing-config', JSON.stringify(landingConfig))
         
         // Redirect back to appropriate location after 2 seconds
         setTimeout(() => {
