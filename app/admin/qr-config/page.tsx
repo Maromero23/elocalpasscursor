@@ -4237,8 +4237,11 @@ function QRConfigPageContent() {
                                             const hasCustomEdits = urlEntry?.customizations || (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
                                             
                                             // Add cache-busting timestamp to prevent browser caching of edited content
-                                            // Use current timestamp for stronger cache busting after edits
-                                            const cacheBreaker = `&t=${Date.now()}&updated=${config.updatedAt ? new Date(config.updatedAt).getTime() : Date.now()}`;
+                                            // Use multiple cache-busting parameters for maximum freshness
+                                            const timestamp = Date.now();
+                                            const configUpdate = config.updatedAt ? new Date(config.updatedAt).getTime() : timestamp;
+                                            const urlSpecificUpdate = urlEntry?.customizations ? 'edited' : 'default';
+                                            const cacheBreaker = `&t=${timestamp}&updated=${configUpdate}&url=${urlId}&v=${urlSpecificUpdate}&rand=${Math.random().toString(36).substr(2, 9)}`;
                                             
                                             // CRITICAL FIX: Always use the saved configuration ID for database-saved URLs
                                             // Never use the potentially stale urlDetails.url which may contain session-based URLs
@@ -4261,6 +4264,13 @@ function QRConfigPageContent() {
                                                   target="_blank"
                                                   rel="noopener noreferrer"
                                                   className="text-blue-600 hover:text-blue-800 cursor-pointer underline"
+                                                  onClick={(e) => {
+                                                    // Force hard refresh by opening URL with additional cache-busting
+                                                    e.preventDefault();
+                                                    const freshTimestamp = Date.now();
+                                                    const freshUrl = `/landing-enhanced/${config.id}?urlId=${urlId}&t=${freshTimestamp}&updated=${configUpdate}&url=${urlId}&v=${urlSpecificUpdate}&rand=${Math.random().toString(36).substr(2, 9)}&force=true`;
+                                                    window.open(freshUrl, '_blank');
+                                                  }}
                                                 >
                                                   {displayName}
                                                 </a>
