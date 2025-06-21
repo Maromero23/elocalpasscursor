@@ -35,12 +35,20 @@ export async function GET(request: NextRequest) {
       deliveryMethod: 'PORTAL'
     })
     
-    // Send test email
-    const emailSent = await sendEmail({
-      to: 'jorgeruiz23@gmail.com',
-      subject: '🧪 Production Email Test - ELocalPass',
-      html: emailHtml
-    })
+    // Send test email with detailed error capture
+    let emailSent = false
+    let emailError = null
+    
+    try {
+      emailSent = await sendEmail({
+        to: 'jorgeruiz23@gmail.com',
+        subject: '🧪 Production Email Test - ELocalPass',
+        html: emailHtml
+      })
+    } catch (error) {
+      emailError = error instanceof Error ? error.message : 'Unknown email error'
+      console.error('Email sending error:', error)
+    }
     
     return NextResponse.json({
       success: emailSent,
@@ -48,6 +56,12 @@ export async function GET(request: NextRequest) {
         ? 'Test email sent successfully! Check jorgeruiz23@gmail.com' 
         : 'Failed to send test email',
       envCheck,
+      emailError,
+      credentials: {
+        user: process.env.GMAIL_USER || process.env.EMAIL_USER,
+        hasPass: !!(process.env.GMAIL_PASS || process.env.EMAIL_PASS),
+        fromAddress: process.env.EMAIL_FROM_ADDRESS
+      },
       timestamp: new Date().toISOString()
     })
     

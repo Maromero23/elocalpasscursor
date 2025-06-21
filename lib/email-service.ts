@@ -39,7 +39,7 @@ const getEmailTransporter = () => {
       secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.EMAIL_USER || process.env.GMAIL_USER,
-        pass: process.env.EMAIL_PASS || process.env.GMAIL_PASS,
+        pass: (process.env.EMAIL_PASS || process.env.GMAIL_PASS || '').replace(/\s/g, ''),
       },
     })
   }
