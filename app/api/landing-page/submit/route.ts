@@ -202,18 +202,15 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
         deliveryMethod: deliveryMethod
       })
 
-      // Send the email
-      emailSent = await sendEmail({
+      // Send the email (now throws errors instead of returning false)
+      await sendEmail({
         to: formData.email,
         subject: emailSubject,
         html: emailHtml
       })
 
-      if (emailSent) {
-        console.log(`✅ Welcome email sent successfully to ${formData.email}`)
-      } else {
-        console.error(`❌ Failed to send welcome email to ${formData.email}`)
-      }
+      emailSent = true
+      console.log(`✅ Welcome email sent successfully to ${formData.email}`)
     } catch (emailError) {
       console.error('❌ Error sending welcome email:', emailError)
       emailSent = false

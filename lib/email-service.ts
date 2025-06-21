@@ -59,6 +59,9 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     console.log(`📧 Sending email to: ${options.to}`)
     console.log(`📧 Subject: ${options.subject}`)
     console.log(`📧 Service: ${getEmailServiceName()}`)
+    console.log(`📧 From: ${mailOptions.from}`)
+    console.log(`📧 User: ${process.env.GMAIL_USER || process.env.EMAIL_USER}`)
+    console.log(`📧 Pass length: ${(process.env.GMAIL_PASS || process.env.EMAIL_PASS || '').replace(/\s/g, '').length}`)
     
     const result = await transporter.sendMail(mailOptions)
     
@@ -67,7 +70,8 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     
   } catch (error) {
     console.error('❌ Email sending failed:', error)
-    return false
+    // Re-throw the error so it can be caught by the caller
+    throw error
   }
 }
 

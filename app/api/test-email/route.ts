@@ -45,7 +45,9 @@ export async function GET(request: NextRequest) {
         subject: '🧪 Production Email Test - ELocalPass',
         html: emailHtml
       })
+      emailSent = true // If no error was thrown, email was sent successfully
     } catch (error) {
+      emailSent = false
       emailError = error instanceof Error ? error.message : 'Unknown email error'
       console.error('Email sending error:', error)
     }
