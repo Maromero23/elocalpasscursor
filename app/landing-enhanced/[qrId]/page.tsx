@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { EnhancedLandingPageTemplate } from '../../../components/enhanced-landing-page-template'
 
+// Force dynamic rendering - prevent Vercel from caching this page
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface QRConfigData {
   id: string
   businessName: string
@@ -71,6 +75,30 @@ export default function EnhancedLandingPage() {
   const [configData, setConfigData] = useState<QRConfigData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Force cache clearing on page load
+  useEffect(() => {
+    // Clear any potential browser cache for this page
+    if (typeof window !== 'undefined') {
+      // Add cache-busting meta tags
+      const metaNoCache = document.createElement('meta')
+      metaNoCache.httpEquiv = 'Cache-Control'
+      metaNoCache.content = 'no-cache, no-store, must-revalidate'
+      document.head.appendChild(metaNoCache)
+      
+      const metaPragma = document.createElement('meta')
+      metaPragma.httpEquiv = 'Pragma'
+      metaPragma.content = 'no-cache'
+      document.head.appendChild(metaPragma)
+      
+      const metaExpires = document.createElement('meta')
+      metaExpires.httpEquiv = 'Expires'
+      metaExpires.content = '0'
+      document.head.appendChild(metaExpires)
+      
+      console.log('🔄 Enhanced Landing - Cache-busting headers added')
+    }
+  }, [])
 
   // Get urlId from URL parameters immediately (synchronously)
   const [urlId, setUrlId] = useState<string | null>(() => {
@@ -97,10 +125,11 @@ export default function EnhancedLandingPage() {
       
       // First try to load from database
       try {
-        // Add cache-busting timestamp to prevent stale data
-        // Add cache-busting timestamp to prevent stale data
+        // Add cache-busting timestamp and URL parameters to prevent stale data
         const timestamp = Date.now()
-        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?t=${timestamp}`, {
+        const urlParams = new URLSearchParams(window.location.search)
+        const cacheBreaker = `t=${timestamp}&cb=${Math.random()}&urlId=${urlId || 'none'}`
+        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?${cacheBreaker}`, {
           credentials: 'include',
           cache: 'no-store', // Force fresh data
           headers: {
