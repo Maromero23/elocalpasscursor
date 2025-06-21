@@ -10,8 +10,8 @@ export interface EmailOptions {
 
 // Email service configuration
 const getEmailTransporter = () => {
-  // Check which email service is configured (prioritize Resend)
-  if (process.env.RESEND_API_KEY) {
+  // Check which email service is configured (temporarily disable Resend for testing)
+  if (false && process.env.RESEND_API_KEY) {
     // Resend configuration (RECOMMENDED)
     console.log('📧 Using Resend email service')
     return nodemailer.createTransport({

@@ -3,7 +3,7 @@ import { sendEmail, createWelcomeEmailHtml } from '@/lib/email-service'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🧪 Testing Resend email service with default domain...')
+    console.log('🧪 Testing email service...')
     
     // Check environment variables
     const envCheck = {
@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Environment variables check:', envCheck)
+    console.log('RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length || 0)
+    console.log('GMAIL_USER value:', process.env.GMAIL_USER)
+    console.log('GMAIL_PASS length:', process.env.GMAIL_PASS?.length || 0)
     
     if (!process.env.RESEND_API_KEY && !process.env.SENDGRID_API_KEY && !process.env.GMAIL_USER && !process.env.EMAIL_USER) {
       return NextResponse.json({ 
@@ -25,33 +28,32 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
     
-    // Create test email HTML
-    const emailHtml = createWelcomeEmailHtml({
-      customerName: 'Test User',
-      qrCode: 'TEST-123456',
-      guests: 2,
-      days: 3,
-      expiresAt: new Date().toLocaleDateString(),
-      customerPortalUrl: 'https://elocalpasscursor.vercel.app/customer/access?token=test',
-      language: 'en',
-      deliveryMethod: 'PORTAL'
-    })
+    // Create simple test email HTML
+    const simpleEmailHtml = `
+      <h1>🧪 ELocalPass Email Test</h1>
+      <p>This is a test email from ELocalPass.</p>
+      <p>If you receive this, the email system is working!</p>
+      <p>Timestamp: ${new Date().toISOString()}</p>
+    `
     
     // Send test email with detailed error capture
     let emailSent = false
     let emailError = null
+    let emailResult = null
     
     try {
-      emailSent = await sendEmail({
+      console.log('🚀 Attempting to send email...')
+      emailResult = await sendEmail({
         to: 'jorgeruiz23@gmail.com',
-        subject: '🧪 Production Email Test - ELocalPass',
-        html: emailHtml
+        subject: '🧪 Simple Email Test - ELocalPass',
+        html: simpleEmailHtml
       })
-      emailSent = true // If no error was thrown, email was sent successfully
+      emailSent = true
+      console.log('✅ Email sent successfully!')
     } catch (error) {
       emailSent = false
       emailError = error instanceof Error ? error.message : 'Unknown email error'
-      console.error('Email sending error:', error)
+      console.error('❌ Email sending error:', error)
     }
     
     // Determine actual from address being used (same logic as email-service.ts)
@@ -69,6 +71,7 @@ export async function GET(request: NextRequest) {
         : 'Failed to send test email',
       envCheck,
       emailError,
+      emailResult,
       credentials: {
         service: process.env.RESEND_API_KEY ? 'Resend' : process.env.SENDGRID_API_KEY ? 'SendGrid' : 'Gmail/SMTP',
         user: process.env.GMAIL_USER || process.env.EMAIL_USER || 'resend',
