@@ -128,15 +128,21 @@ export default function EnhancedLandingPage() {
         if (dbResponse.ok) {
           const dbConfig = await dbResponse.json()
           console.log('✅ Enhanced Landing - Loaded config from database:', dbConfig)
+          console.log('🔍 Enhanced Landing - landingPageConfig structure:', dbConfig.landingPageConfig)
+          console.log('🔍 Enhanced Landing - temporaryUrls array:', dbConfig.landingPageConfig?.temporaryUrls)
           
           // Check for URL-specific customizations first
           let landingConfig = dbConfig.landingPageConfig
           
           if (urlId) {
             console.log('🔍 Enhanced Landing - Looking for URL-specific content for urlId:', urlId)
+            console.log('🔍 Enhanced Landing - urlId type:', typeof urlId)
+            console.log('🔍 Enhanced Landing - urlId length:', urlId.length)
             
             // Check for URL-specific customizations in temporaryUrls array (NEW CORRECT STRUCTURE)
             if (dbConfig.landingPageConfig?.temporaryUrls) {
+              console.log('🔍 Enhanced Landing - Available URL IDs in temporaryUrls:', 
+                dbConfig.landingPageConfig.temporaryUrls.map((url: any) => url.id))
               const urlEntry = dbConfig.landingPageConfig.temporaryUrls.find((url: any) => url.id === urlId)
               if (urlEntry?.customizations) {
                 landingConfig = urlEntry.customizations
