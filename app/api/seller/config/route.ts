@@ -2,37 +2,50 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
+import { getLandingPageUrl } from '@/lib/config'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  console.log('🔍 SELLER CONFIG: Starting GET request...')
+  
   try {
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
+      console.log('❌ SELLER CONFIG: No session found')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
+
+    console.log('✅ SELLER CONFIG: Session found for user:', session.user.email)
+
     if (session.user.role !== 'SELLER') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
     
-    // Get seller's user record with saved configuration relationship
+    // Get the seller and their saved configuration
     const seller = await prisma.user.findUnique({
-      where: {
-        id: session.user.id
-      },
+      where: { id: session.user.id },
       include: {
-        savedConfig: true  // Include the saved configuration
+        savedConfig: true
       }
     })
-    
+
     if (!seller) {
+      console.log('❌ SELLER CONFIG: Seller not found')
       return NextResponse.json({ error: 'Seller not found' }, { status: 404 })
     }
-    
-    // Priority 1: Check if seller has a saved configuration assigned
+
+    console.log('✅ SELLER CONFIG: Seller found:', seller.email)
+    console.log('🔍 SELLER CONFIG: Has saved config:', !!seller.savedConfig)
+
+    if (!seller.savedConfig) {
+      console.log('❌ SELLER CONFIG: No saved configuration found')
+      return NextResponse.json({ error: 'No configuration found' }, { status: 404 })
+    }
+
+    // Check if seller has a saved configuration
     if (seller.savedConfig) {
       const savedConfig = seller.savedConfig
       
@@ -53,53 +66,29 @@ export async function GET(request: NextRequest) {
         landingPageUrls = temporaryUrls
           .filter((url: any) => selectedUrlIds.includes(url.id))
           .map((url: any) => {
-            // Add cache-busting timestamp to prevent browser caching of edited content
-            const cacheBreaker = savedConfig.updatedAt ? `&t=${new Date(savedConfig.updatedAt).getTime()}` : '';
-            
             return {
               id: url.id,
               name: url.name,
               url: url.url,
               description: url.description,
-              // Generate the full landing page URL with cache-busting timestamp
-              fullLandingUrl: `http://localhost:3003/landing-enhanced/${savedConfig.id}?urlId=${url.id}${cacheBreaker}`
+              // Generate the full landing page URL using the config helper function
+              fullLandingUrl: getLandingPageUrl(savedConfig.id, url.id, savedConfig.updatedAt)
             }
           })
       }
-      
-      // Transform to match frontend interface
-      const transformedConfig = {
-        configName: savedConfig.name,
-        configDescription: savedConfig.description || `${config.button1GuestsDefault} guests × ${config.button1DaysDefault} days - ${(config.button3DeliveryMethod || 'DIRECT').toLowerCase()} delivery`,
-        
-        // Button 1 fields
-        button1GuestsLocked: config.button1GuestsLocked || false,
-        button1GuestsDefault: config.button1GuestsDefault || 2,
-        button1GuestsRangeMax: config.button1GuestsRangeMax || 10,
-        button1DaysLocked: config.button1DaysLocked || false,
-        button1DaysDefault: config.button1DaysDefault || 3,
-        button1DaysRangeMax: config.button1DaysRangeMax || 30,
-        
-        // Button 2 fields (for backend pricing calculation only)
-        button2PricingType: config.button2PricingType || 'FIXED',
-        button2FixedPrice: config.button2FixedPrice || 25,
-        button2VariableBasePrice: config.button2VariableBasePrice || 10,
-        button2VariableGuestIncrease: config.button2VariableGuestIncrease || 5,
-        button2VariableDayIncrease: config.button2VariableDayIncrease || 3,
-        button2VariableCommission: config.button2VariableCommission || 0,
-        button2IncludeTax: config.button2IncludeTax || false,
-        button2TaxPercentage: config.button2TaxPercentage || 0,
-        
-        // Button 3 fields
-        button3DeliveryMethod: (config.button3DeliveryMethod as 'DIRECT' | 'URLS' | 'BOTH') || 'DIRECT',
-        
-        // Landing page URLs from configuration
-        landingPageUrls: landingPageUrls
-      }
-      
-      return NextResponse.json(transformedConfig)
+
+      console.log('✅ SELLER CONFIG: Configuration loaded successfully')
+      console.log('🔍 SELLER CONFIG: Landing page URLs:', landingPageUrls.length)
+
+      return NextResponse.json({
+        ...config,
+        landingPageUrls,
+        emailTemplates,
+        landingPageConfig,
+        selectedUrlIds
+      })
     }
-    
+
     // Priority 2: Check legacy configurationId (for backward compatibility)
     if (seller.configurationId) {
       // Check if it's a timestamp-based ID (old saved configuration)
@@ -195,10 +184,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(null)
     
   } catch (error) {
-    console.error('Error fetching seller config:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('💥 SELLER CONFIG: Error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
