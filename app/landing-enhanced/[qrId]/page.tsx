@@ -79,31 +79,8 @@ export default function EnhancedLandingPage() {
     // Get urlId from URL search params
     const searchParams = new URLSearchParams(window.location.search)
     const urlIdParam = searchParams.get('urlId')
-    const forceParam = searchParams.get('force')
-    
     setUrlId(urlIdParam)
     console.log('🔍 Enhanced Landing - URL ID from query:', urlIdParam)
-    
-    // If force parameter is present, clear any potential caches
-    if (forceParam === 'true') {
-      console.log('🔄 Enhanced Landing - Force refresh requested, clearing caches')
-      // Clear potential service worker cache
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          registrations.forEach(registration => {
-            registration.update()
-          })
-        })
-      }
-      // Clear any potential browser cache for this page
-      if ('caches' in window) {
-        caches.keys().then(names => {
-          names.forEach(name => {
-            caches.delete(name)
-          })
-        })
-      }
-    }
   }, [])
 
   useEffect(() => {
@@ -119,15 +96,9 @@ export default function EnhancedLandingPage() {
       // First try to load from database
       try {
         // Add cache-busting timestamp to prevent stale data
-        // Include URL parameters in cache key to ensure fresh data after edits
-        const searchParams = new URLSearchParams(window.location.search)
+        // Add cache-busting timestamp to prevent stale data
         const timestamp = Date.now()
-        const updateParam = searchParams.get('updated') || timestamp
-        const forceParam = searchParams.get('force') || ''
-        const urlParam = searchParams.get('url') || ''
-        const vParam = searchParams.get('v') || ''
-        const randParam = searchParams.get('rand') || Math.random().toString(36).substr(2, 9)
-        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?t=${timestamp}&updated=${updateParam}&urlId=${urlId || ''}&force=${forceParam}&url=${urlParam}&v=${vParam}&rand=${randParam}`, {
+        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?t=${timestamp}`, {
           credentials: 'include',
           cache: 'no-store', // Force fresh data
           headers: {
