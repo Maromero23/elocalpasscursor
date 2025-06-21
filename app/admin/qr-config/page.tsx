@@ -2133,7 +2133,7 @@ function QRConfigPageContent() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-xs text-gray-300">2:37 AM</span>
+                <span className="text-xs text-gray-300">2:49 AM</span>
                 <span className="text-white">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
@@ -4211,8 +4211,9 @@ function QRConfigPageContent() {
                                               const urlId = typeof urlIdOrUrl === 'string' ? urlIdOrUrl : urlIdOrUrl.id;
                                             // Find the URL details from SAVED CONFIGURATION DATA, not current session
                                             // PRIORITY: Always check the new structure first (landingPageConfig) as it gets updated on edits
-                                            // Only use the new structure - ignore legacy button3UrlsConfig completely to avoid stale data
-                                            const urlDetails = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
+                                            // Then fallback to legacy structure only if not found in new structure
+                                            const urlDetails = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId) ||
+                                                             (config as any).button3UrlsConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
                                             console.log('🔍 URL Lookup Debug (FIXED):', {
                                               urlId,
                                               configButton3Urls: (config as any).button3UrlsConfig?.temporaryUrls?.length || 0,

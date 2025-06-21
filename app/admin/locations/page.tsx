@@ -137,7 +137,7 @@ export default function LocationsPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-xs text-orange-200">2:37 AM</span>
+                <span className="text-xs text-orange-200">2:49 AM</span>
                 <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
