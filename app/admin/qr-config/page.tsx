@@ -156,16 +156,6 @@ function QRConfigPageContent() {
         // Add a small delay to ensure any database writes have completed
         setTimeout(() => {
           loadSavedConfigurations(true) // Force refresh after editing
-          // Clear any potential browser cache for landing pages
-          if ('caches' in window) {
-            caches.keys().then(names => {
-              names.forEach(name => {
-                if (name.includes('landing-enhanced')) {
-                  caches.delete(name)
-                }
-              })
-            }).catch(() => {}) // Ignore errors
-          }
         }, 500)
       }
     }
@@ -2143,6 +2133,7 @@ function QRConfigPageContent() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
+                <span className="text-xs text-gray-300">2:37 AM</span>
                 <span className="text-white">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
@@ -4236,10 +4227,7 @@ function QRConfigPageContent() {
                                             const hasCustomEdits = urlEntry?.customizations || (config as any).templates?.landingPage?.urlCustomContent?.[urlId];
                                             
                                             // Add cache-busting timestamp to prevent browser caching of edited content
-                                            // Use current timestamp + config update time for stronger cache busting
-                                            const timestamp = Date.now();
-                                            const configUpdate = config.updatedAt ? new Date(config.updatedAt).getTime() : timestamp;
-                                            const cacheBreaker = `&t=${timestamp}&updated=${configUpdate}`;
+                                            const cacheBreaker = config.updatedAt ? `&t=${new Date(config.updatedAt).getTime()}` : '';
                                             
                                             // CRITICAL FIX: Always use the saved configuration ID for database-saved URLs
                                             // Never use the potentially stale urlDetails.url which may contain session-based URLs
