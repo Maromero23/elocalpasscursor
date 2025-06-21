@@ -53,13 +53,13 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     const transporter = getEmailTransporter()
     
     // Use different from address based on email service
-    let fromAddress = options.from || process.env.FROM_EMAIL || process.env.EMAIL_FROM_ADDRESS
+    let fromAddress = options.from || process.env.FROM_EMAIL
     
-    // If using Resend and no custom from address, use Resend's default domain
-    if (process.env.RESEND_API_KEY && !fromAddress) {
+    // If using Resend, force use of verified default domain (ignore EMAIL_FROM_ADDRESS)
+    if (process.env.RESEND_API_KEY) {
       fromAddress = 'ELocalPass <onboarding@resend.dev>'
     } else if (!fromAddress) {
-      fromAddress = 'info@elocalpass.com'
+      fromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@elocalpass.com'
     }
     
     const mailOptions = {
