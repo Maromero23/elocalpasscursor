@@ -281,18 +281,16 @@ ${t('email.welcome.signature', customerLanguage)}
     let rebuyEmailScheduled = false
     
     if (shouldSendRebuyEmail) {
-      // Schedule rebuy email to be sent when QR expires
-      // For now, just log that rebuy email would be scheduled
-      console.log(`📧 Rebuy email will be scheduled for ${clientEmail} when QR expires on ${expiresAt.toLocaleDateString()}`)
+      console.log(`📧 REBUY EMAIL: Enabled for ${clientEmail} - QR expires on ${expiresAt.toLocaleDateString()}`)
+      console.log(`📧 REBUY EMAIL: Will be automatically sent 6-12 hours before expiration via scheduled service`)
+      console.log(`📧 REBUY EMAIL: Customer will receive renewal reminder with portal access`)
       rebuyEmailScheduled = true
       
-      // TODO: Implement actual rebuy email scheduling
-      // This could involve:
-      // 1. Creating a scheduled job/cron task
-      // 2. Using a queue system (Bull, Agenda, etc.)
-      // 3. Database trigger or background process
+      // The rebuy email will be sent automatically by the scheduled service at:
+      // /api/rebuy-emails/send which runs periodically and checks for QR codes
+      // expiring within 6-12 hours that have rebuy emails enabled
     } else {
-      console.log(`❌ Rebuy email disabled for this configuration`)
+      console.log(`❌ REBUY EMAIL: Disabled for this configuration`)
     }
     
     // 🚀 SEND ACTUAL WELCOME EMAIL

@@ -159,4 +159,104 @@ export const createWelcomeEmailHtml = (data: {
     </body>
     </html>
   `
-} 
+}
+
+// Create rebuy email HTML template
+export const createRebuyEmailHtml = (data: {
+  customerName: string
+  qrCode: string
+  guests: number
+  days: number
+  hoursLeft: number
+  customerPortalUrl?: string
+  language: string
+  rebuyUrl?: string
+}) => {
+  const isSpanish = data.language === 'es'
+  
+  const baseStyles = `
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #dc2626 0%, #f97316 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+      .urgency-section { background: #fef2f2; padding: 20px; margin: 20px 0; border-radius: 8px; border: 2px solid #dc2626; text-align: center; }
+      .details { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; }
+      .cta-button { display: inline-block; background: #dc2626; color: white; padding: 20px 40px; text-decoration: none; border-radius: 8px; margin: 15px 0; font-size: 18px; font-weight: bold; }
+      .footer { text-align: center; color: #666; margin-top: 30px; font-size: 14px; }
+      .timer { font-size: 24px; font-weight: bold; color: #dc2626; }
+    </style>
+  `
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${isSpanish ? '¡Tu ELocalPass expira pronto!' : 'Your ELocalPass Expires Soon!'}</title>
+      ${baseStyles}
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>⏰ ${isSpanish ? '¡No dejes que termine tu aventura local!' : 'Don\'t Let Your Local Adventure End!'}</h1>
+        </div>
+        
+        <div class="content">
+          <p>${isSpanish ? `¡Hola ${data.customerName}!` : `Hello ${data.customerName}!`}</p>
+          
+          <div class="urgency-section">
+            <h2>🚨 ${isSpanish ? '¡TIEMPO LIMITADO!' : 'TIME RUNNING OUT!'}</h2>
+            <div class="timer">${data.hoursLeft} ${isSpanish ? 'horas restantes' : 'hours left'}</div>
+            <p>${isSpanish ? 'Tu ELocalPass expira pronto. ¡No pierdas tus descuentos locales!' : 'Your ELocalPass expires soon. Don\'t lose your local discounts!'}</p>
+          </div>
+          
+          <div class="details">
+            <h3>📋 ${isSpanish ? 'TU PASE ACTUAL' : 'YOUR CURRENT PASS'}</h3>
+            <ul>
+              <li><strong>${isSpanish ? 'Código' : 'Code'}:</strong> ${data.qrCode}</li>
+              <li><strong>${isSpanish ? 'Huéspedes' : 'Guests'}:</strong> ${data.guests} ${isSpanish ? 'personas' : 'people'}</li>
+              <li><strong>${isSpanish ? 'Duración' : 'Duration'}:</strong> ${data.days} ${isSpanish ? 'días' : 'days'}</li>
+              <li><strong>${isSpanish ? 'Tiempo restante' : 'Time left'}:</strong> ${data.hoursLeft} ${isSpanish ? 'horas' : 'hours'}</li>
+            </ul>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <p style="font-size: 18px; margin-bottom: 20px;">
+              ${isSpanish ? '¡Continúa disfrutando de experiencias locales increíbles!' : 'Keep enjoying amazing local experiences!'}
+            </p>
+            
+            ${data.rebuyUrl ? `
+              <a href="${data.rebuyUrl}" class="cta-button">
+                🎯 ${isSpanish ? 'OBTENER OTRO PASE' : 'GET ANOTHER PASS'}
+              </a>
+            ` : `
+              ${data.customerPortalUrl ? `
+                <a href="${data.customerPortalUrl}" class="cta-button">
+                  🎯 ${isSpanish ? 'RENOVAR MI PASE' : 'RENEW MY PASS'}
+                </a>
+              ` : ''}
+            `}
+          </div>
+          
+          <div class="details">
+            <h4>💡 ${isSpanish ? '¿Por qué renovar?' : 'Why renew?'}</h4>
+            <ul>
+              <li>${isSpanish ? '✅ Continúa ahorrando en restaurantes locales' : '✅ Keep saving at local restaurants'}</li>
+              <li>${isSpanish ? '✅ Acceso a descuentos exclusivos' : '✅ Access to exclusive discounts'}</li>
+              <li>${isSpanish ? '✅ Descubre nuevos lugares increíbles' : '✅ Discover amazing new places'}</li>
+              <li>${isSpanish ? '✅ Experiencias auténticas como un local' : '✅ Authentic experiences like a local'}</li>
+            </ul>
+          </div>
+          
+          <div class="footer">
+            <p>${isSpanish ? '¡Gracias por elegir ELocalPass!' : 'Thank you for choosing ELocalPass!'}</p>
+            <p>${isSpanish ? 'Tu socio en experiencias locales' : 'Your local experience partner'}</p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+}
