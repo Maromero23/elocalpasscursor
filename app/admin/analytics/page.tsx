@@ -214,7 +214,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-xs text-orange-200">2:57 AM</span>
+                <span className="text-xs text-orange-200">3:10 AM</span>
                 <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}

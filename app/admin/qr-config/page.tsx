@@ -144,20 +144,25 @@ function QRConfigPageContent() {
     
     if (showLibraryParam === 'true') {
       console.log('🔗 URL REDIRECT: Opening QR Configuration Library')
-      setShowConfigLibrary(true)
       
-      if (expandConfigParam) {
-        console.log('🔗 URL REDIRECT: Expanding configuration:', expandConfigParam)
-        setExpandedConfigs(new Set([expandConfigParam]))
+      // RACE CONDITION FIX: Force immediate data refresh BEFORE opening library
+      console.log('🔄 RACE FIX: Force refreshing configurations to get latest data before opening library')
+      loadSavedConfigurations(true).then(() => {
+        console.log('✅ RACE FIX: Fresh data loaded, now opening library')
+        setShowConfigLibrary(true)
         
-        // Reload configurations to ensure we have the latest data after editing
-        console.log('🔄 URL REDIRECT: Reloading configurations to get latest data')
-        
-        // Add a small delay to ensure any database writes have completed
-        setTimeout(() => {
-          loadSavedConfigurations(true) // Force refresh after editing
-        }, 500)
-      }
+        if (expandConfigParam) {
+          console.log('🔗 URL REDIRECT: Expanding configuration:', expandConfigParam)
+          setExpandedConfigs(new Set([expandConfigParam]))
+        }
+      }).catch(error => {
+        console.error('❌ RACE FIX: Error loading fresh data:', error)
+        // Still open library even if refresh fails
+        setShowConfigLibrary(true)
+        if (expandConfigParam) {
+          setExpandedConfigs(new Set([expandConfigParam]))
+        }
+      })
       
       // Clear the URL parameters after processing to prevent auto-opening on page refresh
       const newUrl = new URL(window.location.href)
@@ -2140,7 +2145,7 @@ function QRConfigPageContent() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-xs text-gray-300">2:57 AM</span>
+                <span className="text-xs text-gray-300">3:10 AM</span>
                 <span className="text-white">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
