@@ -765,8 +765,24 @@ function QRConfigPageContent() {
       
       if (dbResponse.ok) {
         const dbConfigs = await dbResponse.json()
-        console.log('✅ Loaded', dbConfigs.length, 'configurations from database')
-        console.log('🔍 Database configs:', dbConfigs)
+        console.log('✅ LOAD CONFIGS SUCCESS:', {
+          timestamp: new Date().toISOString(),
+          loadedCount: dbConfigs.length,
+          forceRefresh,
+          configDetails: dbConfigs.map(config => ({
+            id: config.id,
+            name: config.name,
+            updatedAt: config.updatedAt,
+            hasNewStructure: !!config.landingPageConfig?.temporaryUrls,
+            hasLegacyStructure: !!(config as any).button3UrlsConfig?.temporaryUrls,
+            newStructureUrlCount: config.landingPageConfig?.temporaryUrls?.length || 0,
+            legacyStructureUrlCount: (config as any).button3UrlsConfig?.temporaryUrls?.length || 0,
+            urlIds: [
+              ...(config.landingPageConfig?.temporaryUrls?.map(u => `NEW:${u.id}:${u.name}:${u.url}`) || []),
+              ...((config as any).button3UrlsConfig?.temporaryUrls?.map(u => `LEGACY:${u.id}:${u.name}:${u.url}`) || [])
+            ]
+          }))
+        })
         
         // DO NOT extract URLs from saved configurations - they belong to those specific configs
         // URLs should only appear in current session when creating new configurations
@@ -2145,7 +2161,7 @@ function QRConfigPageContent() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-xs text-gray-300">3:10 AM</span>
+                <span className="text-xs text-gray-300">1:27 PM</span>
                 <span className="text-white">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
@@ -4224,16 +4240,54 @@ function QRConfigPageContent() {
                                             // Find the URL details from SAVED CONFIGURATION DATA, not current session
                                             // PRIORITY: Always check the new structure first (landingPageConfig) as it gets updated on edits
                                             // Then fallback to legacy structure only if not found in new structure
-                                            const urlDetails = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId) ||
-                                                             (config as any).button3UrlsConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
-                                            console.log('🔍 URL Lookup Debug (FIXED):', {
+                                            
+                                            // DEBUG: Check both data sources separately
+                                            const newStructureUrl = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
+                                            const legacyStructureUrl = (config as any).button3UrlsConfig?.temporaryUrls?.find((url: any) => url.id === urlId);
+                                            const urlDetails = newStructureUrl || legacyStructureUrl;
+                                            
+                                            // COMPREHENSIVE DEBUG LOGGING
+                                            console.log('🔍 SERVER DATA RACE DEBUG:', {
+                                              timestamp: new Date().toISOString(),
                                               urlId,
-                                              configButton3Urls: (config as any).button3UrlsConfig?.temporaryUrls?.length || 0,
-                                              configLandingUrls: config.landingPageConfig?.temporaryUrls?.length || 0,
-                                              urlDetails: urlDetails ? 'FOUND' : 'NOT FOUND',
-                                              urlDetailsData: urlDetails,
-                                              foundInNewStructure: !!config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId),
-                                              foundInLegacyStructure: !!(config as any).button3UrlsConfig?.temporaryUrls?.find((url: any) => url.id === urlId)
+                                              configId: config.id,
+                                              configUpdatedAt: config.updatedAt,
+                                              
+                                              // Data structure analysis
+                                              newStructure: {
+                                                exists: !!config.landingPageConfig?.temporaryUrls,
+                                                count: config.landingPageConfig?.temporaryUrls?.length || 0,
+                                                foundUrl: !!newStructureUrl,
+                                                urlData: newStructureUrl ? {
+                                                  id: newStructureUrl.id,
+                                                  name: newStructureUrl.name,
+                                                  url: newStructureUrl.url,
+                                                  hasCustomizations: !!newStructureUrl.customizations
+                                                } : null
+                                              },
+                                              
+                                              legacyStructure: {
+                                                exists: !!(config as any).button3UrlsConfig?.temporaryUrls,
+                                                count: (config as any).button3UrlsConfig?.temporaryUrls?.length || 0,
+                                                foundUrl: !!legacyStructureUrl,
+                                                urlData: legacyStructureUrl ? {
+                                                  id: legacyStructureUrl.id,
+                                                  name: legacyStructureUrl.name,
+                                                  url: legacyStructureUrl.url,
+                                                  hasCustomizations: !!legacyStructureUrl.customizations
+                                                } : null
+                                              },
+                                              
+                                              // Final result
+                                              finalResult: {
+                                                found: !!urlDetails,
+                                                dataSource: newStructureUrl ? 'NEW_STRUCTURE' : (legacyStructureUrl ? 'LEGACY_STRUCTURE' : 'NONE'),
+                                                finalUrl: urlDetails?.url || 'NOT_FOUND',
+                                                finalName: urlDetails?.name || 'NOT_FOUND'
+                                              },
+                                              
+                                              // Data conflict detection
+                                              dataConflict: !!(newStructureUrl && legacyStructureUrl && newStructureUrl.url !== legacyStructureUrl.url)
                                             });
                                             // Check for custom edits in the correct data structure (NEW structure first, then legacy)
                                             const urlEntry = config.landingPageConfig?.temporaryUrls?.find((url: any) => url.id === urlId);

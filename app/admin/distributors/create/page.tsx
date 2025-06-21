@@ -96,7 +96,7 @@ export default function CreateDistributorPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-xs text-gray-500">3:10 AM</span>
+                <span className="text-xs text-gray-500">1:27 PM</span>
                 <span className="text-sm text-gray-700">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
