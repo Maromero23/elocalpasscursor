@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useToast } from '@/hooks/use-toast'
-import { Building2, Users, MapPin, QrCode, Settings, Eye, Plus, Edit3, Palette, Save, Clock, Monitor, Mail, EyeOff, Trash2 } from 'lucide-react'
+import { Building2, Users, MapPin, QrCode, Settings, Eye, Plus, Edit3, Palette, Save, Monitor, Mail, EyeOff, Trash2 } from 'lucide-react'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { ToastNotifications } from '@/components/toast-notification'
 import Link from 'next/link'
@@ -72,7 +72,7 @@ function QRConfigPageContent() {
   const navItems = getNavItems(session?.user?.role || "")
 
   // DEPLOYMENT TIMESTAMP - Version deployed at specific time
-  const DEPLOYMENT_TIMESTAMP = "2025-06-21 01:35 AM EST - CORRECT REPO localStorage Fix Deployment"
+  
 
   // State for global configuration
   const [globalConfig, setGlobalConfig] = useState<QRGlobalConfig>({
@@ -2148,18 +2148,7 @@ function QRConfigPageContent() {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
-            {/* DEPLOYMENT TIMESTAMP HEADER */}
-            <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-500 rounded-full p-1">
-                  <Clock className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-blue-800 font-semibold text-sm">Latest Deployment</p>
-                  <p className="text-blue-600 text-xs">{DEPLOYMENT_TIMESTAMP}</p>
-                </div>
-              </div>
-            </div>
+
             
             {/* Header */}
             <div className="mb-8">
