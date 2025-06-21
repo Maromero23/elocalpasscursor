@@ -72,22 +72,24 @@ export default function EnhancedLandingPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Get urlId from URL parameters
-  const [urlId, setUrlId] = useState<string | null>(null)
-
-  useEffect(() => {
-    // Get urlId from URL search params
-    const searchParams = new URLSearchParams(window.location.search)
-    const urlIdParam = searchParams.get('urlId')
-    setUrlId(urlIdParam)
-    console.log('🔍 Enhanced Landing - URL ID from query:', urlIdParam)
-  }, [])
+  // Get urlId from URL parameters immediately (synchronously)
+  const [urlId, setUrlId] = useState<string | null>(() => {
+    // Initialize urlId immediately on component mount
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search)
+      const urlIdParam = searchParams.get('urlId')
+      console.log('🔍 Enhanced Landing - URL ID from query (IMMEDIATE):', urlIdParam)
+      return urlIdParam
+    }
+    return null
+  })
 
   useEffect(() => {
     if (qrId) {
+      console.log('🔄 Enhanced Landing - Fetching data with qrId:', qrId, 'urlId:', urlId)
       fetchQRConfigData()
     }
-  }, [qrId, urlId])
+  }, [qrId]) // Remove urlId dependency to prevent double-fetch
 
   const fetchQRConfigData = async () => {
     try {

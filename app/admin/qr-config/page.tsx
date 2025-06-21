@@ -2161,7 +2161,7 @@ function QRConfigPageContent() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-xs text-gray-300">1:27 PM</span>
+                <span className="text-xs text-gray-300">1:50 PM</span>
                 <span className="text-white">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
