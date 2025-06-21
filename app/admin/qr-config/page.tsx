@@ -1074,27 +1074,10 @@ function QRConfigPageContent() {
       }
     }
     
-    // Also check for temporary URLs (if URLs exist, Button 3 should be configured)
-    if (!button3Configured && button3UrlsConfig) {
-      try {
-        const urlsData = JSON.parse(button3UrlsConfig)
-        if (urlsData && urlsData.temporaryUrls && urlsData.temporaryUrls.length > 0) {
-          button3Configured = true
-          console.log('🔧 DETECTION: Button 3 configured (temporary URLs found)')
-          
-          // Auto-configure Button 3 for URLs delivery method
-          const autoConfig = {
-            deliveryMethod: 'URLS',
-            configured: true,
-            autoConfigured: true,
-            timestamp: new Date().toISOString()
-          }
-          localStorage.setItem('elocalpass-button3-config', JSON.stringify(autoConfig))
-        }
-      } catch (error) {
-        console.warn('Warning: Could not parse Button 3 URLs config:', error)
-      }
-    }
+    // DO NOT auto-configure Button 3 just because URLs exist
+    // For fresh master configurations, all buttons should start as "Need to configure"
+    // Button 3 should only be marked as configured when user explicitly chooses a delivery method
+    console.log('🔧 DETECTION: Button 3 - only marking as configured if explicit choice made, not just because URLs exist')
     
     if (button3Configured) {
       configuredButtonsSet.add(3)
@@ -1185,8 +1168,8 @@ function QRConfigPageContent() {
         try {
           const urlsData = JSON.parse(button3UrlsConfig)
           if (urlsData && urlsData.temporaryUrls && urlsData.temporaryUrls.length > 0) {
-            // URLs exist - mark Button 3 as configured and update sellerUrls state
-            setConfiguredButtons((prev) => new Set(prev).add(3))
+            // URLs exist - update sellerUrls state but DO NOT auto-mark Button 3 as configured
+            // Button 3 should only be marked as configured when user explicitly chooses delivery method
             setSellerUrls(urlsData.temporaryUrls)
             
             // IMPORTANT: Auto-select all URLs (ensure all URLs are in selectedUrlIds)
@@ -1214,7 +1197,7 @@ function QRConfigPageContent() {
               setSelectedUrlIds(currentSelectedIds)
             }
             
-            console.log('🔧 FOCUS: Button 3 URLs detected - updating state')
+            console.log('🔧 FOCUS: Button 3 URLs detected - updating URL state only (not marking as configured)')
           }
         } catch (error) {
           console.warn('Error parsing Button 3 URLs config on focus:', error)
