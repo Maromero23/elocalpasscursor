@@ -763,51 +763,56 @@ export default function CreateEnhancedLandingPage() {
             if (saveResponse.ok) {
               console.log('✅ DIRECT SAVE: Successfully saved landing page directly to database!')
               
-              // IMPORTANT: Mark Button 3 as configured and auto-select the new URL
-              console.log('🔧 AUTO-CONFIG: Setting Button 3 as configured and auto-selecting URL')
-              
-              // 1. Save Button 3 configuration to localStorage (so it shows as green)
-              const button3Config = {
-                deliveryMethod: 'URLS',
-                configured: true,
-                timestamp: new Date().toISOString()
-              }
-              localStorage.setItem('elocalpass-button3-config', JSON.stringify(button3Config))
-              
-              // 2. Auto-select the newly created URL (add to selectedUrlIds)
-              const existingButton3Urls = localStorage.getItem('elocalpass-button3-urls')
-              let button3UrlsData: {
-                temporaryUrls: any[]
-                selectedUrlIds: string[]
-              } = {
-                temporaryUrls: [],
-                selectedUrlIds: []
-              }
-              
-              if (existingButton3Urls) {
-                try {
-                  button3UrlsData = JSON.parse(existingButton3Urls)
-                } catch (error) {
-                  console.warn('Could not parse existing Button 3 URLs:', error)
+              // IMPORTANT: Only auto-configure Button 3 when CREATING new URLs, not when EDITING existing ones
+              if (!editMode) {
+                console.log('🔧 AUTO-CONFIG: Creating new URL - Setting Button 3 as configured and auto-selecting URL')
+                
+                // 1. Save Button 3 configuration to localStorage (so it shows as green)
+                const button3Config = {
+                  deliveryMethod: 'URLS',
+                  configured: true,
+                  timestamp: new Date().toISOString()
                 }
+                localStorage.setItem('elocalpass-button3-config', JSON.stringify(button3Config))
+                
+                // 2. Auto-select the newly created URL (add to selectedUrlIds)
+                const existingButton3Urls = localStorage.getItem('elocalpass-button3-urls')
+                let button3UrlsData: {
+                  temporaryUrls: any[]
+                  selectedUrlIds: string[]
+                } = {
+                  temporaryUrls: [],
+                  selectedUrlIds: []
+                }
+                
+                if (existingButton3Urls) {
+                  try {
+                    button3UrlsData = JSON.parse(existingButton3Urls)
+                  } catch (error) {
+                    console.warn('Could not parse existing Button 3 URLs:', error)
+                  }
+                }
+                
+                // Add the new URL to temporaryUrls if not already there
+                const existingUrl = button3UrlsData.temporaryUrls.find((url: any) => url.id === urlId)
+                if (!existingUrl) {
+                  button3UrlsData.temporaryUrls.push(urlEntry)
+                }
+                
+                // Auto-select the new URL (add to selectedUrlIds)
+                if (!button3UrlsData.selectedUrlIds.includes(urlId)) {
+                  button3UrlsData.selectedUrlIds.push(urlId)
+                  console.log('🔧 AUTO-SELECT: Added URL to selectedUrlIds:', urlId)
+                }
+                
+                // Save updated Button 3 URLs data
+                localStorage.setItem('elocalpass-button3-urls', JSON.stringify(button3UrlsData))
+                
+                toast.success('Landing Page Created & Saved', `"${formData.configurationName}" created and automatically attached to Button 3 configuration!`)
+              } else {
+                console.log('🔧 EDIT MODE: Editing existing URL - NOT auto-configuring Button 3')
+                toast.success('Landing Page Updated', `"${formData.configurationName}" updated successfully!`)
               }
-              
-              // Add the new URL to temporaryUrls if not already there
-              const existingUrl = button3UrlsData.temporaryUrls.find((url: any) => url.id === urlId)
-              if (!existingUrl) {
-                button3UrlsData.temporaryUrls.push(urlEntry)
-              }
-              
-              // Auto-select the new URL (add to selectedUrlIds)
-              if (!button3UrlsData.selectedUrlIds.includes(urlId)) {
-                button3UrlsData.selectedUrlIds.push(urlId)
-                console.log('🔧 AUTO-SELECT: Added URL to selectedUrlIds:', urlId)
-              }
-              
-              // Save updated Button 3 URLs data
-              localStorage.setItem('elocalpass-button3-urls', JSON.stringify(button3UrlsData))
-              
-              toast.success('Landing Page Created & Saved', `"${formData.configurationName}" created and automatically attached to Button 3 configuration!`)
             } else {
               console.log('⚠️ DIRECT SAVE: Failed to save to database')
               toast.error('Save Error', 'Landing page created but failed to save to database')
