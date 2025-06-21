@@ -115,8 +115,7 @@ export default function EnhancedLandingPage() {
         const timestamp = Date.now()
         const cacheBreaker = `t=${timestamp}&cb=${Math.random()}`
         console.log('🔄 Enhanced Landing - Fetching with cache breaker:', cacheBreaker)
-        const dbResponse = await fetch(`/api/admin/saved-configs/${qrId}?${cacheBreaker}`, {
-          credentials: 'include',
+        const dbResponse = await fetch(`/api/landing-page/config/${qrId}?${cacheBreaker}`, {
           cache: 'no-store', // Force fresh data
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
