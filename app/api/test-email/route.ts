@@ -54,6 +54,14 @@ export async function GET(request: NextRequest) {
       console.error('Email sending error:', error)
     }
     
+    // Determine actual from address being used (same logic as email-service.ts)
+    let actualFromAddress = process.env.FROM_EMAIL
+    if (process.env.RESEND_API_KEY) {
+      actualFromAddress = 'ELocalPass <onboarding@resend.dev>'
+    } else if (!actualFromAddress) {
+      actualFromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@elocalpass.com'
+    }
+
     return NextResponse.json({
       success: emailSent,
       message: emailSent 
@@ -65,7 +73,7 @@ export async function GET(request: NextRequest) {
         service: process.env.RESEND_API_KEY ? 'Resend' : process.env.SENDGRID_API_KEY ? 'SendGrid' : 'Gmail/SMTP',
         user: process.env.GMAIL_USER || process.env.EMAIL_USER || 'resend',
         hasPass: !!(process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.GMAIL_PASS || process.env.EMAIL_PASS),
-        fromAddress: process.env.EMAIL_FROM_ADDRESS || 'info@elocalpass.com'
+        fromAddress: actualFromAddress
       },
       timestamp: new Date().toISOString()
     })
