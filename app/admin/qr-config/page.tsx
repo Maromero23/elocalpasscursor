@@ -3769,11 +3769,7 @@ function QRConfigPageContent() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-xl font-medium text-gray-900">QR Configuration Library</h3>
-                {/* Deployment timestamp for debugging */}
-                <p className="text-xs text-gray-400">v2.24 - 2025-01-21 02:10 AM EST - URL Edit Cache Fix</p>
-              </div>
+              <h3 className="text-xl font-medium text-gray-900">QR Configuration Library</h3>
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setShowConfigLibrary(false)}

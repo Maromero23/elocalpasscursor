@@ -249,8 +249,6 @@ export default function EnhancedLandingPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading your landing page...</p>
-          {/* Deployment timestamp for debugging */}
-          <p className="text-xs text-gray-400 mt-2">v2.24 - 2025-01-21 02:10 AM EST - URL Edit Cache Fix</p>
         </div>
       </div>
     )
