@@ -10,18 +10,10 @@ export interface EmailOptions {
 
 // Email service configuration
 const getEmailTransporter = () => {
-  // Check which email service is configured
-  if (process.env.SENDGRID_API_KEY) {
-    // SendGrid configuration
-    return nodemailer.createTransport({
-      service: 'SendGrid',
-      auth: {
-        user: 'apikey',
-        pass: process.env.SENDGRID_API_KEY,
-      },
-    })
-  } else if (process.env.RESEND_API_KEY) {
-    // Resend configuration
+  // Check which email service is configured (prioritize Resend)
+  if (process.env.RESEND_API_KEY) {
+    // Resend configuration (RECOMMENDED)
+    console.log('📧 Using Resend email service')
     return nodemailer.createTransport({
       host: 'smtp.resend.com',
       port: 587,
@@ -31,8 +23,19 @@ const getEmailTransporter = () => {
         pass: process.env.RESEND_API_KEY,
       },
     })
+  } else if (process.env.SENDGRID_API_KEY) {
+    // SendGrid configuration
+    console.log('📧 Using SendGrid email service')
+    return nodemailer.createTransport({
+      service: 'SendGrid',
+      auth: {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY,
+      },
+    })
   } else {
-    // Gmail SMTP or generic SMTP
+    // Gmail SMTP or generic SMTP (fallback)
+    console.log('📧 Using Gmail/SMTP email service')
     return nodemailer.createTransport({
       host: process.env.EMAIL_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.EMAIL_PORT || '587'),
@@ -50,7 +53,7 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     const transporter = getEmailTransporter()
     
     const mailOptions = {
-      from: options.from || process.env.FROM_EMAIL || process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || process.env.GMAIL_USER || 'noreply@elocalpass.com',
+      from: options.from || process.env.FROM_EMAIL || process.env.EMAIL_FROM_ADDRESS || 'info@elocalpass.com',
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -76,9 +79,9 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
 }
 
 const getEmailServiceName = (): string => {
-  if (process.env.SENDGRID_API_KEY) return 'SendGrid'
   if (process.env.RESEND_API_KEY) return 'Resend'
-  return 'SMTP'
+  if (process.env.SENDGRID_API_KEY) return 'SendGrid'
+  return 'Gmail/SMTP'
 }
 
 // Email templates for production

@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     
     // Check environment variables
     const envCheck = {
+      RESEND_API_KEY: !!process.env.RESEND_API_KEY,
+      SENDGRID_API_KEY: !!process.env.SENDGRID_API_KEY,
       GMAIL_USER: !!process.env.GMAIL_USER,
       GMAIL_PASS: !!process.env.GMAIL_PASS,
       EMAIL_FROM_ADDRESS: !!process.env.EMAIL_FROM_ADDRESS,
@@ -16,9 +18,9 @@ export async function GET(request: NextRequest) {
     
     console.log('Environment variables check:', envCheck)
     
-    if (!process.env.GMAIL_USER && !process.env.EMAIL_USER) {
+    if (!process.env.RESEND_API_KEY && !process.env.SENDGRID_API_KEY && !process.env.GMAIL_USER && !process.env.EMAIL_USER) {
       return NextResponse.json({ 
-        error: 'No email credentials configured',
+        error: 'No email service configured (Resend, SendGrid, or Gmail)',
         envCheck 
       }, { status: 500 })
     }
@@ -60,9 +62,10 @@ export async function GET(request: NextRequest) {
       envCheck,
       emailError,
       credentials: {
-        user: process.env.GMAIL_USER || process.env.EMAIL_USER,
-        hasPass: !!(process.env.GMAIL_PASS || process.env.EMAIL_PASS),
-        fromAddress: process.env.EMAIL_FROM_ADDRESS
+        service: process.env.RESEND_API_KEY ? 'Resend' : process.env.SENDGRID_API_KEY ? 'SendGrid' : 'Gmail/SMTP',
+        user: process.env.GMAIL_USER || process.env.EMAIL_USER || 'resend',
+        hasPass: !!(process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.GMAIL_PASS || process.env.EMAIL_PASS),
+        fromAddress: process.env.EMAIL_FROM_ADDRESS || 'info@elocalpass.com'
       },
       timestamp: new Date().toISOString()
     })
