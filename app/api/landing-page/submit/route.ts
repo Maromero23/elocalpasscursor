@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '../../../../lib/prisma'
+import { prisma } from '@/lib/prisma'
+import { detectLanguage, t, getPlural, formatDate, type SupportedLanguage } from '@/lib/translations'
+import { sendEmail, createWelcomeEmailHtml } from '@/lib/email-service'
 import crypto from 'crypto'
-import { detectLanguage, t, getPlural, formatDate, type SupportedLanguage } from '../../../../lib/translations'
 
 export async function POST(request: NextRequest) {
   try {
@@ -184,9 +185,39 @@ To: ${formData.email}
 Subject: ${emailSubject}
 Language: ${customerLanguage}
 Delivery Method: ${deliveryMethod}
-Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}
-Content:
-${emailContent}`)
+Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
+
+    // 🚀 SEND ACTUAL WELCOME EMAIL
+    let emailSent = false
+    try {
+      // Create HTML email using the email service
+      const emailHtml = createWelcomeEmailHtml({
+        customerName: formData.name,
+        qrCode: qrCodeId,
+        guests: guests,
+        days: days,
+        expiresAt: formattedExpirationDate,
+        customerPortalUrl: deliveryMethod !== 'DIRECT' ? magicLinkUrl : undefined,
+        language: customerLanguage,
+        deliveryMethod: deliveryMethod
+      })
+
+      // Send the email
+      emailSent = await sendEmail({
+        to: formData.email,
+        subject: emailSubject,
+        html: emailHtml
+      })
+
+      if (emailSent) {
+        console.log(`✅ Welcome email sent successfully to ${formData.email}`)
+      } else {
+        console.error(`❌ Failed to send welcome email to ${formData.email}`)
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending welcome email:', emailError)
+      emailSent = false
+    }
 
     // Schedule rebuy email if enabled
     if (config.button5SendRebuyEmail) {
@@ -198,7 +229,8 @@ ${emailContent}`)
       qrCodeId: qrCode.id,
       message: t('landing.success.message', customerLanguage),
       deliveryMethod: deliveryMethod,
-      magicLink: deliveryMethod !== 'DIRECT' ? magicLinkUrl : undefined
+      magicLink: deliveryMethod !== 'DIRECT' ? magicLinkUrl : undefined,
+      emailSent: emailSent
     })
 
   } catch (error) {

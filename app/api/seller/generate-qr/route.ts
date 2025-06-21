@@ -295,22 +295,61 @@ ${t('email.welcome.signature', customerLanguage)}
       console.log(`❌ Rebuy email disabled for this configuration`)
     }
     
-    // TODO: Send actual welcome email
-    // For now, we'll just log the email content
-    console.log(' 📧 WELCOME EMAIL TO SEND:')
-    console.log(`To: ${clientEmail}`)
-    console.log(`Subject: ${subject}`)
-    console.log(`Delivery Method: ${requestedDelivery}`)
-    console.log(`Rebuy Email Scheduled: ${rebuyEmailScheduled}`)
-    console.log('Content:')
-    console.log(emailContent)
+    // 🚀 SEND ACTUAL WELCOME EMAIL
+    let emailSent = false
+    try {
+      // Import email service
+      const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
+      
+      // Create HTML email using the email service
+      const emailHtml = createWelcomeEmailHtml({
+        customerName: clientName,
+        qrCode: qrCodeId,
+        guests: guests,
+        days: days,
+        expiresAt: formattedExpirationDate,
+        customerPortalUrl: magicLinkUrl,
+        language: customerLanguage,
+        deliveryMethod: requestedDelivery
+      })
+
+      // Send the email
+      emailSent = await sendEmail({
+        to: clientEmail,
+        subject: subject,
+        html: emailHtml
+      })
+
+      if (emailSent) {
+        console.log(`✅ Welcome email sent successfully to ${clientEmail}`)
+        
+        // Update analytics record to reflect email was sent
+        await prisma.qRCodeAnalytics.updateMany({
+          where: { qrCodeId: qrCode.id },
+          data: { welcomeEmailSent: true }
+        })
+      } else {
+        console.error(`❌ Failed to send welcome email to ${clientEmail}`)
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending welcome email:', emailError)
+      emailSent = false
+    }
+    
+    console.log(`📧 WELCOME EMAIL SUMMARY:
+To: ${clientEmail}
+Subject: ${subject}
+Delivery Method: ${requestedDelivery}
+Rebuy Email Scheduled: ${rebuyEmailScheduled}
+Email Sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
     
     return NextResponse.json({
       success: true,
       qrCode: qrCodeId,
       expiresAt: expiresAt,
-      message: 'QR code generated and email sent successfully',
-      magicLinkUrl: magicLinkUrl
+      message: emailSent ? 'QR code generated and email sent successfully' : 'QR code generated but email failed to send',
+      magicLinkUrl: magicLinkUrl,
+      emailSent: emailSent
     })
     
   } catch (error) {
