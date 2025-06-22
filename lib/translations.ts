@@ -54,6 +54,12 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationMap> = {
     'landing.success.message': 'Success! Your ELocalPass has been created and sent to your email.',
     'landing.error.general': 'There was an error submitting your request. Please try again.',
     
+    // Landing Page Default Text (when admin config is empty)
+    'landing.default.business.name': 'ELocalPass Business',
+    'landing.default.header.text': 'WELCOME TO......',
+    'landing.default.description.text': 'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.',
+    'landing.default.cta.button.text': 'GET YOUR ELOCALPASS NOW',
+    
     // Customer Portal
     'portal.welcome': 'Welcome to Your ELocalPass Portal',
     'portal.pass.active': 'Active Pass',
@@ -118,6 +124,12 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationMap> = {
     'landing.error.email.mismatch': 'Las direcciones de email no coinciden. Por favor verifique e intente de nuevo.',
     'landing.success.message': '¡Éxito! Su ELocalPass ha sido creado y enviado a su email.',
     'landing.error.general': 'Hubo un error al enviar su solicitud. Por favor intente de nuevo.',
+    
+    // Landing Page Default Text (when admin config is empty)
+    'landing.default.business.name': 'ELocalPass Business',
+    'landing.default.header.text': 'BIENVENIDO A......',
+    'landing.default.description.text': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por email.',
+    'landing.default.cta.button.text': 'OBTENER MI ELOCALPASS AHORA',
     
     // Customer Portal
     'portal.welcome': 'Bienvenido a Su Portal ELocalPass',

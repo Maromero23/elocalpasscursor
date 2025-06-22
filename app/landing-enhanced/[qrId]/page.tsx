@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { EnhancedLandingPageTemplate } from '../../../components/enhanced-landing-page-template'
+import { detectLanguage, t, type SupportedLanguage } from '@/lib/translations'
 
 // Remove problematic server directives that cause render errors
 
@@ -73,6 +74,15 @@ export default function EnhancedLandingPage() {
   const [configData, setConfigData] = useState<QRConfigData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Add language detection for default text translation
+  const [language, setLanguage] = useState<SupportedLanguage>('en')
+  
+  useEffect(() => {
+    const detectedLang = detectLanguage()
+    setLanguage(detectedLang)
+    console.log('🌍 Enhanced Landing - Customer language detected:', detectedLang)
+  }, [])
   
   // Add simple cache-busting log
   useEffect(() => {
@@ -174,23 +184,23 @@ export default function EnhancedLandingPage() {
             
             setConfigData({
               id: qrId,
-              businessName: landingConfig.businessName || 'Elocalpass Business',
+              businessName: landingConfig.businessName || t('landing.default.business.name', language),
               logoUrl: landingConfig.logoUrl,
               
-              // Header Text with Typography
-              headerText: landingConfig.headerText || 'Welcome to Our Business',
+              // Header Text with Typography - Use translations for defaults
+              headerText: landingConfig.headerText || t('landing.default.header.text', language),
               headerTextColor: landingConfig.headerTextColor,
               headerFontFamily: landingConfig.headerFontFamily,
               headerFontSize: landingConfig.headerFontSize,
               
-              // Description Text with Typography
-              descriptionText: landingConfig.descriptionText || 'Experience our amazing services',
+              // Description Text with Typography - Use translations for defaults
+              descriptionText: landingConfig.descriptionText || t('landing.default.description.text', language),
               descriptionTextColor: landingConfig.descriptionTextColor,
               descriptionFontFamily: landingConfig.descriptionFontFamily,
               descriptionFontSize: landingConfig.descriptionFontSize,
               
-              // CTA Button Text with Typography
-              ctaButtonText: landingConfig.ctaButtonText || 'Get Started',
+              // CTA Button Text with Typography - Use translations for defaults
+              ctaButtonText: landingConfig.ctaButtonText || t('landing.default.cta.button.text', language),
               ctaButtonTextColor: landingConfig.ctaButtonTextColor,
               ctaButtonFontFamily: landingConfig.ctaButtonFontFamily,
               ctaButtonFontSize: landingConfig.ctaButtonFontSize,
