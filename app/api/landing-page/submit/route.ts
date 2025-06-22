@@ -31,6 +31,12 @@ export async function POST(request: NextRequest) {
     // Parse configuration data
     const config = JSON.parse(savedConfig.config)
     const emailTemplates = savedConfig.emailTemplates ? JSON.parse(savedConfig.emailTemplates) : null
+    
+    console.log(`🔍 EMAIL TEMPLATES DEBUG:`)
+    console.log(`📧 Raw emailTemplates field:`, savedConfig.emailTemplates)
+    console.log(`📧 Parsed emailTemplates:`, emailTemplates)
+    console.log(`📧 Has welcomeEmail?:`, !!emailTemplates?.welcomeEmail)
+    console.log(`📧 Has htmlContent?:`, !!emailTemplates?.welcomeEmail?.htmlContent)
 
     // Validate guests and days against configuration rules
     const guests = formData.guests || config.button1GuestsDefault || 2
