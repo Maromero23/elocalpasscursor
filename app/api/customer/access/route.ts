@@ -53,21 +53,34 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get all QR codes for this customer
-    const qrCodes = await prisma.qRCode.findMany({
+    // ✅ FIXED: Only return the specific QR code associated with this token
+    // Each magic link should only show the QR code it was created for
+    const specificQRCode = await prisma.qRCode.findUnique({
       where: {
-        customerEmail: accessToken.customerEmail
+        id: accessToken.qrCodeId
       },
-      orderBy: {
-        createdAt: 'desc'
+      include: {
+        // Include usage history for this specific QR code
+        usage: {
+          orderBy: { usedAt: 'desc' }
+        }
       }
     });
+
+    if (!specificQRCode) {
+      return NextResponse.json(
+        { error: 'QR code not found' },
+        { status: 404 }
+      );
+    }
+
+    console.log(`🎫 Customer access: Returning specific QR code ${specificQRCode.code} for token ${token.substring(0, 20)}...`);
 
     return NextResponse.json({
       name: accessToken.customerName,
       email: accessToken.customerEmail,
-      language: customerLanguage, // Include detected language for frontend
-      qrCodes: qrCodes
+      language: customerLanguage,
+      qrCodes: [specificQRCode] // ✅ Only return the one QR code for this magic link
     });
 
   } catch (error) {
