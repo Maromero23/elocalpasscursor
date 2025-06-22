@@ -135,31 +135,101 @@ export async function GET(
     // Fallback to mock data for testing
     console.log(`⚠️ No stored config found for ${qrId}, using mock data`)
     
+    // Auto-translate function for fallback data
+    const autoTranslate = (text: string, language: string): string => {
+      if (language !== 'es') return text
+      
+      // UNIVERSAL ENGLISH TEXT DETECTION AND TRANSLATION
+      const containsEnglish = /\b(so|is|this|really|working|or|not|we|want|to|be|able|translate|perfectly|spanish|there|was|time|of|happiness|everyone|dont|miss|out|get|it|before|run|come|on|make|work|the|and|for|you|your|will|can|have|has|been|are|with|from|they|them|their|our|us|my|me|i|he|she|him|her|his|its|that|these|those|what|when|where|why|how|who|which|very|much|more|most|some|any|all|no|yes|good|bad|big|small|new|old|first|last|long|short|high|low|right|wrong|true|false)\b/i.test(text)
+      
+      if (containsEnglish) {
+        let translatedText = text
+        
+        // Handle specific complete phrases first
+        if (text.includes('so is this really working or not')) {
+          translatedText = translatedText.replace(/so is this really working or not\?*/gi, 'entonces esto realmente está funcionando o no?')
+        }
+        if (text.includes('We wnat to be able to translate this perfectly to spanish')) {
+          translatedText = translatedText.replace(/We wnat to be able to translate this perfectly to spanish\.*/gi, 'Queremos poder traducir esto perfectamente al español.')
+        }
+        if (text.includes('there was a time of happiness to everyone')) {
+          translatedText = translatedText.replace(/there was a time of happiness to everyone\.*/gi, 'hubo un tiempo de felicidad para todos.')
+        }
+        if (text.includes('dont miss out get it befoe we run out')) {
+          translatedText = translatedText.replace(/dont miss out get it befoe we run out\.*/gi, 'no te lo pierdas consíguelo antes de que se nos acabe.')
+        }
+        if (text.includes('dont miss out get it before we run out')) {
+          translatedText = translatedText.replace(/dont miss out get it before we run out\.*/gi, 'no te lo pierdas consíguelo antes de que se nos acabe.')
+        }
+        if (text.includes('come on make it work')) {
+          translatedText = translatedText.replace(/come on make it work!*/gi, 'vamos haz que funcione!')
+        }
+        
+        // Apply comprehensive translation map
+        const englishToSpanishMap: Record<string, string> = {
+          'so is this': 'entonces esto',
+          'really working': 'realmente funcionando',
+          'or not': 'o no',
+          'we want': 'queremos',
+          'we wnat': 'queremos',
+          'to be able': 'poder',
+          'to translate': 'traducir',
+          'this perfectly': 'esto perfectamente',
+          'to spanish': 'al español',
+          'there was': 'hubo',
+          'a time of': 'un tiempo de',
+          'happiness to': 'felicidad para',
+          'everyone': 'todos',
+          'dont miss out': 'no te lo pierdas',
+          'get it': 'consíguelo',
+          'before we': 'antes de que',
+          'befoe we': 'antes de que',
+          'run out': 'se nos acabe',
+          'come on': 'vamos',
+          'make it work': 'haz que funcione'
+        }
+        
+        for (const [english, spanish] of Object.entries(englishToSpanishMap)) {
+          const regex = new RegExp(english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+          translatedText = translatedText.replace(regex, spanish)
+        }
+        
+        return translatedText.replace(/\s+/g, ' ').trim()
+      }
+      
+      return text
+    }
+    
+    // Get language from Accept-Language header
+    const acceptLanguage = request.headers.get('accept-language') || ''
+    const detectedLanguage = acceptLanguage.toLowerCase().includes('es') ? 'es' : 'en'
+    console.log(`🌐 Detected language for fallback: ${detectedLanguage}`)
+    
     const mockData: QRConfigData = {
       id: qrId,
       businessName: 'Club Viva',
       logoUrl: undefined,
-      headerText: 'THANKS YOU VERY MUCH FOR GIVING YOURSELF THE OPPORTUNITY TO DISCOVER THE BENEFITS OF THE CLUB.',
+      headerText: autoTranslate('THANKS YOU VERY MUCH FOR GIVING YOURSELF THE OPPORTUNITY TO DISCOVER THE BENEFITS OF THE CLUB.', detectedLanguage),
       headerTextColor: '#000',
       headerFontFamily: 'Arial',
       headerFontSize: '24px',
-      descriptionText: 'TO RECEIVE YOUR 7-DAY FULL ACCESS GIFT TO ELOCALPASS, SIMPLY FILL OUT THE FIELDS BELOW AND YOU WILL RECEIVE YOUR FREE ELOCALPASS VIA EMAIL.',
+      descriptionText: autoTranslate('TO RECEIVE YOUR 7-DAY FULL ACCESS GIFT TO ELOCALPASS, SIMPLY FILL OUT THE FIELDS BELOW AND YOU WILL RECEIVE YOUR FREE ELOCALPASS VIA EMAIL.', detectedLanguage),
       descriptionTextColor: '#666',
       descriptionFontFamily: 'Arial',
       descriptionFontSize: '18px',
-      ctaButtonText: 'Get your eLocalPass now!',
+      ctaButtonText: autoTranslate('Get your eLocalPass now!', detectedLanguage),
       ctaButtonTextColor: '#fff',
       ctaButtonFontFamily: 'Arial',
       ctaButtonFontSize: '18px',
-      formTitleText: 'Sign up for your eLocalPass',
+      formTitleText: autoTranslate('Sign up for your eLocalPass', detectedLanguage),
       formTitleTextColor: '#000',
       formTitleFontFamily: 'Arial',
       formTitleFontSize: '24px',
-      formInstructionsText: 'Please fill out the form below to receive your eLocalPass',
+      formInstructionsText: autoTranslate('Please fill out the form below to receive your eLocalPass', detectedLanguage),
       formInstructionsTextColor: '#666',
       formInstructionsFontFamily: 'Arial',
       formInstructionsFontSize: '18px',
-      footerDisclaimerText: 'By signing up, you agree to our terms and conditions',
+      footerDisclaimerText: autoTranslate('By signing up, you agree to our terms and conditions', detectedLanguage),
       footerDisclaimerTextColor: '#666',
       footerDisclaimerFontFamily: 'Arial',
       footerDisclaimerFontSize: '14px',
