@@ -201,12 +201,38 @@ export default function EnhancedLandingPage() {
               
               // Complete phrase translations (exact matches - highest priority)
               const exactPhrases: Record<string, string> = {
+                // Headers
+                'WELCOME TO......': 'BIENVENIDO PARA......',
+                'WELCOME TO': 'BIENVENIDO A',
+                'Welcome to': 'Bienvenido a',
+                
+                // Sign up phrases
                 'SIGN UP FOR YOUR ELOCALPASS': 'REGÍSTRESE PARA SU ELOCALPASS',
                 'Sign Up For Your ELocalPass': 'Regístrese Para Su ELocalPass',
                 'SIGN UP TO GET YOUR FREE ELOCALPASS': 'REGÍSTRESE PARA OBTENER SU ELOCALPASS GRATIS',
                 'Sign Up To Get Your Free ELocalPass': 'Regístrese Para Obtener Su ELocalPass Gratis',
                 'GET YOUR FREE ELOCALPASS': 'OBTENGA SU ELOCALPASS GRATIS',
                 'Get Your Free ELocalPass': 'Obtenga Su ELocalPass Gratis',
+                
+                // Complete description sentences
+                'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico.',
+                
+                // Form instructions
+                'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO:',
+                'Just complete the fields below and receive your gift via email:': 'Solo complete los campos a continuación y reciba su regalo por correo electrónico:',
+                
+                // Button text
+                'GET YOUR ELOCALPASS NOW': 'OBTENER SU ELOCALPASS AHORA',
+                'Get Your ELocalPass Now': 'Obtener Su ELocalPass Ahora',
+                
+                // Footer disclaimer
+                'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.': 'DISFRUTE COMPLETAMENTE LA EXPERIENCIA DE PAGAR COMO UN LOCAL. ELOCALPASS GARANTIZA QUE NO RECIBIRÁ NINGÚN TIPO DE SPAM Y QUE SUS DATOS ESTÁN PROTEGIDOS.',
+                'Fully enjoy the experience of paying like a local. ELocalPass guarantees that you will not receive any kind of spam and that your data is protected.': 'Disfrute completamente la experiencia de pagar como un local. ELocalPass garantiza que no recibirá ningún tipo de spam y que sus datos están protegidos.',
+                
+                // Privacy link
+                'Click HERE to read the privacy notice and data usage': 'Haga clic AQUÍ para leer el aviso de privacidad y uso de datos',
+                
+                // Common business phrases
                 'WELCOME TO PARADISE RESORT': 'BIENVENIDO AL RESORT PARAÍSO',
                 'Welcome to Paradise Resort': 'Bienvenido al Resort Paraíso',
                 'JOIN OUR EXCLUSIVE CLUB': 'ÚNETE A NUESTRO CLUB EXCLUSIVO',
@@ -401,12 +427,38 @@ export default function EnhancedLandingPage() {
           
           // Complete phrase translations (exact matches - highest priority)
           const exactPhrases: Record<string, string> = {
+            // Headers
+            'WELCOME TO......': 'BIENVENIDO PARA......',
+            'WELCOME TO': 'BIENVENIDO A',
+            'Welcome to': 'Bienvenido a',
+            
+            // Sign up phrases
             'SIGN UP FOR YOUR ELOCALPASS': 'REGÍSTRESE PARA SU ELOCALPASS',
             'Sign Up For Your ELocalPass': 'Regístrese Para Su ELocalPass',
             'SIGN UP TO GET YOUR FREE ELOCALPASS': 'REGÍSTRESE PARA OBTENER SU ELOCALPASS GRATIS',
             'Sign Up To Get Your Free ELocalPass': 'Regístrese Para Obtener Su ELocalPass Gratis',
             'GET YOUR FREE ELOCALPASS': 'OBTENGA SU ELOCALPASS GRATIS',
             'Get Your Free ELocalPass': 'Obtenga Su ELocalPass Gratis',
+            
+            // Complete description sentences
+            'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico.',
+            
+            // Form instructions
+            'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO:',
+            'Just complete the fields below and receive your gift via email:': 'Solo complete los campos a continuación y reciba su regalo por correo electrónico:',
+            
+            // Button text
+            'GET YOUR ELOCALPASS NOW': 'OBTENER SU ELOCALPASS AHORA',
+            'Get Your ELocalPass Now': 'Obtener Su ELocalPass Ahora',
+            
+            // Footer disclaimer
+            'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.': 'DISFRUTE COMPLETAMENTE LA EXPERIENCIA DE PAGAR COMO UN LOCAL. ELOCALPASS GARANTIZA QUE NO RECIBIRÁ NINGÚN TIPO DE SPAM Y QUE SUS DATOS ESTÁN PROTEGIDOS.',
+            'Fully enjoy the experience of paying like a local. ELocalPass guarantees that you will not receive any kind of spam and that your data is protected.': 'Disfrute completamente la experiencia de pagar como un local. ELocalPass garantiza que no recibirá ningún tipo de spam y que sus datos están protegidos.',
+            
+            // Privacy link
+            'Click HERE to read the privacy notice and data usage': 'Haga clic AQUÍ para leer el aviso de privacidad y uso de datos',
+            
+            // Common business phrases
             'WELCOME TO PARADISE RESORT': 'BIENVENIDO AL RESORT PARAÍSO',
             'Welcome to Paradise Resort': 'Bienvenido al Resort Paraíso',
             'JOIN OUR EXCLUSIVE CLUB': 'ÚNETE A NUESTRO CLUB EXCLUSIVO',
