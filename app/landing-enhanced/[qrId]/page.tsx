@@ -193,8 +193,46 @@ export default function EnhancedLandingPage() {
             
             console.log('🌍 Enhanced Landing - Current language for defaults:', language)
             
-            // Smart translation: If saved text matches English defaults, use customer's language
-            const getSmartTranslatedText = (savedText: string | undefined, translationKey: string): string => {
+            // Auto-translation function for landing pages only
+            const autoTranslateText = async (text: string): Promise<string> => {
+              if (!text || language === 'en') return text
+              
+              // Simple translation mapping for common phrases
+              const translations: Record<string, string> = {
+                'Welcome': 'Bienvenido',
+                'Join': 'Únete',
+                'Club': 'Club',
+                'Resort': 'Resort',
+                'Paradise': 'Paraíso',
+                'Exclusive': 'Exclusivo',
+                'Free': 'Gratis',
+                'Get': 'Obtener',
+                'Your': 'Su',
+                'Now': 'Ahora',
+                'Today': 'Hoy',
+                'Special': 'Especial',
+                'Offer': 'Oferta',
+                'Limited': 'Limitado',
+                'Time': 'Tiempo',
+                'Access': 'Acceso',
+                'Experience': 'Experiencia',
+                'Adventure': 'Aventura',
+                'Discover': 'Descubrir',
+                'Explore': 'Explorar',
+                'Enjoy': 'Disfrutar'
+              }
+              
+              let translatedText = text
+              for (const [english, spanish] of Object.entries(translations)) {
+                const regex = new RegExp(`\\b${english}\\b`, 'gi')
+                translatedText = translatedText.replace(regex, spanish)
+              }
+              
+              return translatedText
+            }
+
+            // Smart translation: Enhanced with auto-translation for custom text
+            const getSmartTranslatedText = async (savedText: string | undefined, translationKey: string): Promise<string> => {
               if (!savedText) {
                 // No saved text, use translation
                 return t(translationKey, language)
@@ -209,20 +247,29 @@ export default function EnhancedLandingPage() {
                                      savedText.trim() === englishDefault.trim()
               
               if (isEnglishDefault && language === 'es') {
-                console.log(`🔄 Enhanced Landing - Translating "${savedText}" to Spanish`)
+                console.log(`🔄 Enhanced Landing - Translating default "${savedText}" to Spanish`)
                 return t(translationKey, 'es')
               }
               
-              // Use saved text as-is (custom text)
+              // Auto-translate custom text for Spanish customers
+              if (language === 'es') {
+                const autoTranslated = await autoTranslateText(savedText)
+                if (autoTranslated !== savedText) {
+                  console.log(`🤖 Enhanced Landing - Auto-translating custom text: "${savedText}" → "${autoTranslated}"`)
+                  return autoTranslated
+                }
+              }
+              
+              // Use saved text as-is
               return savedText
             }
             
-            const translatedHeaderText = getSmartTranslatedText(landingConfig.headerText, 'landing.default.header.text')
-            const translatedDescriptionText = getSmartTranslatedText(landingConfig.descriptionText, 'landing.default.description.text') 
-            const translatedCtaButtonText = getSmartTranslatedText(landingConfig.ctaButtonText, 'landing.default.cta.button.text')
-            const translatedFormTitleText = getSmartTranslatedText(landingConfig.formTitleText, 'landing.form.title')
-            const translatedFormInstructionsText = getSmartTranslatedText(landingConfig.formInstructionsText, 'landing.form.instructions')
-            const translatedFooterDisclaimerText = getSmartTranslatedText(landingConfig.footerDisclaimerText, 'landing.disclaimer')
+            const translatedHeaderText = await getSmartTranslatedText(landingConfig.headerText, 'landing.default.header.text')
+            const translatedDescriptionText = await getSmartTranslatedText(landingConfig.descriptionText, 'landing.default.description.text') 
+            const translatedCtaButtonText = await getSmartTranslatedText(landingConfig.ctaButtonText, 'landing.default.cta.button.text')
+            const translatedFormTitleText = await getSmartTranslatedText(landingConfig.formTitleText, 'landing.form.title')
+            const translatedFormInstructionsText = await getSmartTranslatedText(landingConfig.formInstructionsText, 'landing.form.instructions')
+            const translatedFooterDisclaimerText = await getSmartTranslatedText(landingConfig.footerDisclaimerText, 'landing.disclaimer')
             
             console.log('🔤 Enhanced Landing - Final header text:', translatedHeaderText)
             console.log('🔤 Enhanced Landing - Final description text:', translatedDescriptionText)
