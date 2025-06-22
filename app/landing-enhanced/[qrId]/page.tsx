@@ -75,13 +75,22 @@ export default function EnhancedLandingPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  // Add language detection for default text translation
-  const [language, setLanguage] = useState<SupportedLanguage>('en')
+  // Add language detection for default text translation - detect immediately
+  const [language, setLanguage] = useState<SupportedLanguage>(() => {
+    // Detect language immediately on component initialization
+    if (typeof window !== 'undefined') {
+      const detectedLang = detectLanguage()
+      console.log('🌍 Enhanced Landing - Customer language detected IMMEDIATELY:', detectedLang)
+      return detectedLang
+    }
+    return 'en'
+  })
   
   useEffect(() => {
+    // Re-detect language to ensure it's correct
     const detectedLang = detectLanguage()
     setLanguage(detectedLang)
-    console.log('🌍 Enhanced Landing - Customer language detected:', detectedLang)
+    console.log('🌍 Enhanced Landing - Customer language re-detected in useEffect:', detectedLang)
   }, [])
   
   // Add simple cache-busting log
@@ -103,7 +112,7 @@ export default function EnhancedLandingPage() {
 
   useEffect(() => {
     if (qrId) {
-      console.log('🔄 Enhanced Landing - Fetching data with qrId:', qrId, 'urlId:', urlId)
+      console.log('🔄 Enhanced Landing - Fetching data with qrId:', qrId, 'urlId:', urlId, 'language:', language)
       try {
         fetchQRConfigData()
       } catch (error) {
@@ -112,7 +121,7 @@ export default function EnhancedLandingPage() {
         setLoading(false)
       }
     }
-  }, [qrId]) // Remove urlId dependency to prevent double-fetch
+  }, [qrId, language]) // Add language dependency to re-fetch when language changes
 
   const fetchQRConfigData = async () => {
     try {
@@ -181,6 +190,11 @@ export default function EnhancedLandingPage() {
           // Use landingPageConfig from database (either general or URL-specific)
           if (landingConfig) {
             console.log('✅ Enhanced Landing - Using landing page config:', landingConfig)
+            
+            console.log('🌍 Enhanced Landing - Current language for defaults:', language)
+            console.log('🔤 Enhanced Landing - Default header text will be:', landingConfig.headerText || t('landing.default.header.text', language))
+            console.log('🔤 Enhanced Landing - Default description text will be:', landingConfig.descriptionText || t('landing.default.description.text', language))
+            console.log('🔤 Enhanced Landing - Default CTA button text will be:', landingConfig.ctaButtonText || t('landing.default.cta.button.text', language))
             
             setConfigData({
               id: qrId,
