@@ -281,36 +281,21 @@ export default function EnhancedLandingPage() {
               return translatedText
             }
 
-            // Smart translation: Enhanced with auto-translation for custom text
+            // Simple universal translation: Translate EVERY text box as a whole unit for Spanish customers
             const getSmartTranslatedText = async (savedText: string | undefined, translationKey: string): Promise<string> => {
               if (!savedText) {
                 // No saved text, use translation
                 return t(translationKey, language)
               }
               
-              // Check if saved text matches English defaults - if so, translate to customer's language
-              const englishDefault = t(translationKey, 'en')
-              
-              // Enhanced matching: exact match or common variations
-              const isEnglishDefault = savedText === englishDefault || 
-                                     savedText.toUpperCase() === englishDefault.toUpperCase() ||
-                                     savedText.trim() === englishDefault.trim()
-              
-              if (isEnglishDefault && language === 'es') {
-                console.log(`🔄 Enhanced Landing - Translating default "${savedText}" to Spanish`)
-                return t(translationKey, 'es')
-              }
-              
-              // Auto-translate custom text for Spanish customers
+              // For Spanish customers: ALWAYS translate the entire text box content (default OR custom)
               if (language === 'es') {
                 const autoTranslated = await autoTranslateText(savedText)
-                if (autoTranslated !== savedText) {
-                  console.log(`🤖 Enhanced Landing - Auto-translating custom text: "${savedText}" → "${autoTranslated}"`)
-                  return autoTranslated
-                }
+                console.log(`🔄 Universal Translation - Translating entire text box: "${savedText}" → "${autoTranslated}"`)
+                return autoTranslated
               }
               
-              // Use saved text as-is
+              // For English customers: use text as-is
               return savedText
             }
             
@@ -501,24 +486,14 @@ export default function EnhancedLandingPage() {
             return t(translationKey, language)
           }
           
-          const englishDefault = t(translationKey, 'en')
-          const isEnglishDefault = savedText === englishDefault || 
-                                 savedText.toUpperCase() === englishDefault.toUpperCase() ||
-                                 savedText.trim() === englishDefault.trim()
-          
-          if (isEnglishDefault && language === 'es') {
-            console.log(`🔄 Enhanced Landing - Translating Map API default "${savedText}" to Spanish`)
-            return t(translationKey, 'es')
-          }
-          
+          // For Spanish customers: ALWAYS translate the entire text box content (default OR custom)
           if (language === 'es') {
             const autoTranslated = await autoTranslateText(savedText)
-            if (autoTranslated !== savedText) {
-              console.log(`🤖 Enhanced Landing - Auto-translating Map API custom text: "${savedText}" → "${autoTranslated}"`)
-              return autoTranslated
-            }
+            console.log(`🔄 Map API Universal Translation - Translating entire text box: "${savedText}" → "${autoTranslated}"`)
+            return autoTranslated
           }
           
+          // For English customers: use text as-is
           return savedText
         }
         
