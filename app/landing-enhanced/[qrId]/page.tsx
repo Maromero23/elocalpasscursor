@@ -202,7 +202,13 @@ export default function EnhancedLandingPage() {
               
               // Check if saved text matches English defaults - if so, translate to customer's language
               const englishDefault = t(translationKey, 'en')
-              if (savedText === englishDefault && language === 'es') {
+              
+              // Enhanced matching: exact match or common variations
+              const isEnglishDefault = savedText === englishDefault || 
+                                     savedText.toUpperCase() === englishDefault.toUpperCase() ||
+                                     savedText.trim() === englishDefault.trim()
+              
+              if (isEnglishDefault && language === 'es') {
                 console.log(`🔄 Enhanced Landing - Translating "${savedText}" to Spanish`)
                 return t(translationKey, 'es')
               }
@@ -216,12 +222,14 @@ export default function EnhancedLandingPage() {
             const translatedCtaButtonText = getSmartTranslatedText(landingConfig.ctaButtonText, 'landing.default.cta.button.text')
             const translatedFormTitleText = getSmartTranslatedText(landingConfig.formTitleText, 'landing.form.title')
             const translatedFormInstructionsText = getSmartTranslatedText(landingConfig.formInstructionsText, 'landing.form.instructions')
+            const translatedFooterDisclaimerText = getSmartTranslatedText(landingConfig.footerDisclaimerText, 'landing.disclaimer')
             
             console.log('🔤 Enhanced Landing - Final header text:', translatedHeaderText)
             console.log('🔤 Enhanced Landing - Final description text:', translatedDescriptionText)
             console.log('🔤 Enhanced Landing - Final CTA button text:', translatedCtaButtonText)
             console.log('🔤 Enhanced Landing - Final form title text:', translatedFormTitleText)
             console.log('🔤 Enhanced Landing - Final form instructions text:', translatedFormInstructionsText)
+            console.log('🔤 Enhanced Landing - Final footer disclaimer text:', translatedFooterDisclaimerText)
             
             setConfigData({
               id: qrId,
@@ -259,7 +267,7 @@ export default function EnhancedLandingPage() {
               formInstructionsFontSize: landingConfig.formInstructionsFontSize,
               
               // Footer Disclaimer Text with Typography
-              footerDisclaimerText: landingConfig.footerDisclaimerText,
+              footerDisclaimerText: translatedFooterDisclaimerText,
               footerDisclaimerTextColor: landingConfig.footerDisclaimerTextColor,
               footerDisclaimerFontFamily: landingConfig.footerDisclaimerFontFamily,
               footerDisclaimerFontSize: landingConfig.footerDisclaimerFontSize,

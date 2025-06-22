@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { detectLanguage, t, formatDate as formatDateLocalized, type SupportedLanguage } from '@/lib/translations';
 
 interface QRCodeUsage {
   id: string;
@@ -61,6 +62,14 @@ function CustomerAccessPageContent() {
   const [reactivating, setReactivating] = useState<string | null>(null);
   const [showReactivateModal, setShowReactivateModal] = useState<string | null>(null);
   const [reactivateForm, setReactivateForm] = useState({ guests: 2, days: 3 });
+  
+  // Detect customer language
+  const [language, setLanguage] = useState<SupportedLanguage>('en');
+  
+  useEffect(() => {
+    const detectedLang = detectLanguage();
+    setLanguage(detectedLang);
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -146,13 +155,7 @@ function CustomerAccessPageContent() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDateLocalized(new Date(dateString), language);
   };
 
   if (loading) {
@@ -160,7 +163,7 @@ function CustomerAccessPageContent() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your ELocalPass...</p>
+          <p className="text-gray-600">{t('general.loading', language)}...</p>
         </div>
       </div>
     );
@@ -194,10 +197,10 @@ function CustomerAccessPageContent() {
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome, {customerData?.name}!
+              {language === 'es' ? `¡Bienvenido, ${customerData?.name}!` : `Welcome, ${customerData?.name}!`}
             </h1>
             <p className="text-gray-600">
-              Your ELocalPass Dashboard
+              {t('portal.welcome', language)}
             </p>
           </div>
         </div>
