@@ -193,76 +193,91 @@ export default function EnhancedLandingPage() {
             
             console.log('🌍 Enhanced Landing - Current language for defaults:', language)
             
-            // Auto-translation function for landing pages only
+            // Simple auto-translation: Assume ALL content is English and translate everything for Spanish customers
             const autoTranslateText = async (text: string): Promise<string> => {
               if (!text || language === 'en') return text
               
-              // Enhanced translation mapping for common phrases including ELocalPass specific terms
-              const translations: Record<string, string> = {
-                'SIGN UP': 'REGÍSTRESE',
-                'Sign Up': 'Regístrese', 
-                'SIGN': 'REGÍSTRESE',
-                'Sign': 'Regístrese',
-                'FOR': 'PARA',
-                'for': 'para',
-                'TO GET': 'PARA OBTENER',
-                'to get': 'para obtener',
-                'GET': 'OBTENER',
-                'Get': 'Obtener',
-                'YOUR': 'SU',
-                'Your': 'Su',
-                'FREE': 'GRATIS',
-                'Free': 'Gratis',
-                'ELOCALPASS': 'ELOCALPASS',
-                'ELocalPass': 'ELocalPass',
-                'Welcome': 'Bienvenido',
-                'WELCOME': 'BIENVENIDO',
-                'Join': 'Únete',
-                'JOIN': 'ÚNETE',
-                'Club': 'Club',
-                'CLUB': 'CLUB',
-                'Resort': 'Resort',
-                'RESORT': 'RESORT',
-                'Paradise': 'Paraíso',
-                'PARADISE': 'PARAÍSO',
-                'Exclusive': 'Exclusivo',
-                'EXCLUSIVE': 'EXCLUSIVO',
-                'Now': 'Ahora',
-                'NOW': 'AHORA',
-                'Today': 'Hoy',
-                'TODAY': 'HOY',
-                'Special': 'Especial',
-                'SPECIAL': 'ESPECIAL',
-                'Offer': 'Oferta',
-                'OFFER': 'OFERTA',
-                'Limited': 'Limitado',
-                'LIMITED': 'LIMITADO',
-                'Time': 'Tiempo',
-                'TIME': 'TIEMPO',
-                'Access': 'Acceso',
-                'ACCESS': 'ACCESO',
-                'Experience': 'Experiencia',
-                'EXPERIENCE': 'EXPERIENCIA',
-                'Adventure': 'Aventura',
-                'ADVENTURE': 'AVENTURA',
-                'Discover': 'Descubrir',
-                'DISCOVER': 'DESCUBRIR',
-                'Explore': 'Explorar',
-                'EXPLORE': 'EXPLORAR',
-                'Enjoy': 'Disfrutar',
-                'ENJOY': 'DISFRUTAR'
+              console.log(`🔄 Simple Translation - Input: "${text}"`)
+              
+              // Complete phrase translations (exact matches - highest priority)
+              const exactPhrases: Record<string, string> = {
+                'SIGN UP FOR YOUR ELOCALPASS': 'REGÍSTRESE PARA SU ELOCALPASS',
+                'Sign Up For Your ELocalPass': 'Regístrese Para Su ELocalPass',
+                'SIGN UP TO GET YOUR FREE ELOCALPASS': 'REGÍSTRESE PARA OBTENER SU ELOCALPASS GRATIS',
+                'Sign Up To Get Your Free ELocalPass': 'Regístrese Para Obtener Su ELocalPass Gratis',
+                'GET YOUR FREE ELOCALPASS': 'OBTENGA SU ELOCALPASS GRATIS',
+                'Get Your Free ELocalPass': 'Obtenga Su ELocalPass Gratis',
+                'WELCOME TO PARADISE RESORT': 'BIENVENIDO AL RESORT PARAÍSO',
+                'Welcome to Paradise Resort': 'Bienvenido al Resort Paraíso',
+                'JOIN OUR EXCLUSIVE CLUB': 'ÚNETE A NUESTRO CLUB EXCLUSIVO',
+                'Join Our Exclusive Club': 'Únete a Nuestro Club Exclusivo',
+                'SPECIAL LIMITED TIME OFFER': 'OFERTA ESPECIAL POR TIEMPO LIMITADO',
+                'Special Limited Time Offer': 'Oferta Especial por Tiempo Limitado',
+                'GET YOUR FREE ACCESS NOW': 'OBTENGA SU ACCESO GRATIS AHORA',
+                'Get Your Free Access Now': 'Obtenga Su Acceso Gratis Ahora'
+              }
+              
+              // Check for exact phrase matches first
+              const trimmedText = text.trim()
+              for (const [english, spanish] of Object.entries(exactPhrases)) {
+                if (trimmedText.toLowerCase() === english.toLowerCase()) {
+                  console.log(`✅ Exact phrase match: "${text}" → "${spanish}"`)
+                  return spanish
+                }
+              }
+              
+              // Word-by-word translation for any remaining English text
+              const wordTranslations: Record<string, string> = {
+                // Common words
+                'Welcome': 'Bienvenido', 'WELCOME': 'BIENVENIDO', 'welcome': 'bienvenido',
+                'Join': 'Únete', 'JOIN': 'ÚNETE', 'join': 'únete',
+                'Get': 'Obtener', 'GET': 'OBTENER', 'get': 'obtener',
+                'Your': 'Su', 'YOUR': 'SU', 'your': 'su',
+                'Free': 'Gratis', 'FREE': 'GRATIS', 'free': 'gratis',
+                'Sign': 'Regístrese', 'SIGN': 'REGÍSTRESE', 'sign': 'regístrese',
+                'Up': '', 'UP': '', 'up': '', // "Sign up" becomes just "Regístrese"
+                'For': 'Para', 'FOR': 'PARA', 'for': 'para',
+                'To': 'Para', 'TO': 'PARA', 'to': 'para',
+                'The': 'El', 'THE': 'EL', 'the': 'el',
+                'And': 'Y', 'AND': 'Y', 'and': 'y',
+                'Our': 'Nuestro', 'OUR': 'NUESTRO', 'our': 'nuestro',
+                'Now': 'Ahora', 'NOW': 'AHORA', 'now': 'ahora',
+                'Today': 'Hoy', 'TODAY': 'HOY', 'today': 'hoy',
+                
+                // Business words
+                'Paradise': 'Paraíso', 'PARADISE': 'PARAÍSO', 'paradise': 'paraíso',
+                'Resort': 'Resort', 'RESORT': 'RESORT', 'resort': 'resort',
+                'Club': 'Club', 'CLUB': 'CLUB', 'club': 'club',
+                'Exclusive': 'Exclusivo', 'EXCLUSIVE': 'EXCLUSIVO', 'exclusive': 'exclusivo',
+                'Special': 'Especial', 'SPECIAL': 'ESPECIAL', 'special': 'especial',
+                'Limited': 'Limitado', 'LIMITED': 'LIMITADO', 'limited': 'limitado',
+                'Time': 'Tiempo', 'TIME': 'TIEMPO', 'time': 'tiempo',
+                'Offer': 'Oferta', 'OFFER': 'OFERTA', 'offer': 'oferta',
+                'Access': 'Acceso', 'ACCESS': 'ACCESO', 'access': 'acceso',
+                'Experience': 'Experiencia', 'EXPERIENCE': 'EXPERIENCIA', 'experience': 'experiencia',
+                'Adventure': 'Aventura', 'ADVENTURE': 'AVENTURA', 'adventure': 'aventura',
+                'Discover': 'Descubrir', 'DISCOVER': 'DESCUBRIR', 'discover': 'descubrir',
+                'Explore': 'Explorar', 'EXPLORE': 'EXPLORAR', 'explore': 'explorar',
+                'Enjoy': 'Disfrutar', 'ENJOY': 'DISFRUTAR', 'enjoy': 'disfrutar',
+                
+                // Keep brand names as-is
+                'ELocalPass': 'ELocalPass', 'ELOCALPASS': 'ELOCALPASS', 'elocalpass': 'elocalpass'
               }
               
               let translatedText = text
               
-              // Apply translations in order of specificity (longer phrases first)
-              const sortedTranslations = Object.entries(translations).sort((a, b) => b[0].length - a[0].length)
-              
-              for (const [english, spanish] of sortedTranslations) {
-                const regex = new RegExp(`\\b${english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
-                translatedText = translatedText.replace(regex, spanish)
+              // Apply word translations
+              for (const [english, spanish] of Object.entries(wordTranslations)) {
+                if (spanish) { // Only replace if there's a translation (skip empty strings)
+                  const regex = new RegExp(`\\b${english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g')
+                  translatedText = translatedText.replace(regex, spanish)
+                }
               }
               
+              // Clean up double spaces and extra whitespace
+              translatedText = translatedText.replace(/\s+/g, ' ').trim()
+              
+              console.log(`✅ Final translation: "${text}" → "${translatedText}"`)
               return translatedText
             }
 
@@ -393,76 +408,91 @@ export default function EnhancedLandingPage() {
         console.log('✅ Enhanced Landing - Received config data from Map:', data)
         console.log('🖼️ Enhanced Landing - Logo URL:', data.logoUrl)
         
-        // Apply auto-translation to Map API data as well
+        // Simple auto-translation for Map API: Assume ALL content is English and translate everything for Spanish customers
         const autoTranslateText = async (text: string): Promise<string> => {
           if (!text || language === 'en') return text
           
-          // Enhanced translation mapping for common phrases including ELocalPass specific terms
-          const translations: Record<string, string> = {
-            'SIGN UP': 'REGÍSTRESE',
-            'Sign Up': 'Regístrese', 
-            'SIGN': 'REGÍSTRESE',
-            'Sign': 'Regístrese',
-            'FOR': 'PARA',
-            'for': 'para',
-            'TO GET': 'PARA OBTENER',
-            'to get': 'para obtener',
-            'GET': 'OBTENER',
-            'Get': 'Obtener',
-            'YOUR': 'SU',
-            'Your': 'Su',
-            'FREE': 'GRATIS',
-            'Free': 'Gratis',
-            'ELOCALPASS': 'ELOCALPASS',
-            'ELocalPass': 'ELocalPass',
-            'Welcome': 'Bienvenido',
-            'WELCOME': 'BIENVENIDO',
-            'Join': 'Únete',
-            'JOIN': 'ÚNETE',
-            'Club': 'Club',
-            'CLUB': 'CLUB',
-            'Resort': 'Resort',
-            'RESORT': 'RESORT',
-            'Paradise': 'Paraíso',
-            'PARADISE': 'PARAÍSO',
-            'Exclusive': 'Exclusivo',
-            'EXCLUSIVE': 'EXCLUSIVO',
-            'Now': 'Ahora',
-            'NOW': 'AHORA',
-            'Today': 'Hoy',
-            'TODAY': 'HOY',
-            'Special': 'Especial',
-            'SPECIAL': 'ESPECIAL',
-            'Offer': 'Oferta',
-            'OFFER': 'OFERTA',
-            'Limited': 'Limitado',
-            'LIMITED': 'LIMITADO',
-            'Time': 'Tiempo',
-            'TIME': 'TIEMPO',
-            'Access': 'Acceso',
-            'ACCESS': 'ACCESO',
-            'Experience': 'Experiencia',
-            'EXPERIENCE': 'EXPERIENCIA',
-            'Adventure': 'Aventura',
-            'ADVENTURE': 'AVENTURA',
-            'Discover': 'Descubrir',
-            'DISCOVER': 'DESCUBRIR',
-            'Explore': 'Explorar',
-            'EXPLORE': 'EXPLORAR',
-            'Enjoy': 'Disfrutar',
-            'ENJOY': 'DISFRUTAR'
+          console.log(`🔄 Map API Simple Translation - Input: "${text}"`)
+          
+          // Complete phrase translations (exact matches - highest priority)
+          const exactPhrases: Record<string, string> = {
+            'SIGN UP FOR YOUR ELOCALPASS': 'REGÍSTRESE PARA SU ELOCALPASS',
+            'Sign Up For Your ELocalPass': 'Regístrese Para Su ELocalPass',
+            'SIGN UP TO GET YOUR FREE ELOCALPASS': 'REGÍSTRESE PARA OBTENER SU ELOCALPASS GRATIS',
+            'Sign Up To Get Your Free ELocalPass': 'Regístrese Para Obtener Su ELocalPass Gratis',
+            'GET YOUR FREE ELOCALPASS': 'OBTENGA SU ELOCALPASS GRATIS',
+            'Get Your Free ELocalPass': 'Obtenga Su ELocalPass Gratis',
+            'WELCOME TO PARADISE RESORT': 'BIENVENIDO AL RESORT PARAÍSO',
+            'Welcome to Paradise Resort': 'Bienvenido al Resort Paraíso',
+            'JOIN OUR EXCLUSIVE CLUB': 'ÚNETE A NUESTRO CLUB EXCLUSIVO',
+            'Join Our Exclusive Club': 'Únete a Nuestro Club Exclusivo',
+            'SPECIAL LIMITED TIME OFFER': 'OFERTA ESPECIAL POR TIEMPO LIMITADO',
+            'Special Limited Time Offer': 'Oferta Especial por Tiempo Limitado',
+            'GET YOUR FREE ACCESS NOW': 'OBTENGA SU ACCESO GRATIS AHORA',
+            'Get Your Free Access Now': 'Obtenga Su Acceso Gratis Ahora'
+          }
+          
+          // Check for exact phrase matches first
+          const trimmedText = text.trim()
+          for (const [english, spanish] of Object.entries(exactPhrases)) {
+            if (trimmedText.toLowerCase() === english.toLowerCase()) {
+              console.log(`✅ Map API - Exact phrase match: "${text}" → "${spanish}"`)
+              return spanish
+            }
+          }
+          
+          // Word-by-word translation for any remaining English text
+          const wordTranslations: Record<string, string> = {
+            // Common words
+            'Welcome': 'Bienvenido', 'WELCOME': 'BIENVENIDO', 'welcome': 'bienvenido',
+            'Join': 'Únete', 'JOIN': 'ÚNETE', 'join': 'únete',
+            'Get': 'Obtener', 'GET': 'OBTENER', 'get': 'obtener',
+            'Your': 'Su', 'YOUR': 'SU', 'your': 'su',
+            'Free': 'Gratis', 'FREE': 'GRATIS', 'free': 'gratis',
+            'Sign': 'Regístrese', 'SIGN': 'REGÍSTRESE', 'sign': 'regístrese',
+            'Up': '', 'UP': '', 'up': '', // "Sign up" becomes just "Regístrese"
+            'For': 'Para', 'FOR': 'PARA', 'for': 'para',
+            'To': 'Para', 'TO': 'PARA', 'to': 'para',
+            'The': 'El', 'THE': 'EL', 'the': 'el',
+            'And': 'Y', 'AND': 'Y', 'and': 'y',
+            'Our': 'Nuestro', 'OUR': 'NUESTRO', 'our': 'nuestro',
+            'Now': 'Ahora', 'NOW': 'AHORA', 'now': 'ahora',
+            'Today': 'Hoy', 'TODAY': 'HOY', 'today': 'hoy',
+            
+            // Business words
+            'Paradise': 'Paraíso', 'PARADISE': 'PARAÍSO', 'paradise': 'paraíso',
+            'Resort': 'Resort', 'RESORT': 'RESORT', 'resort': 'resort',
+            'Club': 'Club', 'CLUB': 'CLUB', 'club': 'club',
+            'Exclusive': 'Exclusivo', 'EXCLUSIVE': 'EXCLUSIVO', 'exclusive': 'exclusivo',
+            'Special': 'Especial', 'SPECIAL': 'ESPECIAL', 'special': 'especial',
+            'Limited': 'Limitado', 'LIMITED': 'LIMITADO', 'limited': 'limitado',
+            'Time': 'Tiempo', 'TIME': 'TIEMPO', 'time': 'tiempo',
+            'Offer': 'Oferta', 'OFFER': 'OFERTA', 'offer': 'oferta',
+            'Access': 'Acceso', 'ACCESS': 'ACCESO', 'access': 'acceso',
+            'Experience': 'Experiencia', 'EXPERIENCE': 'EXPERIENCIA', 'experience': 'experiencia',
+            'Adventure': 'Aventura', 'ADVENTURE': 'AVENTURA', 'adventure': 'aventura',
+            'Discover': 'Descubrir', 'DISCOVER': 'DESCUBRIR', 'discover': 'descubrir',
+            'Explore': 'Explorar', 'EXPLORE': 'EXPLORAR', 'explore': 'explorar',
+            'Enjoy': 'Disfrutar', 'ENJOY': 'DISFRUTAR', 'enjoy': 'disfrutar',
+            
+            // Keep brand names as-is
+            'ELocalPass': 'ELocalPass', 'ELOCALPASS': 'ELOCALPASS', 'elocalpass': 'elocalpass'
           }
           
           let translatedText = text
           
-          // Apply translations in order of specificity (longer phrases first)
-          const sortedTranslations = Object.entries(translations).sort((a, b) => b[0].length - a[0].length)
-          
-          for (const [english, spanish] of sortedTranslations) {
-            const regex = new RegExp(`\\b${english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
-            translatedText = translatedText.replace(regex, spanish)
+          // Apply word translations
+          for (const [english, spanish] of Object.entries(wordTranslations)) {
+            if (spanish) { // Only replace if there's a translation (skip empty strings)
+              const regex = new RegExp(`\\b${english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g')
+              translatedText = translatedText.replace(regex, spanish)
+            }
           }
           
+          // Clean up double spaces and extra whitespace
+          translatedText = translatedText.replace(/\s+/g, ' ').trim()
+          
+          console.log(`✅ Map API - Final translation: "${text}" → "${translatedText}"`)
           return translatedText
         }
 
