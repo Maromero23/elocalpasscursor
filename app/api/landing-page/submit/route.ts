@@ -190,17 +190,32 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
     // 🚀 SEND ACTUAL WELCOME EMAIL
     let emailSent = false
     try {
-      // Create HTML email using the email service
-      const emailHtml = createWelcomeEmailHtml({
-        customerName: formData.name,
-        qrCode: qrCodeId,
-        guests: guests,
-        days: days,
-        expiresAt: formattedExpirationDate,
-        customerPortalUrl: deliveryMethod !== 'DIRECT' ? magicLinkUrl : undefined,
-        language: customerLanguage,
-        deliveryMethod: deliveryMethod
-      })
+      let emailHtml
+      
+      // Use custom HTML template if available, otherwise use default
+      if (emailTemplates?.welcomeEmail?.htmlContent) {
+        // Use custom HTML template from QR configuration
+        emailHtml = emailTemplates.welcomeEmail.htmlContent
+          .replace(/\{customerName\}/g, formData.name)
+          .replace(/\{qrCode\}/g, qrCodeId)
+          .replace(/\{guests\}/g, guests.toString())
+          .replace(/\{days\}/g, days.toString())
+          .replace(/\{expirationDate\}/g, formattedExpirationDate)
+          .replace(/\{magicLink\}/g, magicLinkUrl || '')
+          .replace(/\{customerPortalUrl\}/g, magicLinkUrl || '')
+      } else {
+        // Use default HTML template
+        emailHtml = createWelcomeEmailHtml({
+          customerName: formData.name,
+          qrCode: qrCodeId,
+          guests: guests,
+          days: days,
+          expiresAt: formattedExpirationDate,
+          customerPortalUrl: deliveryMethod !== 'DIRECT' ? magicLinkUrl : undefined,
+          language: customerLanguage,
+          deliveryMethod: deliveryMethod
+        })
+      }
 
       // Send the email (now throws errors instead of returning false)
       await sendEmail({
