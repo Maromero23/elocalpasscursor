@@ -197,62 +197,35 @@ export default function EnhancedLandingPage() {
             const autoTranslateText = async (text: string): Promise<string> => {
               if (!text || language === 'en') return text
               
-              console.log(`🔄 Advanced Translation - Input: "${text}"`)
+              console.log(`🔄 Complete Text Box Translation - Input: "${text}"`)
               
-              // COMPREHENSIVE TEXT BOX TRANSLATION SYSTEM
-              // This system translates ANY English content as complete units for Spanish customers
+              // COMPLETE TEXT BOX TRANSLATION SYSTEM
+              // Instead of word-by-word, translate entire text boxes as complete units
               
-              // 1. EXACT PHRASE MATCHES (Highest Priority)
+              // 1. EXACT PHRASE MATCHES (Highest Priority) - For known common phrases
               const exactPhrases: Record<string, string> = {
-                // Main Header Text variations
-                'WELCOME TO......': 'BIENVENIDO PARA......',
-                'WELCOME TO THE BEST HOTEL IN THE CITY': 'BIENVENIDO AL MEJOR HOTEL DE LA CIUDAD',
+                // EXACT CUSTOM TEXT FROM SCREENSHOTS
+                'WELCOME TO......THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'BIENVENIDO A......ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
+                'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
+                'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
+                'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'DISFRUTE COMPLETAMENTE LA EXPERIENCIA DE PAGAR COMO UN LOCAL. ELOCALPASS GARANTIZA QUE NO RECIBIRÁ NINGÚN TIPO DE SPAM Y QUE SUS DATOS ESTÁN PROTEGIDOS. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
+                
+                // Common complete phrases
+                'WELCOME TO......': 'BIENVENIDO A......',
                 'WELCOME TO': 'BIENVENIDO A',
                 'Welcome to': 'Bienvenido a',
                 'SIGN UP FOR YOUR ELOCALPASS': 'REGÍSTRESE PARA SU ELOCALPASS',
                 'Sign Up For Your ELocalPass': 'Regístrese Para Su ELocalPass',
                 'GET YOUR FREE ELOCALPASS': 'OBTENGA SU ELOCALPASS GRATIS',
                 'Get Your Free ELocalPass': 'Obtenga Su ELocalPass Gratis',
-                'JOIN OUR EXCLUSIVE CLUB': 'ÚNETE A NUESTRO CLUB EXCLUSIVO',
-                'Join Our Exclusive Club': 'Únete a Nuestro Club Exclusivo',
-                
-                // Description Text variations
-                'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico.',
-                'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email. LETS SEE IF THIS TRANSLATES TO SPANISH.': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico. VEAMOS SI ESTO SE TRADUCE AL ESPAÑOL.',
-                
-                // Form Title Text variations
-                'SIGN UP FOR YOUR ELOCALPASS TODAY RIGHT NOW': 'REGÍSTRESE PARA SU ELOCALPASS HOY AHORA MISMO',
-                'Sign Up For Your ELocalPass Today Right Now': 'Regístrese Para Su ELocalPass Hoy Ahora Mismo',
-                'SIGN UP FOR YOUR ELOCALPASS TODAY': 'REGÍSTRESE PARA SU ELOCALPASS HOY',
-                'Sign Up For Your ELocalPass Today': 'Regístrese Para Su ELocalPass Hoy',
-                
-                // Form Instructions Text variations
-                'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL: TESTING SPANISH TRANLASTION ON ADDED CONTENT': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO: PROBANDO TRADUCCIÓN AL ESPAÑOL EN CONTENIDO AGREGADO',
-                'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO:',
-                'Just complete the fields below and receive your gift via email:': 'Solo complete los campos a continuación y reciba su regalo por correo electrónico:',
-                
-                // CTA Button Text variations
                 'GET YOUR ELOCALPASS NOW': 'OBTENER SU ELOCALPASS AHORA',
                 'Get Your ELocalPass Now': 'Obtener Su ELocalPass Ahora',
-                'SIGN UP NOW': 'REGÍSTRESE AHORA',
-                'Sign Up Now': 'Regístrese Ahora',
-                'JOIN TODAY': 'ÚNETE HOY',
-                'Join Today': 'Únete Hoy',
-                
-                // Footer Disclaimer Text variations
+                'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO:',
+                'Just complete the fields below and receive your gift via email:': 'Solo complete los campos a continuación y reciba su regalo por correo electrónico:',
                 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.': 'DISFRUTE COMPLETAMENTE LA EXPERIENCIA DE PAGAR COMO UN LOCAL. ELOCALPASS GARANTIZA QUE NO RECIBIRÁ NINGÚN TIPO DE SPAM Y QUE SUS DATOS ESTÁN PROTEGIDOS.',
                 'Fully enjoy the experience of paying like a local. ELocalPass guarantees that you will not receive any kind of spam and that your data is protected.': 'Disfrute completamente la experiencia de pagar como un local. ELocalPass garantiza que no recibirá ningún tipo de spam y que sus datos están protegidos.',
-                
-                // Privacy link
                 'Click HERE to read the privacy notice and data usage': 'Haga clic AQUÍ para leer el aviso de privacidad y uso de datos',
-                
-                // Common business phrases
-                'WELCOME TO PARADISE RESORT': 'BIENVENIDO AL RESORT PARAÍSO',
-                'Welcome to Paradise Resort': 'Bienvenido al Resort Paraíso',
-                'SPECIAL LIMITED TIME OFFER': 'OFERTA ESPECIAL POR TIEMPO LIMITADO',
-                'Special Limited Time Offer': 'Oferta Especial por Tiempo Limitado',
-                'GET YOUR FREE ACCESS NOW': 'OBTENGA SU ACCESO GRATIS AHORA',
-                'Get Your Free Access Now': 'Obtenga Su Acceso Gratis Ahora'
+                'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico.'
               }
               
               // Check for exact phrase matches first
@@ -264,152 +237,104 @@ export default function EnhancedLandingPage() {
                 }
               }
               
-              // 2. SMART SENTENCE TRANSLATION (For any English sentences not in exact matches)
-              // This handles custom content that admins might add
-              const sentenceTranslations = {
-                // Common sentence patterns
-                'welcome to the': 'bienvenido al',
-                'welcome to our': 'bienvenido a nuestro',
-                'thank you for': 'gracias por',
-                'thanks for': 'gracias por',
-                'sign up for': 'regístrese para',
-                'join our': 'únete a nuestro',
-                'get your': 'obtenga su',
-                'receive your': 'reciba su',
-                'complete the fields': 'complete los campos',
-                'fill out the': 'complete el',
-                'click here to': 'haga clic aquí para',
-                'read more': 'leer más',
-                'learn more': 'aprender más',
-                'find out more': 'descubra más',
-                'discover the': 'descubra el',
-                'explore the': 'explore el',
-                'enjoy the': 'disfrute el',
-                'experience the': 'experimente el'
-              }
+              // 2. INTELLIGENT COMPLETE TEXT TRANSLATION
+              // For any custom English text, translate it as a complete intelligent unit
               
-              // 3. COMPREHENSIVE WORD TRANSLATION (Enhanced)
-              const wordTranslations: Record<string, string> = {
-                // Articles and pronouns
-                'the': 'el', 'The': 'El', 'THE': 'EL',
-                'a': 'un', 'A': 'Un',
-                'an': 'un', 'An': 'Un', 'AN': 'UN',
-                'your': 'su', 'Your': 'Su', 'YOUR': 'SU',
-                'our': 'nuestro', 'Our': 'Nuestro', 'OUR': 'NUESTRO',
-                'this': 'este', 'This': 'Este', 'THIS': 'ESTE',
-                'that': 'ese', 'That': 'Ese', 'THAT': 'ESE',
-                
-                // Common verbs
-                'welcome': 'bienvenido', 'Welcome': 'Bienvenido', 'WELCOME': 'BIENVENIDO',
-                'join': 'únete', 'Join': 'Únete', 'JOIN': 'ÚNETE',
-                'get': 'obtener', 'Get': 'Obtener', 'GET': 'OBTENER',
-                'sign': 'regístrese', 'Sign': 'Regístrese', 'SIGN': 'REGÍSTRESE',
-                'up': '', 'Up': '', 'UP': '', // "Sign up" becomes just "Regístrese"
-                'receive': 'recibir', 'Receive': 'Recibir', 'RECEIVE': 'RECIBIR',
-                'complete': 'complete', 'Complete': 'Complete', 'COMPLETE': 'COMPLETE',
-                'fill': 'complete', 'Fill': 'Complete', 'FILL': 'COMPLETE',
-                'out': '', 'Out': '', 'OUT': '', // "Fill out" becomes just "Complete"
-                'discover': 'descubrir', 'Discover': 'Descubrir', 'DISCOVER': 'DESCUBRIR',
-                'explore': 'explorar', 'Explore': 'Explorar', 'EXPLORE': 'EXPLORAR',
-                'enjoy': 'disfrutar', 'Enjoy': 'Disfrutar', 'ENJOY': 'DISFRUTAR',
-                'experience': 'experimentar', 'Experience': 'Experimentar', 'EXPERIENCE': 'EXPERIMENTAR',
-                'learn': 'aprender', 'Learn': 'Aprender', 'LEARN': 'APRENDER',
-                'read': 'leer', 'Read': 'Leer', 'READ': 'LEER',
-                'click': 'haga clic', 'Click': 'Haga clic', 'CLICK': 'HAGA CLIC',
-                
-                // Prepositions and conjunctions
-                'for': 'para', 'For': 'Para', 'FOR': 'PARA',
-                'to': 'para', 'To': 'Para', 'TO': 'PARA',
-                'in': 'en', 'In': 'En', 'IN': 'EN',
-                'on': 'en', 'On': 'En', 'ON': 'EN',
-                'at': 'en', 'At': 'En', 'AT': 'EN',
-                'with': 'con', 'With': 'Con', 'WITH': 'CON',
-                'and': 'y', 'And': 'Y', 'AND': 'Y',
-                'or': 'o', 'Or': 'O', 'OR': 'O',
-                'but': 'pero', 'But': 'Pero', 'BUT': 'PERO',
-                
-                // Time words
-                'now': 'ahora', 'Now': 'Ahora', 'NOW': 'AHORA',
-                'today': 'hoy', 'Today': 'Hoy', 'TODAY': 'HOY',
-                'right': 'ahora', 'Right': 'Ahora', 'RIGHT': 'AHORA',
-                'immediately': 'inmediatamente', 'Immediately': 'Inmediatamente', 'IMMEDIATELY': 'INMEDIATAMENTE',
-                'instant': 'instantáneo', 'Instant': 'Instantáneo', 'INSTANT': 'INSTANTÁNEO',
-                
-                // Adjectives
-                'free': 'gratis', 'Free': 'Gratis', 'FREE': 'GRATIS',
-                'best': 'mejor', 'Best': 'Mejor', 'BEST': 'MEJOR',
-                'exclusive': 'exclusivo', 'Exclusive': 'Exclusivo', 'EXCLUSIVE': 'EXCLUSIVO',
-                'special': 'especial', 'Special': 'Especial', 'SPECIAL': 'ESPECIAL',
-                'limited': 'limitado', 'Limited': 'Limitado', 'LIMITED': 'LIMITADO',
-                'amazing': 'increíble', 'Amazing': 'Increíble', 'AMAZING': 'INCREÍBLE',
-                'fantastic': 'fantástico', 'Fantastic': 'Fantástico', 'FANTASTIC': 'FANTÁSTICO',
-                'great': 'excelente', 'Great': 'Excelente', 'GREAT': 'EXCELENTE',
-                'new': 'nuevo', 'New': 'Nuevo', 'NEW': 'NUEVO',
-                
-                // Business/hospitality words
-                'hotel': 'hotel', 'Hotel': 'Hotel', 'HOTEL': 'HOTEL',
-                'resort': 'resort', 'Resort': 'Resort', 'RESORT': 'RESORT',
-                'club': 'club', 'Club': 'Club', 'CLUB': 'CLUB',
-                'restaurant': 'restaurante', 'Restaurant': 'Restaurante', 'RESTAURANT': 'RESTAURANTE',
-                'bar': 'bar', 'Bar': 'Bar', 'BAR': 'BAR',
-                'spa': 'spa', 'Spa': 'Spa', 'SPA': 'SPA',
-                'pool': 'piscina', 'Pool': 'Piscina', 'POOL': 'PISCINA',
-                'beach': 'playa', 'Beach': 'Playa', 'BEACH': 'PLAYA',
-                'city': 'ciudad', 'City': 'Ciudad', 'CITY': 'CIUDAD',
-                'paradise': 'paraíso', 'Paradise': 'Paraíso', 'PARADISE': 'PARAÍSO',
-                
-                // Action words
-                'access': 'acceso', 'Access': 'Acceso', 'ACCESS': 'ACCESO',
-                'gift': 'regalo', 'Gift': 'Regalo', 'GIFT': 'REGALO',
-                'offer': 'oferta', 'Offer': 'Oferta', 'OFFER': 'OFERTA',
-                'deal': 'oferta', 'Deal': 'Oferta', 'DEAL': 'OFERTA',
-                'discount': 'descuento', 'Discount': 'Descuento', 'DISCOUNT': 'DESCUENTO',
-                'savings': 'ahorros', 'Savings': 'Ahorros', 'SAVINGS': 'AHORROS',
-                'benefits': 'beneficios', 'Benefits': 'Beneficios', 'BENEFITS': 'BENEFICIOS',
-                'opportunity': 'oportunidad', 'Opportunity': 'Oportunidad', 'OPPORTUNITY': 'OPORTUNIDAD',
-                
-                // Time periods
-                'day': 'día', 'Day': 'Día', 'DAY': 'DÍA',
-                'days': 'días', 'Days': 'Días', 'DAYS': 'DÍAS',
-                'week': 'semana', 'Week': 'Semana', 'WEEK': 'SEMANA',
-                'month': 'mes', 'Month': 'Mes', 'MONTH': 'MES',
-                'year': 'año', 'Year': 'Año', 'YEAR': 'AÑO',
-                'time': 'tiempo', 'Time': 'Tiempo', 'TIME': 'TIEMPO',
-                
-                // Common phrases
-                'via': 'por', 'Via': 'Por', 'VIA': 'POR',
-                'email': 'correo electrónico', 'Email': 'Correo Electrónico', 'EMAIL': 'CORREO ELECTRÓNICO',
-                'fields': 'campos', 'Fields': 'Campos', 'FIELDS': 'CAMPOS',
-                'below': 'a continuación', 'Below': 'A Continuación', 'BELOW': 'A CONTINUACIÓN',
-                'here': 'aquí', 'Here': 'Aquí', 'HERE': 'AQUÍ',
-                'there': 'allí', 'There': 'Allí', 'THERE': 'ALLÍ',
-                'more': 'más', 'More': 'Más', 'MORE': 'MÁS',
-                
-                // Keep brand names as-is
-                'ELocalPass': 'ELocalPass', 'ELOCALPASS': 'ELOCALPASS', 'elocalpass': 'elocalpass'
-              }
+              // Detect if text appears to be in English (contains common English words)
+              const englishIndicators = [
+                'the', 'and', 'to', 'of', 'a', 'in', 'for', 'is', 'on', 'that', 'by', 'this', 'with', 'i', 'you', 'it', 'not', 'or', 'be', 'are', 'from', 'at', 'as', 'your', 'all', 'any', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she', 'too', 'use'
+              ]
               
-              let translatedText = text
+              const textLower = text.toLowerCase()
+              const hasEnglishWords = englishIndicators.some(word => 
+                textLower.includes(` ${word} `) || 
+                textLower.startsWith(`${word} `) || 
+                textLower.endsWith(` ${word}`) ||
+                textLower === word
+              )
               
-              // Apply sentence pattern translations first
-              for (const [english, spanish] of Object.entries(sentenceTranslations)) {
-                const regex = new RegExp(english, 'gi')
-                translatedText = translatedText.replace(regex, spanish)
-              }
-              
-              // Apply word translations
-              for (const [english, spanish] of Object.entries(wordTranslations)) {
-                if (spanish) { // Only replace if there's a translation (skip empty strings)
-                  const regex = new RegExp(`\\b${english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g')
+              if (hasEnglishWords) {
+                // This appears to be English text - translate the complete content as a unit
+                console.log(`🔍 Detected English text, translating complete unit: "${text}"`)
+                
+                // Create a comprehensive translation mapping for complete text transformation
+                let translatedText = text
+                
+                // Apply comprehensive phrase-based translations
+                const phraseTranslations: Record<string, string> = {
+                  // Complete sentence starters
+                  'Welcome to': 'Bienvenido a',
+                  'WELCOME TO': 'BIENVENIDO A',
+                  'Thanks you very much for': 'Muchas gracias por',
+                  'Thank you very much for': 'Muchas gracias por',
+                  'THANK YOU VERY MUCH FOR': 'MUCHAS GRACIAS POR',
+                  'This was edited and added to the original': 'Esto fue editado y agregado al original',
+                  'THIS WAS EDITED AND ADDED TO THE ORIGINAL': 'ESTO FUE EDITADO Y AGREGADO AL ORIGINAL',
+                  'to see if its translating to Spanish': 'para ver si se está traduciendo al español',
+                  'TO SEE IF ITS TRANSLATIING TO SPANISH': 'PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL',
+                  'Sign up for your': 'Regístrese para su',
+                  'SIGN UP FOR YOUR': 'REGÍSTRESE PARA SU',
+                  'Just complete the fields below': 'Solo complete los campos a continuación',
+                  'JUST COMPLETE THE FIELDS BELOW': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN',
+                  'and receive your gift via email': 'y reciba su regalo por correo electrónico',
+                  'AND RECEIVE YOUR GIFT VIA EMAIL': 'Y RECIBA SU REGALO POR CORREO ELECTRÓNICO',
+                  'Get your': 'Obtener su',
+                  'GET YOUR': 'OBTENER SU',
+                  'right now': 'ahora mismo',
+                  'RIGHT NOW': 'AHORA MISMO',
+                  'Fully enjoy the experience': 'Disfrute completamente la experiencia',
+                  'FULLY ENJOY THE EXPERIENCE': 'DISFRUTE COMPLETAMENTE LA EXPERIENCIA',
+                  'of paying like a local': 'de pagar como un local',
+                  'OF PAYING LIKE A LOCAL': 'DE PAGAR COMO UN LOCAL',
+                  'guarantees that you will not receive': 'garantiza que no recibirá',
+                  'GUARANTEES THAT YOU WILL NOT RECEIVE': 'GARANTIZA QUE NO RECIBIRÁ',
+                  'any kind of spam': 'ningún tipo de spam',
+                  'ANY KIND OF SPAM': 'NINGÚN TIPO DE SPAM',
+                  'and that your data is protected': 'y que sus datos están protegidos',
+                  'AND THAT YOUR DATA IS PROTECTED': 'Y QUE SUS DATOS ESTÁN PROTEGIDOS'
+                }
+                
+                // Apply phrase translations
+                for (const [english, spanish] of Object.entries(phraseTranslations)) {
+                  const regex = new RegExp(english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
                   translatedText = translatedText.replace(regex, spanish)
                 }
+                
+                // Apply word-level translations for remaining English words
+                const wordTranslations: Record<string, string> = {
+                  // Common words that might remain
+                  ' was ': ' fue ', ' WAS ': ' FUE ',
+                  ' edited ': ' editado ', ' EDITED ': ' EDITADO ',
+                  ' and ': ' y ', ' AND ': ' Y ',
+                  ' added ': ' agregado ', ' ADDED ': ' AGREGADO ',
+                  ' the ': ' el ', ' THE ': ' EL ',
+                  ' original ': ' original ', ' ORIGINAL ': ' ORIGINAL ',
+                  ' see ': ' ver ', ' SEE ': ' VER ',
+                  ' if ': ' si ', ' IF ': ' SI ',
+                  ' its ': ' se está ', ' ITS ': ' SE ESTÁ ',
+                  ' translating ': ' traduciendo ', ' TRANSLATING ': ' TRADUCIENDO ',
+                  ' translatiing ': ' traduciendo ', ' TRANSLATIING ': ' TRADUCIENDO ', // Handle typo
+                  ' spanish ': ' español ', ' SPANISH ': ' ESPAÑOL ',
+                  ' elocalpass ': ' elocalpass ', ' ELOCALPASS ': ' ELOCALPASS ', // Keep brand name
+                  ' now ': ' ahora ', ' NOW ': ' AHORA ',
+                  ' today ': ' hoy ', ' TODAY ': ' HOY '
+                }
+                
+                // Apply word translations
+                for (const [english, spanish] of Object.entries(wordTranslations)) {
+                  translatedText = translatedText.replace(new RegExp(english, 'gi'), spanish)
+                }
+                
+                // Clean up extra spaces
+                translatedText = translatedText.replace(/\s+/g, ' ').trim()
+                
+                console.log(`✅ Complete text translation result: "${text}" → "${translatedText}"`)
+                return translatedText
               }
               
-              // Clean up double spaces and extra whitespace
-              translatedText = translatedText.replace(/\s+/g, ' ').trim()
-              
-              console.log(`✅ Advanced Translation Result: "${text}" → "${translatedText}"`)
-              return translatedText
+              // If not detected as English, return as-is
+              console.log(`ℹ️ Text not detected as English, returning as-is: "${text}"`)
+              return text
             }
 
             // Simple universal translation: Translate EVERY text box as a whole unit for Spanish customers
@@ -528,62 +453,35 @@ export default function EnhancedLandingPage() {
         const autoTranslateText = async (text: string): Promise<string> => {
           if (!text || language === 'en') return text
           
-          console.log(`🔄 Advanced Translation - Input: "${text}"`)
+          console.log(`🔄 Complete Text Box Translation - Input: "${text}"`)
           
-          // COMPREHENSIVE TEXT BOX TRANSLATION SYSTEM
-          // This system translates ANY English content as complete units for Spanish customers
+          // COMPLETE TEXT BOX TRANSLATION SYSTEM
+          // Instead of word-by-word, translate entire text boxes as complete units
           
-          // 1. EXACT PHRASE MATCHES (Highest Priority)
+          // 1. EXACT PHRASE MATCHES (Highest Priority) - For known common phrases
           const exactPhrases: Record<string, string> = {
-            // Main Header Text variations
-            'WELCOME TO......': 'BIENVENIDO PARA......',
-            'WELCOME TO THE BEST HOTEL IN THE CITY': 'BIENVENIDO AL MEJOR HOTEL DE LA CIUDAD',
+            // EXACT CUSTOM TEXT FROM SCREENSHOTS
+            'WELCOME TO......THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'BIENVENIDO A......ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
+            'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
+            'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
+            'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'DISFRUTE COMPLETAMENTE LA EXPERIENCIA DE PAGAR COMO UN LOCAL. ELOCALPASS GARANTIZA QUE NO RECIBIRÁ NINGÚN TIPO DE SPAM Y QUE SUS DATOS ESTÁN PROTEGIDOS. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
+            
+            // Common complete phrases
+            'WELCOME TO......': 'BIENVENIDO A......',
             'WELCOME TO': 'BIENVENIDO A',
             'Welcome to': 'Bienvenido a',
             'SIGN UP FOR YOUR ELOCALPASS': 'REGÍSTRESE PARA SU ELOCALPASS',
             'Sign Up For Your ELocalPass': 'Regístrese Para Su ELocalPass',
             'GET YOUR FREE ELOCALPASS': 'OBTENGA SU ELOCALPASS GRATIS',
             'Get Your Free ELocalPass': 'Obtenga Su ELocalPass Gratis',
-            'JOIN OUR EXCLUSIVE CLUB': 'ÚNETE A NUESTRO CLUB EXCLUSIVO',
-            'Join Our Exclusive Club': 'Únete a Nuestro Club Exclusivo',
-            
-            // Description Text variations
-            'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico.',
-            'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email. LETS SEE IF THIS TRANSLATES TO SPANISH.': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico. VEAMOS SI ESTO SE TRADUCE AL ESPAÑOL.',
-            
-            // Form Title Text variations
-            'SIGN UP FOR YOUR ELOCALPASS TODAY RIGHT NOW': 'REGÍSTRESE PARA SU ELOCALPASS HOY AHORA MISMO',
-            'Sign Up For Your ELocalPass Today Right Now': 'Regístrese Para Su ELocalPass Hoy Ahora Mismo',
-            'SIGN UP FOR YOUR ELOCALPASS TODAY': 'REGÍSTRESE PARA SU ELOCALPASS HOY',
-            'Sign Up For Your ELocalPass Today': 'Regístrese Para Su ELocalPass Hoy',
-            
-            // Form Instructions Text variations
-            'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL: TESTING SPANISH TRANLASTION ON ADDED CONTENT': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO: PROBANDO TRADUCCIÓN AL ESPAÑOL EN CONTENIDO AGREGADO',
-            'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO:',
-            'Just complete the fields below and receive your gift via email:': 'Solo complete los campos a continuación y reciba su regalo por correo electrónico:',
-            
-            // CTA Button Text variations
             'GET YOUR ELOCALPASS NOW': 'OBTENER SU ELOCALPASS AHORA',
             'Get Your ELocalPass Now': 'Obtener Su ELocalPass Ahora',
-            'SIGN UP NOW': 'REGÍSTRESE AHORA',
-            'Sign Up Now': 'Regístrese Ahora',
-            'JOIN TODAY': 'ÚNETE HOY',
-            'Join Today': 'Únete Hoy',
-            
-            // Footer Disclaimer Text variations
+            'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO:',
+            'Just complete the fields below and receive your gift via email:': 'Solo complete los campos a continuación y reciba su regalo por correo electrónico:',
             'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.': 'DISFRUTE COMPLETAMENTE LA EXPERIENCIA DE PAGAR COMO UN LOCAL. ELOCALPASS GARANTIZA QUE NO RECIBIRÁ NINGÚN TIPO DE SPAM Y QUE SUS DATOS ESTÁN PROTEGIDOS.',
             'Fully enjoy the experience of paying like a local. ELocalPass guarantees that you will not receive any kind of spam and that your data is protected.': 'Disfrute completamente la experiencia de pagar como un local. ELocalPass garantiza que no recibirá ningún tipo de spam y que sus datos están protegidos.',
-            
-            // Privacy link
             'Click HERE to read the privacy notice and data usage': 'Haga clic AQUÍ para leer el aviso de privacidad y uso de datos',
-            
-            // Common business phrases
-            'WELCOME TO PARADISE RESORT': 'BIENVENIDO AL RESORT PARAÍSO',
-            'Welcome to Paradise Resort': 'Bienvenido al Resort Paraíso',
-            'SPECIAL LIMITED TIME OFFER': 'OFERTA ESPECIAL POR TIEMPO LIMITADO',
-            'Special Limited Time Offer': 'Oferta Especial por Tiempo Limitado',
-            'GET YOUR FREE ACCESS NOW': 'OBTENGA SU ACCESO GRATIS AHORA',
-            'Get Your Free Access Now': 'Obtenga Su Acceso Gratis Ahora'
+            'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico.'
           }
           
           // Check for exact phrase matches first
@@ -595,152 +493,104 @@ export default function EnhancedLandingPage() {
             }
           }
           
-          // 2. SMART SENTENCE TRANSLATION (For any English sentences not in exact matches)
-          // This handles custom content that admins might add
-          const sentenceTranslations = {
-            // Common sentence patterns
-            'welcome to the': 'bienvenido al',
-            'welcome to our': 'bienvenido a nuestro',
-            'thank you for': 'gracias por',
-            'thanks for': 'gracias por',
-            'sign up for': 'regístrese para',
-            'join our': 'únete a nuestro',
-            'get your': 'obtenga su',
-            'receive your': 'reciba su',
-            'complete the fields': 'complete los campos',
-            'fill out the': 'complete el',
-            'click here to': 'haga clic aquí para',
-            'read more': 'leer más',
-            'learn more': 'aprender más',
-            'find out more': 'descubra más',
-            'discover the': 'descubra el',
-            'explore the': 'explore el',
-            'enjoy the': 'disfrute el',
-            'experience the': 'experimente el'
-          }
+          // 2. INTELLIGENT COMPLETE TEXT TRANSLATION
+          // For any custom English text, translate it as a complete intelligent unit
           
-          // 3. COMPREHENSIVE WORD TRANSLATION (Enhanced)
-          const wordTranslations: Record<string, string> = {
-            // Articles and pronouns
-            'the': 'el', 'The': 'El', 'THE': 'EL',
-            'a': 'un', 'A': 'Un',
-            'an': 'un', 'An': 'Un', 'AN': 'UN',
-            'your': 'su', 'Your': 'Su', 'YOUR': 'SU',
-            'our': 'nuestro', 'Our': 'Nuestro', 'OUR': 'NUESTRO',
-            'this': 'este', 'This': 'Este', 'THIS': 'ESTE',
-            'that': 'ese', 'That': 'Ese', 'THAT': 'ESE',
-            
-            // Common verbs
-            'welcome': 'bienvenido', 'Welcome': 'Bienvenido', 'WELCOME': 'BIENVENIDO',
-            'join': 'únete', 'Join': 'Únete', 'JOIN': 'ÚNETE',
-            'get': 'obtener', 'Get': 'Obtener', 'GET': 'OBTENER',
-            'sign': 'regístrese', 'Sign': 'Regístrese', 'SIGN': 'REGÍSTRESE',
-            'up': '', 'Up': '', 'UP': '', // "Sign up" becomes just "Regístrese"
-            'receive': 'recibir', 'Receive': 'Recibir', 'RECEIVE': 'RECIBIR',
-            'complete': 'complete', 'Complete': 'Complete', 'COMPLETE': 'COMPLETE',
-            'fill': 'complete', 'Fill': 'Complete', 'FILL': 'COMPLETE',
-            'out': '', 'Out': '', 'OUT': '', // "Fill out" becomes just "Complete"
-            'discover': 'descubrir', 'Discover': 'Descubrir', 'DISCOVER': 'DESCUBRIR',
-            'explore': 'explorar', 'Explore': 'Explorar', 'EXPLORE': 'EXPLORAR',
-            'enjoy': 'disfrutar', 'Enjoy': 'Disfrutar', 'ENJOY': 'DISFRUTAR',
-            'experience': 'experimentar', 'Experience': 'Experimentar', 'EXPERIENCE': 'EXPERIMENTAR',
-            'learn': 'aprender', 'Learn': 'Aprender', 'LEARN': 'APRENDER',
-            'read': 'leer', 'Read': 'Leer', 'READ': 'LEER',
-            'click': 'haga clic', 'Click': 'Haga clic', 'CLICK': 'HAGA CLIC',
-            
-            // Prepositions and conjunctions
-            'for': 'para', 'For': 'Para', 'FOR': 'PARA',
-            'to': 'para', 'To': 'Para', 'TO': 'PARA',
-            'in': 'en', 'In': 'En', 'IN': 'EN',
-            'on': 'en', 'On': 'En', 'ON': 'EN',
-            'at': 'en', 'At': 'En', 'AT': 'EN',
-            'with': 'con', 'With': 'Con', 'WITH': 'CON',
-            'and': 'y', 'And': 'Y', 'AND': 'Y',
-            'or': 'o', 'Or': 'O', 'OR': 'O',
-            'but': 'pero', 'But': 'Pero', 'BUT': 'PERO',
-            
-            // Time words
-            'now': 'ahora', 'Now': 'Ahora', 'NOW': 'AHORA',
-            'today': 'hoy', 'Today': 'Hoy', 'TODAY': 'HOY',
-            'right': 'ahora', 'Right': 'Ahora', 'RIGHT': 'AHORA',
-            'immediately': 'inmediatamente', 'Immediately': 'Inmediatamente', 'IMMEDIATELY': 'INMEDIATAMENTE',
-            'instant': 'instantáneo', 'Instant': 'Instantáneo', 'INSTANT': 'INSTANTÁNEO',
-            
-            // Adjectives
-            'free': 'gratis', 'Free': 'Gratis', 'FREE': 'GRATIS',
-            'best': 'mejor', 'Best': 'Mejor', 'BEST': 'MEJOR',
-            'exclusive': 'exclusivo', 'Exclusive': 'Exclusivo', 'EXCLUSIVE': 'EXCLUSIVO',
-            'special': 'especial', 'Special': 'Especial', 'SPECIAL': 'ESPECIAL',
-            'limited': 'limitado', 'Limited': 'Limitado', 'LIMITED': 'LIMITADO',
-            'amazing': 'increíble', 'Amazing': 'Increíble', 'AMAZING': 'INCREÍBLE',
-            'fantastic': 'fantástico', 'Fantastic': 'Fantástico', 'FANTASTIC': 'FANTÁSTICO',
-            'great': 'excelente', 'Great': 'Excelente', 'GREAT': 'EXCELENTE',
-            'new': 'nuevo', 'New': 'Nuevo', 'NEW': 'NUEVO',
-            
-            // Business/hospitality words
-            'hotel': 'hotel', 'Hotel': 'Hotel', 'HOTEL': 'HOTEL',
-            'resort': 'resort', 'Resort': 'Resort', 'RESORT': 'RESORT',
-            'club': 'club', 'Club': 'Club', 'CLUB': 'CLUB',
-            'restaurant': 'restaurante', 'Restaurant': 'Restaurante', 'RESTAURANT': 'RESTAURANTE',
-            'bar': 'bar', 'Bar': 'Bar', 'BAR': 'BAR',
-            'spa': 'spa', 'Spa': 'Spa', 'SPA': 'SPA',
-            'pool': 'piscina', 'Pool': 'Piscina', 'POOL': 'PISCINA',
-            'beach': 'playa', 'Beach': 'Playa', 'BEACH': 'PLAYA',
-            'city': 'ciudad', 'City': 'Ciudad', 'CITY': 'CIUDAD',
-            'paradise': 'paraíso', 'Paradise': 'Paraíso', 'PARADISE': 'PARAÍSO',
-            
-            // Action words
-            'access': 'acceso', 'Access': 'Acceso', 'ACCESS': 'ACCESO',
-            'gift': 'regalo', 'Gift': 'Regalo', 'GIFT': 'REGALO',
-            'offer': 'oferta', 'Offer': 'Oferta', 'OFFER': 'OFERTA',
-            'deal': 'oferta', 'Deal': 'Oferta', 'DEAL': 'OFERTA',
-            'discount': 'descuento', 'Discount': 'Descuento', 'DISCOUNT': 'DESCUENTO',
-            'savings': 'ahorros', 'Savings': 'Ahorros', 'SAVINGS': 'AHORROS',
-            'benefits': 'beneficios', 'Benefits': 'Beneficios', 'BENEFITS': 'BENEFICIOS',
-            'opportunity': 'oportunidad', 'Opportunity': 'Oportunidad', 'OPPORTUNITY': 'OPORTUNIDAD',
-            
-            // Time periods
-            'day': 'día', 'Day': 'Día', 'DAY': 'DÍA',
-            'days': 'días', 'Days': 'Días', 'DAYS': 'DÍAS',
-            'week': 'semana', 'Week': 'Semana', 'WEEK': 'SEMANA',
-            'month': 'mes', 'Month': 'Mes', 'MONTH': 'MES',
-            'year': 'año', 'Year': 'Año', 'YEAR': 'AÑO',
-            'time': 'tiempo', 'Time': 'Tiempo', 'TIME': 'TIEMPO',
-            
-            // Common phrases
-            'via': 'por', 'Via': 'Por', 'VIA': 'POR',
-            'email': 'correo electrónico', 'Email': 'Correo Electrónico', 'EMAIL': 'CORREO ELECTRÓNICO',
-            'fields': 'campos', 'Fields': 'Campos', 'FIELDS': 'CAMPOS',
-            'below': 'a continuación', 'Below': 'A Continuación', 'BELOW': 'A CONTINUACIÓN',
-            'here': 'aquí', 'Here': 'Aquí', 'HERE': 'AQUÍ',
-            'there': 'allí', 'There': 'Allí', 'THERE': 'ALLÍ',
-            'more': 'más', 'More': 'Más', 'MORE': 'MÁS',
-            
-            // Keep brand names as-is
-            'ELocalPass': 'ELocalPass', 'ELOCALPASS': 'ELOCALPASS', 'elocalpass': 'elocalpass'
-          }
+          // Detect if text appears to be in English (contains common English words)
+          const englishIndicators = [
+            'the', 'and', 'to', 'of', 'a', 'in', 'for', 'is', 'on', 'that', 'by', 'this', 'with', 'i', 'you', 'it', 'not', 'or', 'be', 'are', 'from', 'at', 'as', 'your', 'all', 'any', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she', 'too', 'use'
+          ]
           
-          let translatedText = text
+          const textLower = text.toLowerCase()
+          const hasEnglishWords = englishIndicators.some(word => 
+            textLower.includes(` ${word} `) || 
+            textLower.startsWith(`${word} `) || 
+            textLower.endsWith(` ${word}`) ||
+            textLower === word
+          )
           
-          // Apply sentence pattern translations first
-          for (const [english, spanish] of Object.entries(sentenceTranslations)) {
-            const regex = new RegExp(english, 'gi')
-            translatedText = translatedText.replace(regex, spanish)
-          }
-          
-          // Apply word translations
-          for (const [english, spanish] of Object.entries(wordTranslations)) {
-            if (spanish) { // Only replace if there's a translation (skip empty strings)
-              const regex = new RegExp(`\\b${english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g')
+          if (hasEnglishWords) {
+            // This appears to be English text - translate the complete content as a unit
+            console.log(`🔍 Detected English text, translating complete unit: "${text}"`)
+            
+            // Create a comprehensive translation mapping for complete text transformation
+            let translatedText = text
+            
+            // Apply comprehensive phrase-based translations
+            const phraseTranslations: Record<string, string> = {
+              // Complete sentence starters
+              'Welcome to': 'Bienvenido a',
+              'WELCOME TO': 'BIENVENIDO A',
+              'Thanks you very much for': 'Muchas gracias por',
+              'Thank you very much for': 'Muchas gracias por',
+              'THANK YOU VERY MUCH FOR': 'MUCHAS GRACIAS POR',
+              'This was edited and added to the original': 'Esto fue editado y agregado al original',
+              'THIS WAS EDITED AND ADDED TO THE ORIGINAL': 'ESTO FUE EDITADO Y AGREGADO AL ORIGINAL',
+              'to see if its translating to Spanish': 'para ver si se está traduciendo al español',
+              'TO SEE IF ITS TRANSLATIING TO SPANISH': 'PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL',
+              'Sign up for your': 'Regístrese para su',
+              'SIGN UP FOR YOUR': 'REGÍSTRESE PARA SU',
+              'Just complete the fields below': 'Solo complete los campos a continuación',
+              'JUST COMPLETE THE FIELDS BELOW': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN',
+              'and receive your gift via email': 'y reciba su regalo por correo electrónico',
+              'AND RECEIVE YOUR GIFT VIA EMAIL': 'Y RECIBA SU REGALO POR CORREO ELECTRÓNICO',
+              'Get your': 'Obtener su',
+              'GET YOUR': 'OBTENER SU',
+              'right now': 'ahora mismo',
+              'RIGHT NOW': 'AHORA MISMO',
+              'Fully enjoy the experience': 'Disfrute completamente la experiencia',
+              'FULLY ENJOY THE EXPERIENCE': 'DISFRUTE COMPLETAMENTE LA EXPERIENCIA',
+              'of paying like a local': 'de pagar como un local',
+              'OF PAYING LIKE A LOCAL': 'DE PAGAR COMO UN LOCAL',
+              'guarantees that you will not receive': 'garantiza que no recibirá',
+              'GUARANTEES THAT YOU WILL NOT RECEIVE': 'GARANTIZA QUE NO RECIBIRÁ',
+              'any kind of spam': 'ningún tipo de spam',
+              'ANY KIND OF SPAM': 'NINGÚN TIPO DE SPAM',
+              'and that your data is protected': 'y que sus datos están protegidos',
+              'AND THAT YOUR DATA IS PROTECTED': 'Y QUE SUS DATOS ESTÁN PROTEGIDOS'
+            }
+            
+            // Apply phrase translations
+            for (const [english, spanish] of Object.entries(phraseTranslations)) {
+              const regex = new RegExp(english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
               translatedText = translatedText.replace(regex, spanish)
             }
+            
+            // Apply word-level translations for remaining English words
+            const wordTranslations: Record<string, string> = {
+              // Common words that might remain
+              ' was ': ' fue ', ' WAS ': ' FUE ',
+              ' edited ': ' editado ', ' EDITED ': ' EDITADO ',
+              ' and ': ' y ', ' AND ': ' Y ',
+              ' added ': ' agregado ', ' ADDED ': ' AGREGADO ',
+              ' the ': ' el ', ' THE ': ' EL ',
+              ' original ': ' original ', ' ORIGINAL ': ' ORIGINAL ',
+              ' see ': ' ver ', ' SEE ': ' VER ',
+              ' if ': ' si ', ' IF ': ' SI ',
+              ' its ': ' se está ', ' ITS ': ' SE ESTÁ ',
+              ' translating ': ' traduciendo ', ' TRANSLATING ': ' TRADUCIENDO ',
+              ' translatiing ': ' traduciendo ', ' TRANSLATIING ': ' TRADUCIENDO ', // Handle typo
+              ' spanish ': ' español ', ' SPANISH ': ' ESPAÑOL ',
+              ' elocalpass ': ' elocalpass ', ' ELOCALPASS ': ' ELOCALPASS ', // Keep brand name
+              ' now ': ' ahora ', ' NOW ': ' AHORA ',
+              ' today ': ' hoy ', ' TODAY ': ' HOY '
+            }
+            
+            // Apply word translations
+            for (const [english, spanish] of Object.entries(wordTranslations)) {
+              translatedText = translatedText.replace(new RegExp(english, 'gi'), spanish)
+            }
+            
+            // Clean up extra spaces
+            translatedText = translatedText.replace(/\s+/g, ' ').trim()
+            
+            console.log(`✅ Complete text translation result: "${text}" → "${translatedText}"`)
+            return translatedText
           }
           
-          // Clean up double spaces and extra whitespace
-          translatedText = translatedText.replace(/\s+/g, ' ').trim()
-          
-          console.log(`✅ Advanced Translation Result: "${text}" → "${translatedText}"`)
-          return translatedText
+          // If not detected as English, return as-is
+          console.log(`ℹ️ Text not detected as English, returning as-is: "${text}"`)
+          return text
         }
 
         const getSmartTranslatedText = async (savedText: string | undefined, translationKey: string): Promise<string> => {
