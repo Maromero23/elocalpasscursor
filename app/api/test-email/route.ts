@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
     const envCheck = {
       RESEND_API_KEY: !!process.env.RESEND_API_KEY,
       SENDGRID_API_KEY: !!process.env.SENDGRID_API_KEY,
+      OUTLOOK_USER: !!process.env.OUTLOOK_USER,
+      OUTLOOK_PASS: !!process.env.OUTLOOK_PASS,
       GMAIL_USER: !!process.env.GMAIL_USER,
       GMAIL_PASS: !!process.env.GMAIL_PASS,
       EMAIL_FROM_ADDRESS: !!process.env.EMAIL_FROM_ADDRESS,
@@ -21,9 +23,9 @@ export async function GET(request: NextRequest) {
     console.log('GMAIL_USER value:', process.env.GMAIL_USER)
     console.log('GMAIL_PASS length:', process.env.GMAIL_PASS?.length || 0)
     
-    if (!process.env.RESEND_API_KEY && !process.env.SENDGRID_API_KEY && !process.env.GMAIL_USER && !process.env.EMAIL_USER) {
+    if (!process.env.RESEND_API_KEY && !process.env.SENDGRID_API_KEY && !process.env.OUTLOOK_USER && !process.env.GMAIL_USER && !process.env.EMAIL_USER) {
       return NextResponse.json({ 
-        error: 'No email service configured (Resend, SendGrid, or Gmail)',
+        error: 'No email service configured (Resend, SendGrid, Outlook, or Gmail)',
         envCheck 
       }, { status: 500 })
     }
@@ -73,8 +75,8 @@ export async function GET(request: NextRequest) {
       emailError,
       emailResult,
       credentials: {
-        service: (false && process.env.RESEND_API_KEY) ? 'Resend' : process.env.SENDGRID_API_KEY ? 'SendGrid' : 'Gmail/SMTP',
-        user: process.env.GMAIL_USER || process.env.EMAIL_USER || 'resend',
+        service: (false && process.env.RESEND_API_KEY) ? 'Resend' : process.env.SENDGRID_API_KEY ? 'SendGrid' : (process.env.OUTLOOK_USER && process.env.OUTLOOK_PASS) ? 'Outlook' : 'Gmail/SMTP',
+        user: process.env.OUTLOOK_USER || process.env.GMAIL_USER || process.env.EMAIL_USER || 'resend',
         hasPass: !!(process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.GMAIL_PASS || process.env.EMAIL_PASS),
         fromAddress: actualFromAddress,
         usingGmailVars: !!(process.env.GMAIL_USER && process.env.GMAIL_PASS)

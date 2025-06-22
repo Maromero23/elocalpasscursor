@@ -34,7 +34,24 @@ const getEmailTransporter = () => {
       },
     })
   } else {
-    // Gmail SMTP or generic SMTP (fallback)
+    // Try multiple SMTP services as fallback
+    console.log('📧 Using fallback SMTP email service')
+    
+    // If we have Outlook credentials, use those
+    if (process.env.OUTLOOK_USER && process.env.OUTLOOK_PASS) {
+      console.log('📧 Using Outlook SMTP')
+      return nodemailer.createTransport({
+        host: 'smtp-mail.outlook.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.OUTLOOK_USER,
+          pass: process.env.OUTLOOK_PASS,
+        },
+      })
+    }
+    
+    // Gmail SMTP (if configured)
     console.log('📧 Using Gmail/SMTP email service')
     return nodemailer.createTransport({
       host: process.env.EMAIL_HOST || 'smtp.gmail.com',
@@ -91,6 +108,7 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
 const getEmailServiceName = (): string => {
   if (false && process.env.RESEND_API_KEY) return 'Resend'
   if (process.env.SENDGRID_API_KEY) return 'SendGrid'
+  if (process.env.OUTLOOK_USER && process.env.OUTLOOK_PASS) return 'Outlook'
   return 'Gmail/SMTP'
 }
 
