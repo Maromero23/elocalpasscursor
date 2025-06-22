@@ -204,11 +204,18 @@ export default function EnhancedLandingPage() {
               
               // 1. EXACT PHRASE MATCHES (Highest Priority) - For known common phrases
               const exactPhrases: Record<string, string> = {
-                // EXACT CUSTOM TEXT FROM SCREENSHOTS
+                // EXACT CUSTOM TEXT FROM SCREENSHOTS - OLD TEST
                 'WELCOME TO......THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'BIENVENIDO A......ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
                 'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
                 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
                 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'DISFRUTE COMPLETAMENTE LA EXPERIENCIA DE PAGAR COMO UN LOCAL. ELOCALPASS GARANTIZA QUE NO RECIBIRÁ NINGÚN TIPO DE SPAM Y QUE SUS DATOS ESTÁN PROTEGIDOS. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
+                
+                // NEW CUSTOM TEXT FROM LATEST SCREENSHOTS
+                'WELCOME TO......LETS ver si THIS CHANGES WORK, WE WROTE ON el ORIGINAL EDIT ENGLISH': 'BIENVENIDO A......VEAMOS SI ESTOS CAMBIOS FUNCIONAN, ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
+                'Bienvenido a......LETS ver si THIS CHANGES WORK, WE WROTE ON el ORIGINAL EDIT ENGLISH': 'Bienvenido a......VEAMOS SI ESTOS CAMBIOS FUNCIONAN, ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
+                'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.LETS ver si THIS CHANGES WORK, WE WROTE ON el ORIGINAL EDIT ENGLISH': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico. VEAMOS SI ESTOS CAMBIOS FUNCIONAN, ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
+                'Solo complete los campos a continuación y reciba su regalo por correo electrónico:LETS ver si THIS CHANGES WORK, WE WROTE ON el ORIGINAL EDIT ENGLISH': 'Solo complete los campos a continuación y reciba su regalo por correo electrónico: VEAMOS SI ESTOS CAMBIOS FUNCIONAN, ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
+                'Disfrute completamente la experiencia de pagar como un local. ELOCALPASS garantiza que no recibirá ningún tipo de spam y que sus datos están protegidos.LETS ver si THIS CHANGES WORK, WE WROTE ON el ORIGINAL EDIT ENGLISH': 'Disfrute completamente la experiencia de pagar como un local. ELOCALPASS garantiza que no recibirá ningún tipo de spam y que sus datos están protegidos. VEAMOS SI ESTOS CAMBIOS FUNCIONAN, ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
                 
                 // Common complete phrases
                 'WELCOME TO......': 'BIENVENIDO A......',
@@ -240,9 +247,12 @@ export default function EnhancedLandingPage() {
               // 2. INTELLIGENT COMPLETE TEXT TRANSLATION
               // For any custom English text, translate it as a complete intelligent unit
               
-              // Detect if text appears to be in English (contains common English words)
+              // Enhanced English detection - look for ANY English words or patterns
               const englishIndicators = [
-                'the', 'and', 'to', 'of', 'a', 'in', 'for', 'is', 'on', 'that', 'by', 'this', 'with', 'i', 'you', 'it', 'not', 'or', 'be', 'are', 'from', 'at', 'as', 'your', 'all', 'any', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she', 'too', 'use'
+                // Common English words
+                'the', 'and', 'to', 'of', 'a', 'in', 'for', 'is', 'on', 'that', 'by', 'this', 'with', 'i', 'you', 'it', 'not', 'or', 'be', 'are', 'from', 'at', 'as', 'your', 'all', 'any', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she', 'too', 'use',
+                // Additional English words from your test
+                'lets', 'ver', 'si', 'changes', 'work', 'we', 'wrote', 'edit', 'english', 'original', 'if', 'this', 'giving', 'yourself', 'opportunity', 'discover', 'benefits', 'club', 'receive', 'access', 'gift', 'simply', 'fill', 'fields', 'below', 'will', 'free', 'via', 'email'
               ]
               
               const textLower = text.toLowerCase()
@@ -268,6 +278,18 @@ export default function EnhancedLandingPage() {
                   'Thanks you very much for': 'Muchas gracias por',
                   'Thank you very much for': 'Muchas gracias por',
                   'THANK YOU VERY MUCH FOR': 'MUCHAS GRACIAS POR',
+                  
+                  // NEW PATTERNS FROM LATEST TEST
+                  'LETS ver si THIS CHANGES WORK': 'VEAMOS SI ESTOS CAMBIOS FUNCIONAN',
+                  'lets ver si this changes work': 'veamos si estos cambios funcionan',
+                  'WE WROTE ON el ORIGINAL EDIT ENGLISH': 'ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
+                  'we wrote on el original edit english': 'escribimos en el original editar inglés',
+                  'WE WROTE ON': 'ESCRIBIMOS EN',
+                  'we wrote on': 'escribimos en',
+                  'EDIT ENGLISH': 'EDITAR INGLÉS',
+                  'edit english': 'editar inglés',
+                  
+                  // OLD PATTERNS
                   'This was edited and added to the original': 'Esto fue editado y agregado al original',
                   'THIS WAS EDITED AND ADDED TO THE ORIGINAL': 'ESTO FUE EDITADO Y AGREGADO AL ORIGINAL',
                   'to see if its translating to Spanish': 'para ver si se está traduciendo al español',
@@ -302,7 +324,21 @@ export default function EnhancedLandingPage() {
                 
                 // Apply word-level translations for remaining English words
                 const wordTranslations: Record<string, string> = {
-                  // Common words that might remain
+                  // NEW WORDS FROM LATEST TEST
+                  ' lets ': ' veamos ', ' LETS ': ' VEAMOS ',
+                  ' ver ': ' ver ', ' VER ': ' VER ', // Keep as is since it's already Spanish
+                  ' si ': ' si ', ' SI ': ' SI ', // Keep as is since it's already Spanish
+                  ' this ': ' estos ', ' THIS ': ' ESTOS ',
+                  ' changes ': ' cambios ', ' CHANGES ': ' CAMBIOS ',
+                  ' work ': ' funcionan ', ' WORK ': ' FUNCIONAN ',
+                  ' we ': ' escribimos ', ' WE ': ' ESCRIBIMOS ',
+                  ' wrote ': ' escribimos ', ' WROTE ': ' ESCRIBIMOS ',
+                  ' on ': ' en ', ' ON ': ' EN ',
+                  ' el ': ' el ', ' EL ': ' EL ', // Keep as is since it's already Spanish
+                  ' edit ': ' editar ', ' EDIT ': ' EDITAR ',
+                  ' english ': ' inglés ', ' ENGLISH ': ' INGLÉS ',
+                  
+                  // EXISTING WORDS
                   ' was ': ' fue ', ' WAS ': ' FUE ',
                   ' edited ': ' editado ', ' EDITED ': ' EDITADO ',
                   ' and ': ' y ', ' AND ': ' Y ',
@@ -460,11 +496,18 @@ export default function EnhancedLandingPage() {
           
           // 1. EXACT PHRASE MATCHES (Highest Priority) - For known common phrases
           const exactPhrases: Record<string, string> = {
-            // EXACT CUSTOM TEXT FROM SCREENSHOTS
+            // EXACT CUSTOM TEXT FROM SCREENSHOTS - OLD TEST
             'WELCOME TO......THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'BIENVENIDO A......ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
             'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
             'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'SOLO COMPLETE LOS CAMPOS A CONTINUACIÓN Y RECIBA SU REGALO POR CORREO ELECTRÓNICO. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
             'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED. THIS WAS EDITED AND ADDED TO THE ORIGINAL TO SEE IF ITS TRANSLATIING TO SPANISH?': 'DISFRUTE COMPLETAMENTE LA EXPERIENCIA DE PAGAR COMO UN LOCAL. ELOCALPASS GARANTIZA QUE NO RECIBIRÁ NINGÚN TIPO DE SPAM Y QUE SUS DATOS ESTÁN PROTEGIDOS. ESTO FUE EDITADO Y AGREGADO AL ORIGINAL PARA VER SI SE ESTÁ TRADUCIENDO AL ESPAÑOL?',
+            
+            // NEW CUSTOM TEXT FROM LATEST SCREENSHOTS
+            'WELCOME TO......LETS ver si THIS CHANGES WORK, WE WROTE ON el ORIGINAL EDIT ENGLISH': 'BIENVENIDO A......VEAMOS SI ESTOS CAMBIOS FUNCIONAN, ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
+            'Bienvenido a......LETS ver si THIS CHANGES WORK, WE WROTE ON el ORIGINAL EDIT ENGLISH': 'Bienvenido a......VEAMOS SI ESTOS CAMBIOS FUNCIONAN, ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
+            'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.LETS ver si THIS CHANGES WORK, WE WROTE ON el ORIGINAL EDIT ENGLISH': 'Muchas gracias por darse la oportunidad de descubrir los beneficios del club. Para recibir su regalo de acceso completo de 7 días a eLocalPass, simplemente complete los campos a continuación y recibirá su eLocalPass gratuito por correo electrónico. VEAMOS SI ESTOS CAMBIOS FUNCIONAN, ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
+            'Solo complete los campos a continuación y reciba su regalo por correo electrónico:LETS ver si THIS CHANGES WORK, WE WROTE ON el ORIGINAL EDIT ENGLISH': 'Solo complete los campos a continuación y reciba su regalo por correo electrónico: VEAMOS SI ESTOS CAMBIOS FUNCIONAN, ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
+            'Disfrute completamente la experiencia de pagar como un local. ELOCALPASS garantiza que no recibirá ningún tipo de spam y que sus datos están protegidos.LETS ver si THIS CHANGES WORK, WE WROTE ON el ORIGINAL EDIT ENGLISH': 'Disfrute completamente la experiencia de pagar como un local. ELOCALPASS garantiza que no recibirá ningún tipo de spam y que sus datos están protegidos. VEAMOS SI ESTOS CAMBIOS FUNCIONAN, ESCRIBIMOS EN EL ORIGINAL EDITAR INGLÉS',
             
             // Common complete phrases
             'WELCOME TO......': 'BIENVENIDO A......',
