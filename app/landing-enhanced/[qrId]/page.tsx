@@ -214,10 +214,14 @@ export default function EnhancedLandingPage() {
             const translatedHeaderText = getSmartTranslatedText(landingConfig.headerText, 'landing.default.header.text')
             const translatedDescriptionText = getSmartTranslatedText(landingConfig.descriptionText, 'landing.default.description.text') 
             const translatedCtaButtonText = getSmartTranslatedText(landingConfig.ctaButtonText, 'landing.default.cta.button.text')
+            const translatedFormTitleText = getSmartTranslatedText(landingConfig.formTitleText, 'landing.form.title')
+            const translatedFormInstructionsText = getSmartTranslatedText(landingConfig.formInstructionsText, 'landing.form.instructions')
             
             console.log('🔤 Enhanced Landing - Final header text:', translatedHeaderText)
             console.log('🔤 Enhanced Landing - Final description text:', translatedDescriptionText)
             console.log('🔤 Enhanced Landing - Final CTA button text:', translatedCtaButtonText)
+            console.log('🔤 Enhanced Landing - Final form title text:', translatedFormTitleText)
+            console.log('🔤 Enhanced Landing - Final form instructions text:', translatedFormInstructionsText)
             
             setConfigData({
               id: qrId,
@@ -243,13 +247,13 @@ export default function EnhancedLandingPage() {
               ctaButtonFontSize: landingConfig.ctaButtonFontSize,
               
               // Form Title Text with Typography
-              formTitleText: landingConfig.formTitleText,
+              formTitleText: translatedFormTitleText,
               formTitleTextColor: landingConfig.formTitleTextColor,
               formTitleFontFamily: landingConfig.formTitleFontFamily,
               formTitleFontSize: landingConfig.formTitleFontSize,
               
               // Form Instructions Text with Typography
-              formInstructionsText: landingConfig.formInstructionsText,
+              formInstructionsText: translatedFormInstructionsText,
               formInstructionsTextColor: landingConfig.formInstructionsTextColor,
               formInstructionsFontFamily: landingConfig.formInstructionsFontFamily,
               formInstructionsFontSize: landingConfig.formInstructionsFontSize,
