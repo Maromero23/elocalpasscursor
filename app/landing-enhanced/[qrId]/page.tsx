@@ -197,34 +197,69 @@ export default function EnhancedLandingPage() {
             const autoTranslateText = async (text: string): Promise<string> => {
               if (!text || language === 'en') return text
               
-              // Simple translation mapping for common phrases
+              // Enhanced translation mapping for common phrases including ELocalPass specific terms
               const translations: Record<string, string> = {
-                'Welcome': 'Bienvenido',
-                'Join': 'Únete',
-                'Club': 'Club',
-                'Resort': 'Resort',
-                'Paradise': 'Paraíso',
-                'Exclusive': 'Exclusivo',
-                'Free': 'Gratis',
+                'SIGN UP': 'REGÍSTRESE',
+                'Sign Up': 'Regístrese', 
+                'SIGN': 'REGÍSTRESE',
+                'Sign': 'Regístrese',
+                'FOR': 'PARA',
+                'for': 'para',
+                'TO GET': 'PARA OBTENER',
+                'to get': 'para obtener',
+                'GET': 'OBTENER',
                 'Get': 'Obtener',
+                'YOUR': 'SU',
                 'Your': 'Su',
+                'FREE': 'GRATIS',
+                'Free': 'Gratis',
+                'ELOCALPASS': 'ELOCALPASS',
+                'ELocalPass': 'ELocalPass',
+                'Welcome': 'Bienvenido',
+                'WELCOME': 'BIENVENIDO',
+                'Join': 'Únete',
+                'JOIN': 'ÚNETE',
+                'Club': 'Club',
+                'CLUB': 'CLUB',
+                'Resort': 'Resort',
+                'RESORT': 'RESORT',
+                'Paradise': 'Paraíso',
+                'PARADISE': 'PARAÍSO',
+                'Exclusive': 'Exclusivo',
+                'EXCLUSIVE': 'EXCLUSIVO',
                 'Now': 'Ahora',
+                'NOW': 'AHORA',
                 'Today': 'Hoy',
+                'TODAY': 'HOY',
                 'Special': 'Especial',
+                'SPECIAL': 'ESPECIAL',
                 'Offer': 'Oferta',
+                'OFFER': 'OFERTA',
                 'Limited': 'Limitado',
+                'LIMITED': 'LIMITADO',
                 'Time': 'Tiempo',
+                'TIME': 'TIEMPO',
                 'Access': 'Acceso',
+                'ACCESS': 'ACCESO',
                 'Experience': 'Experiencia',
+                'EXPERIENCE': 'EXPERIENCIA',
                 'Adventure': 'Aventura',
+                'ADVENTURE': 'AVENTURA',
                 'Discover': 'Descubrir',
+                'DISCOVER': 'DESCUBRIR',
                 'Explore': 'Explorar',
-                'Enjoy': 'Disfrutar'
+                'EXPLORE': 'EXPLORAR',
+                'Enjoy': 'Disfrutar',
+                'ENJOY': 'DISFRUTAR'
               }
               
               let translatedText = text
-              for (const [english, spanish] of Object.entries(translations)) {
-                const regex = new RegExp(`\\b${english}\\b`, 'gi')
+              
+              // Apply translations in order of specificity (longer phrases first)
+              const sortedTranslations = Object.entries(translations).sort((a, b) => b[0].length - a[0].length)
+              
+              for (const [english, spanish] of sortedTranslations) {
+                const regex = new RegExp(`\\b${english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
                 translatedText = translatedText.replace(regex, spanish)
               }
               
@@ -357,7 +392,119 @@ export default function EnhancedLandingPage() {
         const data = await response.json()
         console.log('✅ Enhanced Landing - Received config data from Map:', data)
         console.log('🖼️ Enhanced Landing - Logo URL:', data.logoUrl)
-        setConfigData(data)
+        
+        // Apply auto-translation to Map API data as well
+        const autoTranslateText = async (text: string): Promise<string> => {
+          if (!text || language === 'en') return text
+          
+          // Enhanced translation mapping for common phrases including ELocalPass specific terms
+          const translations: Record<string, string> = {
+            'SIGN UP': 'REGÍSTRESE',
+            'Sign Up': 'Regístrese', 
+            'SIGN': 'REGÍSTRESE',
+            'Sign': 'Regístrese',
+            'FOR': 'PARA',
+            'for': 'para',
+            'TO GET': 'PARA OBTENER',
+            'to get': 'para obtener',
+            'GET': 'OBTENER',
+            'Get': 'Obtener',
+            'YOUR': 'SU',
+            'Your': 'Su',
+            'FREE': 'GRATIS',
+            'Free': 'Gratis',
+            'ELOCALPASS': 'ELOCALPASS',
+            'ELocalPass': 'ELocalPass',
+            'Welcome': 'Bienvenido',
+            'WELCOME': 'BIENVENIDO',
+            'Join': 'Únete',
+            'JOIN': 'ÚNETE',
+            'Club': 'Club',
+            'CLUB': 'CLUB',
+            'Resort': 'Resort',
+            'RESORT': 'RESORT',
+            'Paradise': 'Paraíso',
+            'PARADISE': 'PARAÍSO',
+            'Exclusive': 'Exclusivo',
+            'EXCLUSIVE': 'EXCLUSIVO',
+            'Now': 'Ahora',
+            'NOW': 'AHORA',
+            'Today': 'Hoy',
+            'TODAY': 'HOY',
+            'Special': 'Especial',
+            'SPECIAL': 'ESPECIAL',
+            'Offer': 'Oferta',
+            'OFFER': 'OFERTA',
+            'Limited': 'Limitado',
+            'LIMITED': 'LIMITADO',
+            'Time': 'Tiempo',
+            'TIME': 'TIEMPO',
+            'Access': 'Acceso',
+            'ACCESS': 'ACCESO',
+            'Experience': 'Experiencia',
+            'EXPERIENCE': 'EXPERIENCIA',
+            'Adventure': 'Aventura',
+            'ADVENTURE': 'AVENTURA',
+            'Discover': 'Descubrir',
+            'DISCOVER': 'DESCUBRIR',
+            'Explore': 'Explorar',
+            'EXPLORE': 'EXPLORAR',
+            'Enjoy': 'Disfrutar',
+            'ENJOY': 'DISFRUTAR'
+          }
+          
+          let translatedText = text
+          
+          // Apply translations in order of specificity (longer phrases first)
+          const sortedTranslations = Object.entries(translations).sort((a, b) => b[0].length - a[0].length)
+          
+          for (const [english, spanish] of sortedTranslations) {
+            const regex = new RegExp(`\\b${english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
+            translatedText = translatedText.replace(regex, spanish)
+          }
+          
+          return translatedText
+        }
+
+        const getSmartTranslatedText = async (savedText: string | undefined, translationKey: string): Promise<string> => {
+          if (!savedText) {
+            return t(translationKey, language)
+          }
+          
+          const englishDefault = t(translationKey, 'en')
+          const isEnglishDefault = savedText === englishDefault || 
+                                 savedText.toUpperCase() === englishDefault.toUpperCase() ||
+                                 savedText.trim() === englishDefault.trim()
+          
+          if (isEnglishDefault && language === 'es') {
+            console.log(`🔄 Enhanced Landing - Translating Map API default "${savedText}" to Spanish`)
+            return t(translationKey, 'es')
+          }
+          
+          if (language === 'es') {
+            const autoTranslated = await autoTranslateText(savedText)
+            if (autoTranslated !== savedText) {
+              console.log(`🤖 Enhanced Landing - Auto-translating Map API custom text: "${savedText}" → "${autoTranslated}"`)
+              return autoTranslated
+            }
+          }
+          
+          return savedText
+        }
+        
+        // Apply translation to all text fields
+        const translatedData = {
+          ...data,
+          headerText: await getSmartTranslatedText(data.headerText, 'landing.default.header.text'),
+          descriptionText: await getSmartTranslatedText(data.descriptionText, 'landing.default.description.text'),
+          ctaButtonText: await getSmartTranslatedText(data.ctaButtonText, 'landing.default.cta.button.text'),
+          formTitleText: await getSmartTranslatedText(data.formTitleText, 'landing.form.title'),
+          formInstructionsText: await getSmartTranslatedText(data.formInstructionsText, 'landing.form.instructions'),
+          footerDisclaimerText: await getSmartTranslatedText(data.footerDisclaimerText, 'landing.disclaimer')
+        }
+        
+        console.log('🔤 Enhanced Landing - Map API Final translated data:', translatedData)
+        setConfigData(translatedData)
       } else {
         console.error('❌ Enhanced Landing - API response not ok:', response.status, response.statusText)
         throw new Error('Failed to fetch configuration')
