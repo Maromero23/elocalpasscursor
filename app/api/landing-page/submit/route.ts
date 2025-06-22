@@ -37,6 +37,9 @@ export async function POST(request: NextRequest) {
     console.log(`📧 Parsed emailTemplates:`, emailTemplates)
     console.log(`📧 Has welcomeEmail?:`, !!emailTemplates?.welcomeEmail)
     console.log(`📧 Has htmlContent?:`, !!emailTemplates?.welcomeEmail?.htmlContent)
+    console.log(`📧 Has customHTML?:`, !!emailTemplates?.welcomeEmail?.customHTML)
+    console.log(`📧 welcomeEmail structure:`, emailTemplates?.welcomeEmail)
+    console.log(`📧 All emailTemplates keys:`, emailTemplates ? Object.keys(emailTemplates) : 'null')
 
     // Validate guests and days against configuration rules
     const guests = formData.guests || config.button1GuestsDefault || 2
@@ -199,9 +202,10 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
       let emailHtml
       
       // Use custom HTML template if available, otherwise use default
-      if (emailTemplates?.welcomeEmail?.htmlContent) {
+      if (emailTemplates?.welcomeEmail?.customHTML || emailTemplates?.welcomeEmail?.htmlContent) {
         // Use custom HTML template from QR configuration
-        emailHtml = emailTemplates.welcomeEmail.htmlContent
+        const customTemplate = emailTemplates.welcomeEmail.customHTML || emailTemplates.welcomeEmail.htmlContent
+        emailHtml = customTemplate
           .replace(/\{customerName\}/g, formData.name)
           .replace(/\{qrCode\}/g, qrCodeId)
           .replace(/\{guests\}/g, guests.toString())
@@ -209,6 +213,7 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
           .replace(/\{expirationDate\}/g, formattedExpirationDate)
           .replace(/\{magicLink\}/g, magicLinkUrl || '')
           .replace(/\{customerPortalUrl\}/g, magicLinkUrl || '')
+        console.log(`📧 Using custom HTML template from QR configuration`)
       } else {
         // Use default HTML template
         emailHtml = createWelcomeEmailHtml({
