@@ -10,8 +10,18 @@ export interface EmailOptions {
 
 // Email service configuration
 const getEmailTransporter = () => {
-  // Check which email service is configured (temporarily disable Resend for testing)
-  if (false && process.env.RESEND_API_KEY) {
+  // Check which email service is configured (prioritize SendGrid, then Resend)
+  if (process.env.SENDGRID_API_KEY) {
+    // SendGrid configuration (CURRENT WORKING)
+    console.log('📧 Using SendGrid email service')
+    return nodemailer.createTransport({
+      service: 'SendGrid',
+      auth: {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY,
+      },
+    })
+  } else if (process.env.RESEND_API_KEY) {
     // Resend configuration (RECOMMENDED)
     console.log('📧 Using Resend email service')
     return nodemailer.createTransport({
@@ -72,8 +82,10 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     // Use different from address based on email service
     let fromAddress = options.from || process.env.FROM_EMAIL
     
-    // If using Resend, force use of verified default domain (ignore EMAIL_FROM_ADDRESS)
-    if (false && process.env.RESEND_API_KEY) {
+    // Use verified sender address based on service
+    if (process.env.SENDGRID_API_KEY) {
+      fromAddress = process.env.EMAIL_FROM_ADDRESS || 'maromas23@hotmail.com'
+    } else if (process.env.RESEND_API_KEY) {
       fromAddress = 'ELocalPass <onboarding@resend.dev>'
     } else if (!fromAddress) {
       fromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@elocalpass.com'
@@ -106,8 +118,8 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
 }
 
 const getEmailServiceName = (): string => {
-  if (false && process.env.RESEND_API_KEY) return 'Resend'
   if (process.env.SENDGRID_API_KEY) return 'SendGrid'
+  if (process.env.RESEND_API_KEY) return 'Resend'
   if (process.env.OUTLOOK_USER && process.env.OUTLOOK_PASS) return 'Outlook'
   return 'Gmail/SMTP'
 }
