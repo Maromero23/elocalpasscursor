@@ -192,29 +192,52 @@ export default function EnhancedLandingPage() {
             console.log('✅ Enhanced Landing - Using landing page config:', landingConfig)
             
             console.log('🌍 Enhanced Landing - Current language for defaults:', language)
-            console.log('🔤 Enhanced Landing - Default header text will be:', landingConfig.headerText || t('landing.default.header.text', language))
-            console.log('🔤 Enhanced Landing - Default description text will be:', landingConfig.descriptionText || t('landing.default.description.text', language))
-            console.log('🔤 Enhanced Landing - Default CTA button text will be:', landingConfig.ctaButtonText || t('landing.default.cta.button.text', language))
+            
+            // Smart translation: If saved text matches English defaults, use customer's language
+            const getSmartTranslatedText = (savedText: string | undefined, translationKey: string): string => {
+              if (!savedText) {
+                // No saved text, use translation
+                return t(translationKey, language)
+              }
+              
+              // Check if saved text matches English defaults - if so, translate to customer's language
+              const englishDefault = t(translationKey, 'en')
+              if (savedText === englishDefault && language === 'es') {
+                console.log(`🔄 Enhanced Landing - Translating "${savedText}" to Spanish`)
+                return t(translationKey, 'es')
+              }
+              
+              // Use saved text as-is (custom text)
+              return savedText
+            }
+            
+            const translatedHeaderText = getSmartTranslatedText(landingConfig.headerText, 'landing.default.header.text')
+            const translatedDescriptionText = getSmartTranslatedText(landingConfig.descriptionText, 'landing.default.description.text') 
+            const translatedCtaButtonText = getSmartTranslatedText(landingConfig.ctaButtonText, 'landing.default.cta.button.text')
+            
+            console.log('🔤 Enhanced Landing - Final header text:', translatedHeaderText)
+            console.log('🔤 Enhanced Landing - Final description text:', translatedDescriptionText)
+            console.log('🔤 Enhanced Landing - Final CTA button text:', translatedCtaButtonText)
             
             setConfigData({
               id: qrId,
               businessName: landingConfig.businessName || t('landing.default.business.name', language),
               logoUrl: landingConfig.logoUrl,
               
-              // Header Text with Typography - Use translations for defaults
-              headerText: landingConfig.headerText || t('landing.default.header.text', language),
+              // Header Text with Typography - Use smart translation
+              headerText: translatedHeaderText,
               headerTextColor: landingConfig.headerTextColor,
               headerFontFamily: landingConfig.headerFontFamily,
               headerFontSize: landingConfig.headerFontSize,
               
-              // Description Text with Typography - Use translations for defaults
-              descriptionText: landingConfig.descriptionText || t('landing.default.description.text', language),
+              // Description Text with Typography - Use smart translation
+              descriptionText: translatedDescriptionText,
               descriptionTextColor: landingConfig.descriptionTextColor,
               descriptionFontFamily: landingConfig.descriptionFontFamily,
               descriptionFontSize: landingConfig.descriptionFontSize,
               
-              // CTA Button Text with Typography - Use translations for defaults
-              ctaButtonText: landingConfig.ctaButtonText || t('landing.default.cta.button.text', language),
+              // CTA Button Text with Typography - Use smart translation
+              ctaButtonText: translatedCtaButtonText,
               ctaButtonTextColor: landingConfig.ctaButtonTextColor,
               ctaButtonFontFamily: landingConfig.ctaButtonFontFamily,
               ctaButtonFontSize: landingConfig.ctaButtonFontSize,
