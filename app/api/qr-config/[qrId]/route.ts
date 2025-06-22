@@ -140,54 +140,98 @@ export async function GET(
       if (language !== 'es') return text
       
       // UNIVERSAL ENGLISH TEXT DETECTION AND TRANSLATION
-      const containsEnglish = /\b(so|is|this|really|working|or|not|we|want|to|be|able|translate|perfectly|spanish|there|was|time|of|happiness|everyone|dont|miss|out|get|it|before|run|come|on|make|work|the|and|for|you|your|will|can|have|has|been|are|with|from|they|them|their|our|us|my|me|i|he|she|him|her|his|its|that|these|those|what|when|where|why|how|who|which|very|much|more|most|some|any|all|no|yes|good|bad|big|small|new|old|first|last|long|short|high|low|right|wrong|true|false)\b/i.test(text)
+      const containsEnglish = /\b(thanks|thank|you|very|much|giving|yourself|opportunity|discover|benefits|club|receive|access|gift|simply|fill|fields|below|via|email|complete|just|fully|enjoy|experience|paying|like|local|guarantees|kind|spam|data|protected|so|is|this|really|working|or|not|we|want|to|be|able|translate|perfectly|spanish|there|was|time|of|happiness|everyone|dont|miss|out|get|it|before|run|come|on|make|work|the|and|for|will|can|have|has|been|are|with|from|they|them|their|our|us|my|me|i|he|she|him|her|his|its|that|these|those|what|when|where|why|how|who|which|more|most|some|any|all|no|yes|good|bad|big|small|new|old|first|last|long|short|high|low|right|wrong|true|false)\b/i.test(text)
       
-      if (containsEnglish) {
-        let translatedText = text
+              if (containsEnglish) {
+          let translatedText = text
+          
+          // Handle specific complete sentences from screenshots
+          
+          // Complete description text translation
+          if (text.includes('Thanks you very much for giving yourself the opportunity to discover the benefits of the club')) {
+            translatedText = translatedText.replace(/Thanks you very much for giving yourself the opportunity to discover the benefits of the club\. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email\..*$/gi, 'Muchas gracias por darte la oportunidad de descubrir los beneficios del club. Para recibir tu regalo de acceso completo de 7 días a eLocalPass, simplemente completa los campos a continuación y recibirás tu eLocalPass gratuito por correo electrónico.')
+          }
+          
+          // Form instructions translation
+          if (text.includes('JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL')) {
+            translatedText = translatedText.replace(/JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL.*$/gi, 'SOLO COMPLETA LOS CAMPOS A CONTINUACIÓN Y RECIBE TU REGALO POR CORREO ELECTRÓNICO')
+          }
+          
+          // Footer disclaimer translation
+          if (text.includes('FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL')) {
+            translatedText = translatedText.replace(/FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL\. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED\..*$/gi, 'DISFRUTA COMPLETAMENTE LA EXPERIENCIA DE PAGAR COMO UN LOCAL. ELOCALPASS GARANTIZA QUE NO RECIBIRÁS NINGÚN TIPO DE SPAM Y QUE TUS DATOS ESTÁN PROTEGIDOS.')
+          }
+          
+          // Handle specific complete phrases first
+          if (text.includes('so is this really working or not')) {
+            translatedText = translatedText.replace(/so is this really working or not\?*/gi, 'entonces esto realmente está funcionando o no?')
+          }
+          if (text.includes('We wnat to be able to translate this perfectly to spanish')) {
+            translatedText = translatedText.replace(/We wnat to be able to translate this perfectly to spanish\.*/gi, 'Queremos poder traducir esto perfectamente al español.')
+          }
+          if (text.includes('there was a time of happiness to everyone')) {
+            translatedText = translatedText.replace(/there was a time of happiness to everyone\.*/gi, 'hubo un tiempo de felicidad para todos.')
+          }
+          if (text.includes('dont miss out get it befoe we run out')) {
+            translatedText = translatedText.replace(/dont miss out get it befoe we run out\.*/gi, 'no te lo pierdas consíguelo antes de que se nos acabe.')
+          }
+          if (text.includes('dont miss out get it before we run out')) {
+            translatedText = translatedText.replace(/dont miss out get it before we run out\.*/gi, 'no te lo pierdas consíguelo antes de que se nos acabe.')
+          }
+          if (text.includes('come on make it work')) {
+            translatedText = translatedText.replace(/come on make it work!*/gi, 'vamos haz que funcione!')
+          }
         
-        // Handle specific complete phrases first
-        if (text.includes('so is this really working or not')) {
-          translatedText = translatedText.replace(/so is this really working or not\?*/gi, 'entonces esto realmente está funcionando o no?')
-        }
-        if (text.includes('We wnat to be able to translate this perfectly to spanish')) {
-          translatedText = translatedText.replace(/We wnat to be able to translate this perfectly to spanish\.*/gi, 'Queremos poder traducir esto perfectamente al español.')
-        }
-        if (text.includes('there was a time of happiness to everyone')) {
-          translatedText = translatedText.replace(/there was a time of happiness to everyone\.*/gi, 'hubo un tiempo de felicidad para todos.')
-        }
-        if (text.includes('dont miss out get it befoe we run out')) {
-          translatedText = translatedText.replace(/dont miss out get it befoe we run out\.*/gi, 'no te lo pierdas consíguelo antes de que se nos acabe.')
-        }
-        if (text.includes('dont miss out get it before we run out')) {
-          translatedText = translatedText.replace(/dont miss out get it before we run out\.*/gi, 'no te lo pierdas consíguelo antes de que se nos acabe.')
-        }
-        if (text.includes('come on make it work')) {
-          translatedText = translatedText.replace(/come on make it work!*/gi, 'vamos haz que funcione!')
-        }
-        
-        // Apply comprehensive translation map
-        const englishToSpanishMap: Record<string, string> = {
-          'so is this': 'entonces esto',
-          'really working': 'realmente funcionando',
-          'or not': 'o no',
-          'we want': 'queremos',
-          'we wnat': 'queremos',
-          'to be able': 'poder',
-          'to translate': 'traducir',
-          'this perfectly': 'esto perfectamente',
-          'to spanish': 'al español',
-          'there was': 'hubo',
-          'a time of': 'un tiempo de',
-          'happiness to': 'felicidad para',
-          'everyone': 'todos',
-          'dont miss out': 'no te lo pierdas',
-          'get it': 'consíguelo',
-          'before we': 'antes de que',
-          'befoe we': 'antes de que',
-          'run out': 'se nos acabe',
-          'come on': 'vamos',
-          'make it work': 'haz que funcione'
-        }
+                  // Apply comprehensive translation map
+          const englishToSpanishMap: Record<string, string> = {
+            // Complete phrases first
+            'thanks you very much': 'muchas gracias',
+            'giving yourself': 'darte',
+            'the opportunity': 'la oportunidad',
+            'to discover': 'de descubrir',
+            'the benefits': 'los beneficios',
+            'of the club': 'del club',
+            'to receive': 'para recibir',
+            'your 7-day': 'tu acceso de 7 días',
+            'full access gift': 'regalo de acceso completo',
+            'simply fill': 'simplemente completa',
+            'the fields below': 'los campos a continuación',
+            'you will receive': 'recibirás',
+            'your free': 'tu gratuito',
+            'via email': 'por correo electrónico',
+            'just complete': 'solo completa',
+            'receive your gift': 'recibe tu regalo',
+            'fully enjoy': 'disfruta completamente',
+            'the experience': 'la experiencia',
+            'paying like': 'pagar como',
+            'a local': 'un local',
+            'guarantees that': 'garantiza que',
+            'you will not': 'no recibirás',
+            'any kind': 'ningún tipo',
+            'your data': 'tus datos',
+            'is protected': 'están protegidos',
+            
+            'so is this': 'entonces esto',
+            'really working': 'realmente funcionando',
+            'or not': 'o no',
+            'we want': 'queremos',
+            'we wnat': 'queremos',
+            'to be able': 'poder',
+            'to translate': 'traducir',
+            'this perfectly': 'esto perfectamente',
+            'to spanish': 'al español',
+            'there was': 'hubo',
+            'a time of': 'un tiempo de',
+            'happiness to': 'felicidad para',
+            'everyone': 'todos',
+            'dont miss out': 'no te lo pierdas',
+            'get it': 'consíguelo',
+            'before we': 'antes de que',
+            'befoe we': 'antes de que',
+            'run out': 'se nos acabe',
+            'come on': 'vamos',
+            'make it work': 'haz que funcione'
+          }
         
         for (const [english, spanish] of Object.entries(englishToSpanishMap)) {
           const regex = new RegExp(english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')

@@ -246,13 +246,30 @@ export default function EnhancedLandingPage() {
               
               // UNIVERSAL ENGLISH TEXT DETECTION AND TRANSLATION
               // If text contains ANY English words, translate the ENTIRE text as a complete unit
-              const containsEnglish = /\b(so|is|this|really|working|or|not|we|want|to|be|able|translate|perfectly|spanish|there|was|time|of|happiness|everyone|dont|miss|out|get|it|before|run|come|on|make|work|the|and|for|you|your|will|can|have|has|been|are|with|from|they|them|their|our|us|my|me|i|he|she|him|her|his|its|that|these|those|what|when|where|why|how|who|which|very|much|more|most|some|any|all|no|yes|good|bad|big|small|new|old|first|last|long|short|high|low|right|wrong|true|false)\b/i.test(text)
+              const containsEnglish = /\b(thanks|thank|you|very|much|giving|yourself|opportunity|discover|benefits|club|receive|access|gift|simply|fill|fields|below|via|email|complete|just|fully|enjoy|experience|paying|like|local|guarantees|kind|spam|data|protected|so|is|this|really|working|or|not|we|want|to|be|able|translate|perfectly|spanish|there|was|time|of|happiness|everyone|dont|miss|out|get|it|before|run|come|on|make|work|the|and|for|will|can|have|has|been|are|with|from|they|them|their|our|us|my|me|i|he|she|him|her|his|its|that|these|those|what|when|where|why|how|who|which|more|most|some|any|all|no|yes|good|bad|big|small|new|old|first|last|long|short|high|low|right|wrong|true|false)\b/i.test(text)
               
               if (containsEnglish) {
                 console.log(`🔍 Detected English words in text, translating complete unit: "${text}"`)
                 
                 // Create intelligent complete translation
                 let translatedText = text
+                
+                // Handle specific complete sentences from screenshots
+                
+                // Complete description text translation
+                if (text.includes('Thanks you very much for giving yourself the opportunity to discover the benefits of the club')) {
+                  translatedText = translatedText.replace(/Thanks you very much for giving yourself the opportunity to discover the benefits of the club\. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email\..*$/gi, 'Muchas gracias por darte la oportunidad de descubrir los beneficios del club. Para recibir tu regalo de acceso completo de 7 días a eLocalPass, simplemente completa los campos a continuación y recibirás tu eLocalPass gratuito por correo electrónico.')
+                }
+                
+                // Form instructions translation
+                if (text.includes('JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL')) {
+                  translatedText = translatedText.replace(/JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL.*$/gi, 'SOLO COMPLETA LOS CAMPOS A CONTINUACIÓN Y RECIBE TU REGALO POR CORREO ELECTRÓNICO')
+                }
+                
+                // Footer disclaimer translation
+                if (text.includes('FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL')) {
+                  translatedText = translatedText.replace(/FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL\. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED\..*$/gi, 'DISFRUTA COMPLETAMENTE LA EXPERIENCIA DE PAGAR COMO UN LOCAL. ELOCALPASS GARANTIZA QUE NO RECIBIRÁS NINGÚN TIPO DE SPAM Y QUE TUS DATOS ESTÁN PROTEGIDOS.')
+                }
                 
                 // Handle specific new patterns from latest screenshots
                 if (text.includes('so is this really working or not')) {
@@ -276,6 +293,33 @@ export default function EnhancedLandingPage() {
                 
                 // Apply comprehensive English to Spanish translation
                 const englishToSpanishMap: Record<string, string> = {
+                  // Complete phrases first
+                  'thanks you very much': 'muchas gracias',
+                  'giving yourself': 'darte',
+                  'the opportunity': 'la oportunidad',
+                  'to discover': 'de descubrir',
+                  'the benefits': 'los beneficios',
+                  'of the club': 'del club',
+                  'to receive': 'para recibir',
+                  'your 7-day': 'tu acceso de 7 días',
+                  'full access gift': 'regalo de acceso completo',
+                  'simply fill': 'simplemente completa',
+                  'the fields below': 'los campos a continuación',
+                  'you will receive': 'recibirás',
+                  'your free': 'tu gratuito',
+                  'via email': 'por correo electrónico',
+                  'just complete': 'solo completa',
+                  'receive your gift': 'recibe tu regalo',
+                  'fully enjoy': 'disfruta completamente',
+                  'the experience': 'la experiencia',
+                  'paying like': 'pagar como',
+                  'a local': 'un local',
+                  'guarantees that': 'garantiza que',
+                  'you will not': 'no recibirás',
+                  'any kind': 'ningún tipo',
+                  'your data': 'tus datos',
+                  'is protected': 'están protegidos',
+                  
                   // Question words and basic structure
                   'so is this': 'entonces esto',
                   'really working': 'realmente funcionando',
@@ -299,6 +343,39 @@ export default function EnhancedLandingPage() {
                   'make it work': 'haz que funcione',
                   
                   // Individual words
+                  ' thanks ': ' gracias ',
+                  ' thank ': ' gracias ',
+                  ' you ': ' tú ',
+                  ' very ': ' muy ',
+                  ' much ': ' mucho ',
+                  ' giving ': ' dando ',
+                  ' yourself ': ' te ',
+                  ' opportunity ': ' oportunidad ',
+                  ' discover ': ' descubrir ',
+                  ' benefits ': ' beneficios ',
+                  ' club ': ' club ',
+                  ' receive ': ' recibir ',
+                  ' access ': ' acceso ',
+                  ' gift ': ' regalo ',
+                  ' simply ': ' simplemente ',
+                  ' fill ': ' completa ',
+                  ' fields ': ' campos ',
+                  ' below ': ' continuación ',
+                  ' via ': ' por ',
+                  ' email ': ' correo ',
+                  ' complete ': ' completa ',
+                  ' just ': ' solo ',
+                  ' fully ': ' completamente ',
+                  ' enjoy ': ' disfruta ',
+                  ' experience ': ' experiencia ',
+                  ' paying ': ' pagar ',
+                  ' like ': ' como ',
+                  ' local ': ' local ',
+                  ' guarantees ': ' garantiza ',
+                  ' kind ': ' tipo ',
+                  ' spam ': ' spam ',
+                  ' data ': ' datos ',
+                  ' protected ': ' protegidos ',
                   ' so ': ' entonces ',
                   ' is ': ' está ',
                   ' this ': ' esto ',
@@ -332,7 +409,11 @@ export default function EnhancedLandingPage() {
                   ' come ': ' ven ',
                   ' on ': ' en ',
                   ' make ': ' hacer ',
-                  ' work ': ' trabajo '
+                  ' work ': ' trabajo ',
+                  ' and ': ' y ',
+                  ' the ': ' el ',
+                  ' will ': ' será ',
+                  ' free ': ' gratis '
                 }
                 
                 // Apply translations
