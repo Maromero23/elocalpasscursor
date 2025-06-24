@@ -390,7 +390,7 @@ function RebuyEmailConfigPageContent() {
         return null
       }
       
-      // Generate custom rebuy HTML template
+      // Generate advanced custom rebuy HTML template with countdown timer and featured partners
       return `
 <!DOCTYPE html>
 <html lang="en">
@@ -399,31 +399,43 @@ function RebuyEmailConfigPageContent() {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${config.emailSubject}</title>
     <style>
-        body { margin: 0; padding: 0; font-family: ${config.emailHeaderFontFamily}; background-color: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        .header { background-color: ${config.emailHeaderColor}; padding: 24px; text-align: center; }
-        .header h1 { color: white; font-family: ${config.emailHeaderFontFamily}; font-size: 24px; font-weight: bold; margin: 0; }
+        body { margin: 0; padding: 0; font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; background-color: ${config.emailBackgroundColor || '#f5f5f5'}; }
+        .container { max-width: 600px; margin: 0 auto; background-color: ${config.emailBackgroundColor || 'white'}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .header { background-color: ${config.emailHeaderColor || '#dc2626'}; padding: 24px; text-align: center; }
+        .header h1 { color: ${config.emailHeaderColor === '#9AE6B4' ? '#2D3748' : 'white'}; font-family: ${config.emailHeaderFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailHeaderFontSize || '24'}px; font-weight: bold; margin: 0; }
         .content { padding: 24px; }
         .message { text-align: center; margin-bottom: 24px; }
-        .message p { color: #374151; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5; margin: 0; }
+        .message p { color: ${config.emailMessageColor || '#374151'}; font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailMessageFontSize || '16'}px; line-height: 1.5; margin: 0; }
         .highlight-box { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 4px; }
         .highlight-box p { color: #92400e; font-weight: 500; margin: 0; }
         .cta-button { text-align: center; margin: 24px 0; }
-        .cta-button a { background-color: ${config.emailHeaderColor}; color: white; font-family: ${config.emailHeaderFontFamily}; font-size: 16px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
+        .cta-button a { background-color: ${config.emailCtaBackgroundColor || config.emailHeaderColor || '#dc2626'}; color: ${config.emailCtaColor || 'white'}; font-family: ${config.emailCtaFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailCtaFontSize || '16'}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
         .details { background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 24px 0; }
         .details h3 { color: #374151; font-weight: 600; margin: 0 0 12px 0; }
         .detail-item { display: flex; justify-content: space-between; margin: 8px 0; }
         .detail-label { color: #6b7280; font-weight: 500; }
         .detail-value { color: #374151; font-weight: 600; }
-        .discount-banner { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 16px; text-align: center; margin: 24px 0; border-radius: 8px; }
+        .discount-banner { background: linear-gradient(135deg, ${config.emailPrimaryColor || '#dc2626'}, ${config.emailSecondaryColor || '#ef4444'}); color: white; padding: 16px; text-align: center; margin: 24px 0; border-radius: 8px; }
         .discount-banner h2 { margin: 0 0 8px 0; font-size: 20px; }
         .discount-banner p { margin: 0; font-size: 14px; opacity: 0.9; }
+        .countdown-timer { background-color: #f8fafc; border: 2px solid #e2e8f0; padding: 16px; margin: 24px 0; border-radius: 8px; text-align: center; }
+        .countdown-timer p { color: #4a5568; font-weight: 500; margin: 0 0 8px 0; font-size: 14px; }
+        .countdown-display { font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold; color: #2d3748; margin: 8px 0; }
+        .countdown-label { font-size: 12px; color: #718096; margin: 0; }
+        .featured-partners { background-color: #fff7ed; padding: 16px; margin: 24px 0; border-radius: 8px; border-left: 4px solid #f97316; }
+        .featured-partners h3 { color: #c2410c; font-weight: 600; margin: 0 0 12px 0; }
+        .partners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+        .partner-item { background-color: white; padding: 8px; border-radius: 4px; text-align: center; border: 1px solid #fed7aa; }
+        .partner-placeholder { width: 100%; height: 32px; background-color: #f3f4f6; border-radius: 4px; margin-bottom: 4px; }
+        .partner-name { font-size: 11px; color: #9a3412; font-weight: 500; }
+        .partners-message { color: #c2410c; font-size: 14px; margin: 12px 0 0 0; }
         .footer-message { text-align: center; border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px; }
-        .footer-message p { color: #6b7280; font-size: 14px; margin: 0; }
+        .footer-message p { color: ${config.emailFooterColor || '#6b7280'}; font-family: ${config.emailFooterFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailFooterFontSize || '14'}px; margin: 0; }
         .email-footer { background-color: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280; }
         @media only screen and (max-width: 600px) {
             .container { margin: 0; border-radius: 0; }
             .content { padding: 16px; }
+            .partners-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -431,7 +443,8 @@ function RebuyEmailConfigPageContent() {
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>${config.emailHeader}</h1>
+            ${config.logoUrl ? `<div style="margin-bottom: 16px;"><img src="${config.logoUrl}" alt="Logo" style="height: 40px; width: auto;"></div>` : ''}
+            <h1>${config.emailHeader || 'Don\'t Miss Out!'}</h1>
         </div>
         
         <!-- Content -->
@@ -439,12 +452,21 @@ function RebuyEmailConfigPageContent() {
             <!-- Main Message -->
             <div class="message">
                 <p>Hello {customerName},</p>
-                <p style="margin-top: 16px;">${config.emailMessage}</p>
+                <p style="margin-top: 16px;">${config.emailMessage || 'Your eLocalPass expires soon. Renew now with an exclusive discount!'}</p>
             </div>
+            
+            <!-- Countdown Timer (if enabled) -->
+            ${config.showExpirationTimer !== false ? `
+            <div class="countdown-timer">
+                <p>⏰ Time Remaining Until Expiration:</p>
+                <div class="countdown-display">{hoursLeft}:00:00</div>
+                <p class="countdown-label">hrs:min:sec</p>
+            </div>
+            ` : ''}
             
             <!-- Urgency Notice -->
             <div class="highlight-box">
-                <p>⏰ Your ELocalPass expires in {hoursLeft} hours - Don't miss out on amazing local experiences!</p>
+                <p>${config.urgencyMessage ? config.urgencyMessage.replace('{hours_left}', '{hoursLeft}') : '⏰ Your ELocalPass expires in {hoursLeft} hours - Don\'t miss out on amazing local experiences!'}</p>
             </div>
             
             <!-- Current Pass Details -->
@@ -478,8 +500,26 @@ function RebuyEmailConfigPageContent() {
             
             <!-- CTA Button -->
             <div class="cta-button">
-                <a href="{rebuyUrl}">Get Another ELocalPass</a>
+                <a href="{rebuyUrl}">${config.emailCta || 'Get Another ELocalPass'}</a>
             </div>
+            
+            <!-- Featured Partners (if enabled) -->
+            ${config.enableFeaturedPartners ? `
+            <div class="featured-partners">
+                <h3>Featured Partners in ${sellerLocation}</h3>
+                <div class="partners-grid">
+                    <div class="partner-item">
+                        <div class="partner-placeholder"></div>
+                        <div class="partner-name">Local Restaurant</div>
+                    </div>
+                    <div class="partner-item">
+                        <div class="partner-placeholder"></div>
+                        <div class="partner-name">Adventure Tours</div>
+                    </div>
+                </div>
+                <p class="partners-message">${config.customAffiliateMessage || 'Don\'t forget these amazing discounts are waiting for you:'}</p>
+            </div>
+            ` : ''}
             
             <!-- Seller Tracking Message -->
             ${config.enableSellerTracking ? `
@@ -492,7 +532,7 @@ function RebuyEmailConfigPageContent() {
             
             <!-- Footer Message -->
             <div class="footer-message">
-                <p>Thank you for choosing ELocalPass for your local adventures!</p>
+                <p>${config.emailFooter || 'Thank you for choosing ELocalPass for your local adventures!'}</p>
                 <p style="margin-top: 8px; font-size: 12px;">
                     Need help? Visit your <a href="{customerPortalUrl}" style="color: #3b82f6;">customer portal</a> or contact support.
                 </p>
