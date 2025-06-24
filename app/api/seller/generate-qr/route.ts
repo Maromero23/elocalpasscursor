@@ -299,22 +299,67 @@ ${t('email.welcome.signature', customerLanguage)}
       // Import email service
       const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
       
-      // Create HTML email using the email service
-      const emailHtml = createWelcomeEmailHtml({
-        customerName: clientName,
-        qrCode: qrCodeId,
-        guests: guests,
-        days: days,
-        expiresAt: formattedExpirationDate,
-        customerPortalUrl: magicLinkUrl,
-        language: customerLanguage,
-        deliveryMethod: requestedDelivery
-      })
+      // Get email templates from saved configuration
+      let emailTemplates = null
+      if (seller.savedConfigId) {
+        const savedConfig = await prisma.savedQRConfiguration.findUnique({
+          where: { id: seller.savedConfigId },
+          select: { emailTemplates: true }
+        })
+        
+        // Parse email templates JSON
+        if (savedConfig?.emailTemplates) {
+          try {
+            emailTemplates = typeof savedConfig.emailTemplates === 'string' 
+              ? JSON.parse(savedConfig.emailTemplates) 
+              : savedConfig.emailTemplates
+          } catch (error) {
+            console.log('Error parsing email templates:', error)
+          }
+        }
+      }
+      
+      let emailHtml
+      let emailSubject = subject
+      
+      // Use custom HTML template if available, otherwise use default
+      if (emailTemplates?.welcomeEmail?.customHTML || emailTemplates?.welcomeEmail?.htmlContent) {
+        // Use custom HTML template from QR configuration
+        const customTemplate = emailTemplates.welcomeEmail.customHTML || emailTemplates.welcomeEmail.htmlContent
+        emailHtml = customTemplate
+          .replace(/\{customerName\}/g, clientName)
+          .replace(/\{qrCode\}/g, qrCodeId)
+          .replace(/\{guests\}/g, guests.toString())
+          .replace(/\{days\}/g, days.toString())
+          .replace(/\{expirationDate\}/g, formattedExpirationDate)
+          .replace(/\{magicLink\}/g, magicLinkUrl || '')
+          .replace(/\{customerPortalUrl\}/g, magicLinkUrl || '')
+        
+        // Use custom subject if available
+        if (emailTemplates.welcomeEmail.subject) {
+          emailSubject = emailTemplates.welcomeEmail.subject
+        }
+        
+        console.log(`📧 Using custom HTML template from QR configuration`)
+      } else {
+        // Use default HTML template
+        emailHtml = createWelcomeEmailHtml({
+          customerName: clientName,
+          qrCode: qrCodeId,
+          guests: guests,
+          days: days,
+          expiresAt: formattedExpirationDate,
+          customerPortalUrl: magicLinkUrl,
+          language: customerLanguage,
+          deliveryMethod: requestedDelivery
+        })
+        console.log(`📧 Using default HTML template`)
+      }
 
       // Send the email
       emailSent = await sendEmail({
         to: clientEmail,
-        subject: subject,
+        subject: emailSubject,
         html: emailHtml
       })
 
