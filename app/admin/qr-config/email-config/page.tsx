@@ -136,7 +136,7 @@ function EmailConfigPageContent() {
   
   // Button 4 - Welcome Email Configuration State
   const [emailConfig, setEmailConfig] = useState({
-    useDefaultEmail: true, // true = default, false = custom
+    useDefaultEmail: false, // true = default, false = custom
     
     // Email Header
     emailHeaderText: 'Welcome to eLocalPass!',
