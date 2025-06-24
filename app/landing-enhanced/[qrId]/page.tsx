@@ -200,6 +200,7 @@ export default function EnhancedLandingPage() {
               console.log(`🔄 Professional Translation - Input: "${text}"`)
               
               let translatedText = text
+              let translationSuccessful = false
               
               // Try LibreTranslate first
               try {
@@ -218,27 +219,38 @@ export default function EnhancedLandingPage() {
                 
                 if (response.ok) {
                   const result = await response.json()
-                  translatedText = result.translatedText
-                  console.log(`✅ LibreTranslate success: "${text}" → "${translatedText}"`)
+                  if (result.translatedText && result.translatedText.trim()) {
+                    translatedText = result.translatedText
+                    translationSuccessful = true
+                    console.log(`✅ LibreTranslate success: "${text}" → "${translatedText}"`)
+                  }
                 }
               } catch (error) {
                 console.warn('⚠️ LibreTranslate failed, trying MyMemory API...')
-                
-                // Fallback to MyMemory API
+              }
+              
+              // Fallback to MyMemory API if LibreTranslate failed
+              if (!translationSuccessful) {
                 try {
                   const encodedText = encodeURIComponent(text)
                   const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodedText}&langpair=en|es`)
                   
                   if (response.ok) {
                     const result = await response.json()
-                    if (result.responseData && result.responseData.translatedText) {
+                    if (result.responseData && result.responseData.translatedText && result.responseData.translatedText.trim()) {
                       translatedText = result.responseData.translatedText
+                      translationSuccessful = true
                       console.log(`✅ MyMemory success: "${text}" → "${translatedText}"`)
                     }
                   }
                 } catch (error) {
-                  console.warn('⚠️ MyMemory API also failed, using original text')
+                  console.warn('⚠️ MyMemory API also failed')
                 }
+              }
+              
+              // If both APIs failed, keep original text
+              if (!translationSuccessful) {
+                console.warn(`⚠️ Both APIs failed for: "${text}", keeping original`)
               }
               
               // Convert formal Spanish (USTED) to informal Spanish (TÚ)
@@ -403,6 +415,7 @@ export default function EnhancedLandingPage() {
           console.log(`🔄 Professional Translation - Input: "${text}"`)
           
           let translatedText = text
+          let translationSuccessful = false
           
           // Try LibreTranslate first
           try {
@@ -421,27 +434,38 @@ export default function EnhancedLandingPage() {
             
             if (response.ok) {
               const result = await response.json()
-              translatedText = result.translatedText
-              console.log(`✅ LibreTranslate success: "${text}" → "${translatedText}"`)
+              if (result.translatedText && result.translatedText.trim()) {
+                translatedText = result.translatedText
+                translationSuccessful = true
+                console.log(`✅ LibreTranslate success: "${text}" → "${translatedText}"`)
+              }
             }
           } catch (error) {
             console.warn('⚠️ LibreTranslate failed, trying MyMemory API...')
-            
-            // Fallback to MyMemory API
+          }
+          
+          // Fallback to MyMemory API if LibreTranslate failed
+          if (!translationSuccessful) {
             try {
               const encodedText = encodeURIComponent(text)
               const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodedText}&langpair=en|es`)
               
               if (response.ok) {
                 const result = await response.json()
-                if (result.responseData && result.responseData.translatedText) {
+                if (result.responseData && result.responseData.translatedText && result.responseData.translatedText.trim()) {
                   translatedText = result.responseData.translatedText
+                  translationSuccessful = true
                   console.log(`✅ MyMemory success: "${text}" → "${translatedText}"`)
                 }
               }
             } catch (error) {
-              console.warn('⚠️ MyMemory API also failed, using original text')
+              console.warn('⚠️ MyMemory API also failed')
             }
+          }
+          
+          // If both APIs failed, keep original text
+          if (!translationSuccessful) {
+            console.warn(`⚠️ Both APIs failed for: "${text}", keeping original`)
           }
           
           // Convert formal Spanish (USTED) to informal Spanish (TÚ)
