@@ -368,8 +368,8 @@ function EmailConfigPageContent() {
       // Generate the actual HTML template from the configuration
       const generateCustomEmailHtml = (config: any, sellerLocation: string = "Playa del Carmen") => {
         if (config.useDefaultEmail) {
-          // Return null for default email - system will use built-in default
-          return null
+          // Return special marker for default email - system will use built-in default
+          return 'USE_DEFAULT_TEMPLATE'
         }
         
         // Generate custom HTML template

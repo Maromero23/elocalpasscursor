@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
             const emailTemplates = JSON.parse(savedConfig.emailTemplates);
             
             // Check if we have a custom email template
-            if (emailTemplates?.welcomeEmail?.customHTML || (emailTemplates?.welcomeEmail?.htmlContent && emailTemplates.welcomeEmail.htmlContent !== 'USE_DEFAULT_TEMPLATE')) {
+            if (emailTemplates?.welcomeEmail?.customHTML && emailTemplates.welcomeEmail.customHTML !== 'USE_DEFAULT_TEMPLATE') {
               console.log(`📧 Re-sending welcome email in Spanish for customer: ${accessToken.customerEmail}`);
               
               // Import required functions
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
               const { detectLanguage, t, formatDate } = await import('@/lib/translations');
               
               // Get the custom template
-              const customTemplate = emailTemplates.welcomeEmail.customHTML || emailTemplates.welcomeEmail.htmlContent;
+              const customTemplate = emailTemplates.welcomeEmail.customHTML;
               
               // Format dates and data for Spanish
               const formattedExpirationDate = formatDate(specificQRCode.expiresAt, 'es');

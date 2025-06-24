@@ -409,9 +409,9 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
       console.log(`  - Checking for customHTML: ${!!emailTemplates?.welcomeEmail?.customHTML}`)
       console.log(`  - Checking for htmlContent: ${!!emailTemplates?.welcomeEmail?.htmlContent}`)
       
-      if (emailTemplates?.welcomeEmail?.customHTML || (emailTemplates?.welcomeEmail?.htmlContent && emailTemplates.welcomeEmail.htmlContent !== 'USE_DEFAULT_TEMPLATE')) {
+      if (emailTemplates?.welcomeEmail?.customHTML && emailTemplates.welcomeEmail.customHTML !== 'USE_DEFAULT_TEMPLATE') {
         // Use custom HTML template from QR configuration
-        const customTemplate = emailTemplates.welcomeEmail.customHTML || emailTemplates.welcomeEmail.htmlContent
+        const customTemplate = emailTemplates.welcomeEmail.customHTML
         console.log(`📧 USING CUSTOM HTML TEMPLATE - Length: ${customTemplate.length} chars`)
         console.log(`📧 First 200 chars of custom template: ${customTemplate.substring(0, 200)}...`)
         

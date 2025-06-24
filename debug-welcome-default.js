@@ -1,10 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function checkCurrentConfig() {
+async function debugWelcomeDefault() {
   try {
-    console.log('🔍 Checking current "probando rebuying test" configuration...\n');
+    console.log('🔍 Debugging welcome email default template issue...\n');
     
+    // Check your current configuration
     const config = await prisma.savedQRConfiguration.findFirst({
       where: {
         name: 'probando rebuying test'
@@ -24,37 +25,29 @@ async function checkCurrentConfig() {
       try {
         const templates = JSON.parse(config.emailTemplates);
         
-        console.log('📧 EMAIL TEMPLATES CONFIGURED:');
-        console.log(`   welcomeEmail: ${!!templates.welcomeEmail ? '✅ YES' : '❌ NO'}`);
-        console.log(`   rebuyEmail: ${!!templates.rebuyEmail ? '✅ YES' : '❌ NO'}`);
-        console.log('');
+        console.log('📧 WELCOME EMAIL ANALYSIS:');
+        console.log(`   Has welcomeEmail object: ${!!templates.welcomeEmail}`);
         
         if (templates.welcomeEmail) {
-          console.log('📧 WELCOME EMAIL DETAILS:');
           console.log(`   - ID: ${templates.welcomeEmail.id}`);
           console.log(`   - Name: ${templates.welcomeEmail.name}`);
           console.log(`   - Subject: ${templates.welcomeEmail.subject}`);
+          console.log(`   - Content: ${templates.welcomeEmail.content}`);
           console.log(`   - Has customHTML: ${!!templates.welcomeEmail.customHTML}`);
           console.log(`   - Has htmlContent: ${!!templates.welcomeEmail.htmlContent}`);
-          if (templates.welcomeEmail.customHTML) {
-            console.log(`   - CustomHTML length: ${templates.welcomeEmail.customHTML.length} characters`);
+          
+          if (templates.welcomeEmail.htmlContent) {
+            console.log(`   - htmlContent value: "${templates.welcomeEmail.htmlContent}"`);
+            console.log(`   - Is USE_DEFAULT_TEMPLATE signal: ${templates.welcomeEmail.htmlContent === 'USE_DEFAULT_TEMPLATE'}`);
           }
+          
+          if (templates.welcomeEmail.emailConfig) {
+            console.log(`   - useDefaultEmail: ${templates.welcomeEmail.emailConfig.useDefaultEmail}`);
+          }
+          
           console.log('');
         } else {
-          console.log('❌ NO WELCOME EMAIL TEMPLATE CONFIGURED\n');
-        }
-        
-        if (templates.rebuyEmail) {
-          console.log('📧 REBUY EMAIL DETAILS:');
-          console.log(`   - ID: ${templates.rebuyEmail.id}`);
-          console.log(`   - Name: ${templates.rebuyEmail.name}`);
-          console.log(`   - Subject: ${templates.rebuyEmail.subject}`);
-          console.log(`   - Has customHTML: ${!!templates.rebuyEmail.customHTML}`);
-          console.log(`   - Has htmlContent: ${!!templates.rebuyEmail.htmlContent}`);
-          if (templates.rebuyEmail.customHTML) {
-            console.log(`   - CustomHTML length: ${templates.rebuyEmail.customHTML.length} characters`);
-          }
-          console.log('');
+          console.log('   ❌ NO welcomeEmail object found\n');
         }
         
       } catch (e) {
@@ -71,4 +64,4 @@ async function checkCurrentConfig() {
   }
 }
 
-checkCurrentConfig(); 
+debugWelcomeDefault(); 

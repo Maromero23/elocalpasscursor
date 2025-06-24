@@ -457,9 +457,9 @@ ${t('email.welcome.signature', customerLanguage)}
       let emailSubject = subject
       
       // Use custom HTML template if available, otherwise use default
-      if (emailTemplates?.welcomeEmail?.customHTML || (emailTemplates?.welcomeEmail?.htmlContent && emailTemplates.welcomeEmail.htmlContent !== 'USE_DEFAULT_TEMPLATE')) {
+      if (emailTemplates?.welcomeEmail?.customHTML && emailTemplates.welcomeEmail.customHTML !== 'USE_DEFAULT_TEMPLATE') {
         // Use custom HTML template from QR configuration
-        const customTemplate = emailTemplates.welcomeEmail.customHTML || emailTemplates.welcomeEmail.htmlContent
+        const customTemplate = emailTemplates.welcomeEmail.customHTML
         
         let processedTemplate = customTemplate
           .replace(/\{customerName\}/g, clientName)
