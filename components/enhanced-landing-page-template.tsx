@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { detectLanguage, t, getPlural, type SupportedLanguage } from '@/lib/translations'
+import { useToast } from '@/hooks/use-toast'
+import { ToastNotifications } from '@/components/toast-notification'
 
 interface EnhancedLandingPageTemplateProps {
   // QR Configuration Data (from admin settings)
@@ -106,6 +108,9 @@ export function EnhancedLandingPageTemplate({
   // Detect user language
   const [language, setLanguage] = useState<SupportedLanguage>('en')
   
+  // Toast notifications
+  const { notifications, removeToast, success, error, warning } = useToast()
+  
   useEffect(() => {
     const detectedLang = detectLanguage()
     setLanguage(detectedLang)
@@ -136,12 +141,12 @@ export function EnhancedLandingPageTemplate({
     e.preventDefault()
     
     if (emailMatchError) {
-      alert(t('landing.error.email.mismatch', language))
+      error(t('landing.error.email.mismatch', language))
       return
     }
 
     if (!formData.name || !formData.email || !formData.emailConfirmation) {
-      alert(t('landing.error.fill.fields', language))
+      error(t('landing.error.fill.fields', language))
       return
     }
 
@@ -175,33 +180,11 @@ export function EnhancedLandingPageTemplate({
       if (response.ok) {
         const result = await response.json()
         
-        // 🚀 DEBUG: Show email template debug info
-        if (result.debugInfo) {
-          console.log('🔍 EMAIL TEMPLATE DEBUG INFO:', result.debugInfo)
-          console.log('📧 Has Email Templates:', result.debugInfo.hasEmailTemplates)
-          console.log('📧 Has Welcome Email:', result.debugInfo.hasWelcomeEmail)
-          console.log('📧 Has Custom HTML:', result.debugInfo.hasCustomHTML)
-          console.log('📧 Has HTML Content:', result.debugInfo.hasHtmlContent)
-          console.log('📧 Use Default Email:', result.debugInfo.useDefaultEmail)
-          console.log('📧 Custom HTML Length:', result.debugInfo.customHTMLLength)
-          console.log('📧 HTML Content Length:', result.debugInfo.htmlContentLength)
-          console.log('📧 Email Template Keys:', result.debugInfo.emailTemplateKeys)
-          console.log('📧 Welcome Email Keys:', result.debugInfo.welcomeEmailKeys)
-          
-          // Show alert with debug info
-          const debugSummary = `
-EMAIL TEMPLATE DEBUG:
-- Has Email Templates: ${result.debugInfo.hasEmailTemplates}
-- Has Welcome Email: ${result.debugInfo.hasWelcomeEmail}
-- Has Custom HTML: ${result.debugInfo.hasCustomHTML}
-- Custom HTML Length: ${result.debugInfo.customHTMLLength}
-- Use Default Email: ${result.debugInfo.useDefaultEmail}
-          `.trim()
-          
-          alert(debugSummary + '\n\n' + t('landing.success.message', language))
-        } else {
-          alert(t('landing.success.message', language))
-        }
+        // Show success notification
+        success(
+          t('landing.success.title', language) || '¡Éxito!',
+          t('landing.success.message', language)
+        )
         
         // Reset form
         setFormData({
@@ -211,11 +194,14 @@ EMAIL TEMPLATE DEBUG:
         })
       } else {
         const errorData = await response.json()
-        alert(`${t('general.error', language)}: ${errorData.error || t('landing.error.general', language)}`)
+        error(
+          t('general.error', language),
+          errorData.error || t('landing.error.general', language)
+        )
       }
-    } catch (error) {
-      console.error('Submission error:', error)
-      alert(t('landing.error.general', language))
+    } catch (err) {
+      console.error('Submission error:', err)
+      error(t('landing.error.general', language))
     } finally {
       setIsSubmitting(false)
     }
@@ -403,6 +389,12 @@ EMAIL TEMPLATE DEBUG:
           </div>
         </div>
       </div>
+      
+      {/* Toast Notifications */}
+      <ToastNotifications 
+        notifications={notifications} 
+        onRemove={removeToast} 
+      />
     </div>
   )
 }

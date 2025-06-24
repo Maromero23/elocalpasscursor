@@ -468,19 +468,7 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
       message: t('landing.success.message', customerLanguage),
       deliveryMethod: deliveryMethod,
       magicLink: deliveryMethod !== 'DIRECT' ? magicLinkUrl : undefined,
-      emailSent: emailSent,
-      // Debug info to show in frontend
-      debugInfo: {
-        hasEmailTemplates: !!emailTemplates,
-        hasWelcomeEmail: !!emailTemplates?.welcomeEmail,
-        hasCustomHTML: !!emailTemplates?.welcomeEmail?.customHTML,
-        hasHtmlContent: !!emailTemplates?.welcomeEmail?.htmlContent,
-        useDefaultEmail: emailTemplates?.welcomeEmail?.emailConfig?.useDefaultEmail,
-        customHTMLLength: emailTemplates?.welcomeEmail?.customHTML?.length || 0,
-        htmlContentLength: emailTemplates?.welcomeEmail?.htmlContent?.length || 0,
-        emailTemplateKeys: emailTemplates ? Object.keys(emailTemplates) : [],
-        welcomeEmailKeys: emailTemplates?.welcomeEmail ? Object.keys(emailTemplates.welcomeEmail) : []
-      }
+      emailSent: emailSent
     })
 
   } catch (error) {

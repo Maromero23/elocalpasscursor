@@ -51,7 +51,8 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationMap> = {
     'landing.privacy.link': 'Click HERE to read the privacy notice and data usage',
     'landing.error.fill.fields': 'Please fill in all required fields.',
     'landing.error.email.mismatch': 'Email addresses do not match. Please check and try again.',
-    'landing.success.message': 'Success! Your ELocalPass has been created and sent to your email.',
+    'landing.success.title': 'Success!',
+    'landing.success.message': 'Your ELocalPass has been created and sent to your email.',
     'landing.error.general': 'There was an error submitting your request. Please try again.',
     
     // Landing Page Default Text (when admin config is empty)
@@ -122,7 +123,8 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationMap> = {
     'landing.privacy.link': 'Haga clic AQUÍ para leer el aviso de privacidad y uso de datos',
     'landing.error.fill.fields': 'Por favor complete todos los campos requeridos.',
     'landing.error.email.mismatch': 'Las direcciones de email no coinciden. Por favor verifique e intente de nuevo.',
-    'landing.success.message': '¡Éxito! Su ELocalPass ha sido creado y enviado a su email.',
+    'landing.success.title': '¡Éxito!',
+    'landing.success.message': 'Su ELocalPass ha sido creado y enviado a su email.',
     'landing.error.general': 'Hubo un error al enviar su solicitud. Por favor intente de nuevo.',
     
     // Landing Page Default Text (when admin config is empty)
