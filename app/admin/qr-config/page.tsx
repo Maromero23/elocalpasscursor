@@ -4436,7 +4436,7 @@ function QRConfigPageContent() {
                                   <h5 className="font-semibold text-gray-900">Welcome Email</h5>
                                 </div>
                                 <div className="text-sm text-gray-700 space-y-1">
-                                  <p><strong>Enabled:</strong> {config.config.button4LandingPageRequired ? "Yes" : "No"}</p>
+                                  <p><strong>Enabled:</strong> {config.config.button4LandingPageRequired !== undefined ? (config.config.button4LandingPageRequired ? "Yes (Custom)" : "Yes (Default)") : "Not Configured"}</p>
                                   {config.config.button4LandingPageRequired && (
                                     <>
                                       <div className="flex items-center">
