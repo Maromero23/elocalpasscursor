@@ -193,11 +193,13 @@ export default function EnhancedLandingPage() {
             
             console.log('🌍 Enhanced Landing - Current language for defaults:', language)
             
-            // Professional translation system using multiple APIs with fallbacks
+            // Professional translation system with informal Spanish (TÚ) enforcement
             const autoTranslateText = async (text: string): Promise<string> => {
               if (!text || language === 'en') return text
               
               console.log(`🔄 Professional Translation - Input: "${text}"`)
+              
+              let translatedText = text
               
               // Try LibreTranslate first
               try {
@@ -216,34 +218,70 @@ export default function EnhancedLandingPage() {
                 
                 if (response.ok) {
                   const result = await response.json()
-                  const translatedText = result.translatedText
+                  translatedText = result.translatedText
                   console.log(`✅ LibreTranslate success: "${text}" → "${translatedText}"`)
-                  return translatedText
                 }
               } catch (error) {
                 console.warn('⚠️ LibreTranslate failed, trying MyMemory API...')
-              }
-              
-              // Fallback to MyMemory API
-              try {
-                const encodedText = encodeURIComponent(text)
-                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodedText}&langpair=en|es`)
                 
-                if (response.ok) {
-                  const result = await response.json()
-                  if (result.responseData && result.responseData.translatedText) {
-                    const translatedText = result.responseData.translatedText
-                    console.log(`✅ MyMemory success: "${text}" → "${translatedText}"`)
-                    return translatedText
+                // Fallback to MyMemory API
+                try {
+                  const encodedText = encodeURIComponent(text)
+                  const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodedText}&langpair=en|es`)
+                  
+                  if (response.ok) {
+                    const result = await response.json()
+                    if (result.responseData && result.responseData.translatedText) {
+                      translatedText = result.responseData.translatedText
+                      console.log(`✅ MyMemory success: "${text}" → "${translatedText}"`)
+                    }
                   }
+                } catch (error) {
+                  console.warn('⚠️ MyMemory API also failed, using original text')
                 }
-              } catch (error) {
-                console.warn('⚠️ MyMemory API also failed')
               }
               
-              // Final fallback: return original text
-              console.warn(`❌ All translation APIs failed for: "${text}"`)
-              return text
+              // Convert formal Spanish (USTED) to informal Spanish (TÚ)
+              const makeInformalSpanish = (spanish: string): string => {
+                if (language !== 'es') return spanish
+                
+                console.log(`🔄 Converting to informal Spanish (TÚ): "${spanish}"`)
+                
+                let informalText = spanish
+                
+                // Convert formal pronouns to informal
+                informalText = informalText.replace(/\busted\b/gi, 'tú')
+                informalText = informalText.replace(/\bUsted\b/g, 'Tú')
+                
+                // Convert possessive pronouns
+                informalText = informalText.replace(/\bsu\b/g, 'tu')  // your (formal) → your (informal)
+                informalText = informalText.replace(/\bSu\b/g, 'Tu')
+                informalText = informalText.replace(/\bsus\b/g, 'tus') // your plural
+                informalText = informalText.replace(/\bSus\b/g, 'Tus')
+                
+                // Convert common formal verb forms to informal
+                informalText = informalText.replace(/\btiene\b/g, 'tienes')     // you have
+                informalText = informalText.replace(/\bTiene\b/g, 'Tienes')
+                informalText = informalText.replace(/\bpuede\b/g, 'puedes')     // you can
+                informalText = informalText.replace(/\bPuede\b/g, 'Puedes')
+                informalText = informalText.replace(/\bquiere\b/g, 'quieres')   // you want
+                informalText = informalText.replace(/\bQuiere\b/g, 'Quieres')
+                informalText = informalText.replace(/\bnecesita\b/g, 'necesitas') // you need
+                informalText = informalText.replace(/\bNecesita\b/g, 'Necesitas')
+                informalText = informalText.replace(/\bdebe\b/g, 'debes')       // you should
+                informalText = informalText.replace(/\bDebe\b/g, 'Debes')
+                informalText = informalText.replace(/\bestá\b/g, 'estás')       // you are
+                informalText = informalText.replace(/\bEstá\b/g, 'Estás')
+                
+                if (informalText !== spanish) {
+                  console.log(`✅ Converted to informal: "${spanish}" → "${informalText}"`)
+                }
+                
+                return informalText
+              }
+              
+              const finalText = makeInformalSpanish(translatedText)
+              return finalText
             }
             
             // Simple universal translation: Translate EVERY text box as a whole unit for Spanish customers
@@ -358,11 +396,13 @@ export default function EnhancedLandingPage() {
         console.log('✅ Enhanced Landing - Received config data from Map:', data)
         console.log('🖼️ Enhanced Landing - Logo URL:', data.logoUrl)
         
-        // Professional translation system using multiple APIs with fallbacks
+        // Professional translation system with informal Spanish (TÚ) enforcement
         const autoTranslateText = async (text: string): Promise<string> => {
           if (!text || language === 'en') return text
           
           console.log(`🔄 Professional Translation - Input: "${text}"`)
+          
+          let translatedText = text
           
           // Try LibreTranslate first
           try {
@@ -381,34 +421,70 @@ export default function EnhancedLandingPage() {
             
             if (response.ok) {
               const result = await response.json()
-              const translatedText = result.translatedText
+              translatedText = result.translatedText
               console.log(`✅ LibreTranslate success: "${text}" → "${translatedText}"`)
-              return translatedText
             }
           } catch (error) {
             console.warn('⚠️ LibreTranslate failed, trying MyMemory API...')
-          }
-          
-          // Fallback to MyMemory API
-          try {
-            const encodedText = encodeURIComponent(text)
-            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodedText}&langpair=en|es`)
             
-            if (response.ok) {
-              const result = await response.json()
-              if (result.responseData && result.responseData.translatedText) {
-                const translatedText = result.responseData.translatedText
-                console.log(`✅ MyMemory success: "${text}" → "${translatedText}"`)
-                return translatedText
+            // Fallback to MyMemory API
+            try {
+              const encodedText = encodeURIComponent(text)
+              const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodedText}&langpair=en|es`)
+              
+              if (response.ok) {
+                const result = await response.json()
+                if (result.responseData && result.responseData.translatedText) {
+                  translatedText = result.responseData.translatedText
+                  console.log(`✅ MyMemory success: "${text}" → "${translatedText}"`)
+                }
               }
+            } catch (error) {
+              console.warn('⚠️ MyMemory API also failed, using original text')
             }
-          } catch (error) {
-            console.warn('⚠️ MyMemory API also failed')
           }
           
-          // Final fallback: return original text
-          console.warn(`❌ All translation APIs failed for: "${text}"`)
-          return text
+          // Convert formal Spanish (USTED) to informal Spanish (TÚ)
+          const makeInformalSpanish = (spanish: string): string => {
+            if (language !== 'es') return spanish
+            
+            console.log(`🔄 Converting to informal Spanish (TÚ): "${spanish}"`)
+            
+            let informalText = spanish
+            
+            // Convert formal pronouns to informal
+            informalText = informalText.replace(/\busted\b/gi, 'tú')
+            informalText = informalText.replace(/\bUsted\b/g, 'Tú')
+            
+            // Convert possessive pronouns
+            informalText = informalText.replace(/\bsu\b/g, 'tu')  // your (formal) → your (informal)
+            informalText = informalText.replace(/\bSu\b/g, 'Tu')
+            informalText = informalText.replace(/\bsus\b/g, 'tus') // your plural
+            informalText = informalText.replace(/\bSus\b/g, 'Tus')
+            
+            // Convert common formal verb forms to informal
+            informalText = informalText.replace(/\btiene\b/g, 'tienes')     // you have
+            informalText = informalText.replace(/\bTiene\b/g, 'Tienes')
+            informalText = informalText.replace(/\bpuede\b/g, 'puedes')     // you can
+            informalText = informalText.replace(/\bPuede\b/g, 'Puedes')
+            informalText = informalText.replace(/\bquiere\b/g, 'quieres')   // you want
+            informalText = informalText.replace(/\bQuiere\b/g, 'Quieres')
+            informalText = informalText.replace(/\bnecesita\b/g, 'necesitas') // you need
+            informalText = informalText.replace(/\bNecesita\b/g, 'Necesitas')
+            informalText = informalText.replace(/\bdebe\b/g, 'debes')       // you should
+            informalText = informalText.replace(/\bDebe\b/g, 'Debes')
+            informalText = informalText.replace(/\bestá\b/g, 'estás')       // you are
+            informalText = informalText.replace(/\bEstá\b/g, 'Estás')
+            
+            if (informalText !== spanish) {
+              console.log(`✅ Converted to informal: "${spanish}" → "${informalText}"`)
+            }
+            
+            return informalText
+          }
+          
+          const finalText = makeInformalSpanish(translatedText)
+          return finalText
         }
         
         // Simple universal translation: Translate EVERY text box as a whole unit for Spanish customers
