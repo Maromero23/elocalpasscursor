@@ -8,18 +8,19 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 REBUY EMAIL SERVICE: Starting scheduled rebuy email check...')
+    console.log('🔄 REBUY EMAIL SERVICE: Starting rebuy email check (TESTING MODE - 2 minutes after creation)...')
 
-    // Get all active QR codes that expire within the next 24 hours
+    // TESTING MODE: Get QR codes created more than 2 minutes ago but less than 5 minutes ago
     const now = new Date()
-    const next24Hours = new Date(now.getTime() + (24 * 60 * 60 * 1000))
+    const twoMinutesAgo = new Date(now.getTime() - (2 * 60 * 1000)) // 2 minutes ago
+    const fiveMinutesAgo = new Date(now.getTime() - (5 * 60 * 1000)) // 5 minutes ago
     
-    const expiringQRCodes = await prisma.qRCode.findMany({
+    const recentQRCodes = await prisma.qRCode.findMany({
       where: {
         isActive: true,
-        expiresAt: {
-          gte: now,
-          lte: next24Hours
+        createdAt: {
+          gte: fiveMinutesAgo, // Created at least 2 minutes ago
+          lte: twoMinutesAgo   // But not more than 5 minutes ago
         },
         customerEmail: {
           not: null
@@ -30,25 +31,26 @@ export async function POST(request: NextRequest) {
           include: {
             savedConfig: true
           }
-        }
+        },
+        analytics: true
       }
     })
 
-    console.log(`📧 REBUY EMAIL SERVICE: Found ${expiringQRCodes.length} QR codes expiring within 24 hours`)
+    console.log(`📧 REBUY EMAIL SERVICE: Found ${recentQRCodes.length} QR codes created 2-5 minutes ago`)
 
     const results = []
 
-    for (const qrCode of expiringQRCodes) {
+    for (const qrCode of recentQRCodes) {
       try {
-        // Calculate hours left until expiration
-        const hoursLeft = Math.ceil((qrCode.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60))
+        // Calculate time since creation
+        const minutesSinceCreation = Math.floor((now.getTime() - qrCode.createdAt.getTime()) / (1000 * 60))
         
-        // Only send rebuy emails 6-12 hours before expiration (production mode)
-        if (hoursLeft > 12 || hoursLeft < 6) {
-          console.log(`⏭️ REBUY EMAIL: QR ${qrCode.code} expires in ${hoursLeft} hours, outside 6-12 hour window`)
+        // Check if rebuy email is scheduled in analytics
+        if (!qrCode.analytics || !qrCode.analytics.rebuyEmailScheduled) {
+          console.log(`❌ REBUY EMAIL: QR ${qrCode.code} - rebuy email not scheduled`)
           continue
         }
-
+        
         // Get seller's configuration to check if rebuy emails are enabled
         const sellerConfig = qrCode.seller.savedConfig
         if (!sellerConfig) {
@@ -62,13 +64,16 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        console.log(`✅ REBUY EMAIL: QR ${qrCode.code} is in the 6-12 hour expiration window, proceeding with rebuy email`)
+        console.log(`✅ REBUY EMAIL: QR ${qrCode.code} was created ${minutesSinceCreation} minutes ago, sending test rebuy email`)
 
         // Detect customer language (for now default to English, can be enhanced later)
         const customerLanguage = 'en' as const
         
         // Generate customer portal URL for renewal
         const customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCode.customerEmail}`
+
+        // Calculate hours left until expiration for email content
+        const hoursLeft = Math.ceil((qrCode.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60))
 
         // Create rebuy email HTML
         const emailHtml = createRebuyEmailHtml({
@@ -83,7 +88,7 @@ export async function POST(request: NextRequest) {
         })
 
         // Send the rebuy email
-        const subject = `Your ELocalPass expires in ${hoursLeft} hours - Don't miss out!`
+        const subject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
 
         const emailSent = await sendEmail({
           to: qrCode.customerEmail!,
@@ -93,9 +98,17 @@ export async function POST(request: NextRequest) {
 
         if (emailSent) {
           console.log(`✅ REBUY EMAIL: Successfully sent to ${qrCode.customerEmail} for QR ${qrCode.code}`)
+          
+          // Mark as sent to prevent duplicates by updating the analytics record
+          await prisma.qRCodeAnalytics.update({
+            where: { qrCodeId: qrCode.id },
+            data: { rebuyEmailScheduled: false }
+          })
+          
           results.push({
             qrCode: qrCode.code,
             email: qrCode.customerEmail,
+            minutesSinceCreation: minutesSinceCreation,
             hoursLeft: hoursLeft,
             status: 'sent'
           })
@@ -104,7 +117,7 @@ export async function POST(request: NextRequest) {
           results.push({
             qrCode: qrCode.code,
             email: qrCode.customerEmail,
-            hoursLeft: hoursLeft,
+            minutesSinceCreation: minutesSinceCreation,
             status: 'failed'
           })
         }
@@ -124,9 +137,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Rebuy email service completed. Processed ${results.length} emails.`,
+      message: `Rebuy email service completed (TESTING MODE). Processed ${results.length} emails.`,
       results: results,
-      totalExpiring: expiringQRCodes.length
+      totalFound: recentQRCodes.length,
+      testingMode: true,
+      triggerWindow: "2-5 minutes after QR creation"
     })
 
   } catch (error) {
