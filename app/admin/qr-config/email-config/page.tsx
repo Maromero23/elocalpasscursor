@@ -489,9 +489,10 @@ function EmailConfigPageContent() {
       const welcomeEmailConfig = {
         id: qrId || Math.random().toString(36).substr(2, 9),
         name: `Welcome Email Template - ${new Date().toLocaleDateString()}`,
-        subject: emailConfig.useDefaultEmail ? 'Welcome to eLocalPass!' : 'Welcome to eLocalPass!',
-        content: emailConfig.useDefaultEmail ? null : 'Custom email content',
+        subject: emailConfig.useDefaultEmail ? 'Your ELocalPass is Ready - Instant Access' : 'Welcome to eLocalPass!',
+        content: emailConfig.useDefaultEmail ? 'Use default ELocalPass welcome email template' : 'Custom email content',
         customHTML: customHTML,
+        htmlContent: emailConfig.useDefaultEmail ? 'USE_DEFAULT_TEMPLATE' : null, // Signal to use default template
         emailConfig: { ...emailConfig },
         createdAt: new Date(),
         isActive: true

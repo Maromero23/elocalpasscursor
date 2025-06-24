@@ -409,7 +409,7 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
       console.log(`  - Checking for customHTML: ${!!emailTemplates?.welcomeEmail?.customHTML}`)
       console.log(`  - Checking for htmlContent: ${!!emailTemplates?.welcomeEmail?.htmlContent}`)
       
-      if (emailTemplates?.welcomeEmail?.customHTML || emailTemplates?.welcomeEmail?.htmlContent) {
+      if (emailTemplates?.welcomeEmail?.customHTML || (emailTemplates?.welcomeEmail?.htmlContent && emailTemplates.welcomeEmail.htmlContent !== 'USE_DEFAULT_TEMPLATE')) {
         // Use custom HTML template from QR configuration
         const customTemplate = emailTemplates.welcomeEmail.customHTML || emailTemplates.welcomeEmail.htmlContent
         console.log(`📧 USING CUSTOM HTML TEMPLATE - Length: ${customTemplate.length} chars`)
