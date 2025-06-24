@@ -3,6 +3,10 @@
 import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState, useEffect } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { ToastNotifications } from "@/components/toast-notification"
+import { useToast } from "@/hooks/use-toast"
+import { ToastNotifications } from "@/components/toast-notification"
 
 interface QRConfig {
   // Configuration info
@@ -38,6 +42,7 @@ interface QRConfig {
 
 export default function SellerDashboard() {
   const { data: session } = useSession()
+  const { notifications, removeToast, success, error } = useToast()
   const [config, setConfig] = useState<QRConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
