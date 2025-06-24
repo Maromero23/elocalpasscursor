@@ -319,6 +319,140 @@ ${t('email.welcome.signature', customerLanguage)}
         }
       }
       
+      // Professional Email Translation System (same as landing page)
+      const translateEmailHTML = async (htmlContent: string, targetLanguage: SupportedLanguage): Promise<string> => {
+        if (targetLanguage === 'en') return htmlContent
+        
+        console.log(`🌍 SELLER EMAIL TRANSLATION: Translating email HTML to ${targetLanguage}`)
+        
+        // Extract text content from HTML while preserving structure
+        let translatedHTML = htmlContent
+        
+        // Function to translate text using professional APIs
+        const translateText = async (text: string): Promise<string> => {
+          if (!text || text.trim().length === 0) return text
+          
+          console.log(`🔄 Seller Email Translation - Input: "${text.substring(0, 100)}..."`)
+          
+          let translatedText = text
+          let translationSuccessful = false
+          
+          // Try LibreTranslate first
+          try {
+            const response = await fetch('https://libretranslate.com/translate', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                q: text,
+                source: 'en',
+                target: 'es',
+                format: 'text'
+              })
+            })
+            
+            if (response.ok) {
+              const result = await response.json()
+              if (result.translatedText && result.translatedText.trim()) {
+                translatedText = result.translatedText
+                translationSuccessful = true
+                console.log(`✅ Seller Email LibreTranslate success: "${text.substring(0, 50)}..." → "${translatedText.substring(0, 50)}..."`)
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Seller Email LibreTranslate failed, trying MyMemory API...')
+          }
+          
+          // Fallback to MyMemory API if LibreTranslate failed
+          if (!translationSuccessful) {
+            try {
+              const encodedText = encodeURIComponent(text)
+              const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodedText}&langpair=en|es`)
+              
+              if (response.ok) {
+                const result = await response.json()
+                if (result.responseData && result.responseData.translatedText && result.responseData.translatedText.trim()) {
+                  translatedText = result.responseData.translatedText
+                  translationSuccessful = true
+                  console.log(`✅ Seller Email MyMemory success: "${text.substring(0, 50)}..." → "${translatedText.substring(0, 50)}..."`)
+                }
+              }
+            } catch (error) {
+              console.warn('⚠️ Seller Email MyMemory API also failed')
+            }
+          }
+          
+          // If both APIs failed, keep original text
+          if (!translationSuccessful) {
+            console.warn(`⚠️ Both seller email translation APIs failed for: "${text.substring(0, 50)}...", keeping original`)
+          }
+          
+          return translatedText
+        }
+        
+        // Convert formal Spanish (USTED) to informal Spanish (TÚ)
+        const makeInformalSpanish = (spanish: string): string => {
+          console.log(`🔄 Seller Email Converting to informal Spanish (TÚ): "${spanish.substring(0, 100)}..."`)
+          
+          let informalText = spanish
+          
+          // Convert formal pronouns to informal
+          informalText = informalText.replace(/\busted\b/gi, 'tú')
+          informalText = informalText.replace(/\bUsted\b/g, 'Tú')
+          
+          // Convert possessive pronouns
+          informalText = informalText.replace(/\bsu\b/g, 'tu')
+          informalText = informalText.replace(/\bSu\b/g, 'Tu')
+          informalText = informalText.replace(/\bsus\b/g, 'tus')
+          informalText = informalText.replace(/\bSus\b/g, 'Tus')
+          
+          // Convert common formal verb forms to informal
+          informalText = informalText.replace(/\btiene\b/g, 'tienes')
+          informalText = informalText.replace(/\bTiene\b/g, 'Tienes')
+          informalText = informalText.replace(/\bpuede\b/g, 'puedes')
+          informalText = informalText.replace(/\bPuede\b/g, 'Puedes')
+          informalText = informalText.replace(/\bquiere\b/g, 'quieres')
+          informalText = informalText.replace(/\bQuiere\b/g, 'Quieres')
+          informalText = informalText.replace(/\bnecesita\b/g, 'necesitas')
+          informalText = informalText.replace(/\bNecesita\b/g, 'Necesitas')
+          informalText = informalText.replace(/\bdebe\b/g, 'debes')
+          informalText = informalText.replace(/\bDebe\b/g, 'Debes')
+          informalText = informalText.replace(/\bestá\b/g, 'estás')
+          informalText = informalText.replace(/\bEstá\b/g, 'Estás')
+          
+          return informalText
+        }
+        
+        // Extract and translate text content from HTML
+        // This regex finds text content between HTML tags
+        const textPattern = />([^<]+)</g
+        let match
+        while ((match = textPattern.exec(htmlContent)) !== null) {
+          const originalText = match[1].trim()
+          if (originalText && originalText.length > 0 && !/^[0-9\s\-\(\)\[\]{}@.,:;!?]+$/.test(originalText)) {
+            const translatedText = await translateText(originalText)
+            const informalText = makeInformalSpanish(translatedText)
+            translatedHTML = translatedHTML.replace(`>${originalText}<`, `>${informalText}<`)
+          }
+        }
+        
+        // Also translate alt attributes and title attributes
+        const altPattern = /alt="([^"]+)"/g
+        let altMatch
+        while ((altMatch = altPattern.exec(htmlContent)) !== null) {
+          const originalAlt = altMatch[1]
+          if (originalAlt && originalAlt.length > 0) {
+            const translatedAlt = await translateText(originalAlt)
+            const informalAlt = makeInformalSpanish(translatedAlt)
+            translatedHTML = translatedHTML.replace(`alt="${originalAlt}"`, `alt="${informalAlt}"`)
+          }
+        }
+        
+        console.log(`✅ Seller Email HTML translation completed for ${targetLanguage}`)
+        return translatedHTML
+      }
+
       let emailHtml
       let emailSubject = subject
       
@@ -326,7 +460,8 @@ ${t('email.welcome.signature', customerLanguage)}
       if (emailTemplates?.welcomeEmail?.customHTML || emailTemplates?.welcomeEmail?.htmlContent) {
         // Use custom HTML template from QR configuration
         const customTemplate = emailTemplates.welcomeEmail.customHTML || emailTemplates.welcomeEmail.htmlContent
-        emailHtml = customTemplate
+        
+        let processedTemplate = customTemplate
           .replace(/\{customerName\}/g, clientName)
           .replace(/\{qrCode\}/g, qrCodeId)
           .replace(/\{guests\}/g, guests.toString())
@@ -335,12 +470,15 @@ ${t('email.welcome.signature', customerLanguage)}
           .replace(/\{magicLink\}/g, magicLinkUrl || '')
           .replace(/\{customerPortalUrl\}/g, magicLinkUrl || '')
         
+        // Apply universal email translation for Spanish customers
+        emailHtml = await translateEmailHTML(processedTemplate, customerLanguage)
+        
         // Use custom subject if available
         if (emailTemplates.welcomeEmail.subject) {
           emailSubject = emailTemplates.welcomeEmail.subject
         }
         
-        console.log(`📧 Using custom HTML template from QR configuration`)
+        console.log(`📧 Using custom HTML template from QR configuration (translated for ${customerLanguage})`)
       } else {
         // Use default HTML template
         emailHtml = createWelcomeEmailHtml({

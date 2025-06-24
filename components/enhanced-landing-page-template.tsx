@@ -175,7 +175,33 @@ export function EnhancedLandingPageTemplate({
       if (response.ok) {
         const result = await response.json()
         
-        alert(t('landing.success.message', language))
+        // 🚀 DEBUG: Show email template debug info
+        if (result.debugInfo) {
+          console.log('🔍 EMAIL TEMPLATE DEBUG INFO:', result.debugInfo)
+          console.log('📧 Has Email Templates:', result.debugInfo.hasEmailTemplates)
+          console.log('📧 Has Welcome Email:', result.debugInfo.hasWelcomeEmail)
+          console.log('📧 Has Custom HTML:', result.debugInfo.hasCustomHTML)
+          console.log('📧 Has HTML Content:', result.debugInfo.hasHtmlContent)
+          console.log('📧 Use Default Email:', result.debugInfo.useDefaultEmail)
+          console.log('📧 Custom HTML Length:', result.debugInfo.customHTMLLength)
+          console.log('📧 HTML Content Length:', result.debugInfo.htmlContentLength)
+          console.log('📧 Email Template Keys:', result.debugInfo.emailTemplateKeys)
+          console.log('📧 Welcome Email Keys:', result.debugInfo.welcomeEmailKeys)
+          
+          // Show alert with debug info
+          const debugSummary = `
+EMAIL TEMPLATE DEBUG:
+- Has Email Templates: ${result.debugInfo.hasEmailTemplates}
+- Has Welcome Email: ${result.debugInfo.hasWelcomeEmail}
+- Has Custom HTML: ${result.debugInfo.hasCustomHTML}
+- Custom HTML Length: ${result.debugInfo.customHTMLLength}
+- Use Default Email: ${result.debugInfo.useDefaultEmail}
+          `.trim()
+          
+          alert(debugSummary + '\n\n' + t('landing.success.message', language))
+        } else {
+          alert(t('landing.success.message', language))
+        }
         
         // Reset form
         setFormData({
