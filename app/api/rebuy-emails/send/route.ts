@@ -43,9 +43,20 @@ export async function POST(request: NextRequest) {
         // Calculate hours left until expiration
         const hoursLeft = Math.ceil((qrCode.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60))
         
-        // Skip if more than 12 hours left (we want to send 12 hours before expiration)
-        if (hoursLeft > 12) {
-          console.log(`⏭️ REBUY EMAIL: QR ${qrCode.code} expires in ${hoursLeft} hours, skipping (waiting for 12 hour mark)`)
+        // 🧪 TESTING MODE: Send emails 3 minutes after QR creation instead of 12 hours before expiration
+        const minutesSinceCreation = Math.ceil((now.getTime() - qrCode.createdAt.getTime()) / (1000 * 60))
+        
+        console.log(`🧪 TESTING MODE: QR ${qrCode.code} created ${minutesSinceCreation} minutes ago, expires in ${hoursLeft} hours`)
+        
+        // Skip if less than 3 minutes since creation (wait for 3 minute mark)
+        if (minutesSinceCreation < 3) {
+          console.log(`⏭️ REBUY EMAIL: QR ${qrCode.code} created only ${minutesSinceCreation} minutes ago, waiting for 3 minute mark`)
+          continue
+        }
+        
+        // Skip if more than 10 minutes since creation (only send once in the 3-10 minute window)
+        if (minutesSinceCreation > 10) {
+          console.log(`⏭️ REBUY EMAIL: QR ${qrCode.code} created ${minutesSinceCreation} minutes ago, outside 3-10 minute testing window`)
           continue
         }
 
@@ -62,16 +73,9 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Check if we already sent a rebuy email for this QR code
-        // We'll use a simple check: if the QR code was created more than 12 hours ago and expires within 12 hours,
-        // and we haven't sent an email yet (we can track this in the future with a separate table)
-        const createdHoursAgo = Math.ceil((now.getTime() - qrCode.createdAt.getTime()) / (1000 * 60 * 60))
-        
-        // For now, let's assume we send the email once when there are 6-12 hours left
-        if (hoursLeft < 6 || hoursLeft > 12) {
-          console.log(`⏭️ REBUY EMAIL: QR ${qrCode.code} expires in ${hoursLeft} hours, outside 6-12 hour window`)
-          continue
-        }
+        // 🧪 TESTING MODE: Skip the normal 6-12 hour expiration window check
+        // We're now using the 3-10 minute creation window instead
+        console.log(`🧪 TESTING MODE: QR ${qrCode.code} is in the 3-10 minute testing window, proceeding with rebuy email`)
 
         // Detect customer language (for now default to English, can be enhanced later)
         const customerLanguage = 'en' as const
@@ -92,7 +96,7 @@ export async function POST(request: NextRequest) {
         })
 
         // Send the rebuy email
-        const subject = `⏰ Your ELocalPass expires in ${hoursLeft} hours - Don't miss out!`
+        const subject = `🧪 TEST: Your ELocalPass expires in ${hoursLeft} hours - Don't miss out!`
 
         const emailSent = await sendEmail({
           to: qrCode.customerEmail!,
