@@ -40,6 +40,18 @@ export async function POST(request: NextRequest) {
     console.log(`📧 Has customHTML?:`, !!emailTemplates?.welcomeEmail?.customHTML)
     console.log(`📧 welcomeEmail structure:`, emailTemplates?.welcomeEmail)
     console.log(`📧 All emailTemplates keys:`, emailTemplates ? Object.keys(emailTemplates) : 'null')
+    
+    // Additional debugging for the specific fields
+    if (emailTemplates?.welcomeEmail) {
+      console.log(`📧 DETAILED welcomeEmail DEBUG:`)
+      console.log(`  - id: ${emailTemplates.welcomeEmail.id}`)
+      console.log(`  - name: ${emailTemplates.welcomeEmail.name}`)
+      console.log(`  - subject: ${emailTemplates.welcomeEmail.subject}`)
+      console.log(`  - content: ${emailTemplates.welcomeEmail.content ? 'present' : 'missing'}`)
+      console.log(`  - customHTML: ${emailTemplates.welcomeEmail.customHTML ? 'present (' + emailTemplates.welcomeEmail.customHTML.length + ' chars)' : 'missing'}`)
+      console.log(`  - htmlContent: ${emailTemplates.welcomeEmail.htmlContent ? 'present (' + emailTemplates.welcomeEmail.htmlContent.length + ' chars)' : 'missing'}`)
+      console.log(`  - emailConfig.useDefaultEmail: ${emailTemplates.welcomeEmail.emailConfig?.useDefaultEmail}`)
+    }
 
     // Validate guests and days against configuration rules
     const guests = formData.guests || config.button1GuestsDefault || 2
@@ -202,9 +214,16 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
       let emailHtml
       
       // Use custom HTML template if available, otherwise use default
+      console.log(`📧 EMAIL HTML GENERATION DEBUG:`)
+      console.log(`  - Checking for customHTML: ${!!emailTemplates?.welcomeEmail?.customHTML}`)
+      console.log(`  - Checking for htmlContent: ${!!emailTemplates?.welcomeEmail?.htmlContent}`)
+      
       if (emailTemplates?.welcomeEmail?.customHTML || emailTemplates?.welcomeEmail?.htmlContent) {
         // Use custom HTML template from QR configuration
         const customTemplate = emailTemplates.welcomeEmail.customHTML || emailTemplates.welcomeEmail.htmlContent
+        console.log(`📧 USING CUSTOM HTML TEMPLATE - Length: ${customTemplate.length} chars`)
+        console.log(`📧 First 200 chars of custom template: ${customTemplate.substring(0, 200)}...`)
+        
         emailHtml = customTemplate
           .replace(/\{customerName\}/g, formData.name)
           .replace(/\{qrCode\}/g, qrCodeId)
@@ -215,6 +234,7 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
           .replace(/\{customerPortalUrl\}/g, magicLinkUrl || '')
         console.log(`📧 Using custom HTML template from QR configuration`)
       } else {
+        console.log(`📧 NO CUSTOM HTML FOUND - Using default template`)
         // Use default HTML template
         emailHtml = createWelcomeEmailHtml({
           customerName: formData.name,
@@ -226,6 +246,7 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
           language: customerLanguage,
           deliveryMethod: deliveryMethod
         })
+        console.log(`📧 Generated default email HTML - Length: ${emailHtml.length} chars`)
       }
 
       // Send the email (now throws errors instead of returning false)
