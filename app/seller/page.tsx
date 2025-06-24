@@ -51,6 +51,7 @@ export default function SellerDashboard() {
   const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState<'DIRECT' | 'URLS'>('DIRECT')
   const [selectedLandingPage, setSelectedLandingPage] = useState<string>('')
   const [selectedDeliveryOption, setSelectedDeliveryOption] = useState<string>('DIRECT')
+  const [customerLanguage, setCustomerLanguage] = useState<'en' | 'es'>('en')
   
   // Load seller configuration
   useEffect(() => {

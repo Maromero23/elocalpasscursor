@@ -241,11 +241,11 @@ export async function POST(request: NextRequest) {
     })
     
     // Button 4: Welcome Email Template Logic
-    // Detect customer language from Accept-Language headers
-    const acceptLanguage = request.headers.get('accept-language') || undefined
-    const customerLanguage: SupportedLanguage = detectLanguage(acceptLanguage)
+    // For direct seller generation, we don't know customer's language yet
+    // We'll use a special magic link that detects language when customer clicks it
+    const customerLanguage: SupportedLanguage = 'en' // Default to English for seller generation
     
-    console.log(`🌍 Customer language detected: ${customerLanguage}`)
+    console.log(`🌍 Seller generation - Using default language: ${customerLanguage} (customer language will be detected when they access the email)`)
     
     // Generate email content using translation system
     const subject = t('email.welcome.subject', customerLanguage)
