@@ -10,17 +10,17 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔄 REBUY EMAIL SERVICE: Starting rebuy email check (TESTING MODE - 2 minutes after creation)...')
 
-    // TESTING MODE: Get QR codes created more than 2 minutes ago but less than 5 minutes ago
+    // TESTING MODE: Get QR codes created more than 2 minutes ago but less than 10 minutes ago
     const now = new Date()
     const twoMinutesAgo = new Date(now.getTime() - (2 * 60 * 1000)) // 2 minutes ago
-    const fiveMinutesAgo = new Date(now.getTime() - (5 * 60 * 1000)) // 5 minutes ago
+    const tenMinutesAgo = new Date(now.getTime() - (10 * 60 * 1000)) // 10 minutes ago
     
     const recentQRCodes = await prisma.qRCode.findMany({
       where: {
         isActive: true,
         createdAt: {
-          gte: fiveMinutesAgo, // Created at least 2 minutes ago
-          lte: twoMinutesAgo   // But not more than 5 minutes ago
+          gte: tenMinutesAgo, // Created at least 2 minutes ago
+          lte: twoMinutesAgo   // But not more than 10 minutes ago
         },
         customerEmail: {
           not: null
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log(`📧 REBUY EMAIL SERVICE: Found ${recentQRCodes.length} QR codes created 2-5 minutes ago`)
+    console.log(`📧 REBUY EMAIL SERVICE: Found ${recentQRCodes.length} QR codes created 2-10 minutes ago`)
 
     const results = []
 
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       results: results,
       totalFound: recentQRCodes.length,
       testingMode: true,
-      triggerWindow: "2-5 minutes after QR creation"
+      triggerWindow: "2-10 minutes after QR creation"
     })
 
   } catch (error) {
