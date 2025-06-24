@@ -3,10 +3,8 @@
 import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState, useEffect } from "react"
+import { ToastNotifications } from "@/components/toast-notification"import { useToast } from "@/hooks/use-toast"
 import { useToast } from "@/hooks/use-toast"
-import { ToastNotifications } from "@/components/toast-notification"
-import { useToast } from "@/hooks/use-toast"
-import { ToastNotifications } from "@/components/toast-notification"
 
 interface QRConfig {
   // Configuration info
@@ -118,7 +116,7 @@ export default function SellerDashboard() {
     // Only validate client info if it should be shown
     if (shouldShowClientInfo()) {
       if (!clientName || !clientEmail || !confirmEmail || clientEmail !== confirmEmail) {
-        alert('Please fill in client name and email, and ensure emails match')
+        error('Please fill in client name and email, and ensure emails match')
         return
       }
     }
@@ -145,17 +143,17 @@ export default function SellerDashboard() {
       
       if (response.ok) {
         const result = await response.json()
-        alert(`ELocalPass generated and sent to ${clientEmail}!`)
+        success("Success!", `ELocalPass generated and sent to ${clientEmail}!`)
         // Reset form
         setClientName('')
         setClientEmail('')
         setConfirmEmail('')
       } else {
-        alert('Error generating QR code')
+        error('Error generating QR code')
       }
     } catch (error) {
       console.error('Error generating QR:', error)
-      alert('Error generating QR code')
+      error('Error generating QR code')
     } finally {
       setGenerating(false)
     }
@@ -205,10 +203,10 @@ export default function SellerDashboard() {
       link.click()
       document.body.removeChild(link)
       
-      alert(`QR code for "${urlName}" is being generated and downloaded!`)
+      success("QR Code Generated!", `QR code for "${urlName}" is being generated and downloaded!`)
     } catch (error) {
       console.error('Error generating QR code:', error)
-      alert('Error generating QR code. Please try again.')
+      error('Error generating QR code. Please try again.')
     }
   }
 
@@ -221,7 +219,8 @@ export default function SellerDashboard() {
             <p>Loading your configuration...</p>
           </div>
         </div>
-      </ProtectedRoute>
+            <ToastNotifications notifications={notifications} onRemove={removeToast} />
+    </ProtectedRoute>
     )
   }
 
@@ -707,7 +706,7 @@ export default function SellerDashboard() {
             
           </div>
         </main>
-      </div>
+          <ToastNotifications notifications={notifications} onRemove={removeToast} />
     </ProtectedRoute>
   )
 }
