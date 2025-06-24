@@ -383,19 +383,146 @@ function RebuyEmailConfigPageContent() {
     e.preventDefault()
     setIsSubmitting(true)
     
+    // Generate the actual HTML template from the rebuy configuration
+    const generateCustomRebuyEmailHtml = (config: any, sellerLocation: string = "Playa del Carmen") => {
+      if (!config.enableRebuyEmail) {
+        // Return null for disabled rebuy email - system will not send rebuy emails
+        return null
+      }
+      
+      // Generate custom rebuy HTML template
+      return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${config.emailSubject}</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: ${config.emailHeaderFontFamily}; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .header { background-color: ${config.emailHeaderColor}; padding: 24px; text-align: center; }
+        .header h1 { color: white; font-family: ${config.emailHeaderFontFamily}; font-size: 24px; font-weight: bold; margin: 0; }
+        .content { padding: 24px; }
+        .message { text-align: center; margin-bottom: 24px; }
+        .message p { color: #374151; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5; margin: 0; }
+        .highlight-box { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 4px; }
+        .highlight-box p { color: #92400e; font-weight: 500; margin: 0; }
+        .cta-button { text-align: center; margin: 24px 0; }
+        .cta-button a { background-color: ${config.emailHeaderColor}; color: white; font-family: ${config.emailHeaderFontFamily}; font-size: 16px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
+        .details { background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 24px 0; }
+        .details h3 { color: #374151; font-weight: 600; margin: 0 0 12px 0; }
+        .detail-item { display: flex; justify-content: space-between; margin: 8px 0; }
+        .detail-label { color: #6b7280; font-weight: 500; }
+        .detail-value { color: #374151; font-weight: 600; }
+        .discount-banner { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 16px; text-align: center; margin: 24px 0; border-radius: 8px; }
+        .discount-banner h2 { margin: 0 0 8px 0; font-size: 20px; }
+        .discount-banner p { margin: 0; font-size: 14px; opacity: 0.9; }
+        .footer-message { text-align: center; border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px; }
+        .footer-message p { color: #6b7280; font-size: 14px; margin: 0; }
+        .email-footer { background-color: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280; }
+        @media only screen and (max-width: 600px) {
+            .container { margin: 0; border-radius: 0; }
+            .content { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>${config.emailHeader}</h1>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <!-- Main Message -->
+            <div class="message">
+                <p>Hello {customerName},</p>
+                <p style="margin-top: 16px;">${config.emailMessage}</p>
+            </div>
+            
+            <!-- Urgency Notice -->
+            <div class="highlight-box">
+                <p>⏰ Your ELocalPass expires in {hoursLeft} hours - Don't miss out on amazing local experiences!</p>
+            </div>
+            
+            <!-- Current Pass Details -->
+            <div class="details">
+                <h3>Your Current ELocalPass Details:</h3>
+                <div class="detail-item">
+                    <span class="detail-label">Pass Code:</span>
+                    <span class="detail-value">{qrCode}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Guests:</span>
+                    <span class="detail-value">{guests} people</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Duration:</span>
+                    <span class="detail-value">{days} days</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Expires:</span>
+                    <span class="detail-value">In {hoursLeft} hours</span>
+                </div>
+            </div>
+            
+            ${config.enableDiscountCode ? `
+            <!-- Discount Offer -->
+            <div class="discount-banner">
+                <h2>🎉 Special ${config.discountValue}${config.discountType === 'percentage' ? '%' : '$'} OFF!</h2>
+                <p>Get another ELocalPass now and save ${config.discountValue}${config.discountType === 'percentage' ? '%' : '$'} on your next adventure</p>
+            </div>
+            ` : ''}
+            
+            <!-- CTA Button -->
+            <div class="cta-button">
+                <a href="{rebuyUrl}">Get Another ELocalPass</a>
+            </div>
+            
+            <!-- Seller Tracking Message -->
+            ${config.enableSellerTracking ? `
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 24px 0; border-radius: 4px;">
+                <p style="color: #1e40af; font-weight: 500; margin: 0;">
+                    💼 Supporting Local Business: Your purchase helps support the local seller who provided your original pass.
+                </p>
+            </div>
+            ` : ''}
+            
+            <!-- Footer Message -->
+            <div class="footer-message">
+                <p>Thank you for choosing ELocalPass for your local adventures!</p>
+                <p style="margin-top: 8px; font-size: 12px;">
+                    Need help? Visit your <a href="{customerPortalUrl}" style="color: #3b82f6;">customer portal</a> or contact support.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Email Footer -->
+        <div class="email-footer">
+            <p>© 2025 eLocalPass. All rights reserved.</p>
+            <p style="margin-top: 4px;">
+                You received this email because your ELocalPass is expiring soon.
+                <a href="#" style="color: #3b82f6;">Unsubscribe</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>`
+    }
+
+    // Generate the HTML template
+    const customHTML = generateCustomRebuyEmailHtml(rebuyConfig)
+
     const saveToLocalStorage = () => {
-      // Simulate API call for localStorage save
       setTimeout(() => {
-        console.log('✅ REBUY SAVE DEBUG: Saving to localStorage')
-        
-        const urlParams = new URLSearchParams(window.location.search)
-        const qrId = urlParams.get('qrId')
-        
-        // Create the rebuy email configuration object
+        // Create the rebuy email configuration object with customHTML
         const rebuyEmailConfig = {
           id: qrId || Math.random().toString(36).substr(2, 9),
           name: `Rebuy Email Template - ${new Date().toLocaleDateString()}`,
           rebuyConfig: { ...rebuyConfig },
+          customHTML: customHTML, // Add the generated HTML
           createdAt: new Date(),
           isActive: true
         }
@@ -453,6 +580,7 @@ function RebuyEmailConfigPageContent() {
         id: qrId || Math.random().toString(36).substr(2, 9),
         name: `Rebuy Email Template - ${new Date().toLocaleDateString()}`,
         rebuyConfig: { ...rebuyConfig },
+        customHTML: customHTML,
         createdAt: new Date(),
         isActive: true
       }
