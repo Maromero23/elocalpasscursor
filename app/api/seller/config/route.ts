@@ -79,9 +79,12 @@ export async function GET(request: NextRequest) {
 
       console.log('✅ SELLER CONFIG: Configuration loaded successfully')
       console.log('🔍 SELLER CONFIG: Landing page URLs:', landingPageUrls.length)
+      console.log('🔍 SELLER CONFIG: Config name from saved config:', savedConfig.name)
 
       return NextResponse.json({
         ...config,
+        configName: savedConfig.name || `Configuration ${savedConfig.id.slice(-6)}`, // Add the configuration name
+        configDescription: savedConfig.description || 'Saved configuration',
         landingPageUrls,
         emailTemplates,
         landingPageConfig,
