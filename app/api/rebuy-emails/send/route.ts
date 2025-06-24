@@ -66,6 +66,15 @@ export async function POST(request: NextRequest) {
 
         console.log(`✅ REBUY EMAIL: QR ${qrCode.code} was created ${minutesSinceCreation} minutes ago, sending test rebuy email`)
 
+        // Get email templates from configuration
+        const emailTemplates = sellerConfig.emailTemplates ? JSON.parse(sellerConfig.emailTemplates) : null
+        
+        console.log(`📧 REBUY EMAIL: Checking email templates for QR ${qrCode.code}`)
+        console.log(`  - Has emailTemplates: ${!!emailTemplates}`)
+        console.log(`  - Has rebuyEmail: ${!!emailTemplates?.rebuyEmail}`)
+        console.log(`  - Has customHTML: ${!!emailTemplates?.rebuyEmail?.customHTML}`)
+        console.log(`  - Has htmlContent: ${!!emailTemplates?.rebuyEmail?.htmlContent}`)
+
         // Detect customer language (for now default to English, can be enhanced later)
         const customerLanguage = 'en' as const
         
@@ -75,24 +84,52 @@ export async function POST(request: NextRequest) {
         // Calculate hours left until expiration for email content
         const hoursLeft = Math.ceil((qrCode.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60))
 
-        // Create rebuy email HTML
-        const emailHtml = createRebuyEmailHtml({
-          customerName: qrCode.customerName || 'Valued Customer',
-          qrCode: qrCode.code,
-          guests: qrCode.guests,
-          days: qrCode.days,
-          hoursLeft: hoursLeft,
-          customerPortalUrl: customerPortalUrl,
-          language: customerLanguage,
-          rebuyUrl: customerPortalUrl // For now, use the same URL
-        })
+        let emailHtml: string
+        let emailSubject: string
 
-        // Send the rebuy email
-        const subject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+        // Check if we have custom rebuy email template
+        if (emailTemplates?.rebuyEmail?.customHTML || emailTemplates?.rebuyEmail?.htmlContent) {
+          console.log(`📧 REBUY EMAIL: Using custom template for QR ${qrCode.code}`)
+          const customTemplate = emailTemplates.rebuyEmail.customHTML || emailTemplates.rebuyEmail.htmlContent
+          
+          // Replace placeholders in custom template
+          emailHtml = customTemplate
+            .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+            .replace(/\{qrCode\}/g, qrCode.code)
+            .replace(/\{guests\}/g, qrCode.guests.toString())
+            .replace(/\{days\}/g, qrCode.days.toString())
+            .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+            .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+            .replace(/\{rebuyUrl\}/g, customerPortalUrl)
+
+          // Use custom subject if available, otherwise use default
+          if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
+            emailSubject = `🧪 TEST: ${emailTemplates.rebuyEmail.rebuyConfig.emailSubject}`
+          } else {
+            emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+          }
+        } else {
+          console.log(`📧 REBUY EMAIL: Using default template for QR ${qrCode.code} (no custom template found)`)
+          // Fall back to generic template
+          emailHtml = createRebuyEmailHtml({
+            customerName: qrCode.customerName || 'Valued Customer',
+            qrCode: qrCode.code,
+            guests: qrCode.guests,
+            days: qrCode.days,
+            hoursLeft: hoursLeft,
+            customerPortalUrl: customerPortalUrl,
+            language: customerLanguage,
+            rebuyUrl: customerPortalUrl
+          })
+          
+          emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+        }
+
+        console.log(`📧 REBUY EMAIL: Sending email to ${qrCode.customerEmail} with subject: ${emailSubject}`)
 
         const emailSent = await sendEmail({
           to: qrCode.customerEmail!,
-          subject: subject,
+          subject: emailSubject,
           html: emailHtml
         })
 
