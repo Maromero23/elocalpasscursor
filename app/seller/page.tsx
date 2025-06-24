@@ -3,8 +3,8 @@
 import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState, useEffect } from "react"
-import { ToastNotifications } from "@/components/toast-notification"import { useToast } from "@/hooks/use-toast"
 import { useToast } from "@/hooks/use-toast"
+import { ToastNotifications } from "@/components/toast-notification"
 
 interface QRConfig {
   // Configuration info
@@ -82,8 +82,8 @@ export default function SellerDashboard() {
         }
         // Don't auto-select any landing page - user should choose manually
       }
-    } catch (error) {
-      console.error('Error fetching config:', error)
+    } catch (err) {
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -151,8 +151,8 @@ export default function SellerDashboard() {
       } else {
         error('Error generating QR code')
       }
-    } catch (error) {
-      console.error('Error generating QR:', error)
+    } catch (err) {
+      console.error(err)
       error('Error generating QR code')
     } finally {
       setGenerating(false)
@@ -204,8 +204,8 @@ export default function SellerDashboard() {
       document.body.removeChild(link)
       
       success("QR Code Generated!", `QR code for "${urlName}" is being generated and downloaded!`)
-    } catch (error) {
-      console.error('Error generating QR code:', error)
+    } catch (err) {
+      console.error(err)
       error('Error generating QR code. Please try again.')
     }
   }
@@ -706,6 +706,7 @@ export default function SellerDashboard() {
             
           </div>
         </main>
+      </div>
           <ToastNotifications notifications={notifications} onRemove={removeToast} />
     </ProtectedRoute>
   )
