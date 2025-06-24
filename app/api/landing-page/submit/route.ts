@@ -189,7 +189,64 @@ ${t('email.welcome.signature', customerLanguage)}
     // Use custom email template if available (override translations)
     if (emailTemplates?.welcomeEmail) {
       const template = emailTemplates.welcomeEmail
-      if (template.subject) emailSubject = template.subject
+      
+      // Handle custom subject with translation
+      if (template.subject) {
+        emailSubject = template.subject
+        
+        // Translate custom subject for Spanish customers
+        if (customerLanguage === 'es') {
+          try {
+            // Try LibreTranslate first
+            const response = await fetch('https://libretranslate.com/translate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                q: template.subject,
+                source: 'en',
+                target: 'es',
+                format: 'text'
+              })
+            })
+            
+            if (response.ok) {
+              const result = await response.json()
+              if (result.translatedText && result.translatedText.trim()) {
+                emailSubject = result.translatedText
+              }
+            }
+          } catch (error) {
+            // Try MyMemory API as fallback
+            try {
+              const encodedText = encodeURIComponent(template.subject)
+              const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodedText}&langpair=en|es`)
+              
+              if (response.ok) {
+                const result = await response.json()
+                if (result.responseData && result.responseData.translatedText) {
+                  emailSubject = result.responseData.translatedText
+                }
+              }
+            } catch {}
+          }
+          
+          // Convert to informal Spanish (TÚ)
+          emailSubject = emailSubject
+            .replace(/\busted\b/gi, 'tú')
+            .replace(/\bUsted\b/g, 'Tú')
+            .replace(/\bsu\b/g, 'tu')
+            .replace(/\bSu\b/g, 'Tu')
+            .replace(/\bsus\b/g, 'tus')
+            .replace(/\bSus\b/g, 'Tus')
+            .replace(/\btiene\b/g, 'tienes')
+            .replace(/\bTiene\b/g, 'Tienes')
+            .replace(/\bpuede\b/g, 'puedes')
+            .replace(/\bPuede\b/g, 'Puedes')
+          
+          console.log(`📧 Translated custom subject: "${template.subject}" → "${emailSubject}"`)
+        }
+      }
+      
       if (template.content) {
         emailContent = template.content
           .replace(/\{customerName\}/g, formData.name)

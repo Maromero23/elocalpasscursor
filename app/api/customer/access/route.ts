@@ -201,10 +201,51 @@ export async function GET(request: NextRequest) {
               // Translate the email HTML
               const translatedEmailHTML = await translateEmailHTML(processedTemplate);
               
+              // Translate the email subject as well
+              const originalSubject = emailTemplates.welcomeEmail.subject || 'Your ELocalPass is Ready - Instant Access';
+              let translatedSubject = '¡Tu ELocalPass está listo! - Acceso inmediato'; // Default Spanish subject
+              
+              // Try to translate the custom subject if it exists
+              if (emailTemplates.welcomeEmail.subject && emailTemplates.welcomeEmail.subject !== 'Your ELocalPass is Ready - Instant Access') {
+                try {
+                  // Try LibreTranslate first
+                  const response = await fetch('https://libretranslate.com/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      q: originalSubject,
+                      source: 'en',
+                      target: 'es',
+                      format: 'text'
+                    })
+                  });
+                  
+                  if (response.ok) {
+                    const result = await response.json();
+                    if (result.translatedText && result.translatedText.trim()) {
+                      translatedSubject = result.translatedText;
+                    }
+                  }
+                } catch (error) {
+                  // Try MyMemory API as fallback
+                  try {
+                    const encodedSubject = encodeURIComponent(originalSubject);
+                    const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodedSubject}&langpair=en|es`);
+                    
+                    if (response.ok) {
+                      const result = await response.json();
+                      if (result.responseData && result.responseData.translatedText) {
+                        translatedSubject = result.responseData.translatedText;
+                      }
+                    }
+                  } catch {}
+                }
+              }
+
               // Send the translated email
               await sendEmail({
                 to: accessToken.customerEmail,
-                subject: '¡Tu ELocalPass está listo! - Acceso inmediato', // Spanish subject
+                subject: translatedSubject,
                 html: translatedEmailHTML
               });
               
