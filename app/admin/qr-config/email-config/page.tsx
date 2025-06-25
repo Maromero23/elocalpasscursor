@@ -537,7 +537,13 @@ function EmailConfigPageContent() {
             if (updateResponse.ok) {
               console.log('✅ EMAIL SAVE DEBUG: Successfully saved to database')
               setGeneratedEmailConfig(qrId)
-              toast.success('Email Configuration Saved', `Welcome Email Template saved to database successfully! Returning to QR Config...`)
+              
+              // Improved messaging based on template type
+              if (emailConfig.useDefaultEmail) {
+                toast.success('Default Template Confirmed', `ELocalPass default template confirmed and configured! Returning to QR Config...`)
+              } else {
+                toast.success('Custom Email Template Saved', `Custom welcome email template saved to database successfully! Returning to QR Config...`)
+              }
               
               // Redirect back to QR config after 2 seconds
               setTimeout(() => {
@@ -1260,7 +1266,11 @@ function EmailConfigPageContent() {
                   disabled={isSubmitting}
                   className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-105"
                 >
-                  {isSubmitting ? 'Creating Email Configuration...' : 'Create Email Configuration'}
+                  {isSubmitting ? 
+                    (emailConfig.useDefaultEmail ? 'Confirming Default Template...' : 'Creating Custom Email Configuration...') 
+                    : 
+                    (emailConfig.useDefaultEmail ? 'Confirm Default Template' : 'Create Custom Email Configuration')
+                  }
                 </button>
               </div>
             </form>

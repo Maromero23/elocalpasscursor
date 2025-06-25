@@ -3442,37 +3442,54 @@ function QRConfigPageContent() {
                       <input
                         type="radio"
                         checked={button4UserChoice === false}
-                        onChange={() => {
+                        onChange={async () => {
                           // Set interaction flag to prevent detection from overriding
                           setUserIsInteracting(true)
                           
                           // Set user choice first for immediate UI feedback
                           setButton4UserChoice(false)
                           
-                          // Handle async operations separately to avoid blocking UI
-                          const handleAsyncUpdate = async () => {
-                            try {
-                              // Update database - this ensures cross-device compatibility
-                              await updateConfig({ button4LandingPageRequired: false })
-                              
-                              // Also save to localStorage for immediate UI feedback
-                              localStorage.setItem('elocalpass-button4-config', JSON.stringify({
-                                choice: 'default',
-                                timestamp: new Date().toISOString()
-                              }))
-                              
-                              setConfiguredButtons((prev) => new Set(prev).add(4))
-                              console.log('🔧 BUTTON 4: Default template selected - saved to database and marked as configured')
-                              
-                              // Clear interaction flag after a longer delay for Default Template
-                              setTimeout(() => setUserIsInteracting(false), 1000)
-                            } catch (error) {
-                              console.error('Error updating Button 4 config:', error)
-                              setUserIsInteracting(false)
+                          // ✅ AUTO-COMPLETE: Immediately mark as configured and save default template
+                          try {
+                            // Update database - this ensures cross-device compatibility
+                            await updateConfig({ button4LandingPageRequired: false })
+                            
+                            // Save default template configuration automatically
+                            const defaultEmailConfig = {
+                              id: `default-template-${Date.now()}`,
+                              name: 'ELocalPass Default Template',
+                              subject: 'Your ELocalPass is Ready - Instant Access',
+                              content: 'Default ELocalPass welcome email template',
+                              customHTML: 'USE_DEFAULT_TEMPLATE',
+                              htmlContent: 'USE_DEFAULT_TEMPLATE',
+                              emailConfig: { useDefaultEmail: true },
+                              createdAt: new Date(),
+                              isActive: true
                             }
+                            
+                            // Save to localStorage for immediate feedback
+                            localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(defaultEmailConfig))
+                            localStorage.setItem('elocalpass-button4-config', JSON.stringify({
+                              choice: 'default',
+                              configured: true,
+                              timestamp: new Date().toISOString()
+                            }))
+                            
+                            // ✅ Mark as configured immediately
+                            setConfiguredButtons((prev) => new Set(prev).add(4))
+                            
+                            // Show success toast
+                            toast.success('Default Template Selected', 'Button 4 configured with ELocalPass default template!')
+                            
+                            console.log('✅ BUTTON 4: Default template auto-configured - saved to database and marked as configured')
+                            
+                            // Clear interaction flag
+                            setTimeout(() => setUserIsInteracting(false), 1000)
+                          } catch (error) {
+                            console.error('Error auto-configuring default template:', error)
+                            toast.error('Configuration Error', 'Failed to save default template configuration')
+                            setUserIsInteracting(false)
                           }
-                          
-                          handleAsyncUpdate()
                         }}
                         className="mt-1 h-4 w-4 text-purple-600"
                       />
@@ -3482,15 +3499,54 @@ function QRConfigPageContent() {
                       </div>
                     </label>
 
-                    {/* Default Template Button - Show when Default Template is selected */}
+                    {/* Default Template Preview - Show immediately when Default Template is selected */}
                     {button4UserChoice === false && (
-                      <div className="ml-7 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <button 
-                          onClick={() => router.push('/admin/qr-config/email-config?mode=default')}
-                          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
-                        >
-                          View Default Email Template →
-                        </button>
+                      <div className="ml-7 p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <div className="flex items-center space-x-2 text-green-600">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="font-medium text-gray-900">✅ Default Template Selected - Button 4 Configured!</span>
+                          </div>
+                        </div>
+                        
+                        {/* Inline Preview */}
+                        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-3">
+                          <div className="text-sm text-gray-600 mb-3">
+                            <strong>📧 Email Preview:</strong>
+                          </div>
+                          <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                            <div className="text-center mb-3">
+                              <div className="bg-blue-600 text-white px-4 py-2 rounded-t text-lg font-bold">
+                                Welcome to eLocalPass!
+                              </div>
+                            </div>
+                            <div className="space-y-2 text-sm">
+                              <p><strong>Subject:</strong> Your ELocalPass is Ready - Instant Access</p>
+                              <p><strong>Header:</strong> Welcome to eLocalPass!</p>
+                              <p><strong>Message:</strong> Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass</p>
+                              <div className="bg-blue-600 text-white px-3 py-1 rounded text-center text-xs inline-block">
+                                Create Your Account & Access Your eLocalPass
+                              </div>
+                              <p className="text-red-600 text-xs"><strong>⚠️ IMPORTANT:</strong> Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.</p>
+                              <p className="text-gray-500 text-xs">Enjoy hundreds of discounts throughout your destination!</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Optional Full Preview Button */}
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => router.push('/admin/qr-config/email-config?mode=default')}
+                            className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                          >
+                            📖 View Full Preview
+                          </button>
+                          <span className="text-xs text-green-600 flex items-center">
+                            Template automatically saved - no further action needed!
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
