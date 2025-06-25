@@ -3341,8 +3341,25 @@ function QRConfigPageContent() {
                               // Update database - this ensures cross-device compatibility
                               await updateConfig({ button4LandingPageRequired: true })
                               
-                              const welcomeEmailConfig = localStorage.getItem('elocalpass-welcome-email-config')
-                              const hasTemplate = !!(welcomeEmailConfig && welcomeEmailConfig !== 'null')
+                              // 🔧 FIX: Clear any default template data from localStorage when switching to Custom Template
+                              const existingConfig = localStorage.getItem('elocalpass-welcome-email-config')
+                              let hasTemplate = false
+                              
+                              if (existingConfig && existingConfig !== 'null') {
+                                try {
+                                  const parsed = JSON.parse(existingConfig)
+                                  // Only keep if it's a real custom template (not a default template)
+                                  if (parsed.customHTML !== 'USE_DEFAULT_TEMPLATE') {
+                                    hasTemplate = true
+                                  } else {
+                                    // Clear default template data when switching to custom
+                                    localStorage.removeItem('elocalpass-welcome-email-config')
+                                    console.log('🔧 BUTTON 4: Cleared default template data when switching to Custom Template')
+                                  }
+                                } catch (error) {
+                                  localStorage.removeItem('elocalpass-welcome-email-config')
+                                }
+                              }
                               
                               // Also save to localStorage for immediate UI feedback
                               localStorage.setItem('elocalpass-button4-config', JSON.stringify({
@@ -3453,6 +3470,20 @@ function QRConfigPageContent() {
                           try {
                             // Update database - this ensures cross-device compatibility
                             await updateConfig({ button4LandingPageRequired: false })
+                            
+                            // 🔧 FIX: Clear any existing custom template data when switching to Default Template
+                            const existingConfig = localStorage.getItem('elocalpass-welcome-email-config')
+                            if (existingConfig) {
+                              try {
+                                const parsed = JSON.parse(existingConfig)
+                                if (parsed.customHTML !== 'USE_DEFAULT_TEMPLATE') {
+                                  localStorage.removeItem('elocalpass-welcome-email-config')
+                                  console.log('🔧 BUTTON 4: Cleared custom template data when switching to Default Template')
+                                }
+                              } catch (error) {
+                                localStorage.removeItem('elocalpass-welcome-email-config')
+                              }
+                            }
                             
                             // Save default template configuration automatically
                             const defaultEmailConfig = {
