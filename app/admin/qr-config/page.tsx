@@ -4760,9 +4760,15 @@ function QRConfigPageContent() {
                                     <>
                                       <div className="flex items-center">
                                         <span className="text-green-600">✓</span>
-                                        <span>{config.emailTemplates?.rebuyEmail ? 'Custom template configured' : 'Default template'}</span>
+                                        <span>
+                                          {config.emailTemplates?.rebuyEmail?.customHTML === 'USE_DEFAULT_TEMPLATE' 
+                                            ? 'Default template used' 
+                                            : config.emailTemplates?.rebuyEmail 
+                                            ? 'Custom template configured' 
+                                            : 'Default template'}
+                                        </span>
                                       </div>
-                                      {config.emailTemplates?.rebuyEmail && (
+                                      {config.emailTemplates?.rebuyEmail && config.emailTemplates.rebuyEmail.customHTML !== 'USE_DEFAULT_TEMPLATE' && (
                                         <div className="mt-2 space-y-1">
                                           <p><strong>Template:</strong> 
                                             <button 
@@ -4780,6 +4786,46 @@ function QRConfigPageContent() {
                                             </button>
                                           </p>
                                           <p><strong>Created:</strong> {new Date(config.createdAt).toLocaleDateString()}</p>
+                                        </div>
+                                      )}
+                                      {config.emailTemplates?.rebuyEmail?.customHTML === 'USE_DEFAULT_TEMPLATE' && (
+                                        <div className="mt-2 space-y-1">
+                                          <p><strong>Template:</strong> 
+                                            <button 
+                                              onClick={() => {
+                                                // Create a temporary config for viewing the default template
+                                                const defaultTemplateConfig = {
+                                                  id: 'default-template-view',
+                                                  name: 'Default Rebuy Template (Preview)',
+                                                  customHTML: 'USE_DEFAULT_TEMPLATE',
+                                                  rebuyConfig: {
+                                                    emailSubject: 'Your ELocalPass Expires Soon - Don\'t Miss Out!',
+                                                    emailHeader: 'Don\'t Miss Out!',
+                                                    emailMessage: 'Your eLocalPass expires soon. Renew now with an exclusive discount!',
+                                                    emailCta: 'Get Another ELocalPass',
+                                                    emailFooter: 'Thank you for choosing ELocalPass!',
+                                                    enableDiscountCode: true,
+                                                    discountValue: 15,
+                                                    discountType: 'percentage'
+                                                  },
+                                                  createdAt: new Date(),
+                                                  isActive: true
+                                                }
+                                                
+                                                // Store in localStorage for the preview page
+                                                localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(defaultTemplateConfig))
+                                                
+                                                // Navigate to rebuy-config page in VIEW mode to preview the default template
+                                                window.open(`/admin/qr-config/rebuy-config?mode=view&template=default`, '_blank')
+                                              }}
+                                              className="text-blue-600 hover:text-blue-800 cursor-pointer underline ml-1"
+                                            >
+                                              Default Rebuy Email Template - {new Date(config.createdAt).toLocaleDateString()}
+                                            </button>
+                                          </p>
+                                          <p className="text-sm text-gray-600">
+                                            <strong>Type:</strong> System default template
+                                          </p>
                                         </div>
                                       )}
                                     </>
