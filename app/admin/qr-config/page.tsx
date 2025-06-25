@@ -106,6 +106,7 @@ function QRConfigPageContent() {
   
   // Track if user has made a choice for Button 5 (separate from database value)
   const [button5UserChoice, setButton5UserChoice] = useState<boolean | null>(null)
+  const [rebuyTemplateRefresh, setRebuyTemplateRefresh] = useState(0) // Force re-render for radio buttons
   const [userIsInteracting, setUserIsInteracting] = useState(false) // Flag to prevent detection from overriding user actions
 
   // Current session management for direct database saving
@@ -3657,6 +3658,8 @@ function QRConfigPageContent() {
                               type="radio"
                               name="rebuyTemplateType"
                               checked={(() => {
+                                // Use refresh state to trigger re-evaluation
+                                rebuyTemplateRefresh; // Force dependency
                                 const rebuyConfig = localStorage.getItem('elocalpass-rebuy-email-config')
                                 if (!rebuyConfig) return false // Don't default to any option
                                 try {
@@ -3715,6 +3718,7 @@ function QRConfigPageContent() {
                                   
                                   // Force re-render
                                   setButton5UserChoice(true)
+                                  setRebuyTemplateRefresh(prev => prev + 1) // Trigger radio button re-render
                                   
                                   console.log('✅ REBUY: Default template configured successfully')
                                   
@@ -3742,6 +3746,7 @@ function QRConfigPageContent() {
                                   
                                   localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(fallbackConfig))
                                   setButton5UserChoice(true)
+                                  setRebuyTemplateRefresh(prev => prev + 1) // Trigger radio button re-render
                                   
                                   console.log('✅ REBUY: Fallback default template configured')
                                 }
@@ -3751,12 +3756,13 @@ function QRConfigPageContent() {
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
                                 <span className="font-medium text-gray-900">Use Default Template</span>
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Recommended</span>
                               </div>
                               <p className="text-sm text-gray-600 mt-1">
                                 Quick setup with our professional rebuy email template. Perfect for most businesses.
                               </p>
                               {(() => {
+                                // Use refresh state to trigger re-evaluation
+                                rebuyTemplateRefresh; // Force dependency
                                 const rebuyConfig = localStorage.getItem('elocalpass-rebuy-email-config')
                                 if (!rebuyConfig) return null // Don't show any status when nothing is selected
                                 try {
@@ -3778,6 +3784,8 @@ function QRConfigPageContent() {
                               type="radio"
                               name="rebuyTemplateType"
                               checked={(() => {
+                                // Use refresh state to trigger re-evaluation
+                                rebuyTemplateRefresh; // Force dependency
                                 const rebuyConfig = localStorage.getItem('elocalpass-rebuy-email-config')
                                 if (!rebuyConfig) return false
                                 try {
@@ -3796,6 +3804,7 @@ function QRConfigPageContent() {
                                     if (config.customHTML !== 'USE_DEFAULT_TEMPLATE') {
                                       // Already have custom template, just select it
                                       setButton5UserChoice(true)
+                                      setRebuyTemplateRefresh(prev => prev + 1) // Trigger radio button re-render
                                       console.log('✅ REBUY: Custom template already configured, selected')
                                       return
                                     }
@@ -3813,7 +3822,6 @@ function QRConfigPageContent() {
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
                                 <span className="font-medium text-gray-900">Configure Custom Template</span>
-                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Advanced</span>
                               </div>
                               <p className="text-sm text-gray-600 mt-1">
                                 Create a personalized rebuy email with custom branding, colors, and messaging.
@@ -3821,6 +3829,8 @@ function QRConfigPageContent() {
                               
                               {/* Show custom template info if exists */}
                               {(() => {
+                                // Use refresh state to trigger re-evaluation
+                                rebuyTemplateRefresh; // Force dependency
                                 const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
                                 if (rebuyEmailConfig) {
                                   try {
