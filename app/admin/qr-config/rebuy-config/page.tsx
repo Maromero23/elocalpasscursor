@@ -314,13 +314,110 @@ function RebuyEmailConfigPageContent() {
     }
   }
 
-  const loadDefaultTemplate = () => {
-    const defaultTemplate = localStorage.getItem('elocalpass-rebuy-default-template')
-    if (defaultTemplate) {
-      const parsedTemplate = JSON.parse(defaultTemplate)
-      setDefaultTemplate(parsedTemplate)
-      // Automatically apply the default template to the form
-      setRebuyConfig(parsedTemplate)
+  const loadDefaultTemplate = async () => {
+    try {
+      const response = await fetch('/api/admin/rebuy-templates', {
+        method: 'GET',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+                 if (result.template && result.template.customHTML) {
+           // We need to extract rebuy config from the template or use defaults
+           const defaultConfig = {
+             // Timing Configuration
+             triggerHoursBefore: 12,
+             enableRebuyEmail: true,
+             
+             // Seller Tracking & Commission
+             enableSellerTracking: true,
+             commissionRate: 10,
+             trackingMethod: 'url_param',
+             renewalWebsiteUrl: 'https://elocalpass.com/renew',
+             trackingParameter: 'seller_id',
+             
+             // Discount Configuration
+             enableDiscountCode: true,
+             discountType: 'percentage',
+             discountValue: 15,
+             codePrefix: 'REBUY',
+             codeValidityDays: 7,
+             
+             // Enhanced Email Template Configuration
+             emailSubject: result.template.subject,
+             
+             // Header Typography
+             emailHeader: 'Don\'t Miss Out!',
+             emailHeaderColor: '#dc2626',
+             emailHeaderFontFamily: 'Arial, sans-serif',
+             emailHeaderFontSize: '28',
+             
+             // Main Message Typography  
+             emailMessage: 'Your eLocalPass expires soon. Renew now with an exclusive discount!',
+             emailMessageColor: '#374151',
+             emailMessageFontFamily: 'Arial, sans-serif',
+             emailMessageFontSize: '16',
+             
+             // CTA Button Typography
+             emailCta: 'Get Another ELocalPass',
+             emailCtaColor: '#ffffff',
+             emailCtaFontFamily: 'Arial, sans-serif',
+             emailCtaFontSize: '18',
+             emailCtaBackgroundColor: '#dc2626',
+             
+             // Footer Typography
+             emailFooter: 'Thank you for choosing ELocalPass for your local adventures!',
+             emailFooterColor: '#6b7280',
+             emailFooterFontFamily: 'Arial, sans-serif', 
+             emailFooterFontSize: '14',
+             
+             // Brand Colors
+             emailPrimaryColor: '#dc2626',
+             emailSecondaryColor: '#f97316',
+             emailBackgroundColor: '#ffffff',
+             
+             // Media Content
+             logoUrl: '',
+             bannerImages: [] as string[],
+             newBannerUrl: '',
+             videoUrl: '',
+             
+             // Affiliate Configuration
+             enableFeaturedPartners: true,
+             selectedAffiliates: [] as string[],
+             customAffiliateMessage: 'Don\'t forget these amazing discounts are waiting for you:',
+             
+             // Advanced Options
+             customCssStyles: '',
+             urgencyMessage: 'Only {hours_left} hours left!',
+             showExpirationTimer: true
+           }
+          setDefaultTemplate(defaultConfig)
+          setRebuyConfig(defaultConfig)
+          console.log('✅ Default rebuy template loaded from database')
+        }
+      } else {
+        console.log('ℹ️ No default rebuy template found in database, using fallback')
+        // Fallback to localStorage if database fails
+        const localTemplate = localStorage.getItem('elocalpass-rebuy-default-template')
+        if (localTemplate) {
+          const parsedTemplate = JSON.parse(localTemplate)
+          setDefaultTemplate(parsedTemplate)
+          setRebuyConfig(parsedTemplate)
+          console.log('✅ Loaded default template from localStorage fallback')
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading default template from database:', error)
+      // Fallback to localStorage
+      const localTemplate = localStorage.getItem('elocalpass-rebuy-default-template')
+      if (localTemplate) {
+        const parsedTemplate = JSON.parse(localTemplate)
+        setDefaultTemplate(parsedTemplate)
+        setRebuyConfig(parsedTemplate)
+        console.log('✅ Loaded default template from localStorage fallback after error')
+      }
     }
   }
 
@@ -349,10 +446,34 @@ function RebuyEmailConfigPageContent() {
     toast.success('Template Loaded', `Template "${template.name}" loaded successfully!`)
   }
 
-  const saveAsDefault = () => {
-    localStorage.setItem('elocalpass-rebuy-default-template', JSON.stringify(rebuyConfig))
-    setDefaultTemplate(rebuyConfig)
-    toast.success('Default Saved', 'Current configuration saved as default template!')
+  const saveAsDefault = async () => {
+    try {
+      const response = await fetch('/api/admin/rebuy-templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          rebuyConfig: rebuyConfig,
+          action: 'saveAsDefault'
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setDefaultTemplate(rebuyConfig)
+        toast.success('Default Saved to Database', `Template saved successfully! HTML Length: ${result.template.htmlLength} characters`)
+        console.log('✅ Default rebuy template saved to database:', result)
+      } else {
+        const error = await response.json()
+        toast.error('Failed to Save Default', error.details || 'Error saving default template to database')
+        console.error('❌ Error saving default template:', error)
+      }
+    } catch (error) {
+      console.error('❌ Error saving default template:', error)
+      toast.error('Network Error', 'Failed to save default template')
+    }
   }
 
   const loadDefault = () => {

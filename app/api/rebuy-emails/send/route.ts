@@ -87,13 +87,93 @@ export async function POST(request: NextRequest) {
         let emailHtml: string
         let emailSubject: string
 
-        // Check if we have custom rebuy email template
-        if (emailTemplates?.rebuyEmail?.customHTML || emailTemplates?.rebuyEmail?.htmlContent) {
-          console.log(`📧 REBUY EMAIL: Using custom template for QR ${qrCode.code}`)
-          const customTemplate = emailTemplates.rebuyEmail.customHTML || emailTemplates.rebuyEmail.htmlContent
+        // Check if we have rebuy email template configuration
+        if (emailTemplates?.rebuyEmail?.customHTML) {
           
-          // Replace placeholders in custom template
-          emailHtml = customTemplate
+          // Check if it's requesting the default rebuy template
+          if (emailTemplates.rebuyEmail.customHTML === 'USE_DEFAULT_TEMPLATE') {
+            console.log(`📧 REBUY EMAIL: Loading default template from RebuyEmailTemplate database for QR ${qrCode.code}`)
+            
+            try {
+              // Load default rebuy template from database (SEPARATE from welcome emails)
+              const defaultRebuyTemplate = await prisma.rebuyEmailTemplate.findFirst({
+                where: { isDefault: true }
+              })
+              
+              if (defaultRebuyTemplate && defaultRebuyTemplate.customHTML) {
+                console.log(`✅ REBUY EMAIL: Found default rebuy template in database`)
+                
+                // Use the database default template
+                emailHtml = defaultRebuyTemplate.customHTML
+                  .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+                  .replace(/\{qrCode\}/g, qrCode.code)
+                  .replace(/\{guests\}/g, qrCode.guests.toString())
+                  .replace(/\{days\}/g, qrCode.days.toString())
+                  .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                  .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+                  .replace(/\{rebuyUrl\}/g, customerPortalUrl)
+                
+                // Use database default subject
+                emailSubject = `🧪 TEST: ${defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'}`
+                
+              } else {
+                console.log(`⚠️ REBUY EMAIL: Default rebuy template in database is empty, falling back to generic template`)
+                // Fallback to generic template if database template is empty
+                emailHtml = createRebuyEmailHtml({
+                  customerName: qrCode.customerName || 'Valued Customer',
+                  qrCode: qrCode.code,
+                  guests: qrCode.guests,
+                  days: qrCode.days,
+                  hoursLeft: hoursLeft,
+                  customerPortalUrl: customerPortalUrl,
+                  language: customerLanguage,
+                  rebuyUrl: customerPortalUrl
+                })
+                emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+              }
+              
+            } catch (error) {
+              console.error(`❌ REBUY EMAIL: Error loading default template from database:`, error)
+              // Fallback to generic template on database error
+              emailHtml = createRebuyEmailHtml({
+                customerName: qrCode.customerName || 'Valued Customer',
+                qrCode: qrCode.code,
+                guests: qrCode.guests,
+                days: qrCode.days,
+                hoursLeft: hoursLeft,
+                customerPortalUrl: customerPortalUrl,
+                language: customerLanguage,
+                rebuyUrl: customerPortalUrl
+              })
+              emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+            }
+            
+          } else {
+            console.log(`📧 REBUY EMAIL: Using custom template for QR ${qrCode.code}`)
+            
+            // Use custom template from configuration
+            emailHtml = emailTemplates.rebuyEmail.customHTML
+              .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+              .replace(/\{qrCode\}/g, qrCode.code)
+              .replace(/\{guests\}/g, qrCode.guests.toString())
+              .replace(/\{days\}/g, qrCode.days.toString())
+              .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+              .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+              .replace(/\{rebuyUrl\}/g, customerPortalUrl)
+
+            // Use custom subject if available
+            if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
+              emailSubject = `🧪 TEST: ${emailTemplates.rebuyEmail.rebuyConfig.emailSubject}`
+            } else {
+              emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+            }
+          }
+          
+        } else if (emailTemplates?.rebuyEmail?.htmlContent) {
+          console.log(`📧 REBUY EMAIL: Using legacy htmlContent template for QR ${qrCode.code}`)
+          
+          // Legacy support for htmlContent field
+          emailHtml = emailTemplates.rebuyEmail.htmlContent
             .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
             .replace(/\{qrCode\}/g, qrCode.code)
             .replace(/\{guests\}/g, qrCode.guests.toString())
@@ -102,15 +182,16 @@ export async function POST(request: NextRequest) {
             .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
             .replace(/\{rebuyUrl\}/g, customerPortalUrl)
 
-          // Use custom subject if available, otherwise use default
           if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
             emailSubject = `🧪 TEST: ${emailTemplates.rebuyEmail.rebuyConfig.emailSubject}`
           } else {
             emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
           }
+          
         } else {
-          console.log(`📧 REBUY EMAIL: Using default template for QR ${qrCode.code} (no custom template found)`)
-          // Fall back to generic template
+          console.log(`📧 REBUY EMAIL: No rebuy template found, using generic fallback for QR ${qrCode.code}`)
+          
+          // No rebuy template configured - use generic fallback
           emailHtml = createRebuyEmailHtml({
             customerName: qrCode.customerName || 'Valued Customer',
             qrCode: qrCode.code,

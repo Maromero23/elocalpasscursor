@@ -3647,35 +3647,139 @@ function QRConfigPageContent() {
                           encouraging guests to purchase a new QR code for continued access.
                         </p>
                         
-                        {/* Check for existing rebuy email template */}
-                        {(() => {
-                          const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
-                          if (rebuyEmailConfig) {
-                            try {
-                              const rebuy = JSON.parse(rebuyEmailConfig)
-                              return (
-                                <div>
-                                  <div className="text-green-600">✓ Custom template configured</div>
-                                  <div className="mt-1">
-                                    <span className="font-medium text-gray-900">Template:</span> <span className="text-gray-900">{rebuy.name}</span>
-                                  </div>
-                                  <div>
-                                    <span className="font-medium text-gray-900">Created:</span> <span className="text-gray-900">{new Date(rebuy.createdAt).toLocaleDateString()}</span>
-                                  </div>
-                                </div>
-                              )
-                            } catch {
-                              return <div className="text-gray-900">Default template</div>
-                            }
-                          }
-                          return <div className="text-gray-900">Default template</div>
-                        })()}
-                        
-                        <Link href="/admin/qr-config/rebuy-config">
-                          <button className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-                            {localStorage.getItem('elocalpass-rebuy-email-config') ? 'Reconfigure' : 'Configure'} Rebuy Email →
-                          </button>
-                        </Link>
+                        {/* Template Selection Options */}
+                        <div className="space-y-3 mt-4">
+                          <h5 className="font-medium text-blue-900">Choose Template Type:</h5>
+                          
+                          {/* Default Template Option */}
+                          <label className="flex items-start space-x-3 cursor-pointer p-3 border border-blue-200 rounded-md hover:bg-blue-25">
+                            <input
+                              type="radio"
+                              name="rebuyTemplateType"
+                              checked={(() => {
+                                const rebuyConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+                                if (!rebuyConfig) return true // Default to default template
+                                try {
+                                  const config = JSON.parse(rebuyConfig)
+                                  return config.customHTML === 'USE_DEFAULT_TEMPLATE'
+                                } catch {
+                                  return true
+                                }
+                              })()}
+                              onChange={() => {
+                                // Clear custom template and set default template marker
+                                localStorage.removeItem('elocalpass-rebuy-email-config')
+                                
+                                // Set default template configuration
+                                const defaultRebuyConfig = {
+                                  id: 'default-rebuy-template',
+                                  name: 'Default Rebuy Template',
+                                  customHTML: 'USE_DEFAULT_TEMPLATE',
+                                  rebuyConfig: {
+                                    emailSubject: 'Your ELocalPass Expires Soon - Don\'t Miss Out!'
+                                  },
+                                  createdAt: new Date(),
+                                  isActive: true
+                                }
+                                
+                                localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(defaultRebuyConfig))
+                                
+                                // Force re-render
+                                setButton5UserChoice(true)
+                                
+                                console.log('✅ REBUY: Default template selected and configured')
+                              }}
+                              className="mt-1 h-4 w-4 text-blue-600"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium text-gray-900">Use Default Template</span>
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Recommended</span>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Quick setup with our professional rebuy email template. Perfect for most businesses.
+                              </p>
+                              {(() => {
+                                const rebuyConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+                                if (!rebuyConfig) return <div className="text-green-600 text-sm mt-1">✓ Currently selected</div>
+                                try {
+                                  const config = JSON.parse(rebuyConfig)
+                                  if (config.customHTML === 'USE_DEFAULT_TEMPLATE') {
+                                    return <div className="text-green-600 text-sm mt-1">✓ Currently selected</div>
+                                  }
+                                } catch {
+                                  return <div className="text-green-600 text-sm mt-1">✓ Currently selected</div>
+                                }
+                                return null
+                              })()}
+                            </div>
+                          </label>
+
+                          {/* Custom Template Option */}
+                          <label className="flex items-start space-x-3 cursor-pointer p-3 border border-blue-200 rounded-md hover:bg-blue-25">
+                            <input
+                              type="radio"
+                              name="rebuyTemplateType"
+                              checked={(() => {
+                                const rebuyConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+                                if (!rebuyConfig) return false
+                                try {
+                                  const config = JSON.parse(rebuyConfig)
+                                  return config.customHTML !== 'USE_DEFAULT_TEMPLATE'
+                                } catch {
+                                  return false
+                                }
+                              })()}
+                              onChange={() => {
+                                // Navigate to custom template configuration
+                                window.location.href = '/admin/qr-config/rebuy-config'
+                              }}
+                              className="mt-1 h-4 w-4 text-blue-600"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium text-gray-900">Configure Custom Template</span>
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Advanced</span>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Create a personalized rebuy email with custom branding, colors, and messaging.
+                              </p>
+                              
+                              {/* Show custom template info if exists */}
+                              {(() => {
+                                const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+                                if (rebuyEmailConfig) {
+                                  try {
+                                    const rebuy = JSON.parse(rebuyEmailConfig)
+                                    return (
+                                      <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                                        <div className="text-green-600 text-sm">✓ Custom template configured</div>
+                                        <div className="text-xs text-gray-600 mt-1">
+                                          <span className="font-medium">Template:</span> {rebuy.name}<br/>
+                                          <span className="font-medium">Created:</span> {new Date(rebuy.createdAt).toLocaleDateString()}
+                                        </div>
+                                      </div>
+                                    )
+                                  } catch {
+                                    return null
+                                  }
+                                }
+                                return null
+                              })()}
+                            </div>
+                          </label>
+
+                          {/* Configure Custom Template Button - Only show if custom is selected */}
+                          {localStorage.getItem('elocalpass-rebuy-email-config') && (
+                            <div className="pt-2">
+                              <Link href="/admin/qr-config/rebuy-config">
+                                <button className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
+                                  Reconfigure Custom Template →
+                                </button>
+                              </Link>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 
