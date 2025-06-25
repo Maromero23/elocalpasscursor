@@ -3658,36 +3658,93 @@ function QRConfigPageContent() {
                               name="rebuyTemplateType"
                               checked={(() => {
                                 const rebuyConfig = localStorage.getItem('elocalpass-rebuy-email-config')
-                                if (!rebuyConfig) return true // Default to default template
+                                if (!rebuyConfig) return false // Don't default to any option
                                 try {
                                   const config = JSON.parse(rebuyConfig)
                                   return config.customHTML === 'USE_DEFAULT_TEMPLATE'
                                 } catch {
-                                  return true
+                                  return false
                                 }
                               })()}
-                              onChange={() => {
-                                // Clear custom template and set default template marker
-                                localStorage.removeItem('elocalpass-rebuy-email-config')
-                                
-                                // Set default template configuration
-                                const defaultRebuyConfig = {
-                                  id: 'default-rebuy-template',
-                                  name: 'Default Rebuy Template',
-                                  customHTML: 'USE_DEFAULT_TEMPLATE',
-                                  rebuyConfig: {
-                                    emailSubject: 'Your ELocalPass Expires Soon - Don\'t Miss Out!'
-                                  },
-                                  createdAt: new Date(),
-                                  isActive: true
+                              onChange={async () => {
+                                try {
+                                  console.log('🎯 REBUY: Loading default template from database...')
+                                  
+                                  // Load default template from database
+                                  const response = await fetch('/api/admin/rebuy-templates', {
+                                    method: 'GET',
+                                    credentials: 'include'
+                                  })
+
+                                  let defaultRebuyConfig
+                                  
+                                  if (response.ok) {
+                                    const result = await response.json()
+                                    if (result.template && result.template.customHTML) {
+                                      console.log('✅ REBUY: Default template loaded from database')
+                                      
+                                      // Create config with database default template content
+                                      defaultRebuyConfig = {
+                                        id: 'default-rebuy-template',
+                                        name: 'Default Rebuy Template',
+                                        customHTML: 'USE_DEFAULT_TEMPLATE',
+                                        rebuyConfig: {
+                                          emailSubject: result.template.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!',
+                                          // Extract settings from database template or use defaults
+                                          emailHeader: 'Don\'t Miss Out!',
+                                          emailMessage: 'Your eLocalPass expires soon. Renew now with an exclusive discount!',
+                                          emailCta: 'Get Another ELocalPass',
+                                          emailFooter: 'Thank you for choosing ELocalPass!',
+                                          enableDiscountCode: true,
+                                          discountValue: 15,
+                                          discountType: 'percentage'
+                                        },
+                                        createdAt: new Date(),
+                                        isActive: true
+                                      }
+                                    } else {
+                                      console.log('⚠️ REBUY: No default template in database, using fallback')
+                                      throw new Error('No default template found')
+                                    }
+                                  } else {
+                                    throw new Error('Failed to load default template')
+                                  }
+                                  
+                                  // Save to localStorage
+                                  localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(defaultRebuyConfig))
+                                  
+                                  // Force re-render
+                                  setButton5UserChoice(true)
+                                  
+                                  console.log('✅ REBUY: Default template configured successfully')
+                                  
+                                } catch (error) {
+                                  console.error('❌ REBUY: Error loading default template:', error)
+                                  
+                                  // Fallback to basic default config
+                                  const fallbackConfig = {
+                                    id: 'default-rebuy-template',
+                                    name: 'Default Rebuy Template',
+                                    customHTML: 'USE_DEFAULT_TEMPLATE',
+                                    rebuyConfig: {
+                                      emailSubject: 'Your ELocalPass Expires Soon - Don\'t Miss Out!',
+                                      emailHeader: 'Don\'t Miss Out!',
+                                      emailMessage: 'Your eLocalPass expires soon. Renew now with an exclusive discount!',
+                                      emailCta: 'Get Another ELocalPass',
+                                      emailFooter: 'Thank you for choosing ELocalPass!',
+                                      enableDiscountCode: true,
+                                      discountValue: 15,
+                                      discountType: 'percentage'
+                                    },
+                                    createdAt: new Date(),
+                                    isActive: true
+                                  }
+                                  
+                                  localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(fallbackConfig))
+                                  setButton5UserChoice(true)
+                                  
+                                  console.log('✅ REBUY: Fallback default template configured')
                                 }
-                                
-                                localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(defaultRebuyConfig))
-                                
-                                // Force re-render
-                                setButton5UserChoice(true)
-                                
-                                console.log('✅ REBUY: Default template selected and configured')
                               }}
                               className="mt-1 h-4 w-4 text-blue-600"
                             />
@@ -3701,14 +3758,14 @@ function QRConfigPageContent() {
                               </p>
                               {(() => {
                                 const rebuyConfig = localStorage.getItem('elocalpass-rebuy-email-config')
-                                if (!rebuyConfig) return <div className="text-green-600 text-sm mt-1">✓ Currently selected</div>
+                                if (!rebuyConfig) return null // Don't show any status when nothing is selected
                                 try {
                                   const config = JSON.parse(rebuyConfig)
                                   if (config.customHTML === 'USE_DEFAULT_TEMPLATE') {
                                     return <div className="text-green-600 text-sm mt-1">✓ Currently selected</div>
                                   }
                                 } catch {
-                                  return <div className="text-green-600 text-sm mt-1">✓ Currently selected</div>
+                                  return null
                                 }
                                 return null
                               })()}
@@ -3731,7 +3788,24 @@ function QRConfigPageContent() {
                                 }
                               })()}
                               onChange={() => {
+                                // Check if we already have a custom template
+                                const rebuyConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+                                if (rebuyConfig) {
+                                  try {
+                                    const config = JSON.parse(rebuyConfig)
+                                    if (config.customHTML !== 'USE_DEFAULT_TEMPLATE') {
+                                      // Already have custom template, just select it
+                                      setButton5UserChoice(true)
+                                      console.log('✅ REBUY: Custom template already configured, selected')
+                                      return
+                                    }
+                                  } catch (error) {
+                                    console.log('Error parsing existing rebuy config:', error)
+                                  }
+                                }
+                                
                                 // Navigate to custom template configuration
+                                console.log('🎯 REBUY: Navigating to custom template configuration...')
                                 window.location.href = '/admin/qr-config/rebuy-config'
                               }}
                               className="mt-1 h-4 w-4 text-blue-600"
@@ -3751,15 +3825,18 @@ function QRConfigPageContent() {
                                 if (rebuyEmailConfig) {
                                   try {
                                     const rebuy = JSON.parse(rebuyEmailConfig)
-                                    return (
-                                      <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
-                                        <div className="text-green-600 text-sm">✓ Custom template configured</div>
-                                        <div className="text-xs text-gray-600 mt-1">
-                                          <span className="font-medium">Template:</span> {rebuy.name}<br/>
-                                          <span className="font-medium">Created:</span> {new Date(rebuy.createdAt).toLocaleDateString()}
+                                    // Only show if it's actually a custom template (not default)
+                                    if (rebuy.customHTML !== 'USE_DEFAULT_TEMPLATE') {
+                                      return (
+                                        <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                                          <div className="text-green-600 text-sm">✓ Custom template configured</div>
+                                          <div className="text-xs text-gray-600 mt-1">
+                                            <span className="font-medium">Template:</span> {rebuy.name}<br/>
+                                            <span className="font-medium">Created:</span> {new Date(rebuy.createdAt).toLocaleDateString()}
+                                          </div>
                                         </div>
-                                      </div>
-                                    )
+                                      )
+                                    }
                                   } catch {
                                     return null
                                   }
