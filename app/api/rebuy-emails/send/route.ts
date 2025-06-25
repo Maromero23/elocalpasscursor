@@ -74,6 +74,16 @@ export async function POST(request: NextRequest) {
         console.log(`  - Has rebuyEmail: ${!!emailTemplates?.rebuyEmail}`)
         console.log(`  - Has customHTML: ${!!emailTemplates?.rebuyEmail?.customHTML}`)
         console.log(`  - Has htmlContent: ${!!emailTemplates?.rebuyEmail?.htmlContent}`)
+        
+        // Enhanced debugging
+        if (emailTemplates?.rebuyEmail) {
+          console.log(`  - RebuyEmail object keys:`, Object.keys(emailTemplates.rebuyEmail))
+          console.log(`  - CustomHTML length:`, emailTemplates.rebuyEmail.customHTML?.length || 0)
+          console.log(`  - Has rebuyConfig:`, !!emailTemplates.rebuyEmail.rebuyConfig)
+          if (emailTemplates.rebuyEmail.rebuyConfig) {
+            console.log(`  - Email subject:`, emailTemplates.rebuyEmail.rebuyConfig.emailSubject)
+          }
+        }
 
         // Detect customer language (for now default to English, can be enhanced later)
         const customerLanguage = 'en' as const
@@ -87,10 +97,11 @@ export async function POST(request: NextRequest) {
         let emailHtml: string
         let emailSubject: string
 
-        // Check if we have custom rebuy email template
+        // Check if we have custom rebuy email template - IMPROVED DETECTION
         if (emailTemplates?.rebuyEmail?.customHTML || emailTemplates?.rebuyEmail?.htmlContent) {
-          console.log(`📧 REBUY EMAIL: Using custom template for QR ${qrCode.code}`)
+          console.log(`✅ REBUY EMAIL: Found custom template for QR ${qrCode.code}!`)
           const customTemplate = emailTemplates.rebuyEmail.customHTML || emailTemplates.rebuyEmail.htmlContent
+          console.log(`✅ REBUY EMAIL: Using custom template with ${customTemplate.length} characters`)
           
           // Replace placeholders in custom template
           emailHtml = customTemplate
@@ -105,11 +116,13 @@ export async function POST(request: NextRequest) {
           // Use custom subject if available, otherwise use default
           if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
             emailSubject = `🧪 TEST: ${emailTemplates.rebuyEmail.rebuyConfig.emailSubject}`
+            console.log(`✅ REBUY EMAIL: Using custom subject: ${emailSubject}`)
           } else {
             emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+            console.log(`⚠️ REBUY EMAIL: No custom subject, using default: ${emailSubject}`)
           }
         } else {
-          console.log(`📧 REBUY EMAIL: Using default template for QR ${qrCode.code} (no custom template found)`)
+          console.log(`❌ REBUY EMAIL: No custom template found for QR ${qrCode.code}, using fallback default`)
           // Fall back to generic template
           emailHtml = createRebuyEmailHtml({
             customerName: qrCode.customerName || 'Valued Customer',

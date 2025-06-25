@@ -615,12 +615,13 @@ function RebuyEmailConfigPageContent() {
       const urlParams = new URLSearchParams(window.location.search)
       const qrId = urlParams.get('qrId')
       
-      // Create the rebuy email configuration object
+      // Create the rebuy email configuration object with CORRECT structure for email sending
       const rebuyEmailConfig = {
         id: qrId || Math.random().toString(36).substr(2, 9),
         name: `Rebuy Email Template - ${new Date().toLocaleDateString()}`,
         rebuyConfig: { ...rebuyConfig },
-        customHTML: customHTML,
+        customHTML: customHTML,              // ← Direct access for email sender
+        htmlContent: customHTML,             // ← Alternative field for compatibility
         createdAt: new Date(),
         isActive: true
       }
