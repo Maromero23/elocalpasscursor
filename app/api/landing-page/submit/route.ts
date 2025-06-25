@@ -427,9 +427,71 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
         // Apply universal email translation for Spanish customers
         emailHtml = await translateEmailHTML(processedTemplate, customerLanguage)
         console.log(`📧 Using custom HTML template from QR configuration (translated for ${customerLanguage})`)
+      } else if (emailTemplates?.welcomeEmail?.customHTML === 'USE_DEFAULT_TEMPLATE') {
+        console.log(`📧 USE_DEFAULT_TEMPLATE detected - Loading actual default template`)
+        
+        // Load the actual default template from database
+        try {
+          const { PrismaClient } = await import('@prisma/client')
+          const prisma = new PrismaClient()
+          
+          const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
+            where: { isDefault: true }
+          })
+          
+          if (defaultTemplate && defaultTemplate.customHTML) {
+            console.log(`📧 FOUND DEFAULT TEMPLATE in database - Length: ${defaultTemplate.customHTML.length} chars`)
+            
+            let processedTemplate = defaultTemplate.customHTML
+              .replace(/\{customerName\}/g, formData.name)
+              .replace(/\{qrCode\}/g, qrCodeId)
+              .replace(/\{guests\}/g, guests.toString())
+              .replace(/\{days\}/g, days.toString())
+              .replace(/\{expirationDate\}/g, formattedExpirationDate)
+              .replace(/\{magicLink\}/g, magicLinkUrl || '')
+              .replace(/\{customerPortalUrl\}/g, magicLinkUrl || '')
+            
+            // Apply universal email translation for Spanish customers
+            emailHtml = await translateEmailHTML(processedTemplate, customerLanguage)
+            console.log(`📧 Using DEFAULT template from database (translated for ${customerLanguage})`)
+            
+            await prisma.$disconnect()
+          } else {
+            console.log(`⚠️ No default template found in database, falling back to generic template`)
+            await prisma.$disconnect()
+            
+            // Fallback to generic template
+            emailHtml = createWelcomeEmailHtml({
+              customerName: formData.name,
+              qrCode: qrCodeId,
+              guests: guests,
+              days: days,
+              expiresAt: formattedExpirationDate,
+              customerPortalUrl: deliveryMethod !== 'DIRECT' ? magicLinkUrl : undefined,
+              language: customerLanguage,
+              deliveryMethod: deliveryMethod
+            })
+            console.log(`📧 Generated fallback email HTML - Length: ${emailHtml.length} chars`)
+          }
+        } catch (error) {
+          console.error('❌ Error loading default template from database:', error)
+          
+          // Fallback to generic template
+          emailHtml = createWelcomeEmailHtml({
+            customerName: formData.name,
+            qrCode: qrCodeId,
+            guests: guests,
+            days: days,
+            expiresAt: formattedExpirationDate,
+            customerPortalUrl: deliveryMethod !== 'DIRECT' ? magicLinkUrl : undefined,
+            language: customerLanguage,
+            deliveryMethod: deliveryMethod
+          })
+          console.log(`📧 Generated error fallback email HTML - Length: ${emailHtml.length} chars`)
+        }
       } else {
-        console.log(`📧 NO CUSTOM HTML FOUND - Using default template`)
-        // Use default HTML template
+        console.log(`📧 NO CUSTOM HTML FOUND - Using generic default template`)
+        // Use generic default HTML template
         emailHtml = createWelcomeEmailHtml({
           customerName: formData.name,
           qrCode: qrCodeId,
@@ -440,7 +502,7 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
           language: customerLanguage,
           deliveryMethod: deliveryMethod
         })
-        console.log(`📧 Generated default email HTML - Length: ${emailHtml.length} chars`)
+        console.log(`📧 Generated generic default email HTML - Length: ${emailHtml.length} chars`)
       }
 
       // Send the email (now throws errors instead of returning false)

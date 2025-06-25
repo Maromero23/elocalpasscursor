@@ -479,8 +479,76 @@ ${t('email.welcome.signature', customerLanguage)}
         }
         
         console.log(`📧 Using custom HTML template from QR configuration (translated for ${customerLanguage})`)
+      } else if (emailTemplates?.welcomeEmail?.customHTML === 'USE_DEFAULT_TEMPLATE') {
+        console.log(`📧 USE_DEFAULT_TEMPLATE detected - Loading actual default template`)
+        
+        // Load the actual default template from database
+        try {
+          const { PrismaClient } = await import('@prisma/client')
+          const prisma = new PrismaClient()
+          
+          const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
+            where: { isDefault: true }
+          })
+          
+          if (defaultTemplate && defaultTemplate.customHTML) {
+            console.log(`📧 FOUND DEFAULT TEMPLATE in database - Length: ${defaultTemplate.customHTML.length} chars`)
+            
+            let processedTemplate = defaultTemplate.customHTML
+              .replace(/\{customerName\}/g, clientName)
+              .replace(/\{qrCode\}/g, qrCodeId)
+              .replace(/\{guests\}/g, guests.toString())
+              .replace(/\{days\}/g, days.toString())
+              .replace(/\{expirationDate\}/g, formattedExpirationDate)
+              .replace(/\{magicLink\}/g, magicLinkUrl || '')
+              .replace(/\{customerPortalUrl\}/g, magicLinkUrl || '')
+            
+            // Apply universal email translation for Spanish customers
+            emailHtml = await translateEmailHTML(processedTemplate, customerLanguage)
+            
+            // Use default template subject
+            if (defaultTemplate.subject) {
+              emailSubject = defaultTemplate.subject
+            }
+            
+            console.log(`📧 Using DEFAULT template from database (translated for ${customerLanguage})`)
+            
+            await prisma.$disconnect()
+          } else {
+            console.log(`⚠️ No default template found in database, falling back to generic template`)
+            await prisma.$disconnect()
+            
+            // Fallback to generic template
+            emailHtml = createWelcomeEmailHtml({
+              customerName: clientName,
+              qrCode: qrCodeId,
+              guests: guests,
+              days: days,
+              expiresAt: formattedExpirationDate,
+              customerPortalUrl: magicLinkUrl,
+              language: customerLanguage,
+              deliveryMethod: requestedDelivery
+            })
+            console.log(`📧 Generated fallback HTML template`)
+          }
+        } catch (error) {
+          console.error('❌ Error loading default template from database:', error)
+          
+          // Fallback to generic template
+          emailHtml = createWelcomeEmailHtml({
+            customerName: clientName,
+            qrCode: qrCodeId,
+            guests: guests,
+            days: days,
+            expiresAt: formattedExpirationDate,
+            customerPortalUrl: magicLinkUrl,
+            language: customerLanguage,
+            deliveryMethod: requestedDelivery
+          })
+          console.log(`📧 Generated error fallback HTML template`)
+        }
       } else {
-        // Use default HTML template
+        // Use generic default HTML template
         emailHtml = createWelcomeEmailHtml({
           customerName: clientName,
           qrCode: qrCodeId,
@@ -491,7 +559,7 @@ ${t('email.welcome.signature', customerLanguage)}
           language: customerLanguage,
           deliveryMethod: requestedDelivery
         })
-        console.log(`📧 Using default HTML template`)
+        console.log(`📧 Using generic default HTML template`)
       }
 
       // Send the email
