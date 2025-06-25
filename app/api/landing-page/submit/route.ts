@@ -442,6 +442,38 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
           if (defaultTemplate && defaultTemplate.customHTML) {
             console.log(`📧 FOUND DEFAULT TEMPLATE in database - Length: ${defaultTemplate.customHTML.length} chars`)
             
+            // 🔧 FIX: Update email subject from default template
+            if (defaultTemplate.subject) {
+              emailSubject = defaultTemplate.subject
+              console.log(`📧 Updated email subject from default template: "${emailSubject}"`)
+              
+              // Translate subject for Spanish customers
+              if (customerLanguage === 'es') {
+                try {
+                  const response = await fetch('https://libretranslate.com/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      q: defaultTemplate.subject,
+                      source: 'en',
+                      target: 'es',
+                      format: 'text'
+                    })
+                  })
+                  
+                  if (response.ok) {
+                    const result = await response.json()
+                    if (result.translatedText && result.translatedText.trim()) {
+                      emailSubject = result.translatedText
+                      console.log(`📧 Translated default subject: "${defaultTemplate.subject}" → "${emailSubject}"`)
+                    }
+                  }
+                } catch (error) {
+                  console.log('⚠️ Subject translation failed, using original')
+                }
+              }
+            }
+            
             let processedTemplate = defaultTemplate.customHTML
               .replace(/\{customerName\}/g, formData.name)
               .replace(/\{qrCode\}/g, qrCodeId)
