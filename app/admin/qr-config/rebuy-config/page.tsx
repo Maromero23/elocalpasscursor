@@ -543,6 +543,8 @@ function RebuyEmailConfigPageContent() {
         .countdown-timer p { color: #4a5568; font-weight: 500; margin: 0 0 8px 0; font-size: 14px; }
         .countdown-display { font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold; color: #2d3748; margin: 8px 0; }
         .countdown-label { font-size: 12px; color: #718096; margin: 0; }
+        .banner-images { margin: 20px 0; }
+        .banner-image { width: 100%; max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0; display: block; }
         .featured-partners { background-color: #fff7ed; padding: 16px; margin: 24px 0; border-radius: 8px; border-left: 4px solid #f97316; }
         .featured-partners h3 { color: #c2410c; font-weight: 600; margin: 0 0 12px 0; }
         .partners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
@@ -576,6 +578,29 @@ function RebuyEmailConfigPageContent() {
                 <p style="margin-top: 16px;">${config.emailMessage || 'Your eLocalPass expires soon. Renew now with an exclusive discount!'}</p>
             </div>
             
+            <!-- Banner Images Section -->
+            ${config.bannerImages && config.bannerImages.length > 0 ? `
+            <div class="banner-images">
+                ${config.bannerImages.map((imageUrl: string) => `
+                    <img src="${imageUrl}" alt="Promotional Banner" class="banner-image" />
+                `).join('')}
+            </div>
+            ` : ''}
+            
+            <!-- Video Section -->
+            ${config.videoUrl ? `
+            <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; text-align: center; margin: 24px 0;">
+                <div style="background-color: #e5e7eb; height: 128px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                    <div style="color: #6b7280;">
+                        🎥 Promotional Video<br>
+                        <span style="font-size: 12px;">Click to watch</span>
+                    </div>
+                </div>
+                <p style="font-size: 14px; color: #6b7280; margin: 0;">Watch this special message about your renewal!</p>
+                <a href="${config.videoUrl}" style="color: #3b82f6; text-decoration: none; font-size: 14px;">▶ Watch Video</a>
+            </div>
+            ` : ''}
+            
             <!-- Countdown Timer (if enabled) -->
             ${config.showExpirationTimer !== false ? `
             <div class="countdown-timer">
@@ -593,10 +618,6 @@ function RebuyEmailConfigPageContent() {
             <!-- Current Pass Details -->
             <div class="details">
                 <h3>Your Current ELocalPass Details:</h3>
-                <div class="detail-item">
-                    <span class="detail-label">Pass Code:</span>
-                    <span class="detail-value">{qrCode}</span>
-                </div>
                 <div class="detail-item">
                     <span class="detail-label">Guests:</span>
                     <span class="detail-value">{guests} people</span>
