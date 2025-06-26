@@ -150,22 +150,63 @@ export async function POST(request: NextRequest) {
             
           } else {
             console.log(`📧 REBUY EMAIL: Using custom template for QR ${qrCode.code}`)
+            console.log(`📧 REBUY EMAIL: Custom template length: ${emailTemplates.rebuyEmail.customHTML?.length || 0} characters`)
+            console.log(`📧 REBUY EMAIL: Custom template preview: ${(emailTemplates.rebuyEmail.customHTML || '').substring(0, 100)}...`)
             
-            // Use custom template from configuration
-            emailHtml = emailTemplates.rebuyEmail.customHTML
-              .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
-              .replace(/\{qrCode\}/g, qrCode.code)
-              .replace(/\{guests\}/g, qrCode.guests.toString())
-              .replace(/\{days\}/g, qrCode.days.toString())
-              .replace(/\{hoursLeft\}/g, hoursLeft.toString())
-              .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
-              .replace(/\{rebuyUrl\}/g, customerPortalUrl)
+            try {
+              // Use custom template from configuration
+              emailHtml = emailTemplates.rebuyEmail.customHTML
+                .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+                .replace(/\{qrCode\}/g, qrCode.code)
+                .replace(/\{guests\}/g, qrCode.guests.toString())
+                .replace(/\{days\}/g, qrCode.days.toString())
+                .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+                .replace(/\{rebuyUrl\}/g, customerPortalUrl)
 
-            // Use custom subject if available
-            if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
-              emailSubject = `🧪 TEST: ${emailTemplates.rebuyEmail.rebuyConfig.emailSubject}`
-            } else {
-              emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+              console.log(`✅ REBUY EMAIL: Custom template processed successfully. Final length: ${emailHtml.length} characters`)
+
+              // Use custom subject if available
+              if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
+                emailSubject = `🧪 TEST: ${emailTemplates.rebuyEmail.rebuyConfig.emailSubject}`
+              } else {
+                emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+              }
+              
+            } catch (templateError) {
+              console.error(`❌ REBUY EMAIL: Error processing custom template for QR ${qrCode.code}:`, templateError)
+              console.log(`📧 REBUY EMAIL: Falling back to default template due to custom template error`)
+              
+              // Fallback to default template on error
+              const defaultRebuyTemplate = await prisma.rebuyEmailTemplate.findFirst({
+                where: { isDefault: true }
+              })
+              
+              if (defaultRebuyTemplate && defaultRebuyTemplate.customHTML) {
+                emailHtml = defaultRebuyTemplate.customHTML
+                  .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+                  .replace(/\{qrCode\}/g, qrCode.code)
+                  .replace(/\{guests\}/g, qrCode.guests.toString())
+                  .replace(/\{days\}/g, qrCode.days.toString())
+                  .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                  .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+                  .replace(/\{rebuyUrl\}/g, customerPortalUrl)
+                
+                emailSubject = `🧪 TEST: ${defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'}`
+              } else {
+                // Final fallback to generic template
+                emailHtml = createRebuyEmailHtml({
+                  customerName: qrCode.customerName || 'Valued Customer',
+                  qrCode: qrCode.code,
+                  guests: qrCode.guests,
+                  days: qrCode.days,
+                  hoursLeft: hoursLeft,
+                  customerPortalUrl: customerPortalUrl,
+                  language: customerLanguage,
+                  rebuyUrl: customerPortalUrl
+                })
+                emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+              }
             }
           }
           
