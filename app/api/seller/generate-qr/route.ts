@@ -293,6 +293,12 @@ ${t('email.welcome.signature', customerLanguage)}
       console.log(`❌ REBUY EMAIL: Disabled for this configuration`)
     }
     
+    // Update analytics record with correct rebuyEmailScheduled value
+    await prisma.qRCodeAnalytics.updateMany({
+      where: { qrCodeId: qrCode.id },
+      data: { rebuyEmailScheduled: rebuyEmailScheduled }
+    })
+    
     // 🚀 SEND ACTUAL WELCOME EMAIL
     let emailSent = false
     try {
