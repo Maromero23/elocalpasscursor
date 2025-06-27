@@ -24,27 +24,27 @@ function generateRebuyHtmlWithConfig(config: any, replacements: any, existingHtm
     
     // Apply specific color updates with precise targeting
     if (config.emailHeaderColor) {
-      // Update header background color specifically
-      updatedHtml = updatedHtml.replace(/\.header\s*{\s*background-color:\s*[^;]*;/g, `.header { background-color: ${config.emailHeaderColor};`)
+      // Update header background color specifically - improved regex to handle any CSS properties
+      updatedHtml = updatedHtml.replace(/\.header\s*{([^}]*?)background-color:\s*[^;]*;([^}]*?)}/g, `.header {$1background-color: ${config.emailHeaderColor};$2}`)
       
       // Determine header text color based on background
       const headerTextColor = config.emailHeaderColor === '#fcfcfc' || config.emailHeaderColor === '#ffffff' ? '#374151' : 'white'
-      updatedHtml = updatedHtml.replace(/\.header\s+h1\s*{\s*color:\s*[^;]*;/g, `.header h1 { color: ${headerTextColor};`)
+      updatedHtml = updatedHtml.replace(/\.header\s+h1\s*{([^}]*?)color:\s*[^;]*;([^}]*?)}/g, `.header h1 {$1color: ${headerTextColor};$2}`)
     }
     
     if (config.emailCtaBackgroundColor) {
-      // Update CTA button background color specifically
-      updatedHtml = updatedHtml.replace(/\.cta-button\s+a\s*{\s*background-color:\s*[^;]*;/g, `.cta-button a { background-color: ${config.emailCtaBackgroundColor};`)
+      // Update CTA button background color specifically - improved regex
+      updatedHtml = updatedHtml.replace(/\.cta-button\s+a\s*{([^}]*?)background-color:\s*[^;]*;([^}]*?)}/g, `.cta-button a {$1background-color: ${config.emailCtaBackgroundColor};$2}`)
     }
     
     if (config.emailCtaColor) {
-      // Update CTA button text color specifically
-      updatedHtml = updatedHtml.replace(/(\.cta-button\s+a\s*{[^}]*color:\s*)[^;]*;/g, `$1${config.emailCtaColor};`)
+      // Update CTA button text color specifically - improved regex
+      updatedHtml = updatedHtml.replace(/\.cta-button\s+a\s*{([^}]*?)color:\s*[^;]*;([^}]*?)}/g, `.cta-button a {$1color: ${config.emailCtaColor};$2}`)
     }
     
     if (config.emailMessageColor) {
-      // Update message text colors specifically
-      updatedHtml = updatedHtml.replace(/\.message\s+p\s*{\s*color:\s*[^;]*;/g, `.message p { color: ${config.emailMessageColor};`)
+      // Update message text colors specifically - improved regex
+      updatedHtml = updatedHtml.replace(/\.message\s+p\s*{([^}]*?)color:\s*[^;]*;([^}]*?)}/g, `.message p {$1color: ${config.emailMessageColor};$2}`)
     }
     
     if (config.emailBackgroundColor) {
