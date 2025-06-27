@@ -323,79 +323,94 @@ function RebuyEmailConfigPageContent() {
 
       if (response.ok) {
         const result = await response.json()
-                 if (result.template && result.template.customHTML) {
-           // We need to extract rebuy config from the template or use defaults
-           const defaultConfig = {
-             // Timing Configuration
-             triggerHoursBefore: 12,
-             enableRebuyEmail: true,
-             
-             // Seller Tracking & Commission
-             enableSellerTracking: true,
-             commissionRate: 10,
-             trackingMethod: 'url_param',
-             renewalWebsiteUrl: 'https://elocalpass.com/renew',
-             trackingParameter: 'seller_id',
-             
-             // Discount Configuration
-             enableDiscountCode: true,
-             discountType: 'percentage',
-             discountValue: 15,
-             codePrefix: 'REBUY',
-             codeValidityDays: 7,
-             
-             // Enhanced Email Template Configuration
-             emailSubject: result.template.subject,
-             
-             // Header Typography
-             emailHeader: 'Don\'t Miss Out!',
-             emailHeaderColor: '#dc2626',
-             emailHeaderFontFamily: 'Arial, sans-serif',
-             emailHeaderFontSize: '28',
-             
-             // Main Message Typography  
-             emailMessage: 'Your eLocalPass expires soon. Renew now with an exclusive discount!',
-             emailMessageColor: '#374151',
-             emailMessageFontFamily: 'Arial, sans-serif',
-             emailMessageFontSize: '16',
-             
-             // CTA Button Typography
-             emailCta: 'Get Another ELocalPass',
-             emailCtaColor: '#ffffff',
-             emailCtaFontFamily: 'Arial, sans-serif',
-             emailCtaFontSize: '18',
-             emailCtaBackgroundColor: '#dc2626',
-             
-             // Footer Typography
-             emailFooter: 'Thank you for choosing ELocalPass for your local adventures!',
-             emailFooterColor: '#6b7280',
-             emailFooterFontFamily: 'Arial, sans-serif', 
-             emailFooterFontSize: '14',
-             
-             // Brand Colors
-             emailPrimaryColor: '#dc2626',
-             emailSecondaryColor: '#f97316',
-             emailBackgroundColor: '#ffffff',
-             
-             // Media Content
-             logoUrl: '',
-             bannerImages: [] as string[],
-             newBannerUrl: '',
-             videoUrl: '',
-             
-             // Affiliate Configuration
-             enableFeaturedPartners: true,
-             selectedAffiliates: [] as string[],
-             customAffiliateMessage: 'Don\'t forget these amazing discounts are waiting for you:',
-             
-             // Advanced Options
-             customCssStyles: '',
-             urgencyMessage: 'Only {hours_left} hours left!',
-             showExpirationTimer: true
-           }
+        if (result.template && result.template.customHTML) {
+          
+          // Try to load the actual saved rebuy configuration
+          if (result.template.headerText) {
+            try {
+              const savedRebuyConfig = JSON.parse(result.template.headerText)
+              console.log('✅ Loading actual saved rebuy configuration from database:', savedRebuyConfig)
+              setDefaultTemplate(savedRebuyConfig)
+              setRebuyConfig(savedRebuyConfig)
+              console.log('✅ Default rebuy template loaded from database with saved settings')
+              return // Successfully loaded saved configuration
+            } catch (error) {
+              console.log('⚠️ Could not parse saved rebuy config, using fallback defaults')
+            }
+          }
+          
+          // Fallback to basic defaults if no saved configuration
+          const defaultConfig = {
+            // Timing Configuration
+            triggerHoursBefore: 12,
+            enableRebuyEmail: true,
+            
+            // Seller Tracking & Commission
+            enableSellerTracking: true,
+            commissionRate: 10,
+            trackingMethod: 'url_param',
+            renewalWebsiteUrl: 'https://elocalpass.com/renew',
+            trackingParameter: 'seller_id',
+            
+            // Discount Configuration
+            enableDiscountCode: true,
+            discountType: 'percentage',
+            discountValue: 15,
+            codePrefix: 'REBUY',
+            codeValidityDays: 7,
+            
+            // Enhanced Email Template Configuration
+            emailSubject: result.template.subject,
+            
+            // Header Typography
+            emailHeader: 'Don\'t Miss Out!',
+            emailHeaderColor: '#dc2626',
+            emailHeaderFontFamily: 'Arial, sans-serif',
+            emailHeaderFontSize: '28',
+            
+            // Main Message Typography  
+            emailMessage: 'Your eLocalPass expires soon. Renew now with an exclusive discount!',
+            emailMessageColor: '#374151',
+            emailMessageFontFamily: 'Arial, sans-serif',
+            emailMessageFontSize: '16',
+            
+            // CTA Button Typography
+            emailCta: 'Get Another ELocalPass',
+            emailCtaColor: '#ffffff',
+            emailCtaFontFamily: 'Arial, sans-serif',
+            emailCtaFontSize: '18',
+            emailCtaBackgroundColor: '#dc2626',
+            
+            // Footer Typography
+            emailFooter: 'Thank you for choosing ELocalPass for your local adventures!',
+            emailFooterColor: '#6b7280',
+            emailFooterFontFamily: 'Arial, sans-serif', 
+            emailFooterFontSize: '14',
+            
+            // Brand Colors
+            emailPrimaryColor: '#dc2626',
+            emailSecondaryColor: '#f97316',
+            emailBackgroundColor: '#ffffff',
+            
+            // Media Content
+            logoUrl: '',
+            bannerImages: [] as string[],
+            newBannerUrl: '',
+            videoUrl: '',
+            
+            // Affiliate Configuration
+            enableFeaturedPartners: true,
+            selectedAffiliates: [] as string[],
+            customAffiliateMessage: 'Don\'t forget these amazing discounts are waiting for you:',
+            
+            // Advanced Options
+            customCssStyles: '',
+            urgencyMessage: 'Only {hours_left} hours left!',
+            showExpirationTimer: true
+          }
           setDefaultTemplate(defaultConfig)
           setRebuyConfig(defaultConfig)
-          console.log('✅ Default rebuy template loaded from database')
+          console.log('⚠️ Using fallback default configuration (no saved config found)')
         }
       } else {
         console.log('ℹ️ No default rebuy template found in database, using fallback')

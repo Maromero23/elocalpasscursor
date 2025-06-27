@@ -105,6 +105,8 @@ export async function POST(request: NextRequest) {
             name: 'Default Rebuy Template',
             subject: rebuyConfig.emailSubject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!',
             customHTML: customHTML,
+            // Store the complete rebuy configuration in headerText field (temporary solution)
+            headerText: JSON.stringify(rebuyConfig),
             isDefault: true,
             updatedAt: new Date()
           }
@@ -116,6 +118,8 @@ export async function POST(request: NextRequest) {
             name: 'Default Rebuy Template',
             subject: rebuyConfig.emailSubject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!',
             customHTML: customHTML,
+            // Store the complete rebuy configuration in headerText field (temporary solution)
+            headerText: JSON.stringify(rebuyConfig),
             isDefault: true
           }
         })
