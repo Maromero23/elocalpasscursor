@@ -3468,10 +3468,10 @@ function QRConfigPageContent() {
                           setButton4UserChoice(false)
                           
                           // ✅ AUTO-COMPLETE: Immediately mark as configured and save default template
-                          try {
-                            // Update database - this ensures cross-device compatibility
-                            await updateConfig({ button4LandingPageRequired: false })
-                            
+                            try {
+                              // Update database - this ensures cross-device compatibility
+                              await updateConfig({ button4LandingPageRequired: false })
+                              
                             // 🔧 FIX: Clear any existing custom template data when switching to Default Template
                             const existingConfig = localStorage.getItem('elocalpass-welcome-email-config')
                             if (existingConfig) {
@@ -3501,27 +3501,27 @@ function QRConfigPageContent() {
                             
                             // Save to localStorage for immediate feedback
                             localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(defaultEmailConfig))
-                            localStorage.setItem('elocalpass-button4-config', JSON.stringify({
-                              choice: 'default',
+                              localStorage.setItem('elocalpass-button4-config', JSON.stringify({
+                                choice: 'default',
                               configured: true,
-                              timestamp: new Date().toISOString()
-                            }))
-                            
+                                timestamp: new Date().toISOString()
+                              }))
+                              
                             // ✅ Mark as configured immediately
-                            setConfiguredButtons((prev) => new Set(prev).add(4))
+                              setConfiguredButtons((prev) => new Set(prev).add(4))
                             
                             // Show success toast
                             toast.success('Default Template Selected', 'Button 4 configured with ELocalPass default template!')
                             
                             console.log('✅ BUTTON 4: Default template auto-configured - saved to database and marked as configured')
-                            
+                              
                             // Clear interaction flag
-                            setTimeout(() => setUserIsInteracting(false), 1000)
-                          } catch (error) {
+                              setTimeout(() => setUserIsInteracting(false), 1000)
+                            } catch (error) {
                             console.error('Error auto-configuring default template:', error)
                             toast.error('Configuration Error', 'Failed to save default template configuration')
-                            setUserIsInteracting(false)
-                          }
+                              setUserIsInteracting(false)
+                            }
                         }}
                         className="mt-1 h-4 w-4 text-purple-600"
                       />
@@ -3569,12 +3569,12 @@ function QRConfigPageContent() {
                         
                         {/* Optional Full Preview Button */}
                         <div className="flex gap-2">
-                          <button 
-                            onClick={() => router.push('/admin/qr-config/email-config?mode=default')}
+                        <button 
+                          onClick={() => router.push('/admin/qr-config/email-config?mode=default')}
                             className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
-                          >
+                        >
                             📖 View Full Preview
-                          </button>
+                        </button>
                           <span className="text-xs text-green-600 flex items-center">
                             Template automatically saved - no further action needed!
                           </span>
@@ -3760,7 +3760,7 @@ function QRConfigPageContent() {
                               <p className="text-sm text-gray-600 mt-1">
                                 Quick setup with our professional rebuy email template. Perfect for most businesses.
                               </p>
-                              {(() => {
+                        {(() => {
                                 // Use refresh state to trigger re-evaluation
                                 rebuyTemplateRefresh; // Force dependency
                                 const rebuyConfig = localStorage.getItem('elocalpass-rebuy-email-config')
@@ -3831,39 +3831,39 @@ function QRConfigPageContent() {
                               {(() => {
                                 // Use refresh state to trigger re-evaluation
                                 rebuyTemplateRefresh; // Force dependency
-                                const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
-                                if (rebuyEmailConfig) {
-                                  try {
-                                    const rebuy = JSON.parse(rebuyEmailConfig)
+                          const rebuyEmailConfig = localStorage.getItem('elocalpass-rebuy-email-config')
+                          if (rebuyEmailConfig) {
+                            try {
+                              const rebuy = JSON.parse(rebuyEmailConfig)
                                     // Only show if it's actually a custom template (not default)
                                     if (rebuy.customHTML !== 'USE_DEFAULT_TEMPLATE') {
-                                      return (
+                              return (
                                         <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
                                           <div className="text-green-600 text-sm">✓ Custom template configured</div>
                                           <div className="text-xs text-gray-600 mt-1">
                                             <span className="font-medium">Template:</span> {rebuy.name}<br/>
                                             <span className="font-medium">Created:</span> {new Date(rebuy.createdAt).toLocaleDateString()}
-                                          </div>
-                                        </div>
-                                      )
+                                  </div>
+                                </div>
+                              )
                                     }
-                                  } catch {
+                            } catch {
                                     return null
-                                  }
-                                }
+                            }
+                          }
                                 return null
-                              })()}
+                        })()}
                             </div>
                           </label>
-
+                        
                           {/* Configure Custom Template Button - Only show if custom is selected */}
                           {localStorage.getItem('elocalpass-rebuy-email-config') && (
                             <div className="pt-2">
-                              <Link href="/admin/qr-config/rebuy-config">
-                                <button className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
+                        <Link href="/admin/qr-config/rebuy-config">
+                          <button className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
                                   Reconfigure Custom Template →
-                                </button>
-                              </Link>
+                          </button>
+                        </Link>
                             </div>
                           )}
                         </div>

@@ -86,22 +86,23 @@ export async function POST(request: NextRequest) {
 
       const customHTML = generateRebuyHtml(rebuyConfig)
 
-      // First, set all existing templates to not default
-      await prisma.rebuyEmailTemplate.updateMany({
-        where: { isDefault: true },
-        data: { isDefault: false }
-      })
-
-      // Find existing default template or create new one
+      // Find existing default template BEFORE clearing defaults
       let defaultTemplate = await prisma.rebuyEmailTemplate.findFirst({
         where: { isDefault: true }
       })
 
       if (defaultTemplate) {
+        // First, set all existing templates to not default
+        await prisma.rebuyEmailTemplate.updateMany({
+          where: { isDefault: true },
+          data: { isDefault: false }
+        })
+
         // Update existing default template
         defaultTemplate = await prisma.rebuyEmailTemplate.update({
           where: { id: defaultTemplate.id },
           data: {
+            name: 'Default Rebuy Template',
             subject: rebuyConfig.emailSubject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!',
             customHTML: customHTML,
             isDefault: true,
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
           }
         })
       } else {
-        // Create new default template
+        // Create new default template (first time)
         defaultTemplate = await prisma.rebuyEmailTemplate.create({
           data: {
             name: 'Default Rebuy Template',

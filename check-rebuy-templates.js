@@ -66,7 +66,7 @@ async function checkRebuyTemplates() {
           
           if (config.emailTemplates) {
             const emailTemplates = JSON.parse(config.emailTemplates);
-            
+          
             if (emailTemplates.rebuyEmail) {
               console.log(`   Has rebuy email template: ✅ YES`);
               
@@ -85,10 +85,10 @@ async function checkRebuyTemplates() {
                 console.log(`   Template Type: 🎨 CUSTOM TEMPLATE (legacy htmlContent)`);
                 console.log(`   HTML Length: ${emailTemplates.rebuyEmail.htmlContent.length} characters`);
                 console.log(`   HTML Preview: ${emailTemplates.rebuyEmail.htmlContent.substring(0, 100)}...`);
-              } else {
+      } else {
                 noTemplateCount++;
                 console.log(`   Template Type: ❌ NO TEMPLATE CONTENT`);
-              }
+      }
             } else {
               noTemplateCount++;
               console.log(`   Has rebuy email template: ❌ NO`);
@@ -96,7 +96,7 @@ async function checkRebuyTemplates() {
           } else {
             noTemplateCount++;
             console.log(`   Has email templates: ❌ NO`);
-          }
+        }
         }
       } catch (error) {
         console.log(`❌ Error parsing config ${config.name}:`, error.message);
@@ -109,7 +109,7 @@ async function checkRebuyTemplates() {
     console.log(`Configurations using DEFAULT template: ${defaultTemplateCount}`);
     console.log(`Configurations using CUSTOM template: ${customTemplateCount}`);
     console.log(`Configurations with NO template: ${noTemplateCount}`);
-    
+      
     if (noTemplateCount > 0) {
       console.log('\n🚨 ISSUES FOUND:');
       console.log(`${noTemplateCount} configurations have rebuy enabled but no email template!`);
@@ -122,7 +122,7 @@ async function checkRebuyTemplates() {
         console.log('\n🚨 DEFAULT TEMPLATE ISSUE:');
         console.log('Default rebuy template in database has no HTML content!');
         console.log('Configurations using default template will fall back to generic template.');
-      }
+        }
     }
     
     await prisma.$disconnect();

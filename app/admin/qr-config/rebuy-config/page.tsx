@@ -403,8 +403,8 @@ function RebuyEmailConfigPageContent() {
         const localTemplate = localStorage.getItem('elocalpass-rebuy-default-template')
         if (localTemplate) {
           const parsedTemplate = JSON.parse(localTemplate)
-          setDefaultTemplate(parsedTemplate)
-          setRebuyConfig(parsedTemplate)
+      setDefaultTemplate(parsedTemplate)
+      setRebuyConfig(parsedTemplate)
           console.log('✅ Loaded default template from localStorage fallback')
         }
       }
@@ -462,7 +462,7 @@ function RebuyEmailConfigPageContent() {
 
       if (response.ok) {
         const result = await response.json()
-        setDefaultTemplate(rebuyConfig)
+    setDefaultTemplate(rebuyConfig)
         toast.success('Default Saved to Database', `Template saved successfully! HTML Length: ${result.template.htmlLength} characters`)
         console.log('✅ Default rebuy template saved to database:', result)
       } else {
