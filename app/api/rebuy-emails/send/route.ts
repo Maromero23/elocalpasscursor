@@ -140,6 +140,10 @@ export async function POST(request: NextRequest) {
         console.log(`  - Has rebuyEmail: ${!!emailTemplates?.rebuyEmail}`)
         console.log(`  - Has customHTML: ${!!emailTemplates?.rebuyEmail?.customHTML}`)
         console.log(`  - Has htmlContent: ${!!emailTemplates?.rebuyEmail?.htmlContent}`)
+        console.log(`  - CustomHTML length: ${emailTemplates?.rebuyEmail?.customHTML?.length || 0}`)
+        console.log(`  - CustomHTML preview: ${(emailTemplates?.rebuyEmail?.customHTML || '').substring(0, 150)}`)
+        console.log(`  - CustomHTML includes "testing custom": ${(emailTemplates?.rebuyEmail?.customHTML || '').includes('testing custom')}`)
+        console.log(`  - CustomHTML includes "Featured Partners": ${(emailTemplates?.rebuyEmail?.customHTML || '').includes('Featured Partners')}`)
 
         // Detect customer language (for now default to English, can be enhanced later)
         const customerLanguage = 'en' as const
