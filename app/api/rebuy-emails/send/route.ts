@@ -6,86 +6,49 @@ import { detectLanguage, t, type SupportedLanguage } from '@/lib/translations'
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
-// Function to generate fresh HTML with current rebuy configuration based on original template structure
-function generateRebuyHtmlWithConfig(config: any, replacements: any) {
-  const isSpanish = false // For now, default to English (can be enhanced later)
+// Function to apply fresh colors to existing HTML template
+function generateRebuyHtmlWithConfig(config: any, replacements: any, existingHtml?: string) {
+  // If we have existing HTML, use it and just update the colors
+  if (existingHtml) {
+    let updatedHtml = existingHtml
+    
+    // Replace placeholders first
+    updatedHtml = updatedHtml
+      .replace(/\{customerName\}/g, replacements.customerName)
+      .replace(/\{qrCode\}/g, replacements.qrCode)
+      .replace(/\{guests\}/g, replacements.guests.toString())
+      .replace(/\{days\}/g, replacements.days.toString())
+      .replace(/\{hoursLeft\}/g, replacements.hoursLeft.toString())
+      .replace(/\{customerPortalUrl\}/g, replacements.customerPortalUrl)
+      .replace(/\{rebuyUrl\}/g, replacements.rebuyUrl)
+    
+    // Update colors in the existing HTML if configuration is available
+    if (config.emailHeaderColor) {
+      // Replace header background colors
+      updatedHtml = updatedHtml.replace(/(background-color:\s*)[^;]*(;|")/g, `$1${config.emailHeaderColor}$2`)
+      updatedHtml = updatedHtml.replace(/(background:\s*)[^;]*(;|")/g, `$1${config.emailHeaderColor}$2`)
+    }
+    
+    if (config.emailCtaBackgroundColor) {
+      // Replace CTA button colors - look for button classes or inline styles
+      updatedHtml = updatedHtml.replace(/(\.cta-button[^{]*{[^}]*background[^:]*:\s*)[^;]*(;)/g, `$1${config.emailCtaBackgroundColor}$2`)
+      updatedHtml = updatedHtml.replace(/(\.button[^{]*{[^}]*background[^:]*:\s*)[^;]*(;)/g, `$1${config.emailCtaBackgroundColor}$2`)
+    }
+    
+    if (config.emailMessageColor) {
+      // Replace text colors
+      updatedHtml = updatedHtml.replace(/(color:\s*)[^;]*(;|")/g, `$1${config.emailMessageColor}$2`)
+    }
+    
+    return updatedHtml
+  }
   
-  // Apply user's color configuration to the original rebuy template structure
-  const baseStyles = `
-    <style>
-      body { font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; line-height: 1.6; color: ${config.emailMessageColor || '#333'}; }
-      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-      .header { background: linear-gradient(135deg, ${config.emailHeaderColor || '#dc2626'} 0%, ${config.emailPrimaryColor || '#f97316'} 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-      .content { background: ${config.emailBackgroundColor || '#f9f9f9'}; padding: 30px; border-radius: 0 0 10px 10px; }
-      .urgency-section { background: #fef2f2; padding: 20px; margin: 20px 0; border-radius: 8px; border: 2px solid ${config.emailHeaderColor || '#dc2626'}; text-align: center; }
-      .details { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; }
-      .cta-button { display: inline-block; background: ${config.emailCtaBackgroundColor || config.emailHeaderColor || '#dc2626'}; color: ${config.emailCtaColor || 'white'}; padding: 20px 40px; text-decoration: none; border-radius: 8px; margin: 15px 0; font-size: ${config.emailCtaFontSize || '18'}px; font-weight: bold; font-family: ${config.emailCtaFontFamily || 'Arial, sans-serif'}; }
-      .footer { text-align: center; color: ${config.emailFooterColor || '#666'}; margin-top: 30px; font-size: ${config.emailFooterFontSize || '14'}px; font-family: ${config.emailFooterFontFamily || 'Arial, sans-serif'}; }
-      .timer { font-size: 24px; font-weight: bold; color: ${config.emailHeaderColor || '#dc2626'}; }
-      .header h1 { color: white; font-family: ${config.emailHeaderFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailHeaderFontSize || '24'}px; margin: 0; }
-    </style>
-  `
-  
+  // Fallback: if no existing HTML, return error message
   return `
-    <!DOCTYPE html>
     <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>${config.emailSubject || 'Your ELocalPass Expires Soon!'}</title>
-      ${baseStyles}
-    </head>
     <body>
-      <div class="container">
-        <div class="header">
-          <h1>⏰ ${config.emailHeader || 'Don\'t Let Your Local Adventure End!'}</h1>
-        </div>
-        
-        <div class="content">
-          <p>Hello ${replacements.customerName}!</p>
-          
-          <div class="urgency-section">
-            <h2>🚨 TIME RUNNING OUT!</h2>
-            <div class="timer">${replacements.hoursLeft} hours left</div>
-            <p>${config.urgencyMessage || 'Your ELocalPass expires soon. Don\'t lose your local discounts!'}</p>
-          </div>
-          
-          <div class="details">
-            <h3>📋 YOUR CURRENT PASS</h3>
-            <ul>
-              <li><strong>Code:</strong> ${replacements.qrCode}</li>
-              <li><strong>Guests:</strong> ${replacements.guests} people</li>
-              <li><strong>Duration:</strong> ${replacements.days} days</li>
-              <li><strong>Time left:</strong> ${replacements.hoursLeft} hours</li>
-            </ul>
-          </div>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <p style="font-size: 18px; margin-bottom: 20px;">
-              ${config.emailMessage || 'Keep enjoying amazing local experiences!'}
-            </p>
-            
-            <a href="${replacements.rebuyUrl}" class="cta-button">
-              🎯 ${config.emailCta || 'GET ANOTHER PASS'}
-            </a>
-          </div>
-          
-          <div class="details">
-            <h4>💡 Why renew?</h4>
-            <ul>
-              <li>✅ Keep saving at local restaurants</li>
-              <li>✅ Access to exclusive discounts</li>
-              <li>✅ Discover amazing new places</li>
-              <li>✅ Authentic experiences like a local</li>
-            </ul>
-          </div>
-          
-          <div class="footer">
-            <p>${config.emailFooter || 'Thank you for choosing ELocalPass!'}</p>
-            <p>Your local experience partner</p>
-          </div>
-        </div>
-      </div>
+      <h1>Error: No template HTML provided</h1>
+      <p>The rebuy email system should use your saved template HTML, not generate new content.</p>
     </body>
     </html>
   `
@@ -194,7 +157,7 @@ export async function POST(request: NextRequest) {
                     const savedRebuyConfig = JSON.parse(defaultRebuyTemplate.headerText)
                     console.log(`🎨 REBUY EMAIL: Regenerating HTML with saved color configuration`)
                     
-                    // Regenerate HTML with current colors instead of using stored HTML
+                    // Apply fresh colors to existing HTML template
                     emailHtml = generateRebuyHtmlWithConfig(savedRebuyConfig, {
                       customerName: qrCode.customerName || 'Valued Customer',
                       qrCode: qrCode.code,
@@ -203,7 +166,7 @@ export async function POST(request: NextRequest) {
                       hoursLeft: hoursLeft,
                       customerPortalUrl: customerPortalUrl,
                       rebuyUrl: customerPortalUrl
-                    })
+                    }, defaultRebuyTemplate.customHTML)
                     
                     emailSubject = `🧪 TEST: ${savedRebuyConfig.emailSubject || defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'}`
                     
@@ -277,16 +240,16 @@ export async function POST(request: NextRequest) {
               if (emailTemplates.rebuyEmail.rebuyConfig) {
                 console.log(`🎨 REBUY EMAIL: Regenerating custom template HTML with saved color configuration`)
                 
-                // Regenerate HTML with current colors from configuration
-                emailHtml = generateRebuyHtmlWithConfig(emailTemplates.rebuyEmail.rebuyConfig, {
-                  customerName: qrCode.customerName || 'Valued Customer',
-                  qrCode: qrCode.code,
-                  guests: qrCode.guests,
-                  days: qrCode.days,
-                  hoursLeft: hoursLeft,
-                  customerPortalUrl: customerPortalUrl,
-                  rebuyUrl: customerPortalUrl
-                })
+                                    // Apply fresh colors to existing custom template HTML
+                    emailHtml = generateRebuyHtmlWithConfig(emailTemplates.rebuyEmail.rebuyConfig, {
+                      customerName: qrCode.customerName || 'Valued Customer',
+                      qrCode: qrCode.code,
+                      guests: qrCode.guests,
+                      days: qrCode.days,
+                      hoursLeft: hoursLeft,
+                      customerPortalUrl: customerPortalUrl,
+                      rebuyUrl: customerPortalUrl
+                    }, emailTemplates.rebuyEmail.customHTML)
                 
                 emailSubject = `🧪 TEST: ${emailTemplates.rebuyEmail.rebuyConfig.emailSubject || 'Your ELocalPass - Get another one!'}`
                 
