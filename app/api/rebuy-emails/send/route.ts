@@ -27,8 +27,8 @@ function generateRebuyHtmlWithConfig(config: any, replacements: any, existingHtm
       // Update header background color specifically - improved regex to handle any CSS properties
       updatedHtml = updatedHtml.replace(/\.header\s*{([^}]*?)background-color:\s*[^;]*;([^}]*?)}/g, `.header {$1background-color: ${config.emailHeaderColor};$2}`)
       
-      // Determine header text color based on background
-      const headerTextColor = config.emailHeaderColor === '#fcfcfc' || config.emailHeaderColor === '#ffffff' ? '#374151' : 'white'
+      // Use configured header text color, or determine based on background as fallback
+      const headerTextColor = config.emailTextColor || (config.emailHeaderColor === '#fcfcfc' || config.emailHeaderColor === '#ffffff' ? '#374151' : 'white')
       updatedHtml = updatedHtml.replace(/\.header\s+h1\s*{([^}]*?)color:\s*[^;]*;([^}]*?)}/g, `.header h1 {$1color: ${headerTextColor};$2}`)
     }
     
