@@ -160,6 +160,11 @@ export async function POST(request: NextRequest) {
         // Check if we have rebuy email template configuration
         if (emailTemplates?.rebuyEmail?.customHTML) {
           
+          console.log(`🔍 DEBUG: CustomHTML value check for QR ${qrCode.code}`)
+          console.log(`  - CustomHTML === 'USE_DEFAULT_TEMPLATE': ${emailTemplates.rebuyEmail.customHTML === 'USE_DEFAULT_TEMPLATE'}`)
+          console.log(`  - CustomHTML length: ${emailTemplates.rebuyEmail.customHTML.length}`)
+          console.log(`  - CustomHTML includes 'testing custom': ${emailTemplates.rebuyEmail.customHTML.includes('testing custom')}`)
+          
           // Check if it's requesting the default rebuy template
           if (emailTemplates.rebuyEmail.customHTML === 'USE_DEFAULT_TEMPLATE') {
             console.log(`📧 REBUY EMAIL: Loading default template from RebuyEmailTemplate database for QR ${qrCode.code}`)
