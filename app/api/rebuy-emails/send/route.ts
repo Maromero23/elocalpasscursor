@@ -6,88 +6,89 @@ import { detectLanguage, t, type SupportedLanguage } from '@/lib/translations'
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
-// Function to generate fresh HTML with current rebuy configuration
+// Function to generate fresh HTML with current rebuy configuration based on original template structure
 function generateRebuyHtmlWithConfig(config: any, replacements: any) {
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${config.emailSubject}</title>
+  const isSpanish = false // For now, default to English (can be enhanced later)
+  
+  // Apply user's color configuration to the original rebuy template structure
+  const baseStyles = `
     <style>
-        body { margin: 0; padding: 0; font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; background-color: ${config.emailBackgroundColor || '#f5f5f5'}; }
-        .container { max-width: 600px; margin: 0 auto; background-color: ${config.emailBackgroundColor || 'white'}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        .header { background-color: ${config.emailHeaderColor || '#dc2626'}; padding: 24px; text-align: center; }
-        .header h1 { color: ${config.emailHeaderColor === '#9AE6B4' ? '#2D3748' : 'white'}; font-family: ${config.emailHeaderFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailHeaderFontSize || '24'}px; font-weight: bold; margin: 0; }
-        .content { padding: 24px; }
-        .message { text-align: center; margin-bottom: 24px; }
-        .message p { color: ${config.emailMessageColor || '#374151'}; font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailMessageFontSize || '16'}px; line-height: 1.5; margin: 0; }
-        .cta-button { text-align: center; margin: 24px 0; }
-        .cta-button a { background-color: ${config.emailCtaBackgroundColor || config.emailHeaderColor || '#dc2626'}; color: ${config.emailCtaColor || 'white'}; font-family: ${config.emailCtaFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailCtaFontSize || '16'}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
-        .footer-message { text-align: center; border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px; }
-        .footer-message p { color: ${config.emailFooterColor || '#6b7280'}; font-family: ${config.emailFooterFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailFooterFontSize || '14'}px; margin: 0; }
-        .discount-banner { background: linear-gradient(135deg, ${config.emailPrimaryColor || '#dc2626'}, ${config.emailSecondaryColor || '#ef4444'}); color: white; padding: 16px; text-align: center; margin: 24px 0; border-radius: 8px; }
-        .highlight-box { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 4px; }
-        .details { background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 24px 0; }
+      body { font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; line-height: 1.6; color: ${config.emailMessageColor || '#333'}; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, ${config.emailHeaderColor || '#dc2626'} 0%, ${config.emailPrimaryColor || '#f97316'} 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .content { background: ${config.emailBackgroundColor || '#f9f9f9'}; padding: 30px; border-radius: 0 0 10px 10px; }
+      .urgency-section { background: #fef2f2; padding: 20px; margin: 20px 0; border-radius: 8px; border: 2px solid ${config.emailHeaderColor || '#dc2626'}; text-align: center; }
+      .details { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; }
+      .cta-button { display: inline-block; background: ${config.emailCtaBackgroundColor || config.emailHeaderColor || '#dc2626'}; color: ${config.emailCtaColor || 'white'}; padding: 20px 40px; text-decoration: none; border-radius: 8px; margin: 15px 0; font-size: ${config.emailCtaFontSize || '18'}px; font-weight: bold; font-family: ${config.emailCtaFontFamily || 'Arial, sans-serif'}; }
+      .footer { text-align: center; color: ${config.emailFooterColor || '#666'}; margin-top: 30px; font-size: ${config.emailFooterFontSize || '14'}px; font-family: ${config.emailFooterFontFamily || 'Arial, sans-serif'}; }
+      .timer { font-size: 24px; font-weight: bold; color: ${config.emailHeaderColor || '#dc2626'}; }
+      .header h1 { color: white; font-family: ${config.emailHeaderFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailHeaderFontSize || '24'}px; margin: 0; }
     </style>
-</head>
-<body>
-    <div class="container">
+  `
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${config.emailSubject || 'Your ELocalPass Expires Soon!'}</title>
+      ${baseStyles}
+    </head>
+    <body>
+      <div class="container">
         <div class="header">
-            ${config.logoUrl ? `<div style="margin-bottom: 16px;"><img src="${config.logoUrl}" alt="Logo" style="height: 40px; width: auto;"></div>` : ''}
-            <h1>${config.emailHeader || 'Don\'t Miss Out!'}</h1>
+          <h1>⏰ ${config.emailHeader || 'Don\'t Let Your Local Adventure End!'}</h1>
         </div>
         
         <div class="content">
-            <div class="message">
-                <p>Hello ${replacements.customerName},</p>
-                <p style="margin-top: 16px;">${config.emailMessage || 'Your eLocalPass expires soon. Renew now with an exclusive discount!'}</p>
-            </div>
+          <p>Hello ${replacements.customerName}!</p>
+          
+          <div class="urgency-section">
+            <h2>🚨 TIME RUNNING OUT!</h2>
+            <div class="timer">${replacements.hoursLeft} hours left</div>
+            <p>${config.urgencyMessage || 'Your ELocalPass expires soon. Don\'t lose your local discounts!'}</p>
+          </div>
+          
+          <div class="details">
+            <h3>📋 YOUR CURRENT PASS</h3>
+            <ul>
+              <li><strong>Code:</strong> ${replacements.qrCode}</li>
+              <li><strong>Guests:</strong> ${replacements.guests} people</li>
+              <li><strong>Duration:</strong> ${replacements.days} days</li>
+              <li><strong>Time left:</strong> ${replacements.hoursLeft} hours</li>
+            </ul>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <p style="font-size: 18px; margin-bottom: 20px;">
+              ${config.emailMessage || 'Keep enjoying amazing local experiences!'}
+            </p>
             
-            <div class="highlight-box">
-                <p style="color: #92400e; font-weight: 500; margin: 0;">${config.urgencyMessage ? config.urgencyMessage.replace('{hours_left}', replacements.hoursLeft) : '⏰ Your ELocalPass expires in ' + replacements.hoursLeft + ' hours - Don\'t miss out!'}</p>
-            </div>
-            
-            <div class="details">
-                <h3 style="color: #374151; font-weight: 600; margin: 0 0 12px 0;">Your Current ELocalPass Details:</h3>
-                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
-                    <span style="color: #6b7280; font-weight: 500;">Pass Code:</span>
-                    <span style="color: #374151; font-weight: 600;">${replacements.qrCode}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
-                    <span style="color: #6b7280; font-weight: 500;">Guests:</span>
-                    <span style="color: #374151; font-weight: 600;">${replacements.guests} people</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
-                    <span style="color: #6b7280; font-weight: 500;">Days:</span>
-                    <span style="color: #374151; font-weight: 600;">${replacements.days} days</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
-                    <span style="color: #6b7280; font-weight: 500;">Expires:</span>
-                    <span style="color: #374151; font-weight: 600;">In ${replacements.hoursLeft} hours</span>
-                </div>
-            </div>
-            
-            ${config.enableDiscountCode ? `
-            <div class="discount-banner">
-                <h2 style="margin: 0 0 8px 0; font-size: 20px;">🎉 Special ${config.discountValue}${config.discountType === 'percentage' ? '%' : '$'} OFF!</h2>
-                <p style="margin: 0; font-size: 14px; opacity: 0.9;">Get another ELocalPass now and save!</p>
-            </div>
-            ` : ''}
-            
-            <div class="cta-button">
-                <a href="${replacements.rebuyUrl}">${config.emailCta || 'Get Another ELocalPass'}</a>
-            </div>
-            
-            <div class="footer-message">
-                <p>${config.emailFooter || 'Thank you for choosing ELocalPass for your local adventures!'}</p>
-            </div>
+            <a href="${replacements.rebuyUrl}" class="cta-button">
+              🎯 ${config.emailCta || 'GET ANOTHER PASS'}
+            </a>
+          </div>
+          
+          <div class="details">
+            <h4>💡 Why renew?</h4>
+            <ul>
+              <li>✅ Keep saving at local restaurants</li>
+              <li>✅ Access to exclusive discounts</li>
+              <li>✅ Discover amazing new places</li>
+              <li>✅ Authentic experiences like a local</li>
+            </ul>
+          </div>
+          
+          <div class="footer">
+            <p>${config.emailFooter || 'Thank you for choosing ELocalPass!'}</p>
+            <p>Your local experience partner</p>
+          </div>
         </div>
-    </div>
-</body>
-</html>`
-
-  return html
+      </div>
+    </body>
+    </html>
+  `
 }
 
 export async function POST(request: NextRequest) {
