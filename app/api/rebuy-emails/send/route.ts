@@ -22,22 +22,40 @@ function generateRebuyHtmlWithConfig(config: any, replacements: any, existingHtm
       .replace(/\{customerPortalUrl\}/g, replacements.customerPortalUrl)
       .replace(/\{rebuyUrl\}/g, replacements.rebuyUrl)
     
-    // Update colors in the existing HTML if configuration is available
+    // Apply specific color updates with precise targeting
     if (config.emailHeaderColor) {
-      // Replace header background colors
-      updatedHtml = updatedHtml.replace(/(background-color:\s*)[^;]*(;|")/g, `$1${config.emailHeaderColor}$2`)
-      updatedHtml = updatedHtml.replace(/(background:\s*)[^;]*(;|")/g, `$1${config.emailHeaderColor}$2`)
+      // Update header background color specifically
+      updatedHtml = updatedHtml.replace(/\.header\s*{\s*background-color:\s*[^;]*;/g, `.header { background-color: ${config.emailHeaderColor};`)
+      
+      // Determine header text color based on background
+      const headerTextColor = config.emailHeaderColor === '#fcfcfc' || config.emailHeaderColor === '#ffffff' ? '#374151' : 'white'
+      updatedHtml = updatedHtml.replace(/\.header\s+h1\s*{\s*color:\s*[^;]*;/g, `.header h1 { color: ${headerTextColor};`)
     }
     
     if (config.emailCtaBackgroundColor) {
-      // Replace CTA button colors - look for button classes or inline styles
-      updatedHtml = updatedHtml.replace(/(\.cta-button[^{]*{[^}]*background[^:]*:\s*)[^;]*(;)/g, `$1${config.emailCtaBackgroundColor}$2`)
-      updatedHtml = updatedHtml.replace(/(\.button[^{]*{[^}]*background[^:]*:\s*)[^;]*(;)/g, `$1${config.emailCtaBackgroundColor}$2`)
+      // Update CTA button background color specifically
+      updatedHtml = updatedHtml.replace(/\.cta-button\s+a\s*{\s*background-color:\s*[^;]*;/g, `.cta-button a { background-color: ${config.emailCtaBackgroundColor};`)
+    }
+    
+    if (config.emailCtaColor) {
+      // Update CTA button text color specifically
+      updatedHtml = updatedHtml.replace(/(\.cta-button\s+a\s*{[^}]*color:\s*)[^;]*;/g, `$1${config.emailCtaColor};`)
     }
     
     if (config.emailMessageColor) {
-      // Replace text colors
-      updatedHtml = updatedHtml.replace(/(color:\s*)[^;]*(;|")/g, `$1${config.emailMessageColor}$2`)
+      // Update message text colors specifically
+      updatedHtml = updatedHtml.replace(/\.message\s+p\s*{\s*color:\s*[^;]*;/g, `.message p { color: ${config.emailMessageColor};`)
+    }
+    
+    if (config.emailBackgroundColor) {
+      // Update body and container background colors
+      updatedHtml = updatedHtml.replace(/body\s*{\s*([^}]*background-color:\s*)[^;]*;/g, `body { $1${config.emailBackgroundColor};`)
+      updatedHtml = updatedHtml.replace(/\.container\s*{\s*([^}]*background-color:\s*)[^;]*;/g, `.container { $1${config.emailBackgroundColor};`)
+    }
+    
+    if (config.emailFooterColor) {
+      // Update footer text color
+      updatedHtml = updatedHtml.replace(/\.footer-message\s+p\s*{\s*color:\s*[^;]*;/g, `.footer-message p { color: ${config.emailFooterColor};`)
     }
     
     return updatedHtml
@@ -153,35 +171,23 @@ export async function POST(request: NextRequest) {
                 
                 // Try to get saved rebuy configuration for fresh HTML generation
                 if (defaultRebuyTemplate.headerText) {
+                  // The template already has the correct colors saved, just replace placeholders
+                  console.log(`✅ REBUY EMAIL: Using saved template HTML with current colors`)
+                  
+                  emailHtml = defaultRebuyTemplate.customHTML
+                    .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+                    .replace(/\{qrCode\}/g, qrCode.code)
+                    .replace(/\{guests\}/g, qrCode.guests.toString())
+                    .replace(/\{days\}/g, qrCode.days.toString())
+                    .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                    .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+                    .replace(/\{rebuyUrl\}/g, customerPortalUrl)
+                  
+                  // Get subject from saved config if available
                   try {
                     const savedRebuyConfig = JSON.parse(defaultRebuyTemplate.headerText)
-                    console.log(`🎨 REBUY EMAIL: Regenerating HTML with saved color configuration`)
-                    
-                    // Apply fresh colors to existing HTML template
-                    emailHtml = generateRebuyHtmlWithConfig(savedRebuyConfig, {
-                      customerName: qrCode.customerName || 'Valued Customer',
-                      qrCode: qrCode.code,
-                      guests: qrCode.guests,
-                      days: qrCode.days,
-                      hoursLeft: hoursLeft,
-                      customerPortalUrl: customerPortalUrl,
-                      rebuyUrl: customerPortalUrl
-                    }, defaultRebuyTemplate.customHTML)
-                    
                     emailSubject = `🧪 TEST: ${savedRebuyConfig.emailSubject || defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'}`
-                    
                   } catch (error) {
-                    console.log(`⚠️ REBUY EMAIL: Could not parse saved config, using stored HTML`)
-                    // Fallback to stored HTML if config parsing fails
-                    emailHtml = defaultRebuyTemplate.customHTML
-                      .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
-                      .replace(/\{qrCode\}/g, qrCode.code)
-                      .replace(/\{guests\}/g, qrCode.guests.toString())
-                      .replace(/\{days\}/g, qrCode.days.toString())
-                      .replace(/\{hoursLeft\}/g, hoursLeft.toString())
-                      .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
-                      .replace(/\{rebuyUrl\}/g, customerPortalUrl)
-                    
                     emailSubject = `🧪 TEST: ${defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'}`
                   }
                 } else {
@@ -236,36 +242,22 @@ export async function POST(request: NextRequest) {
             console.log(`📧 REBUY EMAIL: Custom template preview: ${(emailTemplates.rebuyEmail.customHTML || '').substring(0, 100)}...`)
             
             try {
-              // Check if we have rebuy configuration to regenerate HTML with fresh colors
-              if (emailTemplates.rebuyEmail.rebuyConfig) {
-                console.log(`🎨 REBUY EMAIL: Regenerating custom template HTML with saved color configuration`)
-                
-                                    // Apply fresh colors to existing custom template HTML
-                    emailHtml = generateRebuyHtmlWithConfig(emailTemplates.rebuyEmail.rebuyConfig, {
-                      customerName: qrCode.customerName || 'Valued Customer',
-                      qrCode: qrCode.code,
-                      guests: qrCode.guests,
-                      days: qrCode.days,
-                      hoursLeft: hoursLeft,
-                      customerPortalUrl: customerPortalUrl,
-                      rebuyUrl: customerPortalUrl
-                    }, emailTemplates.rebuyEmail.customHTML)
-                
-                emailSubject = `🧪 TEST: ${emailTemplates.rebuyEmail.rebuyConfig.emailSubject || 'Your ELocalPass - Get another one!'}`
-                
-              } else {
-                console.log(`📧 REBUY EMAIL: No rebuy config found, using stored custom HTML`)
-                
-                // Use stored custom template with placeholder replacement
-                emailHtml = emailTemplates.rebuyEmail.customHTML
-                  .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
-                  .replace(/\{qrCode\}/g, qrCode.code)
-                  .replace(/\{guests\}/g, qrCode.guests.toString())
-                  .replace(/\{days\}/g, qrCode.days.toString())
-                  .replace(/\{hoursLeft\}/g, hoursLeft.toString())
-                  .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
-                  .replace(/\{rebuyUrl\}/g, customerPortalUrl)
+              // Use custom template HTML directly (colors are already saved in the HTML)
+              console.log(`✅ REBUY EMAIL: Using custom template HTML with saved colors`)
+              
+              emailHtml = emailTemplates.rebuyEmail.customHTML
+                .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+                .replace(/\{qrCode\}/g, qrCode.code)
+                .replace(/\{guests\}/g, qrCode.guests.toString())
+                .replace(/\{days\}/g, qrCode.days.toString())
+                .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+                .replace(/\{rebuyUrl\}/g, customerPortalUrl)
 
+              // Get subject from rebuy config if available
+              if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
+                emailSubject = `🧪 TEST: ${emailTemplates.rebuyEmail.rebuyConfig.emailSubject}`
+              } else {
                 emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
               }
 
