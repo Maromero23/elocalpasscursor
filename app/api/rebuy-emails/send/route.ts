@@ -7,7 +7,7 @@ import { detectLanguage, t, type SupportedLanguage } from '@/lib/translations'
 export const dynamic = 'force-dynamic'
 
 // Function to apply fresh colors to existing HTML template
-function generateRebuyHtmlWithConfig(config: any, replacements: any, existingHtml?: string) {
+function generateRebuyHtmlWithConfig(config: any, replacements: any, existingHtml?: string, preserveTemplateColors = false) {
   // If we have existing HTML, use it and just update the colors
   if (existingHtml) {
     let updatedHtml = existingHtml
@@ -21,6 +21,12 @@ function generateRebuyHtmlWithConfig(config: any, replacements: any, existingHtm
       .replace(/\{hoursLeft\}/g, replacements.hoursLeft.toString())
       .replace(/\{customerPortalUrl\}/g, replacements.customerPortalUrl)
       .replace(/\{rebuyUrl\}/g, replacements.rebuyUrl)
+    
+    // Skip color replacement if preserveTemplateColors is true
+    if (preserveTemplateColors) {
+      console.log('🎨 PRESERVING CUSTOM TEMPLATE COLORS - skipping color replacement')
+      return updatedHtml
+    }
     
     // Apply specific color updates with precise targeting
     if (config.emailHeaderColor) {
@@ -251,8 +257,8 @@ export async function POST(request: NextRequest) {
             console.log(`📧 REBUY EMAIL: Custom template preview: ${(emailTemplates.rebuyEmail.customHTML || '').substring(0, 100)}...`)
             
             try {
-              // Use custom template HTML directly (colors are already saved in the HTML)
-              console.log(`✅ REBUY EMAIL: Using custom template HTML with saved colors`)
+              // Use custom template HTML directly - PRESERVE embedded colors
+              console.log(`✅ REBUY EMAIL: Using custom template HTML with PRESERVED embedded colors`)
               
               emailHtml = emailTemplates.rebuyEmail.customHTML
                 .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
@@ -271,6 +277,7 @@ export async function POST(request: NextRequest) {
               }
 
               console.log(`✅ REBUY EMAIL: Custom template processed successfully. Final length: ${emailHtml.length} characters`)
+              console.log(`🎨 REBUY EMAIL: Custom template colors preserved - no config color overrides applied`)
               
             } catch (templateError) {
               console.error(`❌ REBUY EMAIL: Error processing custom template for QR ${qrCode.code}:`, templateError)
