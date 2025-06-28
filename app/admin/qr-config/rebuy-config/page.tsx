@@ -1317,7 +1317,7 @@ function RebuyEmailConfigPageContent() {
                   <div className="grid grid-cols-3 gap-2">
                     <div>
                       <label className="block text-xs font-medium text-yellow-700 mb-1">
-                        Primary Color
+                        Primary Color <span className="text-gray-500">(Discount Banner)</span>
                       </label>
                       <input
                         type="color"
@@ -1329,7 +1329,7 @@ function RebuyEmailConfigPageContent() {
 
                     <div>
                       <label className="block text-xs font-medium text-yellow-700 mb-1">
-                        Secondary Color
+                        Secondary Color <span className="text-gray-500">(Partners Section)</span>
                       </label>
                       <input
                         type="color"
@@ -1341,7 +1341,7 @@ function RebuyEmailConfigPageContent() {
 
                     <div>
                       <label className="block text-xs font-medium text-yellow-700 mb-1">
-                        Background Color
+                        Email Background <span className="text-gray-500">(Overall)</span>
                       </label>
                       <input
                         type="color"
@@ -1538,6 +1538,7 @@ function RebuyEmailConfigPageContent() {
                 emailConfig={{
                   useDefaultEmail: false,
                   emailHeaderText: rebuyConfig.emailHeader,
+                  emailHeaderColor: rebuyConfig.emailHeaderColor,
                   emailHeaderTextColor: rebuyConfig.emailHeaderTextColor,
                   emailHeaderFontFamily: rebuyConfig.emailHeaderFontFamily,
                   emailHeaderFontSize: rebuyConfig.emailHeaderFontSize,

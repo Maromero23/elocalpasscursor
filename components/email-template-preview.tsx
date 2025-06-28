@@ -86,6 +86,7 @@ interface EmailTemplatePreviewProps {
   emailConfig: {
     useDefaultEmail: boolean
     emailHeaderText: string
+    emailHeaderColor: string
     emailHeaderTextColor: string
     emailHeaderFontFamily: string
     emailHeaderFontSize: string
@@ -231,7 +232,7 @@ const EmailTemplatePreview: React.FC<EmailTemplatePreviewProps> = ({
       {/* Custom Header */}
       <div 
         className="p-6 text-center"
-        style={{ backgroundColor: emailConfig.emailPrimaryColor }}
+        style={{ backgroundColor: emailConfig.emailHeaderColor || emailConfig.emailPrimaryColor }}
       >
         {emailConfig.logoUrl && (
           <div className="mb-4">
