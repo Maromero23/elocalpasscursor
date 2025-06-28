@@ -51,10 +51,11 @@ export async function GET() {
         button2VariableCommission: 0,
         button2IncludeTax: false,
         button2TaxPercentage: 0,
-        // Button 3-5 fields
+        // Button 3-6 fields
         button3DeliveryMethod: 'DIRECT',
         button4LandingPageRequired: true,
         button5SendRebuyEmail: false,
+        button6AllowFutureQR: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -125,10 +126,11 @@ export async function POST(request: NextRequest) {
       button2IncludeTax: Boolean(body.button2IncludeTax),
       button2TaxPercentage: parseFloat(body.button2TaxPercentage) || 0,
       
-      // Button 3-5 fields
+      // Button 3-6 fields
       button3DeliveryMethod: body.button3DeliveryMethod || 'DIRECT',
       button4LandingPageRequired: Boolean(body.button4LandingPageRequired !== false), // Default to true
-      button5SendRebuyEmail: Boolean(body.button5SendRebuyEmail)
+      button5SendRebuyEmail: Boolean(body.button5SendRebuyEmail),
+      button6AllowFutureQR: Boolean(body.button6AllowFutureQR)
     }
 
     console.log('Clean data:', cleanData)

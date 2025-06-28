@@ -104,6 +104,7 @@ model QRConfig {
   button3DeliveryMethod        String?
   button4LandingPageRequired   Boolean?
   button5SendRebuyEmail        Boolean?
+  button6AllowFutureQR         Boolean?
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt
   seller                       User     @relation("SellerConfig", fields: [sellerId], references: [id], onDelete: Cascade)
@@ -133,6 +134,7 @@ model QrGlobalConfig {
   button3DeliveryMethod        String?
   button4LandingPageRequired   Boolean?
   button5SendRebuyEmail        Boolean?
+  button6AllowFutureQR         Boolean?
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt
 

@@ -48,6 +48,7 @@ interface QRGlobalConfig {
   button3DeliveryMethod: 'DIRECT' | 'URLS' | 'BOTH'
   button4LandingPageRequired: boolean | undefined
   button5SendRebuyEmail: boolean | undefined
+  button6AllowFutureQR: boolean | undefined
   updatedAt: Date
 }
 
@@ -98,6 +99,7 @@ function QRConfigPageContent() {
     button3DeliveryMethod: 'DIRECT',
     button4LandingPageRequired: false,
     button5SendRebuyEmail: false,
+    button6AllowFutureQR: false,
     updatedAt: new Date()
   })
 
@@ -106,6 +108,7 @@ function QRConfigPageContent() {
   
   // Track if user has made a choice for Button 5 (separate from database value)
   const [button5UserChoice, setButton5UserChoice] = useState<boolean | null>(null)
+  const [button6UserChoice, setButton6UserChoice] = useState<boolean | null>(null)
   const [rebuyTemplateRefresh, setRebuyTemplateRefresh] = useState(0) // Force re-render for radio buttons
   const [userIsInteracting, setUserIsInteracting] = useState(false) // Flag to prevent detection from overriding user actions
 
@@ -406,6 +409,9 @@ function QRConfigPageContent() {
         // Button 5 defaults
         button5SendRebuyEmail: undefined,
         
+        // Button 6 defaults
+        button6AllowFutureQR: undefined,
+        
         updatedAt: new Date()
       }
       
@@ -452,7 +458,8 @@ function QRConfigPageContent() {
     localStorage.removeItem('elocalpass-button3-config')
     localStorage.removeItem('elocalpass-button3-urls')
     localStorage.removeItem('elocalpass-button4-config')
-    localStorage.removeItem('elocalpass-button5-config')
+          localStorage.removeItem('elocalpass-button5-config')
+      localStorage.removeItem('elocalpass-button6-config')
       
       console.log('🧹 CLEAR PROGRESS: All button configurations cleared from localStorage')
       
@@ -465,7 +472,8 @@ function QRConfigPageContent() {
       setSaveStatus('')
       setProgressRestored(false)
       setButton4UserChoice(null) // Reset Button 4 user choice to "no selection"
-    setButton5UserChoice(null) // Reset Button 5 user choice to "no selection"
+          setButton5UserChoice(null) // Reset Button 5 user choice to "no selection"
+      setButton6UserChoice(null) // Reset Button 6 user choice to "no selection"
       
       console.log('🧹 CLEAR PROGRESS: All progress and database configuration reset to defaults')
       
@@ -880,9 +888,9 @@ function QRConfigPageContent() {
     }
   }
 
-  // Check if all 5 buttons are configured
+  // Check if all 6 buttons are configured
   const areAllButtonsConfigured = (): boolean => {
-    return configuredButtons.size === 5
+    return configuredButtons.size === 6
   }
 
   // BUTTON 3: Save URL data to localStorage
@@ -1193,6 +1201,29 @@ function QRConfigPageContent() {
       console.log('🔧 DETECTION: Button 5 no explicit user choice found - showing no selection')
     }
     
+    // Check Button 6 (Allow Future QR) - database-first approach like Button 4 & 5
+    const button6LocalConfig = localStorage.getItem('elocalpass-button6-config')
+    if (button6LocalConfig && !userIsInteracting) { // Don't override if user is actively interacting
+      try {
+        const parsed = JSON.parse(button6LocalConfig)
+        if (parsed && parsed.choice) {
+          // User has made a choice - set the user choice state
+          const userChoice = parsed.choice === 'yes' ? true : false
+          setButton6UserChoice(userChoice)
+          configuredButtonsSet.add(6)
+          console.log('🔧 DETECTION: Button 6 user choice found in localStorage:', parsed.choice, '- marking as configured')
+        }
+      } catch (error) {
+        console.warn('Warning: Could not parse Button 6 config:', error)
+      }
+    } else if (!button6LocalConfig && !userIsInteracting) {
+      // No localStorage choice - check if database has been explicitly set by user
+      // We'll only trust database values if localStorage confirms user made a choice
+      // Since there's no localStorage, treat as no selection regardless of database value
+      setButton6UserChoice(null)
+      console.log('🔧 DETECTION: Button 6 no explicit user choice found - showing no selection')
+    }
+    
     console.log('🎯 DETECTION: Final configuredButtonsSet:', Array.from(configuredButtonsSet))
     
     // Only update if something changed
@@ -1343,7 +1374,7 @@ function QRConfigPageContent() {
   // Save current configuration with a name
   const saveNamedConfiguration = async () => {
     if (!areAllButtonsConfigured()) {
-      toast.error('Configuration Incomplete', 'Please complete all 5 button configurations before saving')
+      toast.error('Configuration Incomplete', 'Please complete all 6 button configurations before saving')
       return
     }
 
@@ -1535,6 +1566,7 @@ function QRConfigPageContent() {
         localStorage.removeItem('elocalpass-button3-urls') // Clear Button 3 URL data
         localStorage.removeItem('elocalpass-button4-config') // Clear Button 4 localStorage
         localStorage.removeItem('elocalpass-button5-config') // Clear Button 5 localStorage
+        localStorage.removeItem('elocalpass-button6-config') // Clear Button 6 localStorage
         localStorage.removeItem('elocalpass-landing-config')
         localStorage.removeItem('elocalpass-welcome-email-config')
         localStorage.removeItem('elocalpass-rebuy-email-config')
@@ -1567,6 +1599,7 @@ function QRConfigPageContent() {
           button3DeliveryMethod: 'DIRECT' as const,
           button4LandingPageRequired: undefined,
           button5SendRebuyEmail: undefined,
+          button6AllowFutureQR: undefined,
           updatedAt: new Date()
         }
         
@@ -1578,6 +1611,7 @@ function QRConfigPageContent() {
         // Reset button choice states
         setButton4UserChoice(null)
         setButton5UserChoice(null)
+        setButton6UserChoice(null)
         
         // Generate a new session ID for the next configuration
         const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -2290,6 +2324,11 @@ function QRConfigPageContent() {
                     num: 5, 
                     title: "Rebuy Email?", 
                     value: globalConfig.button5SendRebuyEmail ? "Customized" : "Default"
+                  },
+                  { 
+                    num: 6, 
+                    title: "Future QR?", 
+                    value: globalConfig.button6AllowFutureQR ? "Enabled" : "Disabled"
                   }
                 ].map((button, index) => (
                   <div key={button.num} className="flex items-center flex-1">
@@ -2318,7 +2357,7 @@ function QRConfigPageContent() {
                     </button>
                     
                     {/* Step Arrow */}
-                    {index < 4 && (
+                    {index < 5 && (
                       <div className="flex items-center justify-center mx-2">
                         <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -2339,7 +2378,7 @@ function QRConfigPageContent() {
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-yellow-100 text-yellow-700'
                     }`}>
-                      {configuredButtons.size}/5 Complete
+                      {configuredButtons.size}/6 Complete
                     </span>
                     {areAllButtonsConfigured() && (
                       <button
@@ -2393,6 +2432,11 @@ function QRConfigPageContent() {
                       num: 5, 
                       title: "Rebuy Email?", 
                       value: globalConfig.button5SendRebuyEmail ? "Customized" : "Default"
+                    },
+                    { 
+                      num: 6, 
+                      title: "Future QR?", 
+                      value: globalConfig.button6AllowFutureQR ? "Enabled" : "Disabled"
                     }
                   ].map((button, index) => (
                     <div key={button.num} className="flex items-center flex-1">
@@ -2413,7 +2457,7 @@ function QRConfigPageContent() {
                       </div>
                       
                       {/* Progress Arrow */}
-                      {index < 4 && (
+                      {index < 5 && (
                         <div className="flex items-center justify-center mx-1">
                           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -3911,6 +3955,108 @@ function QRConfigPageContent() {
                       <div>
                         <span className="font-medium text-gray-900">No</span>
                         <p className="text-sm text-gray-600">No follow-up emails will be sent</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Button 6: Allow Future QR */}
+              {activeButton === 6 && (
+                <div className="space-y-6">
+                  <div className="border-l-4 border-purple-500 pl-4">
+                    <h2 className="text-xl font-semibold text-gray-900">Button 6: Allow Future QR Creation?</h2>
+                    <p className="text-gray-600 mt-1">Enable sellers to create QR codes in the future (only applies to DIRECT delivery method)</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={button6UserChoice === true}
+                        onChange={() => {
+                          // Set interaction flag to prevent detection from overriding
+                          setUserIsInteracting(true)
+                          
+                          // Set user choice first for immediate UI feedback
+                          setButton6UserChoice(true)
+                          
+                          // Handle async operations separately to avoid blocking UI
+                          const handleAsyncUpdate = async () => {
+                            try {
+                              // Update database - this ensures cross-device compatibility
+                              await updateConfig({ button6AllowFutureQR: true })
+                              
+                              // Also save to localStorage for immediate UI feedback
+                              localStorage.setItem('elocalpass-button6-config', JSON.stringify({
+                                choice: 'yes',
+                                timestamp: new Date().toISOString()
+                              }))
+                              
+                              setConfiguredButtons((prev) => new Set(prev).add(6))
+                              console.log('🔧 BUTTON 6: Yes selected - saved to database and marked as configured')
+                              
+                              // Clear interaction flag after a short delay
+                              setTimeout(() => setUserIsInteracting(false), 500)
+                            } catch (error) {
+                              console.error('Error updating Button 6 config:', error)
+                              setUserIsInteracting(false)
+                            }
+                          }
+                          
+                          handleAsyncUpdate()
+                        }}
+                        className="mt-1 h-4 w-4 text-blue-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">Yes</span>
+                        <p className="text-sm text-gray-600">Sellers can create QR codes in the future. 
+                          This only applies when delivery method is set to "DIRECT" (QR sent via email).
+                        </p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={button6UserChoice === false}
+                        onChange={() => {
+                          // Set interaction flag to prevent detection from overriding
+                          setUserIsInteracting(true)
+                          
+                          // Set user choice first for immediate UI feedback
+                          setButton6UserChoice(false)
+                          
+                          // Handle async operations separately to avoid blocking UI
+                          const handleAsyncUpdate = async () => {
+                            try {
+                              // Update database - this ensures cross-device compatibility
+                              await updateConfig({ button6AllowFutureQR: false })
+                              
+                              // Also save to localStorage for immediate UI feedback
+                              localStorage.setItem('elocalpass-button6-config', JSON.stringify({
+                                choice: 'no',
+                                timestamp: new Date().toISOString()
+                              }))
+                              
+                              setConfiguredButtons((prev) => new Set(prev).add(6))
+                              console.log('🔧 BUTTON 6: No selected - saved to database and marked as configured')
+                              
+                              // Clear interaction flag after a short delay
+                              setTimeout(() => setUserIsInteracting(false), 500)
+                            } catch (error) {
+                              console.error('Error updating Button 6 config:', error)
+                              setUserIsInteracting(false)
+                            }
+                          }
+                          
+                          handleAsyncUpdate()
+                        }}
+                        className="mt-1 h-4 w-4 text-blue-600"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-900">No</span>
+                        <p className="text-sm text-gray-600">Sellers cannot create QR codes in the future</p>
                       </div>
                     </label>
                   </div>
