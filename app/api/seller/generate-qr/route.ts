@@ -303,10 +303,9 @@ ${t('email.welcome.signature', customerLanguage)}
     const isScheduled = scheduledFor && new Date(scheduledFor) > new Date()
     
     if (isScheduled) {
-      // Store the scheduled QR code for future sending
-      await prisma.scheduledQRCode.create({
+      // Don't create QR code yet - just store the scheduling info
+      const scheduledQR = await prisma.scheduledQRCode.create({
         data: {
-          qrCodeId: qrCode.id,
           scheduledFor: new Date(scheduledFor),
           clientName,
           clientEmail,
@@ -314,20 +313,35 @@ ${t('email.welcome.signature', customerLanguage)}
           days,
           sellerId: session.user.id,
           configurationId: seller.savedConfigId,
+          deliveryMethod: requestedDelivery,
+          landingPageId: body.landingPageId || null,
           isProcessed: false
         }
       })
       
-      console.log(`📅 QR code ${qrCodeId} scheduled for ${new Date(scheduledFor).toLocaleString()}`)
+      // Delete the QR code we created since we don't need it yet
+      await prisma.qRCode.delete({
+        where: { id: qrCode.id }
+      })
+      
+      // Delete the analytics record too
+      await prisma.qRCodeAnalytics.deleteMany({
+        where: { qrCodeId: qrCode.id }
+      })
+      
+      // Delete the access token too
+      await prisma.customerAccessToken.deleteMany({
+        where: { qrCodeId: qrCode.id }
+      })
+      
+      console.log(`📅 QR code creation scheduled for ${new Date(scheduledFor).toLocaleString()}`)
       
       return NextResponse.json({
         success: true,
-        qrCode: qrCodeId,
-        expiresAt: expiresAt,
-        message: `QR code scheduled to be sent on ${new Date(scheduledFor).toLocaleString()}`,
-        magicLinkUrl: magicLinkUrl,
+        message: `QR code scheduled to be created and sent on ${new Date(scheduledFor).toLocaleString()}`,
         scheduled: true,
         scheduledFor: scheduledFor,
+        scheduledId: scheduledQR.id,
         emailSent: false
       })
     }

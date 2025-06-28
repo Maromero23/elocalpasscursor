@@ -250,7 +250,6 @@ model QRCode {
   usage         QRCodeUsage[]
   activations   QRCodeActivation[]
   analytics     QRCodeAnalytics?
-  scheduledQR   ScheduledQRCode?
 
   @@map("qr_codes")
 }
@@ -439,7 +438,6 @@ model QRCodeAnalytics {
 
 model ScheduledQRCode {
   id              String   @id @default(cuid())
-  qrCodeId        String   @unique
   scheduledFor    DateTime
   clientName      String
   clientEmail     String
@@ -447,12 +445,13 @@ model ScheduledQRCode {
   days            Int
   sellerId        String
   configurationId String
+  deliveryMethod  String   @default("DIRECT")
+  landingPageId   String?
   isProcessed     Boolean  @default(false)
   processedAt     DateTime?
+  createdQRCodeId String?  // Will be set when QR is actually created
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
-  qrCode          QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
   
   @@map("scheduled_qr_codes")
 }
