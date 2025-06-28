@@ -28,6 +28,8 @@ interface QRConfig {
   button2TaxPercentage: number
   // Button 3 fields
   button3DeliveryMethod: 'DIRECT' | 'URLS' | 'BOTH'
+  // Button 6 fields
+  button6AllowFutureQR?: boolean
   // Landing page URLs from configuration
   landingPageUrls?: Array<{
     id: string
@@ -55,6 +57,11 @@ export default function SellerDashboard() {
   const [selectedLandingPage, setSelectedLandingPage] = useState<string>('')
   const [selectedDeliveryOption, setSelectedDeliveryOption] = useState<string>('DIRECT')
   const [customerLanguage, setCustomerLanguage] = useState<'en' | 'es'>('en')
+  
+  // Future QR scheduling state
+  const [enableFutureQR, setEnableFutureQR] = useState(false)
+  const [futureQRDate, setFutureQRDate] = useState('')
+  const [futureQRTime, setFutureQRTime] = useState('')
   
   // Load seller configuration
   useEffect(() => {
@@ -137,17 +144,27 @@ export default function SellerDashboard() {
           deliveryMethod: config?.button3DeliveryMethod === 'BOTH' ? 
             (selectedDeliveryOption === 'URLS' ? 'URLS' : selectedDeliveryOption) : 
             config?.button3DeliveryMethod,
-          landingPageId: selectedLandingPage
+          landingPageId: selectedLandingPage,
+          // Future QR scheduling
+          scheduledFor: enableFutureQR && futureQRDate && futureQRTime ? 
+            new Date(`${futureQRDate}T${futureQRTime}`).toISOString() : null
         })
       })
       
       if (response.ok) {
         const result = await response.json()
-        success("Success!", `ELocalPass generated and sent to ${clientEmail}!`)
+        if (enableFutureQR && futureQRDate && futureQRTime) {
+          success("Success!", `ELocalPass scheduled to be sent to ${clientEmail} on ${new Date(`${futureQRDate}T${futureQRTime}`).toLocaleString()}!`)
+        } else {
+          success("Success!", `ELocalPass generated and sent to ${clientEmail}!`)
+        }
         // Reset form
         setClientName('')
         setClientEmail('')
         setConfirmEmail('')
+        setEnableFutureQR(false)
+        setFutureQRDate('')
+        setFutureQRTime('')
       } else {
         error('Error generating QR code')
       }
@@ -619,6 +636,70 @@ export default function SellerDashboard() {
                       </div>
                     </div>
                     
+                    {/* Future QR Scheduling - Only show if Button 6 is enabled and delivery method is DIRECT */}
+                    {config?.button6AllowFutureQR && config?.button3DeliveryMethod === 'DIRECT' && (
+                      <div className="bg-purple-50 rounded-lg p-3 border-l-4 border-purple-500 shadow-sm">
+                        <h4 className="text-lg font-semibold text-purple-900 mb-2">
+                          Step {shouldShowClientInfo() ? '4' : '3'}: Schedule Future QR (Optional)
+                        </h4>
+                        <div className="space-y-3">
+                          {/* Enable Future QR Toggle */}
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              id="enableFutureQR"
+                              checked={enableFutureQR}
+                              onChange={(e) => setEnableFutureQR(e.target.checked)}
+                              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="enableFutureQR" className="text-sm font-medium text-gray-700">
+                              Schedule this QR code to be sent at a future date and time
+                            </label>
+                          </div>
+                          
+                          {/* Date and Time Selection - Only show when enabled */}
+                          {enableFutureQR && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 p-3 bg-white rounded-md border border-purple-200">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Send Date *
+                                </label>
+                                <input
+                                  type="date"
+                                  value={futureQRDate}
+                                  onChange={(e) => setFutureQRDate(e.target.value)}
+                                  min={new Date().toISOString().split('T')[0]}
+                                  className="w-full focus:ring-purple-500 focus:border-purple-500 block shadow-sm text-sm border-gray-300 rounded-md px-3 py-2"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Send Time *
+                                </label>
+                                <input
+                                  type="time"
+                                  value={futureQRTime}
+                                  onChange={(e) => setFutureQRTime(e.target.value)}
+                                  className="w-full focus:ring-purple-500 focus:border-purple-500 block shadow-sm text-sm border-gray-300 rounded-md px-3 py-2"
+                                />
+                              </div>
+                              {futureQRDate && futureQRTime && (
+                                <div className="md:col-span-2 text-sm text-purple-700 bg-purple-100 p-2 rounded-md">
+                                  <strong>Scheduled for:</strong> {new Date(`${futureQRDate}T${futureQRTime}`).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {!enableFutureQR && (
+                            <div className="text-sm text-gray-600 bg-gray-100 p-2 rounded-md">
+                              💡 Leave unchecked to send the QR code immediately when you click "Generate & Send"
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Configuration Summary */}
                     <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
                       <h4 className="text-lg font-semibold text-blue-900 mb-2">
@@ -660,11 +741,13 @@ export default function SellerDashboard() {
                       </div>
                     </div>
                     
-                    {/* Step 4: Generate & Send - Only show when delivery method is DIRECT */}
+                    {/* Generate & Send - Only show when delivery method is DIRECT */}
                     {shouldShowGenerateButton() && (
                       <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
                         <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                          Step {shouldShowClientInfo() ? '4' : '3'}: Generate & Send
+                          Step {config?.button6AllowFutureQR && config?.button3DeliveryMethod === 'DIRECT' ? 
+                            (shouldShowClientInfo() ? '5' : '4') : 
+                            (shouldShowClientInfo() ? '4' : '3')}: Generate & Send
                         </h4>
                         <button
                           onClick={handleGenerateQR}

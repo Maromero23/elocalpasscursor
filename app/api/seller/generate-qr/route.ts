@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
     
     const body = await request.json()
-    const { clientName, clientEmail, guests, days, deliveryMethod } = body
+    const { clientName, clientEmail, guests, days, deliveryMethod, scheduledFor } = body
     
     // Validate required fields
     if (!clientName || !clientEmail || !guests || !days) {
@@ -299,7 +299,40 @@ ${t('email.welcome.signature', customerLanguage)}
       data: { rebuyEmailScheduled: rebuyEmailScheduled }
     })
     
-    // 🚀 SEND ACTUAL WELCOME EMAIL
+    // Check if this is a scheduled QR code
+    const isScheduled = scheduledFor && new Date(scheduledFor) > new Date()
+    
+    if (isScheduled) {
+      // Store the scheduled QR code for future sending
+      await prisma.scheduledQRCode.create({
+        data: {
+          qrCodeId: qrCode.id,
+          scheduledFor: new Date(scheduledFor),
+          clientName,
+          clientEmail,
+          guests,
+          days,
+          sellerId: session.user.id,
+          configurationId: seller.savedConfigId,
+          isProcessed: false
+        }
+      })
+      
+      console.log(`📅 QR code ${qrCodeId} scheduled for ${new Date(scheduledFor).toLocaleString()}`)
+      
+      return NextResponse.json({
+        success: true,
+        qrCode: qrCodeId,
+        expiresAt: expiresAt,
+        message: `QR code scheduled to be sent on ${new Date(scheduledFor).toLocaleString()}`,
+        magicLinkUrl: magicLinkUrl,
+        scheduled: true,
+        scheduledFor: scheduledFor,
+        emailSent: false
+      })
+    }
+    
+    // 🚀 SEND ACTUAL WELCOME EMAIL (only if not scheduled)
     let emailSent = false
     try {
       // Import email service

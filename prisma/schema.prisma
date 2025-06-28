@@ -250,6 +250,7 @@ model QRCode {
   usage         QRCodeUsage[]
   activations   QRCodeActivation[]
   analytics     QRCodeAnalytics?
+  scheduledQR   ScheduledQRCode?
 
   @@map("qr_codes")
 }
@@ -434,4 +435,24 @@ model QRCodeAnalytics {
   distributor           Distributor? @relation("DistributorAnalytics", fields: [distributorId], references: [id], onDelete: SetNull)
   
   @@map("qr_code_analytics")
+}
+
+model ScheduledQRCode {
+  id              String   @id @default(cuid())
+  qrCodeId        String   @unique
+  scheduledFor    DateTime
+  clientName      String
+  clientEmail     String
+  guests          Int
+  days            Int
+  sellerId        String
+  configurationId String
+  isProcessed     Boolean  @default(false)
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  qrCode          QRCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  
+  @@map("scheduled_qr_codes")
 }

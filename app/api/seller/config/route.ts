@@ -85,6 +85,8 @@ export async function GET(request: NextRequest) {
         ...config,
         configName: savedConfig.name || `Configuration ${savedConfig.id.slice(-6)}`, // Add the configuration name
         configDescription: savedConfig.description || 'Saved configuration',
+        // Ensure Button 6 is included
+        button6AllowFutureQR: config?.button6AllowFutureQR || false,
         landingPageUrls,
         emailTemplates,
         landingPageConfig,
@@ -121,6 +123,9 @@ export async function GET(request: NextRequest) {
           
           // Default Button 3 fields
           button3DeliveryMethod: 'DIRECT' as 'DIRECT' | 'URLS' | 'BOTH',
+          
+          // Default Button 6 fields
+          button6AllowFutureQR: false,
           
           landingPageUrls: []
         }
@@ -175,6 +180,9 @@ export async function GET(request: NextRequest) {
           
         // Button 3 fields
         button3DeliveryMethod: (config?.button3DeliveryMethod || 'DIRECT') as 'DIRECT' | 'URLS' | 'BOTH',
+        
+        // Button 6 fields
+        button6AllowFutureQR: (config as any)?.button6AllowFutureQR || false,
         
         landingPageUrls: landingPageUrls
         }
