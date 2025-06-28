@@ -2288,7 +2288,7 @@ function QRConfigPageContent() {
 
             {/* Button Navigation */}
             <div className="mb-8">
-              <div className="flex items-center space-x-3 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <div className="grid grid-cols-6 gap-3 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 {[
                   { 
                     num: 1, 
@@ -2331,7 +2331,7 @@ function QRConfigPageContent() {
                     value: globalConfig.button6AllowFutureQR ? "Enabled" : "Disabled"
                   }
                 ].map((button, index) => (
-                  <div key={button.num} className="flex items-center flex-1">
+                  <div key={button.num} className="flex flex-col items-center">
                     <button
                       onClick={() => setActiveButton(button.num)}
                       className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 shadow-sm border-2 ${
@@ -2355,15 +2355,6 @@ function QRConfigPageContent() {
                         <span className="text-sm">{button.title}</span>
                       </div>
                     </button>
-                    
-                    {/* Step Arrow */}
-                    {index < 5 && (
-                      <div className="flex items-center justify-center mx-2">
-                        <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -2396,7 +2387,7 @@ function QRConfigPageContent() {
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="grid grid-cols-6 gap-2">
                   {[
                     { 
                       num: 1, 
@@ -2439,7 +2430,7 @@ function QRConfigPageContent() {
                       value: globalConfig.button6AllowFutureQR ? "Enabled" : "Disabled"
                     }
                   ].map((button, index) => (
-                    <div key={button.num} className="flex items-center flex-1">
+                    <div key={button.num} className="flex flex-col">
                       <div
                         className={`w-full p-3 rounded-lg text-xs text-center transition-all duration-200 border-2 ${
                           isButtonConfigured(button.num) 
@@ -2455,15 +2446,6 @@ function QRConfigPageContent() {
                           <div className="text-gray-500 text-xs mt-1">Need to configure</div>
                         )}
                       </div>
-                      
-                      {/* Progress Arrow */}
-                      {index < 5 && (
-                        <div className="flex items-center justify-center mx-1">
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
