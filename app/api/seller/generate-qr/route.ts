@@ -302,6 +302,14 @@ ${t('email.welcome.signature', customerLanguage)}
     // Check if this is a scheduled QR code
     const isScheduled = scheduledFor && new Date(scheduledFor) > new Date()
     
+    // Validate that scheduled time is in the future
+    if (scheduledFor && new Date(scheduledFor) <= new Date()) {
+      return NextResponse.json(
+        { error: 'Scheduled time must be in the future' },
+        { status: 400 }
+      )
+    }
+    
     if (isScheduled) {
       // Don't create QR code yet - just store the scheduling info
       const scheduledQR = await prisma.scheduledQRCode.create({

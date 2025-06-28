@@ -685,7 +685,15 @@ export default function SellerDashboard() {
                               </div>
                               {futureQRDate && futureQRTime && (
                                 <div className="md:col-span-2 text-sm text-purple-700 bg-purple-100 p-2 rounded-md">
-                                  <strong>Scheduled for:</strong> {new Date(`${futureQRDate}T${futureQRTime}`).toLocaleString()}
+                                  {new Date(`${futureQRDate}T${futureQRTime}`) > new Date() ? (
+                                    <>
+                                      <strong>Scheduled for:</strong> {new Date(`${futureQRDate}T${futureQRTime}`).toLocaleString()}
+                                    </>
+                                  ) : (
+                                    <div className="text-red-700 bg-red-100 p-2 rounded-md">
+                                      ⚠️ <strong>Invalid time:</strong> Please select a future date and time
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -751,7 +759,10 @@ export default function SellerDashboard() {
                         </h4>
                         <button
                           onClick={handleGenerateQR}
-                          disabled={generating || (shouldShowClientInfo() && (!clientName || !clientEmail || !confirmEmail || clientEmail !== confirmEmail))}
+                          disabled={generating || 
+                            (shouldShowClientInfo() && (!clientName || !clientEmail || !confirmEmail || clientEmail !== confirmEmail)) ||
+                            (enableFutureQR && futureQRDate.length > 0 && futureQRTime.length > 0 && new Date(`${futureQRDate}T${futureQRTime}`) <= new Date())
+                          }
                           className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                         >
                           {generating ? (
