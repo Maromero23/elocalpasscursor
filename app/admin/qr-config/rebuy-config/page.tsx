@@ -711,17 +711,17 @@ function RebuyEmailConfigPageContent() {
 </html>`
     }
 
-    // Generate the HTML template
-    const customHTML = generateCustomRebuyEmailHtml(rebuyConfig)
-
     const saveToLocalStorage = () => {
       setTimeout(() => {
+        // CRITICAL FIX: Generate HTML with CURRENT colors every time we save
+        const customHTML = generateCustomRebuyEmailHtml(rebuyConfig)
+        
         // Create the rebuy email configuration object with customHTML
         const rebuyEmailConfig = {
           id: qrId || Math.random().toString(36).substr(2, 9),
           name: `Rebuy Email Template - ${new Date().toLocaleDateString()}`,
           rebuyConfig: { ...rebuyConfig },
-          customHTML: customHTML, // Add the generated HTML
+          customHTML: customHTML, // Add the freshly generated HTML
           createdAt: new Date(),
           isActive: true
         }
@@ -773,6 +773,9 @@ function RebuyEmailConfigPageContent() {
     try {
       const urlParams = new URLSearchParams(window.location.search)
       const qrId = urlParams.get('qrId')
+      
+      // CRITICAL FIX: Generate HTML with CURRENT colors every time we save
+      const customHTML = generateCustomRebuyEmailHtml(rebuyConfig)
       
       // Create the rebuy email configuration object
       const rebuyEmailConfig = {
