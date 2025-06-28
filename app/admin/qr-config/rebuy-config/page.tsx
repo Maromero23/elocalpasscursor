@@ -1535,7 +1535,7 @@ function RebuyEmailConfigPageContent() {
                 emailConfig={{
                   useDefaultEmail: false,
                   emailHeaderText: rebuyConfig.emailHeader,
-                  emailHeaderTextColor: rebuyConfig.emailHeaderColor,
+                  emailHeaderTextColor: rebuyConfig.emailHeaderTextColor,
                   emailHeaderFontFamily: rebuyConfig.emailHeaderFontFamily,
                   emailHeaderFontSize: rebuyConfig.emailHeaderFontSize,
                   emailMessageText: rebuyConfig.emailMessage,
