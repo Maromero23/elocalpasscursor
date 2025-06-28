@@ -149,6 +149,7 @@ function RebuyEmailConfigPageContent() {
     // Header Typography
     emailHeader: 'Don\'t Miss Out!',
     emailHeaderColor: '#dc2626',
+    emailHeaderTextColor: '#ffffff',
     emailHeaderFontFamily: 'Arial, sans-serif',
     emailHeaderFontSize: '28',
     
@@ -365,6 +366,7 @@ function RebuyEmailConfigPageContent() {
             // Header Typography
             emailHeader: 'Don\'t Miss Out!',
             emailHeaderColor: '#dc2626',
+            emailHeaderTextColor: '#ffffff',
             emailHeaderFontFamily: 'Arial, sans-serif',
             emailHeaderFontSize: '28',
             
@@ -538,7 +540,7 @@ function RebuyEmailConfigPageContent() {
         body { margin: 0; padding: 0; font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; background-color: ${config.emailBackgroundColor || '#f5f5f5'}; }
         .container { max-width: 600px; margin: 0 auto; background-color: ${config.emailBackgroundColor || 'white'}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
         .header { background-color: ${config.emailHeaderColor || '#dc2626'}; padding: 24px; text-align: center; }
-        .header h1 { color: ${config.emailHeaderColor === '#9AE6B4' ? '#2D3748' : 'white'}; font-family: ${config.emailHeaderFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailHeaderFontSize || '24'}px; font-weight: bold; margin: 0; }
+        .header h1 { color: ${config.emailHeaderTextColor || 'white'}; font-family: ${config.emailHeaderFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailHeaderFontSize || '24'}px; font-weight: bold; margin: 0; }
         .content { padding: 24px; }
         .message { text-align: center; margin-bottom: 24px; }
         .message p { color: ${config.emailMessageColor || '#374151'}; font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailMessageFontSize || '16'}px; line-height: 1.5; margin: 0; }
@@ -1199,15 +1201,71 @@ function RebuyEmailConfigPageContent() {
                     />
                   </div>
 
-                  <TextWithTypography
-                    label="Header Text"
-                    textKey="emailHeader"
-                    colorKey="emailHeaderColor"
-                    fontFamilyKey="emailHeaderFontFamily"
-                    fontSizeKey="emailHeaderFontSize"
-                    formData={rebuyConfig}
-                    setFormData={setRebuyConfig}
-                  />
+                  {/* Header Text with separate background and text color controls */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-medium text-gray-700">Header Text</label>
+                    
+                    {/* Header Text Input */}
+                    <input
+                      type="text"
+                      value={rebuyConfig.emailHeader}
+                      onChange={(e) => setRebuyConfig({...rebuyConfig, emailHeader: e.target.value})}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    
+                    {/* Typography Controls */}
+                    <div className="flex gap-2 items-end">
+                      {/* Header Background Color */}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Background Color</label>
+                        <input
+                          type="color"
+                          value={rebuyConfig.emailHeaderColor}
+                          onChange={(e) => setRebuyConfig({...rebuyConfig, emailHeaderColor: e.target.value})}
+                          className="w-12 h-6 border border-gray-300 rounded cursor-pointer"
+                        />
+                      </div>
+                      
+                      {/* Header Text Color */}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Text Color</label>
+                        <input
+                          type="color"
+                          value={rebuyConfig.emailHeaderTextColor || '#ffffff'}
+                          onChange={(e) => setRebuyConfig({...rebuyConfig, emailHeaderTextColor: e.target.value})}
+                          className="w-12 h-6 border border-gray-300 rounded cursor-pointer"
+                        />
+                      </div>
+                      
+                      {/* Font Family */}
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-500 mb-1">Font</label>
+                        <select
+                          value={rebuyConfig.emailHeaderFontFamily}
+                          onChange={(e) => setRebuyConfig({...rebuyConfig, emailHeaderFontFamily: e.target.value})}
+                          className="w-24 px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          {fontFamilies.map(font => (
+                            <option key={font} value={font}>{font.split(',')[0]}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      {/* Font Size */}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Size</label>
+                        <select
+                          value={rebuyConfig.emailHeaderFontSize}
+                          onChange={(e) => setRebuyConfig({...rebuyConfig, emailHeaderFontSize: e.target.value})}
+                          className="w-24 px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          {fontSizes.map(size => (
+                            <option key={size} value={size}>{size}px</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
 
                   <TextWithTypography
                     label="Main Message"
