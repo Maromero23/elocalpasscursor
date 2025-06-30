@@ -181,61 +181,23 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        // Send welcome email using existing email service
-        const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
+        // Send welcome email using shared template system
+        const { sendWelcomeEmailWithTemplates } = await import('@/lib/email-service')
         
-        const customerLanguage = 'en' // Default language
-        const subject = t('email.welcome.subject', customerLanguage)
-        const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
-
-        // Get email templates from saved configuration
-        let emailTemplates = null
-        if (savedConfig?.emailTemplates) {
-          try {
-            emailTemplates = typeof savedConfig.emailTemplates === 'string' 
-              ? JSON.parse(savedConfig.emailTemplates) 
-              : savedConfig.emailTemplates
-          } catch (error) {
-            console.log('Error parsing email templates:', error)
-          }
-        }
-
-        let emailHtml
-        let emailSubject = subject
+        const customerLanguage = 'en' // Default language for now
         
-        if (emailTemplates?.welcomeEmail?.customHTML && emailTemplates.welcomeEmail.customHTML !== 'USE_DEFAULT_TEMPLATE') {
-          // Use custom HTML template
-          emailHtml = emailTemplates.welcomeEmail.customHTML
-            .replace(/\{customerName\}/g, scheduledQR.clientName)
-            .replace(/\{qrCode\}/g, qrCodeId)
-            .replace(/\{guests\}/g, scheduledQR.guests.toString())
-            .replace(/\{days\}/g, scheduledQR.days.toString())
-            .replace(/\{expirationDate\}/g, formattedExpirationDate)
-            .replace(/\{magicLink\}/g, magicLinkUrl || '')
-            .replace(/\{customerPortalUrl\}/g, magicLinkUrl || '')
-
-          if (emailTemplates.welcomeEmail.subject) {
-            emailSubject = emailTemplates.welcomeEmail.subject
-          }
-        } else {
-          // Use default template
-          emailHtml = createWelcomeEmailHtml({
-            customerName: scheduledQR.clientName,
-            qrCode: qrCodeId,
-            guests: scheduledQR.guests,
-            days: scheduledQR.days,
-            expiresAt: formattedExpirationDate,
-            customerPortalUrl: magicLinkUrl,
-            language: customerLanguage,
-            deliveryMethod: scheduledQR.deliveryMethod
-          })
-        }
-
-        // Send the email
-        const emailSent = await sendEmail({
-          to: scheduledQR.clientEmail,
-          subject: emailSubject,
-          html: emailHtml
+        // Use the shared email template system
+        const emailSent = await sendWelcomeEmailWithTemplates({
+          customerName: scheduledQR.clientName,
+          customerEmail: scheduledQR.clientEmail,
+          qrCode: qrCodeId,
+          guests: scheduledQR.guests,
+          days: scheduledQR.days,
+          expiresAt: expiresAt,
+          magicLinkUrl: magicLinkUrl,
+          customerLanguage: customerLanguage,
+          deliveryMethod: scheduledQR.deliveryMethod,
+          savedConfigId: seller.savedConfigId
         })
 
         if (emailSent) {

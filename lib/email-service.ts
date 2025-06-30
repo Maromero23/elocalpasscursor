@@ -1,5 +1,6 @@
 // Production-ready email service for ELocalPass
 import nodemailer from 'nodemailer'
+import { prisma } from '@/lib/prisma'
 
 export interface EmailOptions {
   to: string
@@ -306,4 +307,302 @@ export const createRebuyEmailHtml = (data: {
     </body>
     </html>
   `
+}
+
+interface WelcomeEmailData {
+  customerName: string
+  customerEmail: string
+  qrCode: string
+  guests: number
+  days: number
+  expiresAt: Date
+  magicLinkUrl: string
+  customerLanguage: 'en' | 'es'
+  deliveryMethod: string
+  savedConfigId: string
+}
+
+export async function sendWelcomeEmailWithTemplates(data: WelcomeEmailData): Promise<boolean> {
+  try {
+    const { detectLanguage, t, getPlural, formatDate } = await import('@/lib/translations')
+    type SupportedLanguage = 'en' | 'es'
+    
+    const formattedExpirationDate = formatDate(data.expiresAt, data.customerLanguage)
+    const subject = t('email.welcome.subject', data.customerLanguage)
+
+    // Get email templates from saved configuration
+    let emailTemplates = null
+    if (data.savedConfigId) {
+      const savedConfig = await prisma.savedQRConfiguration.findUnique({
+        where: { id: data.savedConfigId },
+        select: { emailTemplates: true }
+      })
+      
+      // Parse email templates JSON
+      if (savedConfig?.emailTemplates) {
+        try {
+          emailTemplates = typeof savedConfig.emailTemplates === 'string' 
+            ? JSON.parse(savedConfig.emailTemplates) 
+            : savedConfig.emailTemplates
+        } catch (error) {
+          console.log('Error parsing email templates:', error)
+        }
+      }
+    }
+
+    // Professional Email Translation System
+    const translateEmailHTML = async (htmlContent: string, targetLanguage: SupportedLanguage): Promise<string> => {
+      if (targetLanguage === 'en') return htmlContent
+      
+      console.log(`🌍 EMAIL TRANSLATION: Translating email HTML to ${targetLanguage}`)
+      
+      // Extract text content from HTML while preserving structure
+      let translatedHTML = htmlContent
+      
+      // Function to translate text using professional APIs
+      const translateText = async (text: string): Promise<string> => {
+        if (!text || text.trim().length === 0) return text
+        
+        console.log(`🔄 Email Translation - Input: "${text.substring(0, 100)}..."`)
+        
+        let translatedText = text
+        let translationSuccessful = false
+        
+        // Try LibreTranslate first
+        try {
+          const response = await fetch('https://libretranslate.com/translate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              q: text,
+              source: 'en',
+              target: 'es',
+              format: 'text'
+            })
+          })
+          
+          if (response.ok) {
+            const result = await response.json()
+            if (result.translatedText && result.translatedText.trim()) {
+              translatedText = result.translatedText
+              translationSuccessful = true
+              console.log(`✅ Email LibreTranslate success: "${text.substring(0, 50)}..." → "${translatedText.substring(0, 50)}..."`)
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Email LibreTranslate failed, trying MyMemory API...')
+        }
+        
+        // Fallback to MyMemory API if LibreTranslate failed
+        if (!translationSuccessful) {
+          try {
+            const encodedText = encodeURIComponent(text)
+            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodedText}&langpair=en|es`)
+            
+            if (response.ok) {
+              const result = await response.json()
+              if (result.responseData && result.responseData.translatedText && result.responseData.translatedText.trim()) {
+                translatedText = result.responseData.translatedText
+                translationSuccessful = true
+                console.log(`✅ Email MyMemory success: "${text.substring(0, 50)}..." → "${translatedText.substring(0, 50)}..."`)
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Email MyMemory API also failed')
+          }
+        }
+        
+        // If both APIs failed, keep original text
+        if (!translationSuccessful) {
+          console.warn(`⚠️ Both email translation APIs failed for: "${text.substring(0, 50)}...", keeping original`)
+        }
+        
+        return translatedText
+      }
+      
+      // Convert formal Spanish (USTED) to informal Spanish (TÚ)
+      const makeInformalSpanish = (spanish: string): string => {
+        console.log(`🔄 Email Converting to informal Spanish (TÚ): "${spanish.substring(0, 100)}..."`)
+        
+        let informalText = spanish
+        
+        // Convert formal pronouns to informal
+        informalText = informalText.replace(/\busted\b/gi, 'tú')
+        informalText = informalText.replace(/\bUsted\b/g, 'Tú')
+        
+        // Convert possessive pronouns
+        informalText = informalText.replace(/\bsu\b/g, 'tu')
+        informalText = informalText.replace(/\bSu\b/g, 'Tu')
+        informalText = informalText.replace(/\bsus\b/g, 'tus')
+        informalText = informalText.replace(/\bSus\b/g, 'Tus')
+        
+        // Convert common formal verb forms to informal
+        informalText = informalText.replace(/\btiene\b/g, 'tienes')
+        informalText = informalText.replace(/\bTiene\b/g, 'Tienes')
+        informalText = informalText.replace(/\bpuede\b/g, 'puedes')
+        informalText = informalText.replace(/\bPuede\b/g, 'Puedes')
+        informalText = informalText.replace(/\bquiere\b/g, 'quieres')
+        informalText = informalText.replace(/\bQuiere\b/g, 'Quieres')
+        informalText = informalText.replace(/\bnecesita\b/g, 'necesitas')
+        informalText = informalText.replace(/\bNecesita\b/g, 'Necesitas')
+        informalText = informalText.replace(/\bdebe\b/g, 'debes')
+        informalText = informalText.replace(/\bDebe\b/g, 'Debes')
+        informalText = informalText.replace(/\bestá\b/g, 'estás')
+        informalText = informalText.replace(/\bEstá\b/g, 'Estás')
+        
+        return informalText
+      }
+      
+      // Extract and translate text content from HTML
+      // This regex finds text content between HTML tags
+      const textPattern = />([^<]+)</g
+      let match
+      while ((match = textPattern.exec(htmlContent)) !== null) {
+        const originalText = match[1].trim()
+        if (originalText && originalText.length > 0 && !/^[0-9\s\-\(\)\[\]{}@.,:;!?]+$/.test(originalText)) {
+          const translatedText = await translateText(originalText)
+          const informalText = makeInformalSpanish(translatedText)
+          translatedHTML = translatedHTML.replace(`>${originalText}<`, `>${informalText}<`)
+        }
+      }
+      
+      // Also translate alt attributes and title attributes
+      const altPattern = /alt="([^"]+)"/g
+      let altMatch
+      while ((altMatch = altPattern.exec(htmlContent)) !== null) {
+        const originalAlt = altMatch[1]
+        if (originalAlt && originalAlt.length > 0) {
+          const translatedAlt = await translateText(originalAlt)
+          const informalAlt = makeInformalSpanish(translatedAlt)
+          translatedHTML = translatedHTML.replace(`alt="${originalAlt}"`, `alt="${informalAlt}"`)
+        }
+      }
+      
+      console.log(`✅ Email HTML translation completed for ${targetLanguage}`)
+      return translatedHTML
+    }
+
+    let emailHtml
+    let emailSubject = subject
+    
+    // Use custom HTML template if available, otherwise use default
+    if (emailTemplates?.welcomeEmail?.customHTML && emailTemplates.welcomeEmail.customHTML !== 'USE_DEFAULT_TEMPLATE') {
+      // Use custom HTML template from QR configuration
+      const customTemplate = emailTemplates.welcomeEmail.customHTML
+      
+      let processedTemplate = customTemplate
+        .replace(/\{customerName\}/g, data.customerName)
+        .replace(/\{qrCode\}/g, data.qrCode)
+        .replace(/\{guests\}/g, data.guests.toString())
+        .replace(/\{days\}/g, data.days.toString())
+        .replace(/\{expirationDate\}/g, formattedExpirationDate)
+        .replace(/\{magicLink\}/g, data.magicLinkUrl || '')
+        .replace(/\{customerPortalUrl\}/g, data.magicLinkUrl || '')
+      
+      // Apply universal email translation for Spanish customers
+      emailHtml = await translateEmailHTML(processedTemplate, data.customerLanguage)
+      
+      // Use custom subject if available
+      if (emailTemplates.welcomeEmail.subject) {
+        emailSubject = emailTemplates.welcomeEmail.subject
+      }
+      
+      console.log(`📧 Using custom HTML template from QR configuration (translated for ${data.customerLanguage})`)
+    } else if (emailTemplates?.welcomeEmail?.customHTML === 'USE_DEFAULT_TEMPLATE') {
+      console.log(`📧 USE_DEFAULT_TEMPLATE detected - Loading actual default template`)
+      
+      // Load the actual default template from database
+      try {
+        const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
+          where: { isDefault: true }
+        })
+        
+        if (defaultTemplate && defaultTemplate.customHTML) {
+          console.log(`📧 FOUND DEFAULT TEMPLATE in database - Length: ${defaultTemplate.customHTML.length} chars`)
+          
+          let processedTemplate = defaultTemplate.customHTML
+            .replace(/\{customerName\}/g, data.customerName)
+            .replace(/\{qrCode\}/g, data.qrCode)
+            .replace(/\{guests\}/g, data.guests.toString())
+            .replace(/\{days\}/g, data.days.toString())
+            .replace(/\{expirationDate\}/g, formattedExpirationDate)
+            .replace(/\{magicLink\}/g, data.magicLinkUrl || '')
+            .replace(/\{customerPortalUrl\}/g, data.magicLinkUrl || '')
+          
+          // Apply universal email translation for Spanish customers
+          emailHtml = await translateEmailHTML(processedTemplate, data.customerLanguage)
+          
+          // Use default template subject
+          if (defaultTemplate.subject) {
+            emailSubject = defaultTemplate.subject
+          }
+          
+          console.log(`📧 Using DEFAULT template from database (translated for ${data.customerLanguage})`)
+        } else {
+          console.log(`⚠️ No default template found in database, falling back to generic template`)
+          
+          // Fallback to generic template
+          emailHtml = createWelcomeEmailHtml({
+            customerName: data.customerName,
+            qrCode: data.qrCode,
+            guests: data.guests,
+            days: data.days,
+            expiresAt: formattedExpirationDate,
+            customerPortalUrl: data.magicLinkUrl,
+            language: data.customerLanguage,
+            deliveryMethod: data.deliveryMethod
+          })
+          console.log(`📧 Generated fallback HTML template`)
+        }
+      } catch (error) {
+        console.error('❌ Error loading default template from database:', error)
+        
+        // Fallback to generic template
+        emailHtml = createWelcomeEmailHtml({
+          customerName: data.customerName,
+          qrCode: data.qrCode,
+          guests: data.guests,
+          days: data.days,
+          expiresAt: formattedExpirationDate,
+          customerPortalUrl: data.magicLinkUrl,
+          language: data.customerLanguage,
+          deliveryMethod: data.deliveryMethod
+        })
+        console.log(`📧 Generated error fallback HTML template`)
+      }
+    } else {
+      // Use generic default HTML template
+      emailHtml = createWelcomeEmailHtml({
+        customerName: data.customerName,
+        qrCode: data.qrCode,
+        guests: data.guests,
+        days: data.days,
+        expiresAt: formattedExpirationDate,
+        customerPortalUrl: data.magicLinkUrl,
+        language: data.customerLanguage,
+        deliveryMethod: data.deliveryMethod
+      })
+      console.log(`📧 Using generic default HTML template`)
+    }
+
+    // Send the email
+    const emailSent = await sendEmail({
+      to: data.customerEmail,
+      subject: emailSubject,
+      html: emailHtml
+    })
+
+    if (emailSent) {
+      console.log(`✅ Welcome email sent successfully to ${data.customerEmail}`)
+    } else {
+      console.error(`❌ Failed to send welcome email to ${data.customerEmail}`)
+    }
+
+    return emailSent
+  } catch (error) {
+    console.error('❌ Error in sendWelcomeEmailWithTemplates:', error)
+    return false
+  }
 }
