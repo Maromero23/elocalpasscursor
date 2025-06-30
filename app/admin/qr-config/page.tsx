@@ -458,7 +458,7 @@ function QRConfigPageContent() {
     localStorage.removeItem('elocalpass-button3-config')
     localStorage.removeItem('elocalpass-button3-urls')
     localStorage.removeItem('elocalpass-button4-config')
-          localStorage.removeItem('elocalpass-button5-config')
+    localStorage.removeItem('elocalpass-button5-config')
       localStorage.removeItem('elocalpass-button6-config')
       
       console.log('🧹 CLEAR PROGRESS: All button configurations cleared from localStorage')
@@ -472,7 +472,7 @@ function QRConfigPageContent() {
       setSaveStatus('')
       setProgressRestored(false)
       setButton4UserChoice(null) // Reset Button 4 user choice to "no selection"
-          setButton5UserChoice(null) // Reset Button 5 user choice to "no selection"
+    setButton5UserChoice(null) // Reset Button 5 user choice to "no selection"
       setButton6UserChoice(null) // Reset Button 6 user choice to "no selection"
       
       console.log('🧹 CLEAR PROGRESS: All progress and database configuration reset to defaults')
@@ -3949,7 +3949,7 @@ function QRConfigPageContent() {
                   <div className="border-l-4 border-purple-500 pl-4">
                     <h2 className="text-xl font-semibold text-gray-900">Button 6: Allow Future QR Creation?</h2>
                     <p className="text-gray-600 mt-1">Enable sellers to create QR codes in the future (only applies to DIRECT delivery method)</p>
-                  </div>
+            </div>
                   
                   <div className="space-y-4">
                     <label className="flex items-start space-x-3 cursor-pointer">
@@ -3995,7 +3995,7 @@ function QRConfigPageContent() {
                         <p className="text-sm text-gray-600">Sellers can create QR codes in the future. 
                           This only applies when delivery method is set to "DIRECT" (QR sent via email).
                         </p>
-                      </div>
+          </div>
                     </label>
 
                     <label className="flex items-start space-x-3 cursor-pointer">

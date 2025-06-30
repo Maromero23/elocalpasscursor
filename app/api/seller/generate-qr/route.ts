@@ -299,13 +299,13 @@ ${t('email.welcome.signature', customerLanguage)}
       data: { rebuyEmailScheduled: rebuyEmailScheduled }
     })
     
-    // Check if this is a scheduled QR code
-    const isScheduled = scheduledFor && new Date(scheduledFor) > new Date()
+    // Check if this is a scheduled QR code (2 minutes minimum buffer)
+    const isScheduled = scheduledFor && new Date(scheduledFor) >= new Date(Date.now() + 2 * 60 * 1000)
     
-    // Validate that scheduled time is in the future
-    if (scheduledFor && new Date(scheduledFor) <= new Date()) {
+    // Validate that scheduled time is at least 2 minutes in the future
+    if (scheduledFor && new Date(scheduledFor) < new Date(Date.now() + 2 * 60 * 1000)) {
       return NextResponse.json(
-        { error: 'Scheduled time must be in the future' },
+        { error: 'Scheduled time must be at least 2 minutes in the future' },
         { status: 400 }
       )
     }

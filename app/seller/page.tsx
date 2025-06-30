@@ -156,7 +156,7 @@ export default function SellerDashboard() {
         if (enableFutureQR && futureQRDate && futureQRTime) {
           success("Success!", `ELocalPass scheduled to be sent to ${clientEmail} on ${new Date(`${futureQRDate}T${futureQRTime}`).toLocaleString()}!`)
         } else {
-          success("Success!", `ELocalPass generated and sent to ${clientEmail}!`)
+        success("Success!", `ELocalPass generated and sent to ${clientEmail}!`)
         }
         // Reset form
         setClientName('')
@@ -653,7 +653,7 @@ export default function SellerDashboard() {
                               className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                             />
                             <label htmlFor="enableFutureQR" className="text-sm font-medium text-gray-700">
-                              Schedule this QR code to be sent at a future date and time
+                              Schedule this QR code to be sent at a future date and time (minimum 2 minutes from now)
                             </label>
                           </div>
                           
@@ -685,15 +685,19 @@ export default function SellerDashboard() {
                               </div>
                               {futureQRDate && futureQRTime && (
                                 <div className="md:col-span-2 text-sm text-purple-700 bg-purple-100 p-2 rounded-md">
-                                  {new Date(`${futureQRDate}T${futureQRTime}`) > new Date() ? (
-                                    <>
-                                      <strong>Scheduled for:</strong> {new Date(`${futureQRDate}T${futureQRTime}`).toLocaleString()}
-                                    </>
-                                  ) : (
-                                    <div className="text-red-700 bg-red-100 p-2 rounded-md">
-                                      ⚠️ <strong>Invalid time:</strong> Please select a future date and time
-                                    </div>
-                                  )}
+                                  {(() => {
+                                    const scheduledDateTime = new Date(`${futureQRDate}T${futureQRTime}`)
+                                    const nowPlus2Minutes = new Date(Date.now() + 2 * 60 * 1000) // 2 minutes from now
+                                    return scheduledDateTime >= nowPlus2Minutes ? (
+                                      <>
+                                        <strong>✅ Scheduled for:</strong> {scheduledDateTime.toLocaleString()}
+                                      </>
+                                    ) : (
+                                      <div className="text-red-700 bg-red-100 p-2 rounded-md">
+                                        ⚠️ <strong>Invalid time:</strong> Please select a time at least 2 minutes from now
+                                      </div>
+                                    )
+                                  })()}
                                 </div>
                               )}
                             </div>
@@ -702,6 +706,8 @@ export default function SellerDashboard() {
                           {!enableFutureQR && (
                             <div className="text-sm text-gray-600 bg-gray-100 p-2 rounded-md">
                               💡 Leave unchecked to send the QR code immediately when you click "Generate & Send"
+                              <br />
+                              ⏰ Or check to schedule for any time at least 2 minutes from now (same day allowed!)
                             </div>
                           )}
                         </div>
@@ -761,7 +767,7 @@ export default function SellerDashboard() {
                           onClick={handleGenerateQR}
                           disabled={generating || 
                             (shouldShowClientInfo() && (!clientName || !clientEmail || !confirmEmail || clientEmail !== confirmEmail)) ||
-                            (enableFutureQR && futureQRDate.length > 0 && futureQRTime.length > 0 && new Date(`${futureQRDate}T${futureQRTime}`) <= new Date())
+                            (enableFutureQR && futureQRDate.length > 0 && futureQRTime.length > 0 && new Date(`${futureQRDate}T${futureQRTime}`) < new Date(Date.now() + 2 * 60 * 1000))
                           }
                           className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                         >
