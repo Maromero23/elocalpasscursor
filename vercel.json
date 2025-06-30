@@ -1,3 +1,13 @@
 {
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/scheduled-qr/process",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/rebuy-emails/send",
+      "schedule": "*/15 * * * *"
+    }
+  ]
 } 

@@ -80,22 +80,27 @@ function generateRebuyHtmlWithConfig(config: any, replacements: any, existingHtm
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 REBUY EMAIL SERVICE: Starting rebuy email check (TESTING MODE - 2 minutes after creation)...')
+    console.log('🔄 REBUY EMAIL SERVICE: Starting rebuy email check (PRODUCTION MODE - 6-12 hours before expiration)...')
 
-    // TESTING MODE: Get QR codes created more than 2 minutes ago but less than 25 minutes ago
+    // PRODUCTION MODE: Get QR codes expiring in 6-12 hours that haven't received rebuy emails yet
     const now = new Date()
-    const twoMinutesAgo = new Date(now.getTime() - (2 * 60 * 1000)) // 2 minutes ago
-    const twentyFiveMinutesAgo = new Date(now.getTime() - (25 * 60 * 1000)) // 25 minutes ago
+    const sixHoursFromNow = new Date(now.getTime() + (6 * 60 * 60 * 1000)) // 6 hours from now
+    const twelveHoursFromNow = new Date(now.getTime() + (12 * 60 * 60 * 1000)) // 12 hours from now
     
-    const recentQRCodes = await prisma.qRCode.findMany({
+    const expiringQRCodes = await prisma.qRCode.findMany({
       where: {
         isActive: true,
-        createdAt: {
-          gte: twentyFiveMinutesAgo, // Created at least 2 minutes ago
-          lte: twoMinutesAgo   // But not more than 25 minutes ago
+        expiresAt: {
+          gte: sixHoursFromNow,   // Expires more than 6 hours from now
+          lte: twelveHoursFromNow // But less than 12 hours from now
         },
         customerEmail: {
           not: null
+        },
+        // Only include QRs that haven't received rebuy emails yet
+        analytics: {
+          rebuyEmailScheduled: true, // Only if rebuy email is scheduled
+          // We'll check rebuyEmailSent separately since it might not be in the schema yet
         }
       },
       include: {
@@ -108,11 +113,11 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log(`📧 REBUY EMAIL SERVICE: Found ${recentQRCodes.length} QR codes created 2-25 minutes ago`)
+    console.log(`📧 REBUY EMAIL SERVICE: Found ${expiringQRCodes.length} QR codes expiring in 6-12 hours`)
 
     const results = []
 
-    for (const qrCode of recentQRCodes) {
+    for (const qrCode of expiringQRCodes) {
       try {
         // Calculate time since creation
         const minutesSinceCreation = Math.floor((now.getTime() - qrCode.createdAt.getTime()) / (1000 * 60))
@@ -390,10 +395,10 @@ export async function POST(request: NextRequest) {
                   try {
                     const savedRebuyConfig = JSON.parse(defaultRebuyTemplate.headerText)
                     const originalSubject = savedRebuyConfig.emailSubject || defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'
-                    emailSubject = `🧪 TEST: ${await translateSubject(originalSubject, customerLanguage)}`
+                    emailSubject = `${await translateSubject(originalSubject, customerLanguage)}`
                   } catch (error) {
                     const originalSubject = defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'
-                    emailSubject = `🧪 TEST: ${await translateSubject(originalSubject, customerLanguage)}`
+                    emailSubject = `${await translateSubject(originalSubject, customerLanguage)}`
                   }
                 } else {
                   // No saved config, use stored HTML
@@ -410,7 +415,7 @@ export async function POST(request: NextRequest) {
                   emailHtml = await translateRebuyEmailHTML(processedTemplate, customerLanguage)
                   
                   const originalSubject = defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'
-                  emailSubject = `🧪 TEST: ${await translateSubject(originalSubject, customerLanguage)}`
+                  emailSubject = `${await translateSubject(originalSubject, customerLanguage)}`
                 }
                 
               } else {
@@ -426,7 +431,7 @@ export async function POST(request: NextRequest) {
                   language: customerLanguage,
                   rebuyUrl: customerPortalUrl
                 })
-                emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+                emailSubject = `Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
               }
               
             } catch (error) {
@@ -442,7 +447,7 @@ export async function POST(request: NextRequest) {
                 language: customerLanguage,
                 rebuyUrl: customerPortalUrl
               })
-              emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+              emailSubject = `Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
             }
             
           } else {
@@ -469,10 +474,10 @@ export async function POST(request: NextRequest) {
               // Get subject from rebuy config if available
               if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
                 const originalSubject = emailTemplates.rebuyEmail.rebuyConfig.emailSubject
-                emailSubject = `🧪 TEST: ${await translateSubject(originalSubject, customerLanguage)}`
+                emailSubject = `${await translateSubject(originalSubject, customerLanguage)}`
               } else {
                 const originalSubject = `Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
-                emailSubject = `🧪 TEST: ${await translateSubject(originalSubject, customerLanguage)}`
+                emailSubject = `${await translateSubject(originalSubject, customerLanguage)}`
               }
 
               console.log(`✅ REBUY EMAIL: Custom template processed successfully. Final length: ${emailHtml.length} characters`)
@@ -501,7 +506,7 @@ export async function POST(request: NextRequest) {
                 emailHtml = await translateRebuyEmailHTML(processedTemplate, customerLanguage)
                 
                 const originalSubject = defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'
-                emailSubject = `🧪 TEST: ${await translateSubject(originalSubject, customerLanguage)}`
+                emailSubject = `${await translateSubject(originalSubject, customerLanguage)}`
               } else {
                 // Final fallback to generic template
                 emailHtml = createRebuyEmailHtml({
@@ -514,7 +519,7 @@ export async function POST(request: NextRequest) {
                   language: customerLanguage,
                   rebuyUrl: customerPortalUrl
                 })
-                emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+                emailSubject = `Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
               }
             }
           }
@@ -537,10 +542,10 @@ export async function POST(request: NextRequest) {
 
           if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
             const originalSubject = emailTemplates.rebuyEmail.rebuyConfig.emailSubject
-            emailSubject = `🧪 TEST: ${await translateSubject(originalSubject, customerLanguage)}`
+            emailSubject = `${await translateSubject(originalSubject, customerLanguage)}`
           } else {
             const originalSubject = `Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
-            emailSubject = `🧪 TEST: ${await translateSubject(originalSubject, customerLanguage)}`
+            emailSubject = `${await translateSubject(originalSubject, customerLanguage)}`
           }
           
         } else {
@@ -558,7 +563,7 @@ export async function POST(request: NextRequest) {
             rebuyUrl: customerPortalUrl
           })
           
-          emailSubject = `🧪 TEST: Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
+          emailSubject = `Your ELocalPass - Get another one! (expires in ${hoursLeft} hours)`
         }
 
         console.log(`📧 REBUY EMAIL: Sending email to ${qrCode.customerEmail} with subject: ${emailSubject}`)
@@ -610,11 +615,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Rebuy email service completed (TESTING MODE). Processed ${results.length} emails.`,
+      message: `Rebuy email service completed (PRODUCTION MODE). Processed ${results.length} emails.`,
       results: results,
-      totalFound: recentQRCodes.length,
-      testingMode: true,
-      triggerWindow: "2-25 minutes after QR creation"
+      totalFound: expiringQRCodes.length,
+      productionMode: true,
+      triggerWindow: "6-12 hours before expiration"
     })
 
   } catch (error) {
