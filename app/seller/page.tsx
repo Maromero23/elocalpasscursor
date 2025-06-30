@@ -668,7 +668,13 @@ export default function SellerDashboard() {
                                   type="date"
                                   value={futureQRDate}
                                   onChange={(e) => setFutureQRDate(e.target.value)}
-                                  min={new Date().toISOString().split('T')[0]}
+                                  min={(() => {
+                                    const today = new Date();
+                                    const year = today.getFullYear();
+                                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                                    const day = String(today.getDate()).padStart(2, '0');
+                                    return `${year}-${month}-${day}`;
+                                  })()}
                                   className="w-full focus:ring-purple-500 focus:border-purple-500 block shadow-sm text-sm border-gray-300 rounded-md px-3 py-2"
                                 />
                               </div>
