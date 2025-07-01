@@ -495,12 +495,15 @@ export default function AdminAffiliates() {
          return (
        <div
          onClick={() => setEditingField({ affiliateId: affiliate.id, field })}
-         className={`cursor-pointer hover:bg-blue-50 px-2 py-1 rounded min-h-[24px] ${type === 'textarea' ? 'leading-relaxed' : 'flex items-center'}`}
+         className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs ${type === 'textarea' ? 'leading-tight' : 'flex items-center'}`}
          title="Click to edit"
          style={{ 
-           maxWidth: type === 'textarea' ? '200px' : 'auto',
+           minHeight: '16px',
+           maxWidth: type === 'textarea' ? '180px' : 'auto',
            wordBreak: 'break-word',
-           whiteSpace: type === 'textarea' ? 'pre-wrap' : 'nowrap'
+           whiteSpace: type === 'textarea' ? 'pre-wrap' : 'nowrap',
+           overflow: 'hidden',
+           textOverflow: 'ellipsis'
          }}
        >
          {displayValue()}
@@ -519,14 +522,14 @@ export default function AdminAffiliates() {
     
     return (
       <th 
-        className={`px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${className}`}
+        className={`px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${className}`}
         onClick={() => handleSort(field)}
       >
         <div className="flex items-center space-x-1">
-          <span>{children}</span>
-          <div className="flex flex-col">
-            <ChevronUp className={`w-3 h-3 ${isSorted && isAsc ? 'text-blue-600' : 'text-gray-300'}`} />
-            <ChevronDown className={`w-3 h-3 -mt-1 ${isSorted && !isAsc ? 'text-blue-600' : 'text-gray-300'}`} />
+          <span className="truncate">{children}</span>
+          <div className="flex flex-col flex-shrink-0">
+            <ChevronUp className={`w-2 h-2 ${isSorted && isAsc ? 'text-blue-600' : 'text-gray-300'}`} />
+            <ChevronDown className={`w-2 h-2 -mt-0.5 ${isSorted && !isAsc ? 'text-blue-600' : 'text-gray-300'}`} />
           </div>
         </div>
       </th>
@@ -923,258 +926,275 @@ export default function AdminAffiliates() {
             </div>
           ) : (
             <>
-              {/* Top Horizontal Scroll Navigation */}
-              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Scroll horizontally to view all columns
+              {/* Top Horizontal Scroll Toggle Bar */}
+              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs text-gray-600">
+                    Horizontal scroll: Use bar below or mouse wheel + Shift
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {filteredAffiliates.length} affiliates
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => {
+                <div className="w-full overflow-hidden">
+                  <div 
+                    className="h-3 bg-gray-200 rounded-full cursor-pointer relative"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      const x = e.clientX - rect.left
+                      const percentage = x / rect.width
                       const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
-                      tableContainer?.scrollBy({ left: -300, behavior: 'smooth' })
+                      const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
+                      tableContainer.scrollLeft = maxScroll * percentage
                     }}
-                    className="p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center"
-                    title="Scroll Left"
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
-                      tableContainer?.scrollBy({ left: 300, behavior: 'smooth' })
-                    }}
-                    className="p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center"
-                    title="Scroll Right"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                    <div 
+                      className="h-full bg-blue-600 rounded-full transition-all duration-200"
+                      style={{ width: '25%' }}
+                      id="scroll-indicator"
+                    />
+                  </div>
                 </div>
               </div>
               
-              <div className="overflow-x-auto table-scroll-container">
-                <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '2000px' }}>
-                  <thead className="bg-gray-50">
+              <div 
+                className="overflow-x-auto table-scroll-container" 
+                style={{ maxHeight: '70vh' }}
+                onScroll={(e) => {
+                  const container = e.target as HTMLElement
+                  const percentage = container.scrollLeft / (container.scrollWidth - container.clientWidth)
+                  const indicator = document.getElementById('scroll-indicator')
+                  const bottomIndicator = document.getElementById('bottom-scroll-indicator')
+                  if (indicator) indicator.style.marginLeft = `${percentage * 75}%`
+                  if (bottomIndicator) bottomIndicator.style.marginLeft = `${percentage * 75}%`
+                }}
+              >
+                <table className="min-w-full divide-y divide-gray-100" style={{ 
+                  minWidth: '2400px', 
+                  fontSize: '11px',
+                  tableLayout: 'fixed'
+                }}>
+                  <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10" style={{width: '40px'}}>
                         <input
                           type="checkbox"
                           checked={selectedAffiliates.length === affiliates.length && affiliates.length > 0}
                           onChange={handleSelectAll}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </th>
-                      <SortableHeader field="affiliateNum">
+                      <SortableHeader field="affiliateNum" className="w-16">
                         #
                       </SortableHeader>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Status
                       </th>
-                      <SortableHeader field="name">
+                      <SortableHeader field="name" className="w-36">
                         Business Name
                       </SortableHeader>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         First Name
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Last Name
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
                         Email
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                         Work Phone
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                         WhatsApp
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                         Address
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                         Website
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                         Description
                       </th>
-                      <SortableHeader field="city">
+                      <SortableHeader field="city" className="w-24">
                         City
                       </SortableHeader>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Maps
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Location
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Discount
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Logo
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Facebook
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Instagram
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Category
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Sub-Category
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Service
                       </th>
-                      <SortableHeader field="type">
+                      <SortableHeader field="type" className="w-24">
                         Type
                       </SortableHeader>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Sticker
                       </th>
-                      <SortableHeader field="rating">
+                      <SortableHeader field="rating" className="w-20">
                         Rating
                       </SortableHeader>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Recommended
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Terms & Conditions
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Visits
                       </th>
-                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white divide-y divide-gray-100 text-xs">
                     {filteredAffiliates.map((affiliate) => (
-                      <tr key={affiliate.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 sticky left-0 bg-white z-10">
+                      <tr key={affiliate.id} className="hover:bg-gray-50 h-8">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900 sticky left-0 bg-white z-10">
                           <input
                             type="checkbox"
                             checked={selectedAffiliates.includes(affiliate.id)}
                             onChange={() => handleSelectAffiliate(affiliate.id)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           #{affiliate.affiliateNum || affiliate.id.slice(-3)}
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
+                        <td className="px-2 py-1 whitespace-nowrap">
                           <EditableField affiliate={affiliate} field="isActive" value={affiliate.isActive} type="boolean" />
                         </td>
-                        <td className="px-3 py-2 text-sm font-medium text-gray-900">
+                        <td className="px-2 py-1 text-xs font-medium text-gray-900">
                           <EditableField affiliate={affiliate} field="name" value={affiliate.name} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="firstName" value={affiliate.firstName} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="lastName" value={affiliate.lastName} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-blue-600">
                           <EditableField affiliate={affiliate} field="email" value={affiliate.email} type="email" />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="workPhone" value={affiliate.workPhone} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs">
                           <EditableField affiliate={affiliate} field="whatsApp" value={affiliate.whatsApp} />
                         </td>
-                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs">
+                        <td className="px-2 py-1 text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="address" value={affiliate.address} type="textarea" />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-blue-600">
                           <EditableField affiliate={affiliate} field="web" value={affiliate.web} type="url" />
                         </td>
-                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs">
+                        <td className="px-2 py-1 text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="description" value={affiliate.description} type="textarea" />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-blue-600">
                           <EditableField affiliate={affiliate} field="maps" value={affiliate.maps} type="url" />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-green-600">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs font-medium text-green-600">
                           <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          <div className="flex items-center space-x-2">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                          <div className="flex items-center space-x-1">
                             {affiliate.logo && (
-                              <img src={affiliate.logo} alt="Logo" className="w-8 h-8 object-cover rounded" />
+                              <img src={affiliate.logo} alt="Logo" className="w-4 h-4 object-cover rounded" />
                             )}
                             <EditableField affiliate={affiliate} field="logo" value={affiliate.logo} type="url" />
                           </div>
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-blue-600">
                           <EditableField affiliate={affiliate} field="facebook" value={affiliate.facebook} type="url" />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-blue-600">
                           <EditableField affiliate={affiliate} field="instagram" value={affiliate.instagram} type="url" />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="category" value={affiliate.category} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="subCategory" value={affiliate.subCategory} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="sticker" value={affiliate.sticker} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="rating" value={affiliate.rating} type="number" />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="recommended" value={affiliate.recommended} type="boolean" />
                         </td>
-                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs">
+                        <td className="px-2 py-1 text-xs text-gray-900">
                           <EditableField affiliate={affiliate} field="termsConditions" value={!!affiliate.termsConditions} type="boolean" />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          <div className="text-sm font-medium">{affiliate.totalVisits}</div>
-                          <div className="text-xs text-gray-500">
+                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                          <div className="text-xs font-medium">{affiliate.totalVisits}</div>
+                          <div className="text-xs text-gray-400">
                             {affiliate.lastVisitAt ? 
                               new Date(affiliate.lastVisitAt).toLocaleDateString() : 
                               'Never'
                             }
                           </div>
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-1">
+                        <td className="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
+                          <div className="flex items-center justify-end space-x-0.5">
                             <button
                               onClick={() => setEditingAffiliate(affiliate)}
-                              className="text-blue-600 hover:text-blue-900 p-1"
+                              className="text-blue-600 hover:text-blue-900 p-0.5"
                               title="Edit"
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => handleDuplicateAffiliate(affiliate)}
-                              className="text-green-600 hover:text-green-900 p-1"
+                              className="text-green-600 hover:text-green-900 p-0.5"
                               title="Copy"
                             >
-                              <Users className="w-4 h-4" />
+                              <Users className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => handleDeleteAffiliate(affiliate.id, affiliate.name)}
-                              className="text-red-600 hover:text-red-900 p-1"
+                              className="text-red-600 hover:text-red-900 p-0.5"
                               title="Delete"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
                         </td>
@@ -1184,32 +1204,34 @@ export default function AdminAffiliates() {
                 </table>
               </div>
               
-              {/* Bottom Horizontal Scroll Navigation */}
-              <div className="bg-gray-50 px-4 py-2 border-t border-gray-200 flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  {filteredAffiliates.length} affiliates shown
+              {/* Bottom Horizontal Scroll Toggle Bar */}
+              <div className="bg-gray-50 px-4 py-2 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs text-gray-600">
+                    Total: {filteredAffiliates.length} affiliates displayed
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Use scroll bar or Shift + mouse wheel
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => {
+                <div className="w-full overflow-hidden">
+                  <div 
+                    className="h-3 bg-gray-200 rounded-full cursor-pointer relative"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      const x = e.clientX - rect.left
+                      const percentage = x / rect.width
                       const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
-                      tableContainer?.scrollBy({ left: -300, behavior: 'smooth' })
+                      const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
+                      tableContainer.scrollLeft = maxScroll * percentage
                     }}
-                    className="p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center"
-                    title="Scroll Left"
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
-                      tableContainer?.scrollBy({ left: 300, behavior: 'smooth' })
-                    }}
-                    className="p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center"
-                    title="Scroll Right"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                    <div 
+                      className="h-full bg-blue-600 rounded-full transition-all duration-200"
+                      style={{ width: '25%' }}
+                      id="bottom-scroll-indicator"
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -1484,7 +1506,7 @@ export default function AdminAffiliates() {
       {/* Edit Affiliate Modal */}
       {editingAffiliate && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+          <div className="relative top-4 mx-auto p-5 border w-11/12 shadow-lg rounded-md bg-white" style={{ maxWidth: '1400px' }}>
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
@@ -1498,53 +1520,220 @@ export default function AdminAffiliates() {
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[70vh] overflow-y-auto p-2">
+                {/* Basic Information */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Business Name *</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Business Name *</label>
                   <input
                     type="text"
                     value={editingAffiliate.name}
                     onChange={(e) => setEditingAffiliate({...editingAffiliate, name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">First Name</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.firstName || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, firstName: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.lastName || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, lastName: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
                   <input
                     type="email"
                     value={editingAffiliate.email}
                     onChange={(e) => setEditingAffiliate({...editingAffiliate, email: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Work Phone</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.workPhone || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, workPhone: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">WhatsApp</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.whatsApp || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, whatsApp: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div className="lg:col-span-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Address</label>
+                  <textarea
+                    value={editingAffiliate.address || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, address: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    rows={2}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Website</label>
+                  <input
+                    type="url"
+                    value={editingAffiliate.web || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, web: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div className="lg:col-span-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    value={editingAffiliate.description || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, description: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    rows={2}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">City</label>
                   <input
                     type="text"
                     value={editingAffiliate.city || ''}
                     onChange={(e) => setEditingAffiliate({...editingAffiliate, city: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <select
-                    value={editingAffiliate.type || ''}
-                    onChange={(e) => setEditingAffiliate({...editingAffiliate, type: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Type</option>
-                    <option value="restaurant">Restaurant</option>
-                    <option value="service">Service</option>
-                    <option value="store">Store</option>
-                  </select>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Maps URL</label>
+                  <input
+                    type="url"
+                    value={editingAffiliate.maps || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, maps: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.location || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, location: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Discount</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.discount || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, discount: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Logo URL</label>
+                  <input
+                    type="url"
+                    value={editingAffiliate.logo || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, logo: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Facebook</label>
+                  <input
+                    type="url"
+                    value={editingAffiliate.facebook || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, facebook: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Instagram</label>
+                  <input
+                    type="url"
+                    value={editingAffiliate.instagram || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, instagram: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.category || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, category: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Sub-Category</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.subCategory || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, subCategory: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Service</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.service || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, service: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.type || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, type: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Sticker</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.sticker || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, sticker: e.target.value})}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Rating</label>
                   <input
                     type="number"
                     min="1"
@@ -1552,27 +1741,51 @@ export default function AdminAffiliates() {
                     step="0.1"
                     value={editingAffiliate.rating || ''}
                     onChange={(e) => setEditingAffiliate({...editingAffiliate, rating: parseFloat(e.target.value) || null})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    value={editingAffiliate.isActive ? 'active' : 'inactive'}
-                    onChange={(e) => setEditingAffiliate({...editingAffiliate, isActive: e.target.value === 'active'})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editingAffiliate.isActive}
+                      onChange={(e) => setEditingAffiliate({...editingAffiliate, isActive: e.target.checked})}
+                      className="mr-2"
+                    />
+                    <span className="text-xs font-medium text-gray-700">Active</span>
+                  </label>
                 </div>
+                
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editingAffiliate.recommended}
+                      onChange={(e) => setEditingAffiliate({...editingAffiliate, recommended: e.target.checked})}
+                      className="mr-2"
+                    />
+                    <span className="text-xs font-medium text-gray-700">Recommended</span>
+                  </label>
+                </div>
+                
+                                 <div>
+                   <label className="flex items-center">
+                     <input
+                       type="checkbox"
+                       checked={!!editingAffiliate.termsConditions}
+                       onChange={(e) => setEditingAffiliate({...editingAffiliate, termsConditions: e.target.checked ? 'yes' : null})}
+                       className="mr-2"
+                     />
+                     <span className="text-xs font-medium text-gray-700">Terms & Conditions</span>
+                   </label>
+                 </div>
               </div>
               
-              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
+              <div className="flex justify-end space-x-3 mt-4 pt-3 border-t">
                 <button
                   onClick={() => setEditingAffiliate(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="px-3 py-1 text-xs border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
@@ -1597,7 +1810,7 @@ export default function AdminAffiliates() {
                       error('Update Failed', 'Unable to update affiliate')
                     }
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                   Save Changes
                 </button>
