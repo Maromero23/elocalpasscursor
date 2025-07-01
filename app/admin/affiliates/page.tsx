@@ -128,9 +128,32 @@ export default function AdminAffiliates() {
     }
   }
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+      error('Please select a valid CSV file')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const content = e.target?.result as string
+      if (content) {
+        setCsvData(content)
+        success('File Loaded!', `${file.name} loaded successfully`)
+      }
+    }
+    reader.onerror = () => {
+      error('File Error', 'Failed to read the CSV file')
+    }
+    reader.readAsText(file)
+  }
+
   const handleImportCSV = async () => {
     if (!csvData.trim()) {
-      error('Please paste CSV data')
+      error('Please upload a CSV file or paste CSV data')
       return
     }
 
@@ -586,20 +609,44 @@ export default function AdminAffiliates() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Expected CSV Format:
                   </label>
-                  <div className="bg-gray-50 p-3 rounded text-xs font-mono">
-                    Affiliate #,Active,Name,FirstName,LastName,Email,WorkPhone,WhatsApp,Address,Web,Descripcion,City,Maps,Location,Discount,Logo,Facebook,Instagram,Category,Sub-Categoria,Service,Type,Sticker,Rating,Recommended,Terms&Cond
+                  <div className="bg-gray-50 p-3 rounded border text-xs font-mono text-gray-800 overflow-x-auto">
+                    <div className="whitespace-nowrap">
+                      Affiliate #,Active,Name,FirstName,LastName,Email,WorkPhone,WhatsApp,Address,Web,Descripcion,City,Maps,Location,Discount,Logo,Facebook,Instagram,Category,Sub-Categoria,Service,Type,Sticker,Rating,Recommended,Terms&Cond
+                    </div>
                   </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Paste CSV Data:
+                    Option 1: Upload CSV File
+                  </label>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Select a .csv file from your computer</p>
+                </div>
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">OR</span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Option 2: Paste CSV Data
                   </label>
                   <textarea
                     value={csvData}
                     onChange={(e) => setCsvData(e.target.value)}
                     placeholder="Paste your CSV data here..."
-                    rows={10}
+                    rows={8}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
                   />
                 </div>
