@@ -622,9 +622,54 @@ function RebuyEmailConfigPageContent() {
             ${config.showExpirationTimer !== false ? `
             <div class="countdown-timer">
                 <p>⏰ Time Remaining Until Expiration:</p>
-                <div class="countdown-display">{hoursLeft}:00:00</div>
+                <div class="countdown-display" id="countdown-timer">12:00:00</div>
                 <p class="countdown-label">hrs:min:sec</p>
             </div>
+            <script>
+                (function() {
+                    function updateCountdown() {
+                        try {
+                            const now = new Date();
+                            // Use the actual expiration timestamp passed from the rebuy email system
+                            const expirationTime = new Date('{qrExpirationTimestamp}');
+                            
+                            const remainingMs = expirationTime.getTime() - now.getTime();
+                            const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+                            
+                            const hours = Math.floor(remainingSeconds / 3600);
+                            const minutes = Math.floor((remainingSeconds % 3600) / 60);
+                            const seconds = remainingSeconds % 60;
+                            
+                            const timeString = hours.toString().padStart(2, '0') + ':' + 
+                                             minutes.toString().padStart(2, '0') + ':' + 
+                                             seconds.toString().padStart(2, '0');
+                            
+                            const timerElement = document.getElementById('countdown-timer');
+                            if (timerElement) {
+                                timerElement.innerHTML = timeString;
+                                
+                                if (remainingSeconds === 0) {
+                                    timerElement.innerHTML = '🚨 EXPIRED';
+                                    timerElement.style.color = '#dc2626';
+                                    timerElement.style.fontWeight = 'bold';
+                                }
+                            }
+                        } catch (error) {
+                            // Fallback to static display if JavaScript fails
+                            const timerElement = document.getElementById('countdown-timer');
+                            if (timerElement) {
+                                timerElement.innerHTML = '{hoursLeft}:00:00';
+                            }
+                        }
+                    }
+                    
+                    // Start countdown immediately
+                    updateCountdown();
+                    
+                    // Update every second
+                    setInterval(updateCountdown, 1000);
+                })();
+            </script>
             ` : ''}
             
             <!-- Urgency Notice -->
