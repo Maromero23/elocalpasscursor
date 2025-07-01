@@ -194,14 +194,7 @@ function parseCSVLine(line: string): string[] {
   // Add the last field
   result.push(current.trim())
   
-  // Filter out empty fields at the beginning and end (common CSV export issue)
-  while (result.length > 0 && result[0] === '') {
-    result.shift()
-  }
-  while (result.length > 0 && result[result.length - 1] === '') {
-    result.pop()
-  }
-  
+  // Don't remove empty fields - they are part of the structure
   return result
 }
 
@@ -230,42 +223,42 @@ async function handleCSVImport(csvData: string) {
       
       const values = parseCSVLine(lines[i])
       
-      console.log(`📋 Row ${i + 1} - Values count: ${values.length}, Email: ${values[4]}`)
+      console.log(`📋 Row ${i + 1} - Values count: ${values.length}, Email: ${values[5]}`)
       
-      if (values.length < 5 || !values[4]?.includes('@')) {
+      if (values.length < 6 || !values[5]?.includes('@')) {
         console.log(`⚠️ Skipping row ${i + 1}: Invalid data - insufficient columns or invalid email`)
         errors++
-        errorDetails.push(`Row ${i + 1}: Invalid data (${values.length} columns, email: ${values[4]})`)
+        errorDetails.push(`Row ${i + 1}: Invalid data (${values.length} columns, email: ${values[5]})`)
         continue
       }
       
       const affiliateData = {
-        affiliateNum: null, // Not provided in this CSV format
-        isActive: values[0]?.toLowerCase() === 'true' || values[0] === '1',
-        name: values[1] || 'Unknown Business',
-        firstName: values[2] || null,
-        lastName: values[3] || null,
-        email: values[4]?.toLowerCase(),
-        workPhone: values[5] || null,
-        whatsApp: values[6] || null,
-        address: values[7] || null,
-        web: values[8] || null,
-        description: values[9] || null,
-        city: values[10] || null,
-        maps: values[11] || null,
-        location: values[12] || null,
-        discount: values[13] || null,
-        logo: values[14] || null,
-        facebook: values[15] || null,
-        instagram: values[16] || null,
-        category: values[17] || null,
-        subCategory: values[18] || null,
-        service: values[19] || null,
-        type: values[20] || null,
-        sticker: values[21] || null,
-        rating: values[22] ? parseFloat(values[22]) : null,
-        recommended: values[23]?.toLowerCase() === 'true' || values[23] === '1',
-        termsConditions: values[24] || null // TyC field
+        affiliateNum: values[0] || null, // First column (sometimes has sequence number)
+        isActive: values[1]?.toLowerCase() === 'true' || values[1] === '1',
+        name: values[2] || 'Unknown Business',
+        firstName: values[3] || null,
+        lastName: values[4] || null,
+        email: values[5]?.toLowerCase(),
+        workPhone: values[6] || null,
+        whatsApp: values[7] || null,
+        address: values[8] || null,
+        web: values[9] || null,
+        description: values[10] || null,
+        city: values[11] || null,
+        maps: values[12] || null,
+        location: values[13] || null,
+        discount: values[14] || null,
+        logo: values[15] || null,
+        facebook: values[16] || null,
+        instagram: values[17] || null,
+        category: values[18] || null,
+        subCategory: values[19] || null,
+        service: values[20] || null,
+        type: values[21] || null,
+        sticker: values[22] || null,
+        rating: values[23] ? parseFloat(values[23]) : null,
+        recommended: values[24]?.toLowerCase() === 'true' || values[24] === '1',
+        termsConditions: values[25] || null // TyC field
       }
       
       // Check if affiliate already exists
