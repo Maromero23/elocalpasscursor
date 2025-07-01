@@ -246,10 +246,11 @@ model QRCode {
   submissions   LandingPageSubmission[]
   seller        User                    @relation("SellerQRCodes", fields: [sellerId], references: [id], onDelete: Cascade)
   scans         QRScan[]
-  accessTokens  CustomerAccessToken[]
-  usage         QRCodeUsage[]
-  activations   QRCodeActivation[]
-  analytics     QRCodeAnalytics?
+  accessTokens    CustomerAccessToken[]
+  usage           QRCodeUsage[]
+  activations     QRCodeActivation[]
+  analytics       QRCodeAnalytics?
+  affiliateVisits AffiliateVisit[]      @relation("AffiliateQRVisits")
 
   @@map("qr_codes")
 }
@@ -454,4 +455,85 @@ model ScheduledQRCode {
   updatedAt       DateTime @updatedAt
   
   @@map("scheduled_qr_codes")
+}
+
+// AFFILIATE SYSTEM MODELS
+model Affiliate {
+  id             String   @id @default(cuid())
+  affiliateNum   String?  // Affiliate # from Google Sheet
+  isActive       Boolean  @default(true)
+  name           String   // Business name
+  firstName      String?
+  lastName       String?
+  email          String   @unique
+  workPhone      String?
+  whatsApp       String?
+  address        String?
+  web            String?
+  description    String?  // "Descripcion" from sheet
+  city           String?
+  maps           String?  // Google Maps link
+  location       String?  // Location description
+  discount       String?  // Discount offered (percentage or description)
+  logo           String?  // Logo URL
+  facebook       String?
+  instagram      String?
+  category       String?
+  subCategory    String?  // "Sub-Categoria" from sheet
+  service        String?
+  type           String?
+  sticker        String?
+  rating         Float?
+  recommended    Boolean  @default(false)
+  termsConditions String? // "Terms&Cond" from sheet
+  
+  // Internal tracking
+  totalVisits    Int      @default(0)
+  lastVisitAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  sessions       AffiliateSession[] @relation("AffiliateSessions") 
+  visits         AffiliateVisit[]   @relation("AffiliateVisits")
+  
+  @@map("affiliates")
+}
+
+model AffiliateSession {
+  id          String   @id @default(cuid())
+  affiliateId String
+  sessionToken String  @unique
+  deviceInfo  String?  // Browser/device info for identification
+  ipAddress   String?
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime // Long-lasting (30 days)
+  lastUsedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  affiliate   Affiliate @relation("AffiliateSessions", fields: [affiliateId], references: [id], onDelete: Cascade)
+  
+  @@map("affiliate_sessions")
+}
+
+model AffiliateVisit {
+  id              String   @id @default(cuid())
+  affiliateId     String
+  qrCodeId        String
+  qrCode          String   // The actual QR code scanned
+  customerName    String
+  customerEmail   String
+  discountApplied String   // Discount from affiliate's record
+  visitedAt       DateTime @default(now())
+  visitDate       DateTime @default(now()) @db.Date // For once-per-day logic
+  deviceInfo      String?  // Which device/employee scanned
+  notes           String?
+  
+  // Relations
+  affiliate       Affiliate @relation("AffiliateVisits", fields: [affiliateId], references: [id], onDelete: Cascade)
+  qrCodeRecord    QRCode    @relation("AffiliateQRVisits", fields: [qrCodeId], references: [id], onDelete: Cascade)
+  
+  // Ensure once per day per affiliate per QR
+  @@unique([affiliateId, qrCodeId, visitDate])
+  @@map("affiliate_visits")
 }
