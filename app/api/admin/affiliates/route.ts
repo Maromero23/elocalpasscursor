@@ -160,14 +160,51 @@ async function createSingleAffiliate(data: any) {
   })
 }
 
+// Proper CSV parser that handles quoted fields and commas within quotes
+function parseCSVLine(line: string): string[] {
+  const result = []
+  let current = ''
+  let inQuotes = false
+  let i = 0
+  
+  while (i < line.length) {
+    const char = line[i]
+    
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        // Escaped quote
+        current += '"'
+        i += 2
+      } else {
+        // Toggle quote state
+        inQuotes = !inQuotes
+        i++
+      }
+    } else if (char === ',' && !inQuotes) {
+      // End of field
+      result.push(current.trim())
+      current = ''
+      i++
+    } else {
+      current += char
+      i++
+    }
+  }
+  
+  // Add the last field
+  result.push(current.trim())
+  return result
+}
+
 async function handleCSVImport(csvData: string) {
   console.log('📊 ADMIN: Starting CSV import of affiliates')
   
-  // Parse CSV data
-  const lines = csvData.trim().split('\n')
-  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
+  // Parse CSV data properly
+  const lines = csvData.trim().split(/\r?\n/)
+  const headers = parseCSVLine(lines[0])
   
   console.log('📋 CSV Headers:', headers)
+  console.log('📋 Headers count:', headers.length)
   
   // Expected headers: Affiliate #,Active,Name,FirstName,LastName,Email,WorkPhone,WhatsApp,Address,Web,Descripcion,City,Maps,Location,Discount,Logo,Facebook,Instagram,Category,Sub-Categoria,Service,Type,Sticker,Rating,Recommended,Terms&Cond
   
@@ -177,10 +214,19 @@ async function handleCSVImport(csvData: string) {
   
   for (let i = 1; i < lines.length; i++) {
     try {
-      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
+      if (!lines[i].trim()) {
+        console.log(`⚠️ Skipping empty row ${i + 1}`)
+        continue
+      }
       
-      if (values.length < headers.length || !values[5]?.includes('@')) {
-        console.log(`⚠️ Skipping row ${i + 1}: Invalid data`)
+      const values = parseCSVLine(lines[i])
+      
+      console.log(`📋 Row ${i + 1} - Values count: ${values.length}, Email: ${values[5]}`)
+      
+      if (values.length < 6 || !values[5]?.includes('@')) {
+        console.log(`⚠️ Skipping row ${i + 1}: Invalid data - insufficient columns or invalid email`)
+        errors++
+        errorDetails.push(`Row ${i + 1}: Invalid data (${values.length} columns, email: ${values[5]})`)
         continue
       }
       

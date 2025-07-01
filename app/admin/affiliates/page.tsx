@@ -92,6 +92,8 @@ export default function AdminAffiliates() {
   const [csvData, setCsvData] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingAffiliate, setEditingAffiliate] = useState<Affiliate | null>(null)
+  const [csvPreview, setCsvPreview] = useState<any>(null)
+  const [previewing, setPreviewing] = useState(false)
 
   // Load affiliates
   useEffect(() => {
@@ -142,13 +144,44 @@ export default function AdminAffiliates() {
       const content = e.target?.result as string
       if (content) {
         setCsvData(content)
-        success('File Loaded!', `${file.name} loaded successfully`)
+        setCsvPreview(null) // Reset preview when new file is loaded
+        success('File Loaded!', `${file.name} loaded successfully. Click Preview to check the data.`)
       }
     }
     reader.onerror = () => {
       error('File Error', 'Failed to read the CSV file')
     }
     reader.readAsText(file)
+  }
+
+  const handlePreviewCSV = async () => {
+    if (!csvData.trim()) {
+      error('Please upload a CSV file or paste CSV data first')
+      return
+    }
+
+    setPreviewing(true)
+    try {
+      const response = await fetch('/api/admin/affiliates/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csvData: csvData.trim() })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setCsvPreview(result.preview)
+        success('Preview Generated!', `Found ${result.preview.totalRows} rows to process`)
+      } else {
+        error('Preview Failed', result.error || 'Unable to preview CSV')
+      }
+    } catch (err) {
+      console.error('Preview error:', err)
+      error('Preview Failed', 'Unable to generate preview')
+    } finally {
+      setPreviewing(false)
+    }
   }
 
   const handleImportCSV = async () => {
@@ -173,6 +206,7 @@ export default function AdminAffiliates() {
       if (result.success) {
         success('Import Complete!', `${result.imported} affiliates imported, ${result.errors} errors`)
         setCsvData('')
+        setCsvPreview(null)
         setShowImportModal(false)
         loadAffiliates()
       } else {
@@ -207,6 +241,26 @@ export default function AdminAffiliates() {
     } catch (err) {
       console.error('Delete error:', err)
       error('Delete Failed', 'Unable to delete affiliate')
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    try {
+      const response = await fetch('/api/admin/affiliates/bulk-delete', {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        success('All Data Cleared', `Deleted ${result.deleted} affiliates and their visit records`)
+        loadAffiliates()
+      } else {
+        error('Bulk Delete Failed', result.error || 'Unknown error')
+      }
+    } catch (err) {
+      console.error('Bulk delete error:', err)
+      error('Bulk Delete Failed', 'Unable to clear all affiliate data')
     }
   }
 
@@ -296,6 +350,21 @@ export default function AdminAffiliates() {
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </button>
+              {summary.total > 0 && (
+                <button
+                  onClick={() => {
+                    if (confirm(`⚠️ WARNING: This will delete ALL ${summary.total} affiliates and their visit records. This cannot be undone. Are you absolutely sure?`)) {
+                      if (confirm(`🚨 FINAL CONFIRMATION: Delete ${summary.total} affiliates permanently?`)) {
+                        handleBulkDelete()
+                      }
+                    }
+                  }}
+                  className="flex items-center px-4 py-2 text-red-600 border border-red-600 rounded-md hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear All Data
+                </button>
+              )}
               <button
                 onClick={() => setShowAddModal(true)}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -644,24 +713,146 @@ export default function AdminAffiliates() {
                   </label>
                   <textarea
                     value={csvData}
-                    onChange={(e) => setCsvData(e.target.value)}
+                    onChange={(e) => {
+                      setCsvData(e.target.value)
+                      setCsvPreview(null) // Reset preview when data changes
+                    }}
                     placeholder="Paste your CSV data here..."
                     rows={8}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
                   />
                 </div>
+
+                {/* Preview Button */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={handlePreviewCSV}
+                    disabled={previewing || !csvData.trim()}
+                    className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 flex items-center"
+                  >
+                    {previewing ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                        Generating Preview...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-4 h-4 mr-2" />
+                        Preview Data
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* CSV Preview */}
+                {csvPreview && (
+                  <div className="space-y-4">
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-medium text-gray-900 mb-3">Data Preview</h4>
+                      
+                      {/* Header Check */}
+                      <div className="mb-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          {csvPreview.headerMatch ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-600" />
+                          )}
+                          <span className="text-sm font-medium">
+                            Headers: {csvPreview.headers.length} found (expected {csvPreview.expectedHeaders.length})
+                          </span>
+                        </div>
+                        {!csvPreview.headerMatch && (
+                          <div className="text-xs text-red-600 ml-7">
+                            Column count mismatch may cause import issues
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
+                        <div className="text-center">
+                          <div className="font-medium text-gray-900">{csvPreview.totalRows}</div>
+                          <div className="text-gray-500">Total Rows</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium text-green-600">{csvPreview.estimatedValid}</div>
+                          <div className="text-gray-500">Valid Rows</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium text-red-600">{csvPreview.estimatedInvalid}</div>
+                          <div className="text-gray-500">Invalid Rows</div>
+                        </div>
+                      </div>
+
+                      {/* Preview Table */}
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-xs">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="px-2 py-1 text-left font-medium text-gray-700">Row</th>
+                              <th className="px-2 py-1 text-left font-medium text-gray-700">Name</th>
+                              <th className="px-2 py-1 text-left font-medium text-gray-700">Email</th>
+                              <th className="px-2 py-1 text-left font-medium text-gray-700">City</th>
+                              <th className="px-2 py-1 text-left font-medium text-gray-700">Discount</th>
+                              <th className="px-2 py-1 text-left font-medium text-gray-700">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {csvPreview.previewRows.map((row: any, idx: number) => (
+                              <tr key={idx} className={row.isValid ? '' : 'bg-red-50'}>
+                                <td className="px-2 py-1">{row.rowNumber}</td>
+                                <td className="px-2 py-1 font-medium">{row.values[2] || '-'}</td>
+                                <td className="px-2 py-1">{row.values[5] || '-'}</td>
+                                <td className="px-2 py-1">{row.values[11] || '-'}</td>
+                                <td className="px-2 py-1">{row.values[14] || '-'}</td>
+                                <td className="px-2 py-1">
+                                  {row.isValid ? (
+                                    <span className="text-green-600">✓ Valid</span>
+                                  ) : (
+                                    <span className="text-red-600">✗ Issues</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {csvPreview.previewRows.some((row: any) => !row.isValid) && (
+                        <div className="mt-3 p-3 bg-red-50 rounded border border-red-200">
+                          <h5 className="font-medium text-red-800 mb-2">Issues Found:</h5>
+                          <ul className="text-sm text-red-700 space-y-1">
+                            {csvPreview.previewRows
+                              .filter((row: any) => !row.isValid)
+                              .map((row: any, idx: number) => (
+                                <li key={idx}>
+                                  Row {row.rowNumber}: {row.issues.join(', ')}
+                                </li>
+                              ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex justify-end space-x-3">
                   <button
-                    onClick={() => setShowImportModal(false)}
+                    onClick={() => {
+                      setShowImportModal(false)
+                      setCsvData('')
+                      setCsvPreview(null)
+                    }}
                     className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleImportCSV}
-                    disabled={importing || !csvData.trim()}
+                    disabled={importing || !csvData.trim() || !csvPreview}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                    title={!csvPreview ? 'Please preview your data first' : ''}
                   >
                     {importing ? (
                       <>
@@ -671,7 +862,7 @@ export default function AdminAffiliates() {
                     ) : (
                       <>
                         <Upload className="w-4 h-4 mr-2" />
-                        Import
+                        Import {csvPreview ? `(${csvPreview.estimatedValid} valid rows)` : ''}
                       </>
                     )}
                   </button>
