@@ -345,9 +345,9 @@ ${t('email.welcome.signature', customerLanguage)}
       console.log(`📅 QR code creation scheduled for ${new Date(scheduledFor).toLocaleString()}`)
       
       // If this is a scheduled QR, schedule exact-time processing with QStash
-      if (scheduledFor && scheduledFor.length > 0) {
+      if (scheduledFor && scheduledFor.trim().length > 0) {
         const scheduledDateTime = new Date(scheduledFor)
-        const delay = new Date(scheduledDateTime).getTime() - Date.now()
+        const delay = scheduledDateTime.getTime() - Date.now()
         
         if (delay > 0) {
           try {
