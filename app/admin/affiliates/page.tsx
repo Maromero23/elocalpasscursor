@@ -253,22 +253,64 @@ export default function AdminAffiliates() {
   }
 
   const handleBulkDelete = async () => {
+    if (selectedAffiliates.length === 0) {
+      error('No Selection', 'Please select affiliates to delete')
+      return
+    }
+    
+    const confirmed = confirm(`Are you sure you want to delete ${selectedAffiliates.length} selected affiliates? This action cannot be undone.`)
+    if (!confirmed) return
+
     try {
       const response = await fetch('/api/admin/affiliates/bulk-delete', {
-        method: 'DELETE'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedAffiliates })
       })
 
       const result = await response.json()
 
       if (result.success) {
-        success('All Data Cleared', `Deleted ${result.deleted} affiliates and their visit records`)
+        success('Bulk Delete Complete', `Successfully deleted ${result.deleted} affiliates`)
+        setSelectedAffiliates([])
         loadAffiliates()
       } else {
         error('Bulk Delete Failed', result.error || 'Unknown error')
       }
     } catch (err) {
       console.error('Bulk delete error:', err)
-      error('Bulk Delete Failed', 'Unable to clear all affiliate data')
+      error('Bulk Delete Failed', 'Unable to delete selected affiliates')
+    }
+  }
+
+  const handleClearAllData = async () => {
+    try {
+      // Get all affiliate IDs
+      const allIds = affiliates.map(a => a.id)
+      
+      if (allIds.length === 0) {
+        error('No Data', 'No affiliates to delete')
+        return
+      }
+
+      const response = await fetch('/api/admin/affiliates/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: allIds })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        success('All Data Cleared', `Successfully deleted ${result.deleted} affiliates and their visit records`)
+        setSelectedAffiliates([])
+        loadAffiliates()
+      } else {
+        error('Clear All Failed', result.error || 'Unknown error')
+      }
+    } catch (err) {
+      console.error('Clear all error:', err)
+      error('Clear All Failed', 'Unable to clear all affiliate data')
     }
   }
 
@@ -458,7 +500,7 @@ export default function AdminAffiliates() {
                   onClick={() => {
                     if (confirm(`⚠️ WARNING: This will delete ALL ${summary.total} affiliates and their visit records. This cannot be undone. Are you absolutely sure?`)) {
                       if (confirm(`🚨 FINAL CONFIRMATION: Delete ${summary.total} affiliates permanently?`)) {
-                        handleBulkDelete()
+                        handleClearAllData()
                       }
                     }
                   }}
