@@ -204,6 +204,20 @@ export default function SellerDashboard() {
     return true
   }
 
+  // Helper function to determine if Future QR Scheduling should be shown
+  const shouldShowScheduling = () => {
+    if (!config?.button6AllowFutureQR) return false // Must have scheduling enabled
+    
+    if (config.button3DeliveryMethod === 'DIRECT') {
+      return true // Always show for direct email
+    } else if (config.button3DeliveryMethod === 'URLS') {
+      return false // Never show for URLs only - scheduling only works with direct email
+    } else if (config.button3DeliveryMethod === 'BOTH') {
+      return selectedDeliveryOption === 'DIRECT' // Show only if direct email is selected
+    }
+    return false
+  }
+
   // Generate QR code for a landing page URL
   const generateQRCodeForURL = async (url: string, urlName: string) => {
     try {
@@ -636,8 +650,8 @@ export default function SellerDashboard() {
                       </div>
                     </div>
                     
-                    {/* Future QR Scheduling - Only show if Button 6 is enabled and delivery method is DIRECT */}
-                    {config?.button6AllowFutureQR && config?.button3DeliveryMethod === 'DIRECT' && (
+                    {/* Future QR Scheduling - Only show if scheduling is enabled and delivery method supports direct email */}
+                    {shouldShowScheduling() && (
                       <div className="bg-purple-50 rounded-lg p-3 border-l-4 border-purple-500 shadow-sm">
                         <h4 className="text-lg font-semibold text-purple-900 mb-2">
                           Step {shouldShowClientInfo() ? '4' : '3'}: Schedule Future QR (Optional)
@@ -765,7 +779,7 @@ export default function SellerDashboard() {
                     {shouldShowGenerateButton() && (
                       <div className="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-500 shadow-sm">
                         <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                          Step {config?.button6AllowFutureQR && config?.button3DeliveryMethod === 'DIRECT' ? 
+                          Step {shouldShowScheduling() ? 
                             (shouldShowClientInfo() ? '5' : '4') : 
                             (shouldShowClientInfo() ? '4' : '3')}: Generate & Send
                         </h4>
