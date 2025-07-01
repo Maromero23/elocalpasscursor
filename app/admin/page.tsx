@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../components/auth/protected-route"
 import Link from "next/link"
-import { Building2, Users, MapPin, QrCode, TrendingUp, Eye } from "lucide-react"
+import { Building2, Users, MapPin, QrCode, TrendingUp, Eye, Clock } from "lucide-react"
 
 const getNavItems = (userRole: string) => {
   if (userRole === "ADMIN") {
@@ -13,6 +13,7 @@ const getNavItems = (userRole: string) => {
       { href: "/admin/locations", label: "Locations", icon: MapPin },
       { href: "/admin/sellers", label: "Sellers", icon: Users },
       { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
+      { href: "/admin/scheduled", label: "Scheduled QRs", icon: Clock },
       { href: "/admin/analytics", label: "Analytics", icon: TrendingUp },
     ]
   }
@@ -147,7 +148,7 @@ export default function AdminPage() {
               </div>
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                 <Link
                   href="/admin/distributors"
                   className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
@@ -197,6 +198,19 @@ export default function AdminPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">QR Configuration</h3>
                   <p className="text-sm text-gray-600">
                     Configure QR code templates and settings for the entire system
+                  </p>
+                </Link>
+
+                <Link
+                  href="/admin/scheduled"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                >
+                  <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4 group-hover:bg-blue-200 transition-colors">
+                    <Clock className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Scheduled QRs</h3>
+                  <p className="text-sm text-gray-600">
+                    Monitor upcoming QR code creation and precision timing system
                   </p>
                 </Link>
 
