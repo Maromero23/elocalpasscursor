@@ -3,6 +3,16 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
+    // Optional security check for external cron services
+    const cronSecret = process.env.CRON_SECRET
+    if (cronSecret) {
+      const authHeader = request.headers.get('authorization')
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        console.log('🔒 SCHEDULED QR: Unauthorized cron request')
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+    }
+
     console.log('🕐 SCHEDULED QR PROCESSOR: Starting scheduled QR code processing...')
     
     // Get all scheduled QR codes that are due for processing

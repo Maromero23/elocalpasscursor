@@ -344,6 +344,48 @@ ${t('email.welcome.signature', customerLanguage)}
       
       console.log(`📅 QR code creation scheduled for ${new Date(scheduledFor).toLocaleString()}`)
       
+      // If this is a scheduled QR, schedule exact-time processing with QStash
+      if (scheduledFor && scheduledFor.length > 0) {
+        const scheduledDateTime = new Date(scheduledFor)
+        const delay = new Date(scheduledDateTime).getTime() - Date.now()
+        
+        if (delay > 0) {
+          try {
+            // Schedule exact processing with Upstash QStash
+            const qstashResponse = await fetch('https://qstash.upstash.io/v1/publish', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
+                'Content-Type': 'application/json',
+                'Upstash-Delay': `${delay}ms`
+              },
+              body: JSON.stringify({
+                url: `${process.env.NEXTAUTH_URL}/api/scheduled-qr/process-single`,
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${process.env.CRON_SECRET || 'internal'}`
+                },
+                body: JSON.stringify({
+                  scheduledQRId: scheduledQR.id
+                })
+              })
+            })
+            
+            if (qstashResponse.ok) {
+              const qstashData = await qstashResponse.json()
+              console.log(`📅 SCHEDULED QR: QStash job created for exact time: ${scheduledDateTime}`)
+              console.log(`🆔 QStash Message ID: ${qstashData.messageId}`)
+            } else {
+              console.error('❌ QStash scheduling failed:', await qstashResponse.text())
+            }
+          } catch (qstashError) {
+            console.error('❌ QStash error:', qstashError)
+            // Fallback: could still rely on periodic checking
+          }
+        }
+      }
+      
       return NextResponse.json({
         success: true,
         message: `QR code scheduled to be created and sent on ${new Date(scheduledFor).toLocaleString()}`,

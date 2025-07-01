@@ -80,6 +80,16 @@ function generateRebuyHtmlWithConfig(config: any, replacements: any, existingHtm
 
 export async function POST(request: NextRequest) {
   try {
+    // Optional security check for external cron services
+    const cronSecret = process.env.CRON_SECRET
+    if (cronSecret) {
+      const authHeader = request.headers.get('authorization')
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        console.log('🔒 REBUY EMAIL: Unauthorized cron request')
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+    }
+
     console.log('🔄 REBUY EMAIL SERVICE: Starting rebuy email check (PRODUCTION MODE - 6-12 hours before expiration)...')
 
     // PRODUCTION MODE: Get QR codes expiring in 6-12 hours that haven't received rebuy emails yet
