@@ -72,6 +72,11 @@ export default function AdminAffiliates() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // 'active', 'inactive', 'all'
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [cityFilter, setCityFilter] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [ratingFilter, setRatingFilter] = useState('')
+  const [selectedAffiliates, setSelectedAffiliates] = useState<string[]>([])
+  const [editingField, setEditingField] = useState<{affiliateId: string, field: string} | null>(null)
   
   // Summary data
   const [summary, setSummary] = useState({
@@ -98,7 +103,7 @@ export default function AdminAffiliates() {
   // Load affiliates
   useEffect(() => {
     loadAffiliates()
-  }, [currentPage, searchTerm, statusFilter, categoryFilter])
+  }, [currentPage, searchTerm, statusFilter, categoryFilter, cityFilter, typeFilter, ratingFilter])
 
   const loadAffiliates = async () => {
     setSearching(true)
@@ -108,7 +113,10 @@ export default function AdminAffiliates() {
         limit: '50',
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== 'all' && { status: statusFilter }),
-        ...(categoryFilter && { category: categoryFilter })
+        ...(categoryFilter && { category: categoryFilter }),
+        ...(cityFilter && { city: cityFilter }),
+        ...(typeFilter && { type: typeFilter }),
+        ...(ratingFilter && { rating: ratingFilter })
       })
 
       const response = await fetch(`/api/admin/affiliates?${params}`)
@@ -261,6 +269,101 @@ export default function AdminAffiliates() {
     } catch (err) {
       console.error('Bulk delete error:', err)
       error('Bulk Delete Failed', 'Unable to clear all affiliate data')
+    }
+  }
+
+  // Bulk operations
+  const handleSelectAll = () => {
+    if (selectedAffiliates.length === affiliates.length) {
+      setSelectedAffiliates([])
+    } else {
+      setSelectedAffiliates(affiliates.map(a => a.id))
+    }
+  }
+
+  const handleSelectAffiliate = (id: string) => {
+    if (selectedAffiliates.includes(id)) {
+      setSelectedAffiliates(selectedAffiliates.filter(aid => aid !== id))
+    } else {
+      setSelectedAffiliates([...selectedAffiliates, id])
+    }
+  }
+
+  // Inline editing
+  const handleFieldEdit = async (affiliateId: string, field: string, value: any) => {
+    try {
+      const affiliate = affiliates.find(a => a.id === affiliateId)
+      if (!affiliate) return
+
+      const updatedData = { ...affiliate, [field]: value }
+      
+      const response = await fetch(`/api/admin/affiliates/${affiliateId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        setAffiliates(affiliates.map(a => 
+          a.id === affiliateId ? { ...a, [field]: value } : a
+        ))
+        setEditingField(null)
+        success('Updated', `${field} updated successfully`)
+      } else {
+        error('Update Failed', result.error)
+      }
+    } catch (err) {
+      error('Update Failed', 'Unable to update affiliate')
+    }
+  }
+
+  const handleDuplicateAffiliate = async (affiliate: Affiliate) => {
+    try {
+      const duplicateData = {
+        name: `${affiliate.name} (Copy)`,
+        email: `copy_${Date.now()}_${affiliate.email}`,
+        affiliateNum: null,
+        isActive: affiliate.isActive,
+        firstName: affiliate.firstName,
+        lastName: affiliate.lastName,
+        workPhone: affiliate.workPhone,
+        whatsApp: affiliate.whatsApp,
+        address: affiliate.address,
+        web: affiliate.web,
+        description: affiliate.description,
+        city: affiliate.city,
+        maps: affiliate.maps,
+        location: affiliate.location,
+        discount: affiliate.discount,
+        logo: affiliate.logo,
+        facebook: affiliate.facebook,
+        instagram: affiliate.instagram,
+        category: affiliate.category,
+        subCategory: affiliate.subCategory,
+        service: affiliate.service,
+        type: affiliate.type,
+        sticker: affiliate.sticker,
+        rating: affiliate.rating,
+        recommended: affiliate.recommended,
+        termsConditions: affiliate.termsConditions
+      }
+
+      const response = await fetch('/api/admin/affiliates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(duplicateData)
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        success('Duplicated', 'Affiliate duplicated successfully')
+        loadAffiliates()
+      } else {
+        error('Duplication Failed', result.error)
+      }
+    } catch (err) {
+      error('Duplication Failed', 'Unable to duplicate affiliate')
     }
   }
 
@@ -425,7 +528,7 @@ export default function AdminAffiliates() {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
               <div className="relative">
@@ -454,33 +557,76 @@ export default function AdminAffiliates() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
               <input
                 type="text"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                placeholder="Category filter..."
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+                placeholder="Filter by city..."
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
               />
             </div>
             
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+              <input
+                type="text"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                placeholder="Filter by type..."
+                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+              <select
+                value={ratingFilter}
+                onChange={(e) => setRatingFilter(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
+              >
+                <option value="">All Ratings</option>
+                <option value="5">5 Stars</option>
+                <option value="4">4+ Stars</option>
+                <option value="3">3+ Stars</option>
+                <option value="2">2+ Stars</option>
+                <option value="1">1+ Stars</option>
+              </select>
+            </div>
+            
             <div className="flex items-end">
               <button
-                onClick={loadAffiliates}
-                disabled={searching}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 flex items-center w-full justify-center"
+                onClick={() => {
+                  setSearchTerm('')
+                  setStatusFilter('all')
+                  setCategoryFilter('')
+                  setCityFilter('')
+                  setTypeFilter('')
+                  setRatingFilter('')
+                  setCurrentPage(1)
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center w-full justify-center"
               >
-                {searching ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Filter className="w-4 h-4 mr-2" />
-                    Filter
-                  </>
-                )}
+                <Filter className="w-4 h-4 mr-2" />
+                Clear
               </button>
             </div>
           </div>
+          
+          {selectedAffiliates.length > 0 && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+              <span className="text-red-800 font-medium">
+                {selectedAffiliates.length} affiliate(s) selected
+              </span>
+              <button
+                onClick={handleBulkDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Selected
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Affiliates Table */}
@@ -509,6 +655,14 @@ export default function AdminAffiliates() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                        <input
+                          type="checkbox"
+                          checked={selectedAffiliates.length === affiliates.length && affiliates.length > 0}
+                          onChange={handleSelectAll}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         #
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -545,10 +699,16 @@ export default function AdminAffiliates() {
                         City
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Maps
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Location
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Discount
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Logo
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Facebook
@@ -569,10 +729,16 @@ export default function AdminAffiliates() {
                         Type
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Sticker
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Rating
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Recommended
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Terms & Conditions
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Visits
@@ -586,6 +752,14 @@ export default function AdminAffiliates() {
                     {affiliates.map((affiliate) => (
                       <tr key={affiliate.id} className="hover:bg-gray-50">
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 sticky left-0 bg-white z-10">
+                          <input
+                            type="checkbox"
+                            checked={selectedAffiliates.includes(affiliate.id)}
+                            onChange={() => handleSelectAffiliate(affiliate.id)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                           #{affiliate.affiliateNum || affiliate.id.slice(-3)}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
@@ -637,11 +811,23 @@ export default function AdminAffiliates() {
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                           {affiliate.city || '-'}
                         </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                          {affiliate.maps ? (
+                            <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              📍 Maps
+                            </a>
+                          ) : '-'}
+                        </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                           {affiliate.location || '-'}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-green-600">
                           {affiliate.discount || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.logo ? (
+                            <img src={affiliate.logo} alt="Logo" className="w-8 h-8 object-cover rounded" />
+                          ) : '-'}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
                           {affiliate.facebook ? (
@@ -674,6 +860,9 @@ export default function AdminAffiliates() {
                           {affiliate.type || '-'}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.sticker || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                           {affiliate.rating ? (
                             <span className="text-yellow-600">★ {affiliate.rating}</span>
                           ) : '-'}
@@ -684,6 +873,11 @@ export default function AdminAffiliates() {
                           ) : (
                             <span className="text-gray-400">No</span>
                           )}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs">
+                          <div className="overflow-hidden text-ellipsis" style={{maxHeight: '40px', lineHeight: '20px'}}>
+                            {affiliate.termsConditions || '-'}
+                          </div>
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                           <div className="text-sm font-medium">{affiliate.totalVisits}</div>
@@ -702,6 +896,13 @@ export default function AdminAffiliates() {
                               title="Edit"
                             >
                               <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDuplicateAffiliate(affiliate)}
+                              className="text-green-600 hover:text-green-900 p-1"
+                              title="Copy"
+                            >
+                              <Users className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteAffiliate(affiliate.id, affiliate.name)}
