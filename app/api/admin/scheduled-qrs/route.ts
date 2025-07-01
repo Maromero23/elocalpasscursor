@@ -19,7 +19,10 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit
 
     // Build where clause based on status filter
-    let whereClause = {}
+    // IMPORTANT: Only show unprocessed QRs (processed ones are in regular QR list)
+    let whereClause: any = {
+      isProcessed: false  // Always filter to unprocessed only
+    }
     const now = new Date()
     
     if (status === 'pending') {
@@ -27,17 +30,14 @@ export async function GET(request: NextRequest) {
         isProcessed: false,
         scheduledFor: { gt: now }
       }
-    } else if (status === 'processed') {
-      whereClause = {
-        isProcessed: true
-      }
     } else if (status === 'overdue') {
       whereClause = {
         isProcessed: false,
         scheduledFor: { lt: now }
       }
     }
-    // 'all' or no filter = no where clause
+    // For 'all' or no filter: whereClause already set to { isProcessed: false }
+    // Never show processed QRs - those are in the regular QR analytics
 
     console.log(`📊 ADMIN: Fetching scheduled QRs (page ${page}, limit ${limit}, status: ${status || 'all'})`)
 
@@ -85,47 +85,51 @@ export async function GET(request: NextRequest) {
       where: whereClause
     })
 
-    // Get status counts for dashboard
+    // Get status counts for dashboard (only unprocessed QRs)
     const statusCounts = await prisma.$transaction([
-      // Pending (future)
+      // Pending (future, unprocessed)
       prisma.scheduledQRCode.count({
         where: {
           isProcessed: false,
           scheduledFor: { gt: now }
         }
       }),
-      // Overdue (past, unprocessed)
+      // Overdue (past, unprocessed) 
       prisma.scheduledQRCode.count({
         where: {
           isProcessed: false,
           scheduledFor: { lt: now }
         }
       }),
-      // Processed
+      // Total unprocessed (pending + overdue)
       prisma.scheduledQRCode.count({
         where: {
-          isProcessed: true
+          isProcessed: false
         }
-      }),
-      // Total
-      prisma.scheduledQRCode.count()
+      })
     ])
 
     // Format the data with additional computed fields
+    // NOTE: Only unprocessed QRs are shown (processed ones are in regular QR analytics)
     const formattedData = scheduledQRs.map(qr => {
+      // Calculate time difference from now (all QRs here are unprocessed)
       const timeDiff = Math.round((qr.scheduledFor.getTime() - now.getTime()) / 1000 / 60) // minutes
-      let status = 'unknown'
-      let statusColor = 'gray'
+      let status = 'pending'
+      let statusColor = 'blue'
+      let timeFromNowText = ''
 
-      if (qr.isProcessed) {
-        status = 'processed'
-        statusColor = 'green'
-      } else if (timeDiff < 0) {
+      if (timeDiff < 0) {
         status = 'overdue'
         statusColor = 'red'
+        timeFromNowText = `${Math.abs(timeDiff)} minutes overdue`
+      } else if (timeDiff === 0) {
+        status = 'pending'
+        statusColor = 'blue'
+        timeFromNowText = 'Due now'
       } else {
         status = 'pending'
         statusColor = 'blue'
+        timeFromNowText = `${timeDiff} minutes remaining`
       }
 
       return {
@@ -145,11 +149,7 @@ export async function GET(request: NextRequest) {
         status: status,
         statusColor: statusColor,
         timeFromNow: timeDiff,
-        timeFromNowText: timeDiff < 0 
-          ? `${Math.abs(timeDiff)} minutes overdue`
-          : timeDiff === 0 
-            ? 'Due now'
-            : `${timeDiff} minutes remaining`,
+        timeFromNowText: timeFromNowText,
         
         // Seller info
         seller: {
@@ -175,8 +175,7 @@ export async function GET(request: NextRequest) {
       summary: {
         pending: statusCounts[0],
         overdue: statusCounts[1], 
-        processed: statusCounts[2],
-        total: statusCounts[3]
+        total: statusCounts[2]
       }
     }
 

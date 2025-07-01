@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react"
 import { ProtectedRoute } from "../../../components/auth/protected-route"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Clock, User, Calendar, Eye, RefreshCw, Filter, CheckCircle, AlertCircle, XCircle } from "lucide-react"
+import { ArrowLeft, Clock, User, Calendar, Eye, RefreshCw, Filter, AlertCircle, XCircle } from "lucide-react"
 
 interface ScheduledQR {
   id: string
@@ -18,7 +18,7 @@ interface ScheduledQR {
   createdQRCodeId?: string
   deliveryMethod: string
   createdAt: string
-  status: 'pending' | 'processed' | 'overdue'
+  status: 'pending' | 'overdue'
   statusColor: string
   timeFromNow: number
   timeFromNowText: string
@@ -44,7 +44,6 @@ interface ApiResponse {
   summary: {
     pending: number
     overdue: number
-    processed: number
     total: number
   }
 }
@@ -55,7 +54,7 @@ export default function ScheduledQRsAdminPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState('all')
-  const [summary, setSummary] = useState({ pending: 0, overdue: 0, processed: 0, total: 0 })
+  const [summary, setSummary] = useState({ pending: 0, overdue: 0, total: 0 })
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -98,8 +97,6 @@ export default function ScheduledQRsAdminPage() {
     switch (status) {
       case 'pending':
         return <Clock className="w-4 h-4 text-blue-600" />
-      case 'processed':
-        return <CheckCircle className="w-4 h-4 text-green-600" />
       case 'overdue':
         return <AlertCircle className="w-4 h-4 text-red-600" />
       default:
@@ -175,7 +172,7 @@ export default function ScheduledQRsAdminPage() {
 
         {/* Summary Cards */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -204,19 +201,7 @@ export default function ScheduledQRsAdminPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Processed</dt>
-                    <dd className="text-lg font-medium text-gray-900">{summary.processed}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
+
 
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center">
@@ -243,8 +228,7 @@ export default function ScheduledQRsAdminPage() {
                   {[
                     { value: 'all', label: 'All', count: summary.total },
                     { value: 'pending', label: 'Pending', count: summary.pending },
-                    { value: 'overdue', label: 'Overdue', count: summary.overdue },
-                    { value: 'processed', label: 'Processed', count: summary.processed }
+                    { value: 'overdue', label: 'Overdue', count: summary.overdue }
                   ].map((filter) => (
                     <button
                       key={filter.value}
