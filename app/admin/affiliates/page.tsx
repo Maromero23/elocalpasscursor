@@ -360,6 +360,145 @@ export default function AdminAffiliates() {
     }
   }
 
+  // Inline editing component
+  const EditableField = ({ affiliate, field, value, type = 'text' }: {
+    affiliate: Affiliate
+    field: string 
+    value: any
+    type?: 'text' | 'email' | 'url' | 'number' | 'boolean' | 'textarea'
+  }) => {
+    const isEditing = editingField?.affiliateId === affiliate.id && editingField?.field === field
+    
+    if (isEditing) {
+      if (type === 'boolean') {
+        return (
+          <select
+            defaultValue={value ? 'yes' : 'no'}
+            onBlur={(e) => {
+              const newValue = (e.target as HTMLSelectElement).value === 'yes'
+              handleFieldEdit(affiliate.id, field, newValue)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const newValue = (e.target as HTMLSelectElement).value === 'yes'
+                handleFieldEdit(affiliate.id, field, newValue)
+              } else if (e.key === 'Escape') {
+                setEditingField(null)
+              }
+            }}
+            autoFocus
+            className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+          >
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        )
+      } else if (type === 'textarea') {
+        return (
+          <textarea
+            defaultValue={value || ''}
+            onBlur={(e) => handleFieldEdit(affiliate.id, field, (e.target as HTMLTextAreaElement).value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.ctrlKey) {
+                                 handleFieldEdit(affiliate.id, field, (e.target as HTMLTextAreaElement).value)
+              } else if (e.key === 'Escape') {
+                setEditingField(null)
+              }
+            }}
+            autoFocus
+            rows={2}
+            className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+          />
+        )
+      } else {
+        return (
+          <input
+            type={type === 'number' ? 'number' : 'text'}
+            defaultValue={value || ''}
+                         onBlur={(e) => {
+               const newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
+               handleFieldEdit(affiliate.id, field, newValue)
+             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
+                handleFieldEdit(affiliate.id, field, newValue)
+              } else if (e.key === 'Escape') {
+                setEditingField(null)
+              }
+            }}
+            autoFocus
+            className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          />
+        )
+      }
+    }
+
+    // Display mode
+    const displayValue = () => {
+      if (value === null || value === undefined || value === '') {
+        return <span className="text-gray-400">-</span>
+      }
+
+             switch (type) {
+         case 'email':
+           return <a href={`mailto:${value}`} className="text-blue-600 hover:underline">{value}</a>
+         case 'url':
+           if (!value) return <span className="text-gray-400">-</span>
+           
+           let displayText = value.length > 30 ? value.substring(0, 30) + '...' : value
+           if (field === 'maps') displayText = '📍 Maps'
+           if (field === 'facebook') displayText = 'Facebook'
+           if (field === 'instagram') displayText = 'Instagram'
+           
+           return (
+             <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+               {displayText}
+             </a>
+           )
+         case 'boolean':
+           if (field === 'isActive') {
+             return (
+               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                 value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+               }`}>
+                 {value ? 'Active' : 'Inactive'}
+               </span>
+             )
+           }
+           return value ? (
+             <span className="text-green-600">✓ Yes</span>
+           ) : (
+             <span className="text-gray-400">No</span>
+           )
+         case 'number':
+           if (field === 'rating' && value) {
+             return <span className="text-yellow-600">★ {value}</span>
+           }
+           return value || <span className="text-gray-400">-</span>
+         default:
+           if (field === 'whatsApp' && value) {
+             return (
+               <a href={`https://wa.me/${value}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">
+                 {value}
+               </a>
+             )
+           }
+           return value || <span className="text-gray-400">-</span>
+       }
+    }
+
+    return (
+      <div
+        onClick={() => setEditingField({ affiliateId: affiliate.id, field })}
+        className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded min-h-[24px] flex items-center"
+        title="Click to edit"
+      >
+        {displayValue()}
+      </div>
+    )
+  }
+
   const handleDuplicateAffiliate = async (affiliate: Affiliate) => {
     try {
       const duplicateData = {
@@ -805,121 +944,84 @@ export default function AdminAffiliates() {
                           #{affiliate.affiliateNum || affiliate.id.slice(-3)}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            affiliate.isActive 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {affiliate.isActive ? 'Active' : 'Inactive'}
-                          </span>
+                          <EditableField affiliate={affiliate} field="isActive" value={affiliate.isActive} type="boolean" />
                         </td>
                         <td className="px-3 py-2 text-sm font-medium text-gray-900">
-                          {affiliate.name}
+                          <EditableField affiliate={affiliate} field="name" value={affiliate.name} />
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.firstName || '-'}
+                          <EditableField affiliate={affiliate} field="firstName" value={affiliate.firstName} />
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.lastName || '-'}
+                          <EditableField affiliate={affiliate} field="lastName" value={affiliate.lastName} />
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
-                          <a href={`mailto:${affiliate.email}`} className="hover:underline">
-                            {affiliate.email}
-                          </a>
+                          <EditableField affiliate={affiliate} field="email" value={affiliate.email} type="email" />
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.workPhone || '-'}
+                          <EditableField affiliate={affiliate} field="workPhone" value={affiliate.workPhone} />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-green-600">
-                          {affiliate.whatsApp ? (
-                            <a href={`https://wa.me/${affiliate.whatsApp}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                              {affiliate.whatsApp}
-                            </a>
-                          ) : '-'}
-                        </td>
-                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs truncate">
-                          {affiliate.address || '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
-                          {affiliate.web ? (
-                            <a href={affiliate.web} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                              {affiliate.web.length > 30 ? affiliate.web.substring(0, 30) + '...' : affiliate.web}
-                            </a>
-                          ) : '-'}
-                        </td>
-                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs truncate">
-                          {affiliate.description || '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.city || '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
-                          {affiliate.maps ? (
-                            <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                              📍 Maps
-                            </a>
-                          ) : '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.location || '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-green-600">
-                          {affiliate.discount || '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.logo ? (
-                            <img src={affiliate.logo} alt="Logo" className="w-8 h-8 object-cover rounded" />
-                          ) : '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
-                          {affiliate.facebook ? (
-                            <a href={affiliate.facebook} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                              Facebook
-                            </a>
-                          ) : '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
-                          {affiliate.instagram ? (
-                            <a href={affiliate.instagram} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                              Instagram
-                            </a>
-                          ) : '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.category ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {affiliate.category}
-                            </span>
-                          ) : '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.subCategory || '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.service || '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.type || '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.sticker || '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.rating ? (
-                            <span className="text-yellow-600">★ {affiliate.rating}</span>
-                          ) : '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {affiliate.recommended ? (
-                            <span className="text-green-600">✓ Yes</span>
-                          ) : (
-                            <span className="text-gray-400">No</span>
-                          )}
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">
+                          <EditableField affiliate={affiliate} field="whatsApp" value={affiliate.whatsApp} />
                         </td>
                         <td className="px-3 py-2 text-sm text-gray-900 max-w-xs">
-                          <div className="overflow-hidden text-ellipsis" style={{maxHeight: '40px', lineHeight: '20px'}}>
-                            {affiliate.termsConditions || '-'}
+                          <EditableField affiliate={affiliate} field="address" value={affiliate.address} type="textarea" />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                          <EditableField affiliate={affiliate} field="web" value={affiliate.web} type="url" />
+                        </td>
+                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs">
+                          <EditableField affiliate={affiliate} field="description" value={affiliate.description} type="textarea" />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                          <EditableField affiliate={affiliate} field="maps" value={affiliate.maps} type="url" />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-green-600">
+                          <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <div className="flex items-center space-x-2">
+                            {affiliate.logo && (
+                              <img src={affiliate.logo} alt="Logo" className="w-8 h-8 object-cover rounded" />
+                            )}
+                            <EditableField affiliate={affiliate} field="logo" value={affiliate.logo} type="url" />
                           </div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                          <EditableField affiliate={affiliate} field="facebook" value={affiliate.facebook} type="url" />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                          <EditableField affiliate={affiliate} field="instagram" value={affiliate.instagram} type="url" />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <EditableField affiliate={affiliate} field="category" value={affiliate.category} />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <EditableField affiliate={affiliate} field="subCategory" value={affiliate.subCategory} />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <EditableField affiliate={affiliate} field="sticker" value={affiliate.sticker} />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <EditableField affiliate={affiliate} field="rating" value={affiliate.rating} type="number" />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <EditableField affiliate={affiliate} field="recommended" value={affiliate.recommended} type="boolean" />
+                        </td>
+                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs">
+                          <EditableField affiliate={affiliate} field="termsConditions" value={!!affiliate.termsConditions} type="boolean" />
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                           <div className="text-sm font-medium">{affiliate.totalVisits}</div>
