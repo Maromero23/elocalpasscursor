@@ -495,18 +495,27 @@ export default function AdminAffiliates() {
          return (
        <div
          onClick={() => setEditingField({ affiliateId: affiliate.id, field })}
-         className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs ${type === 'textarea' ? 'leading-tight' : 'flex items-center'}`}
-         title="Click to edit"
+         className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group`}
+         title={String(value || '')}
          style={{ 
-           minHeight: '16px',
-           maxWidth: type === 'textarea' ? '180px' : 'auto',
-           wordBreak: 'break-word',
-           whiteSpace: type === 'textarea' ? 'pre-wrap' : 'nowrap',
+           minHeight: '20px',
+           height: '20px',
            overflow: 'hidden',
-           textOverflow: 'ellipsis'
+           textOverflow: 'ellipsis',
+           whiteSpace: 'nowrap',
+           display: 'flex',
+           alignItems: 'center'
          }}
        >
-         {displayValue()}
+         <span className="truncate">{displayValue()}</span>
+         {/* Excel-style tooltip on hover */}
+         {value && String(value).length > 15 && (
+           <div className="absolute left-0 top-6 bg-yellow-50 border border-gray-300 rounded shadow-lg p-2 text-xs z-50 max-w-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+             <div className="whitespace-pre-wrap break-words">
+               {String(value)}
+             </div>
+           </div>
+         )}
        </div>
      )
    }
@@ -522,7 +531,7 @@ export default function AdminAffiliates() {
     
     return (
       <th 
-        className={`px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${className}`}
+        className={`px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${className}`}
         onClick={() => handleSort(field)}
       >
         <div className="flex items-center space-x-1">
@@ -970,13 +979,13 @@ export default function AdminAffiliates() {
                 }}
               >
                 <table className="min-w-full divide-y divide-gray-100" style={{ 
-                  minWidth: '2400px', 
+                  minWidth: '1800px', 
                   fontSize: '11px',
                   tableLayout: 'fixed'
                 }}>
                   <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10" style={{width: '40px'}}>
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10" style={{width: '40px'}}>
                         <input
                           type="checkbox"
                           checked={selectedAffiliates.length === affiliates.length && affiliates.length > 0}
@@ -984,96 +993,96 @@ export default function AdminAffiliates() {
                           className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </th>
-                      <SortableHeader field="affiliateNum" className="w-16">
+                      <SortableHeader field="affiliateNum" className="w-12">
                         #
                       </SortableHeader>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                         Status
                       </th>
-                      <SortableHeader field="name" className="w-36">
+                      <SortableHeader field="name" className="w-24">
                         Business Name
                       </SortableHeader>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         First Name
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Last Name
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Email
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Work Phone
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         WhatsApp
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Address
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Website
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                         Description
                       </th>
-                      <SortableHeader field="city" className="w-24">
+                      <SortableHeader field="city" className="w-16">
                         City
                       </SortableHeader>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                         Maps
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Location
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                         Discount
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                         Logo
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Facebook
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Instagram
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Category
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Sub-Category
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                         Service
                       </th>
-                      <SortableHeader field="type" className="w-24">
+                      <SortableHeader field="type" className="w-16">
                         Type
                       </SortableHeader>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                         Sticker
                       </th>
-                      <SortableHeader field="rating" className="w-20">
+                      <SortableHeader field="rating" className="w-16">
                         Rating
                       </SortableHeader>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                         Recommended
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                         Terms & Conditions
                       </th>
-                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                         Visits
                       </th>
-                      <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100 text-xs">
                     {filteredAffiliates.map((affiliate) => (
-                      <tr key={affiliate.id} className="hover:bg-gray-50 h-8">
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900 sticky left-0 bg-white z-10">
+                      <tr key={affiliate.id} className="hover:bg-gray-50" style={{ height: '28px' }}>
+                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 sticky left-0 bg-white z-10" style={{ width: '40px' }}>
                           <input
                             type="checkbox"
                             checked={selectedAffiliates.includes(affiliate.id)}
@@ -1081,100 +1090,97 @@ export default function AdminAffiliates() {
                             className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center" style={{ width: '48px' }}>
                           #{affiliate.affiliateNum || affiliate.id.slice(-3)}
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap">
+                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
                           <EditableField affiliate={affiliate} field="isActive" value={affiliate.isActive} type="boolean" />
                         </td>
-                        <td className="px-2 py-1 text-xs font-medium text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '96px' }}>
                           <EditableField affiliate={affiliate} field="name" value={affiliate.name} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
                           <EditableField affiliate={affiliate} field="firstName" value={affiliate.firstName} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
                           <EditableField affiliate={affiliate} field="lastName" value={affiliate.lastName} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-blue-600">
+                        <td className="px-1 py-0.5" style={{ width: '96px' }}>
                           <EditableField affiliate={affiliate} field="email" value={affiliate.email} type="email" />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
                           <EditableField affiliate={affiliate} field="workPhone" value={affiliate.workPhone} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs">
+                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
                           <EditableField affiliate={affiliate} field="whatsApp" value={affiliate.whatsApp} />
                         </td>
-                        <td className="px-2 py-1 text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '96px' }}>
                           <EditableField affiliate={affiliate} field="address" value={affiliate.address} type="textarea" />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-blue-600">
+                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
                           <EditableField affiliate={affiliate} field="web" value={affiliate.web} type="url" />
                         </td>
-                        <td className="px-2 py-1 text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '96px' }}>
                           <EditableField affiliate={affiliate} field="description" value={affiliate.description} type="textarea" />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
                           <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-blue-600">
-                          <EditableField affiliate={affiliate} field="maps" value={affiliate.maps} type="url" />
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
+                          {affiliate.maps ? (
+                            <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800" title={affiliate.maps}>
+                              📍
+                            </a>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
                           <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs font-medium text-green-600">
+                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
                           <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
-                          <div className="flex items-center space-x-1">
-                            {affiliate.logo && (
-                              <img src={affiliate.logo} alt="Logo" className="w-4 h-4 object-cover rounded" />
-                            )}
-                            <EditableField affiliate={affiliate} field="logo" value={affiliate.logo} type="url" />
-                          </div>
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
+                          {affiliate.logo && (
+                            <img src={affiliate.logo} alt="Logo" className="w-4 h-4 object-cover rounded mx-auto" title={affiliate.logo} />
+                          )}
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-blue-600">
+                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
                           <EditableField affiliate={affiliate} field="facebook" value={affiliate.facebook} type="url" />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-blue-600">
+                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
                           <EditableField affiliate={affiliate} field="instagram" value={affiliate.instagram} type="url" />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
                           <EditableField affiliate={affiliate} field="category" value={affiliate.category} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
                           <EditableField affiliate={affiliate} field="subCategory" value={affiliate.subCategory} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
                           <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
                           <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
                           <EditableField affiliate={affiliate} field="sticker" value={affiliate.sticker} />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
                           <EditableField affiliate={affiliate} field="rating" value={affiliate.rating} type="number" />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
                           <EditableField affiliate={affiliate} field="recommended" value={affiliate.recommended} type="boolean" />
                         </td>
-                        <td className="px-2 py-1 text-xs text-gray-900">
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
                           <EditableField affiliate={affiliate} field="termsConditions" value={!!affiliate.termsConditions} type="boolean" />
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
                           <div className="text-xs font-medium">{affiliate.totalVisits}</div>
-                          <div className="text-xs text-gray-400">
-                            {affiliate.lastVisitAt ? 
-                              new Date(affiliate.lastVisitAt).toLocaleDateString() : 
-                              'Never'
-                            }
-                          </div>
                         </td>
-                        <td className="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
-                          <div className="flex items-center justify-end space-x-0.5">
+                        <td className="px-1 py-0.5 text-center" style={{ width: '80px' }}>
+                          <div className="flex items-center justify-center space-x-0.5">
                             <button
                               onClick={() => setEditingAffiliate(affiliate)}
                               className="text-blue-600 hover:text-blue-900 p-0.5"
