@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, TrendingUp, FileSpreadsheet, RefreshCw, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight } from "lucide-react"
+import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, TrendingUp, FileSpreadsheet, RefreshCw, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowLeft, ArrowRight } from "lucide-react"
 import { ToastNotifications } from "@/components/toast-notification"
 import { useToast } from "@/hooks/use-toast"
 
@@ -77,6 +77,10 @@ export default function AdminAffiliates() {
   const [ratingFilter, setRatingFilter] = useState('')
   const [selectedAffiliates, setSelectedAffiliates] = useState<string[]>([])
   const [editingField, setEditingField] = useState<{affiliateId: string, field: string} | null>(null)
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<string>('')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   
   // Summary data
   const [summary, setSummary] = useState({
@@ -488,14 +492,44 @@ export default function AdminAffiliates() {
        }
     }
 
+         return (
+       <div
+         onClick={() => setEditingField({ affiliateId: affiliate.id, field })}
+         className={`cursor-pointer hover:bg-blue-50 px-2 py-1 rounded min-h-[24px] ${type === 'textarea' ? 'leading-relaxed' : 'flex items-center'}`}
+         title="Click to edit"
+         style={{ 
+           maxWidth: type === 'textarea' ? '200px' : 'auto',
+           wordBreak: 'break-word',
+           whiteSpace: type === 'textarea' ? 'pre-wrap' : 'nowrap'
+         }}
+       >
+         {displayValue()}
+       </div>
+     )
+   }
+
+  // Sortable column header component
+  const SortableHeader = ({ field, children, className = "" }: { 
+    field: string
+    children: React.ReactNode
+    className?: string 
+  }) => {
+    const isSorted = sortField === field
+    const isAsc = sortDirection === 'asc'
+    
     return (
-      <div
-        onClick={() => setEditingField({ affiliateId: affiliate.id, field })}
-        className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded min-h-[24px] flex items-center"
-        title="Click to edit"
+      <th 
+        className={`px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${className}`}
+        onClick={() => handleSort(field)}
       >
-        {displayValue()}
-      </div>
+        <div className="flex items-center space-x-1">
+          <span>{children}</span>
+          <div className="flex flex-col">
+            <ChevronUp className={`w-3 h-3 ${isSorted && isAsc ? 'text-blue-600' : 'text-gray-300'}`} />
+            <ChevronDown className={`w-3 h-3 -mt-1 ${isSorted && !isAsc ? 'text-blue-600' : 'text-gray-300'}`} />
+          </div>
+        </div>
+      </th>
     )
   }
 
@@ -599,11 +633,69 @@ export default function AdminAffiliates() {
     URL.revokeObjectURL(url)
   }
 
-  const filteredAffiliates = affiliates.filter(affiliate =>
+  // Sorting function
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  // Filter and sort affiliates
+  let filteredAffiliates = affiliates.filter(affiliate =>
     affiliate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     affiliate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (affiliate.city && affiliate.city.toLowerCase().includes(searchTerm.toLowerCase()))
   )
+
+  // Apply additional filters
+  if (statusFilter !== 'all') {
+    filteredAffiliates = filteredAffiliates.filter(affiliate => 
+      statusFilter === 'active' ? affiliate.isActive : !affiliate.isActive
+    )
+  }
+  if (cityFilter) {
+    filteredAffiliates = filteredAffiliates.filter(affiliate => 
+      affiliate.city?.toLowerCase().includes(cityFilter.toLowerCase())
+    )
+  }
+  if (typeFilter) {
+    filteredAffiliates = filteredAffiliates.filter(affiliate => 
+      affiliate.type?.toLowerCase().includes(typeFilter.toLowerCase())
+    )
+  }
+  if (ratingFilter) {
+    const minRating = parseInt(ratingFilter)
+    filteredAffiliates = filteredAffiliates.filter(affiliate => 
+      affiliate.rating && affiliate.rating >= minRating
+    )
+  }
+
+  // Apply sorting
+  if (sortField) {
+    filteredAffiliates.sort((a, b) => {
+      let aVal: any = (a as any)[sortField]
+      let bVal: any = (b as any)[sortField]
+      
+      // Handle different field types
+      if (sortField === 'affiliateNum') {
+        aVal = parseInt(aVal) || 0
+        bVal = parseInt(bVal) || 0
+      } else if (sortField === 'rating') {
+        aVal = aVal || 0
+        bVal = bVal || 0
+      } else if (typeof aVal === 'string') {
+        aVal = aVal?.toLowerCase() || ''
+        bVal = bVal?.toLowerCase() || ''
+      }
+      
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+             return 0
+     })
+   }
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
@@ -831,7 +923,36 @@ export default function AdminAffiliates() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Top Horizontal Scroll Navigation */}
+              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Scroll horizontally to view all columns
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
+                      tableContainer?.scrollBy({ left: -300, behavior: 'smooth' })
+                    }}
+                    className="p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center"
+                    title="Scroll Left"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
+                      tableContainer?.scrollBy({ left: 300, behavior: 'smooth' })
+                    }}
+                    className="p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center"
+                    title="Scroll Right"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto table-scroll-container">
                 <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '2000px' }}>
                   <thead className="bg-gray-50">
                     <tr>
@@ -843,15 +964,15 @@ export default function AdminAffiliates() {
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <SortableHeader field="affiliateNum">
                         #
-                      </th>
+                      </SortableHeader>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <SortableHeader field="name">
                         Business Name
-                      </th>
+                      </SortableHeader>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         First Name
                       </th>
@@ -876,9 +997,9 @@ export default function AdminAffiliates() {
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Description
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <SortableHeader field="city">
                         City
-                      </th>
+                      </SortableHeader>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Maps
                       </th>
@@ -906,15 +1027,15 @@ export default function AdminAffiliates() {
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Service
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <SortableHeader field="type">
                         Type
-                      </th>
+                      </SortableHeader>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Sticker
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <SortableHeader field="rating">
                         Rating
-                      </th>
+                      </SortableHeader>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Recommended
                       </th>
@@ -930,7 +1051,7 @@ export default function AdminAffiliates() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {affiliates.map((affiliate) => (
+                    {filteredAffiliates.map((affiliate) => (
                       <tr key={affiliate.id} className="hover:bg-gray-50">
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 sticky left-0 bg-white z-10">
                           <input
@@ -1061,6 +1182,35 @@ export default function AdminAffiliates() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              
+              {/* Bottom Horizontal Scroll Navigation */}
+              <div className="bg-gray-50 px-4 py-2 border-t border-gray-200 flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  {filteredAffiliates.length} affiliates shown
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
+                      tableContainer?.scrollBy({ left: -300, behavior: 'smooth' })
+                    }}
+                    className="p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center"
+                    title="Scroll Left"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
+                      tableContainer?.scrollBy({ left: 300, behavior: 'smooth' })
+                    }}
+                    className="p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 flex items-center"
+                    title="Scroll Right"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               
               {/* Pagination */}
@@ -1325,6 +1475,132 @@ export default function AdminAffiliates() {
                     )}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+              )}
+
+      {/* Edit Affiliate Modal */}
+      {editingAffiliate && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Edit Affiliate: {editingAffiliate.name}
+                </h3>
+                <button
+                  onClick={() => setEditingAffiliate(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Business Name *</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.name}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    value={editingAffiliate.email}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <input
+                    type="text"
+                    value={editingAffiliate.city || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, city: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={editingAffiliate.type || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, type: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Type</option>
+                    <option value="restaurant">Restaurant</option>
+                    <option value="service">Service</option>
+                    <option value="store">Store</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    step="0.1"
+                    value={editingAffiliate.rating || ''}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, rating: parseFloat(e.target.value) || null})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={editingAffiliate.isActive ? 'active' : 'inactive'}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, isActive: e.target.value === 'active'})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
+                <button
+                  onClick={() => setEditingAffiliate(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`/api/admin/affiliates/${editingAffiliate.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(editingAffiliate)
+                      })
+                      
+                      const result = await response.json()
+                      if (result.success) {
+                        success('Updated', 'Affiliate updated successfully')
+                        setEditingAffiliate(null)
+                        loadAffiliates()
+                      } else {
+                        error('Update Failed', result.error)
+                      }
+                    } catch (err) {
+                      error('Update Failed', 'Unable to update affiliate')
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Save Changes
+                </button>
               </div>
             </div>
           </div>
