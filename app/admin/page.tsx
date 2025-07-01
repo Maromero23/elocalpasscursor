@@ -12,6 +12,7 @@ const getNavItems = (userRole: string) => {
       { href: "/admin/distributors", label: "Distributors", icon: Users },
       { href: "/admin/locations", label: "Locations", icon: MapPin },
       { href: "/admin/sellers", label: "Sellers", icon: Users },
+      { href: "/admin/affiliates", label: "Affiliates", icon: Building2 },
       { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
       { href: "/admin/scheduled", label: "Scheduled QRs", icon: Clock },
       { href: "/admin/analytics", label: "Analytics", icon: TrendingUp },
@@ -148,7 +149,7 @@ export default function AdminPage() {
               </div>
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                 <Link
                   href="/admin/distributors"
                   className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
@@ -185,6 +186,19 @@ export default function AdminPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Sellers</h3>
                   <p className="text-sm text-gray-600">
                     Create seller accounts and configure their QR code settings
+                  </p>
+                </Link>
+
+                <Link
+                  href="/admin/affiliates"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                >
+                  <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-lg mb-4 group-hover:bg-indigo-200 transition-colors">
+                    <Building2 className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Affiliates</h3>
+                  <p className="text-sm text-gray-600">
+                    Import and manage 500+ businesses that accept ELocalPass discounts
                   </p>
                 </Link>
 

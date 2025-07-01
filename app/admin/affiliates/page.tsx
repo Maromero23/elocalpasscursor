@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
+import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, TrendingUp, FileSpreadsheet, RefreshCw, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight } from "lucide-react"
 import { ToastNotifications } from "@/components/toast-notification"
 import { useToast } from "@/hooks/use-toast"
@@ -58,7 +59,7 @@ interface AffiliateResponse {
 }
 
 export default function AdminAffiliates() {
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
   const { notifications, removeToast, success, error } = useToast()
   
   const [affiliates, setAffiliates] = useState<Affiliate[]>([])
@@ -91,19 +92,6 @@ export default function AdminAffiliates() {
   const [csvData, setCsvData] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingAffiliate, setEditingAffiliate] = useState<Affiliate | null>(null)
-
-  // Check admin authentication
-  if (status === 'loading') {
-    return <div className="flex items-center justify-center min-h-screen">
-      <RefreshCw className="w-8 h-8 animate-spin" />
-    </div>
-  }
-
-  if (!session || session.user?.role !== 'ADMIN') {
-    return <div className="flex items-center justify-center min-h-screen">
-      <p className="text-red-600">Access denied. Admin privileges required.</p>
-    </div>
-  }
 
   // Load affiliates
   useEffect(() => {
@@ -257,7 +245,8 @@ export default function AdminAffiliates() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <ProtectedRoute allowedRoles={["ADMIN"]}>
+      <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -647,6 +636,7 @@ export default function AdminAffiliates() {
       )}
       
       <ToastNotifications notifications={notifications} onRemove={removeToast} />
-    </div>
+      </div>
+    </ProtectedRoute>
   )
 } 
