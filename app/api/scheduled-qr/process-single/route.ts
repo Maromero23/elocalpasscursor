@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
       
       if (rebuyDelay > 0 && process.env.QSTASH_TOKEN) {
         try {
-          const qstashResponse = await fetch('https://qstash.upstash.io/v1/publish', {
+          const qstashResponse = await fetch(`https://qstash.upstash.io/v2/publish/${process.env.NEXTAUTH_URL}/api/rebuy-emails/send-single`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
@@ -224,15 +224,7 @@ export async function POST(request: NextRequest) {
               'Upstash-Delay': `${rebuyDelay}ms`
             },
             body: JSON.stringify({
-              url: `${process.env.NEXTAUTH_URL}/api/rebuy-emails/send-single`,
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.CRON_SECRET || 'internal'}`
-              },
-              body: JSON.stringify({
-                qrCodeId: qrCode.id
-              })
+              qrCodeId: qrCode.id
             })
           })
           

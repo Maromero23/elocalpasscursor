@@ -351,8 +351,8 @@ ${t('email.welcome.signature', customerLanguage)}
         
         if (delay > 0) {
           try {
-            // Schedule exact processing with Upstash QStash
-            const qstashResponse = await fetch('https://qstash.upstash.io/v1/publish', {
+            // Schedule exact processing with Upstash QStash V2
+            const qstashResponse = await fetch(`https://qstash.upstash.io/v2/publish/${process.env.NEXTAUTH_URL}/api/scheduled-qr/process-single`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
@@ -360,15 +360,7 @@ ${t('email.welcome.signature', customerLanguage)}
                 'Upstash-Delay': `${delay}ms`
               },
               body: JSON.stringify({
-                url: `${process.env.NEXTAUTH_URL}/api/scheduled-qr/process-single`,
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${process.env.CRON_SECRET || 'internal'}`
-                },
-                body: JSON.stringify({
-                  scheduledQRId: scheduledQR.id
-                })
+                scheduledQRId: scheduledQR.id
               })
             })
             
