@@ -35,6 +35,15 @@ function parseCSVLine(line: string): string[] {
   
   // Add the last field
   result.push(current.trim())
+  
+  // Filter out empty fields at the beginning and end (common CSV export issue)
+  while (result.length > 0 && result[0] === '') {
+    result.shift()
+  }
+  while (result.length > 0 && result[result.length - 1] === '') {
+    result.pop()
+  }
+  
   return result
 }
 
@@ -58,13 +67,13 @@ export async function POST(request: NextRequest) {
     const lines = csvData.trim().split(/\r?\n/)
     const headers = parseCSVLine(lines[0])
     
-    // Expected headers for reference
+    // Expected headers for reference (updated to match user's actual CSV format)
     const expectedHeaders = [
-      'Affiliate #', 'Active', 'Name', 'FirstName', 'LastName', 'Email', 
+      'Active', 'Name', 'FirstName', 'LastName', 'Email', 
       'WorkPhone', 'WhatsApp', 'Address', 'Web', 'Descripcion', 'City', 
       'Maps', 'Location', 'Discount', 'Logo', 'Facebook', 'Instagram', 
       'Category', 'Sub-Categoria', 'Service', 'Type', 'Sticker', 
-      'Rating', 'Recommended', 'Terms&Cond'
+      'Rating', 'Recommended', 'TyC', 'DaysAllowed'
     ]
     
     // Preview first 5 data rows
@@ -76,7 +85,7 @@ export async function POST(request: NextRequest) {
       if (!lines[i].trim()) continue
       
       const values = parseCSVLine(lines[i])
-      const isValid = values.length >= 6 && values[5]?.includes('@')
+      const isValid = values.length >= 5 && values[4]?.includes('@')
       
       if (isValid) validRows++
       else invalidRows++
@@ -86,8 +95,8 @@ export async function POST(request: NextRequest) {
         values: values,
         isValid: isValid,
         issues: !isValid ? [
-          values.length < 6 ? `Only ${values.length} columns (expected ${expectedHeaders.length})` : null,
-          !values[5]?.includes('@') ? 'Invalid email format' : null
+          values.length < 5 ? `Only ${values.length} columns (expected ${expectedHeaders.length})` : null,
+          !values[4]?.includes('@') ? 'Invalid email format' : null
         ].filter(Boolean) : []
       })
     }
