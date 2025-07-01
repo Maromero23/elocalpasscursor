@@ -505,77 +505,91 @@ export default function AdminAffiliates() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '2000px' }}>
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Business
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                        #
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Contact
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Location
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Discount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Visits
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Business Name
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        First Name
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Last Name
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Work Phone
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        WhatsApp
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Address
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Website
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        City
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Location
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Discount
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Facebook
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Instagram
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Sub-Category
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Service
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rating
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Recommended
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Visits
+                      </th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredAffiliates.map((affiliate) => (
-                      <tr key={affiliate.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {affiliate.name}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {affiliate.category && (
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2">
-                                    {affiliate.category}
-                                  </span>
-                                )}
-                                #{affiliate.affiliateNum}
-                              </div>
-                            </div>
-                          </div>
+                    {affiliates.map((affiliate) => (
+                      <tr key={affiliate.id} className="hover:bg-gray-50">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 sticky left-0 bg-white z-10">
+                          #{affiliate.affiliateNum || affiliate.id.slice(-3)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{affiliate.email}</div>
-                          <div className="text-sm text-gray-500">{affiliate.city}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{affiliate.address}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {affiliate.discount || 'Not specified'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {affiliate.totalVisits}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {affiliate.lastVisitAt ? 
-                              new Date(affiliate.lastVisitAt).toLocaleDateString() : 
-                              'Never'
-                            }
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             affiliate.isActive 
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-red-100 text-red-800'
@@ -583,17 +597,116 @@ export default function AdminAffiliates() {
                             {affiliate.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-2">
+                        <td className="px-3 py-2 text-sm font-medium text-gray-900">
+                          {affiliate.name}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.firstName || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.lastName || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                          <a href={`mailto:${affiliate.email}`} className="hover:underline">
+                            {affiliate.email}
+                          </a>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.workPhone || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-green-600">
+                          {affiliate.whatsApp ? (
+                            <a href={`https://wa.me/${affiliate.whatsApp}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              {affiliate.whatsApp}
+                            </a>
+                          ) : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs truncate">
+                          {affiliate.address || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                          {affiliate.web ? (
+                            <a href={affiliate.web} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              {affiliate.web.length > 30 ? affiliate.web.substring(0, 30) + '...' : affiliate.web}
+                            </a>
+                          ) : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-gray-900 max-w-xs truncate">
+                          {affiliate.description || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.city || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.location || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-green-600">
+                          {affiliate.discount || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                          {affiliate.facebook ? (
+                            <a href={affiliate.facebook} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              Facebook
+                            </a>
+                          ) : '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                          {affiliate.instagram ? (
+                            <a href={affiliate.instagram} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              Instagram
+                            </a>
+                          ) : '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.category ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {affiliate.category}
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.subCategory || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.service || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.type || '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.rating ? (
+                            <span className="text-yellow-600">★ {affiliate.rating}</span>
+                          ) : '-'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {affiliate.recommended ? (
+                            <span className="text-green-600">✓ Yes</span>
+                          ) : (
+                            <span className="text-gray-400">No</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <div className="text-sm font-medium">{affiliate.totalVisits}</div>
+                          <div className="text-xs text-gray-500">
+                            {affiliate.lastVisitAt ? 
+                              new Date(affiliate.lastVisitAt).toLocaleDateString() : 
+                              'Never'
+                            }
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center justify-end space-x-1">
                             <button
                               onClick={() => setEditingAffiliate(affiliate)}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-blue-600 hover:text-blue-900 p-1"
+                              title="Edit"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteAffiliate(affiliate.id, affiliate.name)}
-                              className="text-red-600 hover:text-red-900"
+                              className="text-red-600 hover:text-red-900 p-1"
+                              title="Delete"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

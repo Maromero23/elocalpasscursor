@@ -69,12 +69,13 @@ export async function POST(request: NextRequest) {
       'Rating', 'Recommended', 'TyC', 'DaysAllowed', ''
     ]
     
-    // Preview first 5 data rows
+    // Count all rows and preview first 5 data rows for display
     const previewRows = []
     let validRows = 0
     let invalidRows = 0
     
-    for (let i = 1; i < Math.min(lines.length, 6); i++) {
+    // First pass: Count all valid/invalid rows
+    for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue
       
       const values = parseCSVLine(lines[i])
@@ -82,6 +83,14 @@ export async function POST(request: NextRequest) {
       
       if (isValid) validRows++
       else invalidRows++
+    }
+    
+    // Second pass: Create preview rows for display (first 5 only)
+    for (let i = 1; i < Math.min(lines.length, 6); i++) {
+      if (!lines[i].trim()) continue
+      
+      const values = parseCSVLine(lines[i])
+      const isValid = values.length >= 6 && values[5]?.includes('@')
       
       previewRows.push({
         rowNumber: i + 1,
