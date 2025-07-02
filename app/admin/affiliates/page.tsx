@@ -989,36 +989,7 @@ export default function AdminAffiliates() {
             </div>
           ) : (
             <>
-              {/* Top Horizontal Scroll Bar - Always Visible */}
-              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 sticky top-0 z-30">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-gray-600">
-                    Horizontal scroll: Use bar below or mouse wheel + Shift
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Showing {filteredAffiliates.length} of {pagination.totalCount} affiliates
-                  </div>
-                </div>
-                <div className="w-full overflow-hidden">
-                  <div 
-                    className="h-3 bg-gray-200 rounded-full cursor-pointer relative"
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect()
-                      const x = e.clientX - rect.left
-                      const percentage = x / rect.width
-                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
-                      const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
-                      tableContainer.scrollLeft = maxScroll * percentage
-                    }}
-                  >
-                    <div 
-                      className="h-full bg-blue-600 rounded-full transition-all duration-200"
-                      style={{ width: '25%' }}
-                      id="top-scroll-indicator"
-                    />
-                  </div>
-                </div>
-              </div>
+
               
               <div 
                 className="overflow-x-auto table-scroll-container" 
@@ -1030,9 +1001,7 @@ export default function AdminAffiliates() {
                   const container = e.target as HTMLElement
                   const maxScroll = container.scrollWidth - container.clientWidth
                   const percentage = maxScroll > 0 ? container.scrollLeft / maxScroll : 0
-                  const topIndicator = document.getElementById('top-scroll-indicator')
                   const bottomIndicator = document.getElementById('bottom-scroll-indicator')
-                  if (topIndicator) topIndicator.style.marginLeft = `${percentage * 75}%`
                   if (bottomIndicator) bottomIndicator.style.marginLeft = `${percentage * 75}%`
                 }}
                 onWheel={(e) => {
@@ -1280,7 +1249,7 @@ export default function AdminAffiliates() {
               </div>
               
               {/* Bottom Horizontal Scroll Bar - Always Visible */}
-              <div className="bg-gray-50 px-4 py-2 border-t border-gray-200 sticky bottom-0 z-30">
+              <div className="bg-gray-50 px-4 py-2 border-t border-gray-200 fixed bottom-0 left-0 right-0 z-30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-xs text-gray-600">
                     Total: {filteredAffiliates.length} affiliates displayed
