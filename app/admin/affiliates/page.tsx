@@ -992,18 +992,12 @@ export default function AdminAffiliates() {
 
               
               <div 
-                className="overflow-x-auto table-scroll-container" 
+                className="overflow-x-scroll table-scroll-container" 
                 style={{ 
                   maxHeight: '70vh',
                   scrollBehavior: 'auto' // Remove smooth for more predictable scrolling
                 }}
-                onScroll={(e) => {
-                  const container = e.target as HTMLElement
-                  const maxScroll = container.scrollWidth - container.clientWidth
-                  const percentage = maxScroll > 0 ? container.scrollLeft / maxScroll : 0
-                  const bottomIndicator = document.getElementById('bottom-scroll-indicator')
-                  if (bottomIndicator) bottomIndicator.style.marginLeft = `${percentage * 75}%`
-                }}
+
                 onWheel={(e) => {
                   if (e.shiftKey) {
                     e.preventDefault()
@@ -1247,37 +1241,7 @@ export default function AdminAffiliates() {
                   </tbody>
                 </table>
               </div>
-              
-              {/* Bottom Horizontal Scroll Bar - Always Visible */}
-              <div className="bg-gray-50 px-4 py-2 border-t border-gray-200 sticky bottom-0 z-40 shadow-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-gray-600">
-                    Total: {filteredAffiliates.length} affiliates displayed
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Use scroll bar or Shift + mouse wheel
-                  </div>
-                </div>
-                <div className="w-full overflow-hidden">
-                  <div 
-                    className="h-3 bg-gray-200 rounded-full cursor-pointer relative"
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect()
-                      const x = e.clientX - rect.left
-                      const percentage = x / rect.width
-                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
-                      const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
-                      tableContainer.scrollLeft = maxScroll * percentage
-                    }}
-                  >
-                    <div 
-                      className="h-full bg-gray-500 rounded-full transition-all duration-200"
-                      style={{ width: '25%' }}
-                      id="bottom-scroll-indicator"
-                    />
-                  </div>
-                </div>
-              </div>
+
               
               {/* Pagination */}
               <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6" style={{ marginBottom: '80px' }}>
