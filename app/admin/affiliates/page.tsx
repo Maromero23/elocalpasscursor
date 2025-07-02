@@ -512,26 +512,29 @@ export default function AdminAffiliates() {
          }}
        >
          <span className="truncate text-gray-900" style={{ maxWidth: '100%' }}>{displayValue()}</span>
-         {/* Vertical tooltip on hover - expands up/down, not horizontally */}
+         {/* Large Vertical tooltip on hover - expands up/down, not horizontally */}
          {value && String(value).length > 10 && (
            <div 
-             className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-100 border border-gray-400 rounded shadow-xl p-3 text-xs z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+             className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-2xl p-4 text-sm z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
              style={{
-               top: '-10px', // Position above the cell
+               top: '-15px', // Position above the cell
                transform: 'translateX(-50%) translateY(-100%)', // Center horizontally, position above
-               minWidth: '200px',
-               maxWidth: '400px',
+               minWidth: '300px',
+               maxWidth: '600px',
                width: 'max-content',
                wordWrap: 'break-word',
-               whiteSpace: 'pre-wrap'
+               whiteSpace: 'pre-wrap',
+               lineHeight: '1.5',
+               maxHeight: '300px',
+               overflowY: 'auto'
              }}
            >
-             <div className="text-gray-900 font-medium">
+             <div className="text-gray-900 font-medium leading-relaxed">
                {String(value)}
              </div>
              {/* Arrow pointing down to the cell */}
              <div 
-               className="absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-400"
+               className="absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-yellow-400"
                style={{ top: '100%' }}
              />
            </div>
@@ -943,28 +946,28 @@ export default function AdminAffiliates() {
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={!pagination.hasPreviousPage}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
                     First
                   </button>
                   <button
                     onClick={() => setCurrentPage(pagination.currentPage - 1)}
                     disabled={!pagination.hasPreviousPage}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
                     Prev
                   </button>
                   <button
                     onClick={() => setCurrentPage(pagination.currentPage + 1)}
                     disabled={!pagination.hasNextPage}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
                     Next
                   </button>
                   <button
                     onClick={() => setCurrentPage(pagination.totalPages)}
                     disabled={!pagination.hasNextPage}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
                     Last
                   </button>
@@ -986,32 +989,32 @@ export default function AdminAffiliates() {
             </div>
           ) : (
             <>
-              {/* Top Horizontal Scroll Toggle Bar */}
-              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+              {/* Top Horizontal Scroll Bar - Always Visible */}
+              <div className="bg-gray-100 px-4 py-3 border-b border-gray-300 sticky top-0 z-30">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-gray-700">
-                    Horizontal scroll: Click anywhere on bar, or use Shift + Mouse Wheel
+                  <div className="text-sm font-medium text-gray-800">
+                    Horizontal Scroll: Click anywhere on bar below, or use Shift + Mouse Wheel
                   </div>
-                  <div className="text-xs text-gray-700">
+                  <div className="text-sm font-medium text-gray-800">
                     Showing {filteredAffiliates.length} of {pagination.totalCount} affiliates
                   </div>
                 </div>
                 <div className="w-full overflow-hidden">
                   <div 
-                    className="h-4 bg-gray-200 rounded-full cursor-pointer relative hover:bg-gray-300 transition-colors"
+                    className="h-6 bg-gray-300 rounded-full cursor-pointer relative hover:bg-gray-400 transition-colors border border-gray-400"
                     onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       const x = e.clientX - rect.left
                       const percentage = x / rect.width
                       const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
                       const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
-                      tableContainer.scrollLeft = maxScroll * percentage // Instant, predictable movement
+                      tableContainer.scrollLeft = maxScroll * percentage
                     }}
                   >
                     <div 
-                      className="h-full bg-blue-600 rounded-full transition-all duration-150 ease-out"
+                      className="h-full bg-gray-600 rounded-full transition-all duration-150 ease-out"
                       style={{ width: '25%' }}
-                      id="scroll-indicator"
+                      id="top-scroll-indicator"
                     />
                   </div>
                 </div>
@@ -1027,9 +1030,9 @@ export default function AdminAffiliates() {
                   const container = e.target as HTMLElement
                   const maxScroll = container.scrollWidth - container.clientWidth
                   const percentage = maxScroll > 0 ? container.scrollLeft / maxScroll : 0
-                  const indicator = document.getElementById('scroll-indicator')
+                  const topIndicator = document.getElementById('top-scroll-indicator')
                   const bottomIndicator = document.getElementById('bottom-scroll-indicator')
-                  if (indicator) indicator.style.marginLeft = `${percentage * 75}%`
+                  if (topIndicator) topIndicator.style.marginLeft = `${percentage * 75}%`
                   if (bottomIndicator) bottomIndicator.style.marginLeft = `${percentage * 75}%`
                 }}
                 onWheel={(e) => {
@@ -1092,8 +1095,8 @@ export default function AdminAffiliates() {
                       <SortableHeader field="city" className="w-16">
                         City
                       </SortableHeader>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                        Maps
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '80px', maxWidth: '80px'}}>
+                        Maps URL
                       </th>
                       <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Location
@@ -1189,14 +1192,17 @@ export default function AdminAffiliates() {
                         <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
-                          {affiliate.maps ? (
-                            <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800" title={affiliate.maps}>
-                              📍
-                            </a>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                          <div className="flex items-center space-x-1">
+                            {affiliate.maps && (
+                              <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex-shrink-0" title="Open in Maps">
+                                📍
+                              </a>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <EditableField affiliate={affiliate} field="maps" value={affiliate.maps} type="url" />
+                            </div>
+                          </div>
                         </td>
                         <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
@@ -1273,30 +1279,30 @@ export default function AdminAffiliates() {
                 </table>
               </div>
               
-              {/* Bottom Horizontal Scroll Toggle Bar */}
-              <div className="bg-gray-50 px-4 py-2 border-t border-gray-200">
+              {/* Bottom Horizontal Scroll Bar - Always Visible */}
+              <div className="bg-gray-100 px-4 py-3 border-t border-gray-300 sticky bottom-0 z-30">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-gray-700">
-                    Showing page {pagination.currentPage} of {pagination.totalPages} ({filteredAffiliates.length} displayed)
+                  <div className="text-sm font-medium text-gray-800">
+                    Page {pagination.currentPage} of {pagination.totalPages} ({filteredAffiliates.length} displayed)
                   </div>
-                  <div className="text-xs text-gray-700">
+                  <div className="text-sm font-medium text-gray-800">
                     Click anywhere on scroll bar, or use Shift + mouse wheel
                   </div>
                 </div>
                 <div className="w-full overflow-hidden">
                   <div 
-                    className="h-4 bg-gray-200 rounded-full cursor-pointer relative hover:bg-gray-300 transition-colors"
+                    className="h-6 bg-gray-300 rounded-full cursor-pointer relative hover:bg-gray-400 transition-colors border border-gray-400"
                     onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       const x = e.clientX - rect.left
                       const percentage = x / rect.width
                       const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
                       const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
-                      tableContainer.scrollLeft = maxScroll * percentage // Instant, predictable movement
+                      tableContainer.scrollLeft = maxScroll * percentage
                     }}
                   >
                     <div 
-                      className="h-full bg-blue-600 rounded-full transition-all duration-150 ease-out"
+                      className="h-full bg-gray-600 rounded-full transition-all duration-150 ease-out"
                       style={{ width: '25%' }}
                       id="bottom-scroll-indicator"
                     />
