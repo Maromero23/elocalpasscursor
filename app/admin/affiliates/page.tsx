@@ -990,18 +990,18 @@ export default function AdminAffiliates() {
           ) : (
             <>
               {/* Top Horizontal Scroll Bar - Always Visible */}
-              <div className="bg-gray-100 px-4 py-3 border-b border-gray-300 sticky top-0 z-30">
+              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 sticky top-0 z-30">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium text-gray-800">
-                    Horizontal Scroll: Click anywhere on bar below, or use Shift + Mouse Wheel
+                  <div className="text-xs text-gray-600">
+                    Horizontal scroll: Use bar below or mouse wheel + Shift
                   </div>
-                  <div className="text-sm font-medium text-gray-800">
+                  <div className="text-xs text-gray-500">
                     Showing {filteredAffiliates.length} of {pagination.totalCount} affiliates
                   </div>
                 </div>
                 <div className="w-full overflow-hidden">
                   <div 
-                    className="h-6 bg-gray-300 rounded-full cursor-pointer relative hover:bg-gray-400 transition-colors border border-gray-400"
+                    className="h-3 bg-gray-200 rounded-full cursor-pointer relative"
                     onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       const x = e.clientX - rect.left
@@ -1012,7 +1012,7 @@ export default function AdminAffiliates() {
                     }}
                   >
                     <div 
-                      className="h-full bg-gray-600 rounded-full transition-all duration-150 ease-out"
+                      className="h-full bg-blue-600 rounded-full transition-all duration-200"
                       style={{ width: '25%' }}
                       id="top-scroll-indicator"
                     />
@@ -1280,18 +1280,18 @@ export default function AdminAffiliates() {
               </div>
               
               {/* Bottom Horizontal Scroll Bar - Always Visible */}
-              <div className="bg-gray-100 px-4 py-3 border-t border-gray-300 sticky bottom-0 z-30">
+              <div className="bg-gray-50 px-4 py-2 border-t border-gray-200 sticky bottom-0 z-30">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium text-gray-800">
-                    Page {pagination.currentPage} of {pagination.totalPages} ({filteredAffiliates.length} displayed)
+                  <div className="text-xs text-gray-600">
+                    Total: {filteredAffiliates.length} affiliates displayed
                   </div>
-                  <div className="text-sm font-medium text-gray-800">
-                    Click anywhere on scroll bar, or use Shift + mouse wheel
+                  <div className="text-xs text-gray-500">
+                    Use scroll bar or Shift + mouse wheel
                   </div>
                 </div>
                 <div className="w-full overflow-hidden">
                   <div 
-                    className="h-6 bg-gray-300 rounded-full cursor-pointer relative hover:bg-gray-400 transition-colors border border-gray-400"
+                    className="h-3 bg-gray-200 rounded-full cursor-pointer relative"
                     onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       const x = e.clientX - rect.left
@@ -1302,7 +1302,7 @@ export default function AdminAffiliates() {
                     }}
                   >
                     <div 
-                      className="h-full bg-gray-600 rounded-full transition-all duration-150 ease-out"
+                      className="h-full bg-blue-600 rounded-full transition-all duration-200"
                       style={{ width: '25%' }}
                       id="bottom-scroll-indicator"
                     />
