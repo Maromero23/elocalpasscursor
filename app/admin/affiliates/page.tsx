@@ -1249,7 +1249,7 @@ export default function AdminAffiliates() {
               </div>
               
               {/* Bottom Horizontal Scroll Bar - Always Visible */}
-              <div className="bg-gray-50 px-4 py-2 border-t border-gray-200 fixed bottom-0 left-0 right-0 z-30">
+              <div className="bg-gray-50 px-4 py-2 border-t border-gray-200 sticky bottom-0 z-40 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-xs text-gray-600">
                     Total: {filteredAffiliates.length} affiliates displayed
@@ -1271,7 +1271,7 @@ export default function AdminAffiliates() {
                     }}
                   >
                     <div 
-                      className="h-full bg-blue-600 rounded-full transition-all duration-200"
+                      className="h-full bg-gray-500 rounded-full transition-all duration-200"
                       style={{ width: '25%' }}
                       id="bottom-scroll-indicator"
                     />
@@ -1280,7 +1280,7 @@ export default function AdminAffiliates() {
               </div>
               
               {/* Pagination */}
-              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6" style={{ marginBottom: '80px' }}>
                 <div className="flex-1 flex justify-between sm:hidden">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
