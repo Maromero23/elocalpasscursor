@@ -506,16 +506,34 @@ export default function AdminAffiliates() {
            whiteSpace: 'nowrap',
            display: 'flex',
            alignItems: 'center',
-           color: '#111827' // Ensure black text
+           color: '#111827', // Ensure black text
+           width: '100%', // Force full width of container
+           maxWidth: '100%' // Prevent expansion beyond container
          }}
        >
-         <span className="truncate text-gray-900">{displayValue()}</span>
-         {/* Excel-style tooltip on hover */}
-         {value && String(value).length > 15 && (
-           <div className="absolute left-0 top-6 bg-yellow-50 border border-gray-300 rounded shadow-lg p-2 text-xs z-50 max-w-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-             <div className="whitespace-pre-wrap break-words text-gray-900">
+         <span className="truncate text-gray-900" style={{ maxWidth: '100%' }}>{displayValue()}</span>
+         {/* Vertical tooltip on hover - expands up/down, not horizontally */}
+         {value && String(value).length > 10 && (
+           <div 
+             className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-100 border border-gray-400 rounded shadow-xl p-3 text-xs z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+             style={{
+               top: '-10px', // Position above the cell
+               transform: 'translateX(-50%) translateY(-100%)', // Center horizontally, position above
+               minWidth: '200px',
+               maxWidth: '400px',
+               width: 'max-content',
+               wordWrap: 'break-word',
+               whiteSpace: 'pre-wrap'
+             }}
+           >
+             <div className="text-gray-900 font-medium">
                {String(value)}
              </div>
+             {/* Arrow pointing down to the cell */}
+             <div 
+               className="absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-400"
+               style={{ top: '100%' }}
+             />
            </div>
          )}
        </div>
@@ -972,7 +990,7 @@ export default function AdminAffiliates() {
               <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-xs text-gray-700">
-                    Horizontal scroll: Click and drag bar, or use Shift + Mouse Wheel
+                    Horizontal scroll: Click anywhere on bar, or use Shift + Mouse Wheel
                   </div>
                   <div className="text-xs text-gray-700">
                     Showing {filteredAffiliates.length} of {pagination.totalCount} affiliates
@@ -981,35 +999,13 @@ export default function AdminAffiliates() {
                 <div className="w-full overflow-hidden">
                   <div 
                     className="h-4 bg-gray-200 rounded-full cursor-pointer relative hover:bg-gray-300 transition-colors"
-                    onMouseDown={(e) => {
-                      const scrollBar = e.currentTarget
-                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
-                      const startX = e.clientX
-                      const startScrollLeft = tableContainer.scrollLeft
-                      const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
-                      
-                      const handleMouseMove = (e: MouseEvent) => {
-                        const deltaX = e.clientX - startX
-                        const scrollRatio = deltaX / scrollBar.offsetWidth
-                        const newScrollLeft = Math.max(0, Math.min(maxScroll, startScrollLeft + (scrollRatio * maxScroll)))
-                        tableContainer.scrollLeft = newScrollLeft
-                      }
-                      
-                      const handleMouseUp = () => {
-                        document.removeEventListener('mousemove', handleMouseMove)
-                        document.removeEventListener('mouseup', handleMouseUp)
-                      }
-                      
-                      document.addEventListener('mousemove', handleMouseMove)
-                      document.addEventListener('mouseup', handleMouseUp)
-                    }}
                     onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       const x = e.clientX - rect.left
                       const percentage = x / rect.width
                       const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
                       const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
-                      tableContainer.scrollTo({ left: maxScroll * percentage, behavior: 'smooth' })
+                      tableContainer.scrollLeft = maxScroll * percentage // Instant, predictable movement
                     }}
                   >
                     <div 
@@ -1025,7 +1021,7 @@ export default function AdminAffiliates() {
                 className="overflow-x-auto table-scroll-container" 
                 style={{ 
                   maxHeight: '70vh',
-                  scrollBehavior: 'smooth'
+                  scrollBehavior: 'auto' // Remove smooth for more predictable scrolling
                 }}
                 onScroll={(e) => {
                   const container = e.target as HTMLElement
@@ -1040,14 +1036,15 @@ export default function AdminAffiliates() {
                   if (e.shiftKey) {
                     e.preventDefault()
                     const container = e.currentTarget
-                    container.scrollLeft += e.deltaY * 2 // Make horizontal scroll more sensitive
+                    container.scrollLeft += e.deltaY * 3 // Even more sensitive scrolling
                   }
                 }}
               >
                 <table className="min-w-full divide-y divide-gray-100" style={{ 
                   minWidth: '1800px', 
                   fontSize: '11px',
-                  tableLayout: 'fixed'
+                  tableLayout: 'fixed',
+                  width: '1800px' // Force exact width
                 }}>
                   <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
@@ -1083,13 +1080,13 @@ export default function AdminAffiliates() {
                       <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         WhatsApp
                       </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '96px', maxWidth: '96px'}}>
                         Address
                       </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '80px', maxWidth: '80px'}}>
                         Website
                       </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '96px', maxWidth: '96px'}}>
                         Description
                       </th>
                       <SortableHeader field="city" className="w-16">
@@ -1159,40 +1156,40 @@ export default function AdminAffiliates() {
                         <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center font-medium" style={{ width: '48px', color: '#111827' }}>
                           #{affiliate.affiliateNum || affiliate.id.slice(-3)}
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="isActive" value={affiliate.isActive} type="boolean" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '96px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '96px', maxWidth: '96px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="name" value={affiliate.name} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="firstName" value={affiliate.firstName} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="lastName" value={affiliate.lastName} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '96px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '96px', maxWidth: '96px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="email" value={affiliate.email} type="email" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="workPhone" value={affiliate.workPhone} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="whatsApp" value={affiliate.whatsApp} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '96px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '96px', maxWidth: '96px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="address" value={affiliate.address} type="textarea" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="web" value={affiliate.web} type="url" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '96px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '96px', maxWidth: '96px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="description" value={affiliate.description} type="textarea" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           {affiliate.maps ? (
                             <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800" title={affiliate.maps}>
                               📍
@@ -1201,51 +1198,51 @@ export default function AdminAffiliates() {
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           {affiliate.logo && (
                             <img src={affiliate.logo} alt="Logo" className="w-4 h-4 object-cover rounded mx-auto" title={affiliate.logo} />
                           )}
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="facebook" value={affiliate.facebook} type="url" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="instagram" value={affiliate.instagram} type="url" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="category" value={affiliate.category} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="subCategory" value={affiliate.subCategory} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="sticker" value={affiliate.sticker} />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="rating" value={affiliate.rating} type="number" />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="recommended" value={affiliate.recommended} type="boolean" />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="termsConditions" value={!!affiliate.termsConditions} type="boolean" />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
                           <div className="text-xs font-medium text-gray-900" style={{ color: '#111827' }}>{affiliate.totalVisits}</div>
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '80px' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
                           <div className="flex items-center justify-center space-x-0.5">
                             <button
                               onClick={() => setEditingAffiliate(affiliate)}
@@ -1283,41 +1280,19 @@ export default function AdminAffiliates() {
                     Showing page {pagination.currentPage} of {pagination.totalPages} ({filteredAffiliates.length} displayed)
                   </div>
                   <div className="text-xs text-gray-700">
-                    Click and drag scroll bar, or use Shift + mouse wheel
+                    Click anywhere on scroll bar, or use Shift + mouse wheel
                   </div>
                 </div>
                 <div className="w-full overflow-hidden">
                   <div 
                     className="h-4 bg-gray-200 rounded-full cursor-pointer relative hover:bg-gray-300 transition-colors"
-                    onMouseDown={(e) => {
-                      const scrollBar = e.currentTarget
-                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
-                      const startX = e.clientX
-                      const startScrollLeft = tableContainer.scrollLeft
-                      const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
-                      
-                      const handleMouseMove = (e: MouseEvent) => {
-                        const deltaX = e.clientX - startX
-                        const scrollRatio = deltaX / scrollBar.offsetWidth
-                        const newScrollLeft = Math.max(0, Math.min(maxScroll, startScrollLeft + (scrollRatio * maxScroll)))
-                        tableContainer.scrollLeft = newScrollLeft
-                      }
-                      
-                      const handleMouseUp = () => {
-                        document.removeEventListener('mousemove', handleMouseMove)
-                        document.removeEventListener('mouseup', handleMouseUp)
-                      }
-                      
-                      document.addEventListener('mousemove', handleMouseMove)
-                      document.addEventListener('mouseup', handleMouseUp)
-                    }}
                     onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       const x = e.clientX - rect.left
                       const percentage = x / rect.width
                       const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
                       const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
-                      tableContainer.scrollTo({ left: maxScroll * percentage, behavior: 'smooth' })
+                      tableContainer.scrollLeft = maxScroll * percentage // Instant, predictable movement
                     }}
                   >
                     <div 
