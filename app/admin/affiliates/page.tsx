@@ -69,6 +69,7 @@ export default function AdminAffiliates() {
   
   // Filters and pagination
   const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(50)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // 'active', 'inactive', 'all'
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -107,14 +108,14 @@ export default function AdminAffiliates() {
   // Load affiliates
   useEffect(() => {
     loadAffiliates()
-  }, [currentPage, searchTerm, statusFilter, categoryFilter, cityFilter, typeFilter, ratingFilter])
+  }, [currentPage, itemsPerPage, searchTerm, statusFilter, categoryFilter, cityFilter, typeFilter, ratingFilter])
 
   const loadAffiliates = async () => {
     setSearching(true)
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: '50',
+        limit: itemsPerPage.toString(),
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter !== 'all' && { status: statusFilter }),
         ...(categoryFilter && { category: categoryFilter }),
@@ -495,7 +496,7 @@ export default function AdminAffiliates() {
          return (
        <div
          onClick={() => setEditingField({ affiliateId: affiliate.id, field })}
-         className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group`}
+         className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900`}
          title={String(value || '')}
          style={{ 
            minHeight: '20px',
@@ -504,14 +505,15 @@ export default function AdminAffiliates() {
            textOverflow: 'ellipsis',
            whiteSpace: 'nowrap',
            display: 'flex',
-           alignItems: 'center'
+           alignItems: 'center',
+           color: '#111827' // Ensure black text
          }}
        >
-         <span className="truncate">{displayValue()}</span>
+         <span className="truncate text-gray-900">{displayValue()}</span>
          {/* Excel-style tooltip on hover */}
          {value && String(value).length > 15 && (
            <div className="absolute left-0 top-6 bg-yellow-50 border border-gray-300 rounded shadow-lg p-2 text-xs z-50 max-w-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-             <div className="whitespace-pre-wrap break-words">
+             <div className="whitespace-pre-wrap break-words text-gray-900">
                {String(value)}
              </div>
            </div>
@@ -655,36 +657,9 @@ export default function AdminAffiliates() {
     }
   }
 
-  // Filter and sort affiliates
-  let filteredAffiliates = affiliates.filter(affiliate =>
-    affiliate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    affiliate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (affiliate.city && affiliate.city.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
-
-  // Apply additional filters
-  if (statusFilter !== 'all') {
-    filteredAffiliates = filteredAffiliates.filter(affiliate => 
-      statusFilter === 'active' ? affiliate.isActive : !affiliate.isActive
-    )
-  }
-  if (cityFilter) {
-    filteredAffiliates = filteredAffiliates.filter(affiliate => 
-      affiliate.city?.toLowerCase().includes(cityFilter.toLowerCase())
-    )
-  }
-  if (typeFilter) {
-    filteredAffiliates = filteredAffiliates.filter(affiliate => 
-      affiliate.type?.toLowerCase().includes(typeFilter.toLowerCase())
-    )
-  }
-  if (ratingFilter) {
-    const minRating = parseInt(ratingFilter)
-    filteredAffiliates = filteredAffiliates.filter(affiliate => 
-      affiliate.rating && affiliate.rating >= minRating
-    )
-  }
-
+  // Apply client-side sorting to server-paginated data
+  let filteredAffiliates = [...affiliates]
+  
   // Apply sorting
   if (sortField) {
     filteredAffiliates.sort((a, b) => {
@@ -916,10 +891,68 @@ export default function AdminAffiliates() {
 
         {/* Affiliates Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">
-              Affiliates ({filteredAffiliates.length})
+              Affiliates ({pagination.totalCount})
             </h3>
+            
+            {/* Pagination Controls */}
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700">Show:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value))
+                    setCurrentPage(1) // Reset to first page when changing items per page
+                  }}
+                  className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={500}>500</option>
+                </select>
+                <span className="text-sm text-gray-700">per page</span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700">
+                  Page {pagination.currentPage} of {pagination.totalPages} 
+                  ({pagination.totalCount} total)
+                </span>
+                <div className="flex space-x-1">
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={!pagination.hasPreviousPage}
+                    className="px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    First
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(pagination.currentPage - 1)}
+                    disabled={!pagination.hasPreviousPage}
+                    className="px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(pagination.currentPage + 1)}
+                    disabled={!pagination.hasNextPage}
+                    className="px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Next
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(pagination.totalPages)}
+                    disabled={!pagination.hasNextPage}
+                    className="px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Last
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           
           {loading ? (
@@ -938,27 +971,49 @@ export default function AdminAffiliates() {
               {/* Top Horizontal Scroll Toggle Bar */}
               <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-gray-600">
-                    Horizontal scroll: Use bar below or mouse wheel + Shift
+                  <div className="text-xs text-gray-700">
+                    Horizontal scroll: Click and drag bar, or use Shift + Mouse Wheel
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {filteredAffiliates.length} affiliates
+                  <div className="text-xs text-gray-700">
+                    Showing {filteredAffiliates.length} of {pagination.totalCount} affiliates
                   </div>
                 </div>
                 <div className="w-full overflow-hidden">
                   <div 
-                    className="h-3 bg-gray-200 rounded-full cursor-pointer relative"
+                    className="h-4 bg-gray-200 rounded-full cursor-pointer relative hover:bg-gray-300 transition-colors"
+                    onMouseDown={(e) => {
+                      const scrollBar = e.currentTarget
+                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
+                      const startX = e.clientX
+                      const startScrollLeft = tableContainer.scrollLeft
+                      const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
+                      
+                      const handleMouseMove = (e: MouseEvent) => {
+                        const deltaX = e.clientX - startX
+                        const scrollRatio = deltaX / scrollBar.offsetWidth
+                        const newScrollLeft = Math.max(0, Math.min(maxScroll, startScrollLeft + (scrollRatio * maxScroll)))
+                        tableContainer.scrollLeft = newScrollLeft
+                      }
+                      
+                      const handleMouseUp = () => {
+                        document.removeEventListener('mousemove', handleMouseMove)
+                        document.removeEventListener('mouseup', handleMouseUp)
+                      }
+                      
+                      document.addEventListener('mousemove', handleMouseMove)
+                      document.addEventListener('mouseup', handleMouseUp)
+                    }}
                     onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       const x = e.clientX - rect.left
                       const percentage = x / rect.width
                       const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
                       const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
-                      tableContainer.scrollLeft = maxScroll * percentage
+                      tableContainer.scrollTo({ left: maxScroll * percentage, behavior: 'smooth' })
                     }}
                   >
                     <div 
-                      className="h-full bg-blue-600 rounded-full transition-all duration-200"
+                      className="h-full bg-blue-600 rounded-full transition-all duration-150 ease-out"
                       style={{ width: '25%' }}
                       id="scroll-indicator"
                     />
@@ -968,14 +1023,25 @@ export default function AdminAffiliates() {
               
               <div 
                 className="overflow-x-auto table-scroll-container" 
-                style={{ maxHeight: '70vh' }}
+                style={{ 
+                  maxHeight: '70vh',
+                  scrollBehavior: 'smooth'
+                }}
                 onScroll={(e) => {
                   const container = e.target as HTMLElement
-                  const percentage = container.scrollLeft / (container.scrollWidth - container.clientWidth)
+                  const maxScroll = container.scrollWidth - container.clientWidth
+                  const percentage = maxScroll > 0 ? container.scrollLeft / maxScroll : 0
                   const indicator = document.getElementById('scroll-indicator')
                   const bottomIndicator = document.getElementById('bottom-scroll-indicator')
                   if (indicator) indicator.style.marginLeft = `${percentage * 75}%`
                   if (bottomIndicator) bottomIndicator.style.marginLeft = `${percentage * 75}%`
+                }}
+                onWheel={(e) => {
+                  if (e.shiftKey) {
+                    e.preventDefault()
+                    const container = e.currentTarget
+                    container.scrollLeft += e.deltaY * 2 // Make horizontal scroll more sensitive
+                  }
                 }}
               >
                 <table className="min-w-full divide-y divide-gray-100" style={{ 
@@ -1079,9 +1145,9 @@ export default function AdminAffiliates() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-100 text-xs">
+                  <tbody className="bg-white divide-y divide-gray-100">
                     {filteredAffiliates.map((affiliate) => (
-                      <tr key={affiliate.id} className="hover:bg-gray-50" style={{ height: '28px' }}>
+                      <tr key={affiliate.id} className="hover:bg-gray-50" style={{ height: '28px', color: '#111827' }}>
                         <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 sticky left-0 bg-white z-10" style={{ width: '40px' }}>
                           <input
                             type="checkbox"
@@ -1090,7 +1156,7 @@ export default function AdminAffiliates() {
                             className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
                         </td>
-                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center" style={{ width: '48px' }}>
+                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center font-medium" style={{ width: '48px', color: '#111827' }}>
                           #{affiliate.affiliateNum || affiliate.id.slice(-3)}
                         </td>
                         <td className="px-1 py-0.5" style={{ width: '64px' }}>
@@ -1177,7 +1243,7 @@ export default function AdminAffiliates() {
                           <EditableField affiliate={affiliate} field="termsConditions" value={!!affiliate.termsConditions} type="boolean" />
                         </td>
                         <td className="px-1 py-0.5 text-center" style={{ width: '64px' }}>
-                          <div className="text-xs font-medium">{affiliate.totalVisits}</div>
+                          <div className="text-xs font-medium text-gray-900" style={{ color: '#111827' }}>{affiliate.totalVisits}</div>
                         </td>
                         <td className="px-1 py-0.5 text-center" style={{ width: '80px' }}>
                           <div className="flex items-center justify-center space-x-0.5">
@@ -1213,27 +1279,49 @@ export default function AdminAffiliates() {
               {/* Bottom Horizontal Scroll Toggle Bar */}
               <div className="bg-gray-50 px-4 py-2 border-t border-gray-200">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-gray-600">
-                    Total: {filteredAffiliates.length} affiliates displayed
+                  <div className="text-xs text-gray-700">
+                    Showing page {pagination.currentPage} of {pagination.totalPages} ({filteredAffiliates.length} displayed)
                   </div>
-                  <div className="text-xs text-gray-500">
-                    Use scroll bar or Shift + mouse wheel
+                  <div className="text-xs text-gray-700">
+                    Click and drag scroll bar, or use Shift + mouse wheel
                   </div>
                 </div>
                 <div className="w-full overflow-hidden">
                   <div 
-                    className="h-3 bg-gray-200 rounded-full cursor-pointer relative"
+                    className="h-4 bg-gray-200 rounded-full cursor-pointer relative hover:bg-gray-300 transition-colors"
+                    onMouseDown={(e) => {
+                      const scrollBar = e.currentTarget
+                      const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
+                      const startX = e.clientX
+                      const startScrollLeft = tableContainer.scrollLeft
+                      const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
+                      
+                      const handleMouseMove = (e: MouseEvent) => {
+                        const deltaX = e.clientX - startX
+                        const scrollRatio = deltaX / scrollBar.offsetWidth
+                        const newScrollLeft = Math.max(0, Math.min(maxScroll, startScrollLeft + (scrollRatio * maxScroll)))
+                        tableContainer.scrollLeft = newScrollLeft
+                      }
+                      
+                      const handleMouseUp = () => {
+                        document.removeEventListener('mousemove', handleMouseMove)
+                        document.removeEventListener('mouseup', handleMouseUp)
+                      }
+                      
+                      document.addEventListener('mousemove', handleMouseMove)
+                      document.addEventListener('mouseup', handleMouseUp)
+                    }}
                     onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect()
                       const x = e.clientX - rect.left
                       const percentage = x / rect.width
                       const tableContainer = document.querySelector('.table-scroll-container') as HTMLElement
                       const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth
-                      tableContainer.scrollLeft = maxScroll * percentage
+                      tableContainer.scrollTo({ left: maxScroll * percentage, behavior: 'smooth' })
                     }}
                   >
                     <div 
-                      className="h-full bg-blue-600 rounded-full transition-all duration-200"
+                      className="h-full bg-blue-600 rounded-full transition-all duration-150 ease-out"
                       style={{ width: '25%' }}
                       id="bottom-scroll-indicator"
                     />
