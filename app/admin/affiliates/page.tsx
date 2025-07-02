@@ -105,8 +105,8 @@ export default function AdminAffiliates() {
   const [csvPreview, setCsvPreview] = useState<any>(null)
   const [previewing, setPreviewing] = useState(false)
 
-  // Column widths state for manual resizing
-  const [columnWidths, setColumnWidths] = useState({
+  // Default column widths
+  const defaultColumnWidths = {
     select: 40,
     affiliateNum: 48,
     status: 64,
@@ -136,7 +136,31 @@ export default function AdminAffiliates() {
     termsConditions: 64,
     visits: 64,
     actions: 80
+  }
+
+  // Column widths state for manual resizing with localStorage persistence
+  const [columnWidths, setColumnWidths] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('affiliateColumnWidths')
+      if (saved) {
+        try {
+          return { ...defaultColumnWidths, ...JSON.parse(saved) }
+        } catch (e) {
+          console.warn('Failed to parse saved column widths:', e)
+        }
+      }
+    }
+    return defaultColumnWidths
   })
+
+  // Save column widths to localStorage whenever they change
+  const updateColumnWidth = (field: keyof typeof columnWidths, width: number) => {
+    const newWidths = { ...columnWidths, [field]: width }
+    setColumnWidths(newWidths)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('affiliateColumnWidths', JSON.stringify(newWidths))
+    }
+  }
 
   // Load affiliates
   useEffect(() => {
@@ -623,7 +647,7 @@ export default function AdminAffiliates() {
       if (!isResizing) return
       const diff = e.clientX - startX
       const newWidth = Math.max(30, startWidth + diff) // Minimum width of 30px
-      setColumnWidths(prev => ({ ...prev, [field]: newWidth }))
+      updateColumnWidth(field, newWidth)
     }
 
     const handleMouseUp = () => {
@@ -646,11 +670,11 @@ export default function AdminAffiliates() {
     
     return (
       <th 
-        className={`px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative ${sortable ? 'cursor-pointer hover:bg-gray-100' : ''}`}
+        className={`px-1 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative ${sortable ? 'cursor-pointer hover:bg-gray-100' : ''}`}
         style={{ width: `${columnWidths[field]}px`, maxWidth: `${columnWidths[field]}px` }}
         onClick={sortable ? () => handleSort(field as string) : undefined}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-center">
           <div className="flex items-center space-x-1">
             <span className="truncate">{children}</span>
             {isActive && sortable && (
@@ -660,13 +684,17 @@ export default function AdminAffiliates() {
               </div>
             )}
           </div>
-          {/* Resize Handle */}
-          <div
-            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 bg-transparent"
-            onMouseDown={handleMouseDown}
-            title="Drag to resize column"
-          />
         </div>
+        {/* Resize Handle - More Visible */}
+        <div
+          className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-400 bg-gray-300 border-r border-gray-400"
+          onMouseDown={handleMouseDown}
+          title="Drag to resize column"
+          style={{
+            background: isResizing ? '#3b82f6' : 'linear-gradient(to right, #e5e7eb, #9ca3af)',
+            opacity: 0.8
+          }}
+        />
       </th>
     )
   }
@@ -1133,10 +1161,10 @@ export default function AdminAffiliates() {
                 }}
               >
                 <table className="min-w-full divide-y divide-gray-100" style={{ 
-                  minWidth: `${Object.values(columnWidths).reduce((sum, width) => sum + width, 0)}px`, 
+                  minWidth: `${(Object.values(columnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0)}px`, 
                   fontSize: '11px',
                   tableLayout: 'fixed',
-                  width: `${Object.values(columnWidths).reduce((sum, width) => sum + width, 0)}px`
+                  width: `${(Object.values(columnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0)}px`
                 }}>
                   <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
