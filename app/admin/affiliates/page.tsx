@@ -619,7 +619,7 @@ export default function AdminAffiliates() {
 
     return (
       <div 
-        className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-2xl text-sm z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-2xl text-sm z-50 opacity-100 transition-opacity duration-200"
         style={{
           top: '-15px',
           transform: 'translateX(-50%) translateY(-100%)',
