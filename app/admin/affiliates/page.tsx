@@ -569,9 +569,22 @@ export default function AdminAffiliates() {
          }}
        >
          <span className="truncate text-gray-900" style={{ maxWidth: '100%' }}>{displayValue()}</span>
-         {/* Resizable Tooltip with drag corner */}
+         {/* Simple Test Tooltip */}
          {value && String(value).length > 10 && (
-           <ResizableTooltip content={String(value)} />
+           <div 
+             className="absolute top-0 left-0 bg-red-500 text-white p-2 rounded shadow-lg z-50 min-w-[200px]"
+             style={{ 
+               transform: 'translateY(-100%)',
+               pointerEvents: 'auto'
+             }}
+           >
+             <div>🔴 TEST TOOLTIP</div>
+             <div>{String(value).substring(0, 50)}...</div>
+             <div 
+               className="w-4 h-4 bg-blue-500 cursor-se-resize absolute bottom-0 right-0"
+               title="Drag to resize"
+             />
+           </div>
          )}
        </div>
      )
