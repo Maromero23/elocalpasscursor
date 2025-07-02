@@ -876,9 +876,9 @@ export default function AdminAffiliates() {
      })
    }
 
+
   return (
-    <ProtectedRoute allowedRoles={["ADMIN"]}>
-      <style dangerouslySetInnerHTML={{__html: `
+    <ProtectedRoute allowedRoles={["ADMIN"]}>      <style dangerouslySetInnerHTML={{__html: `
         .table-scroll-container::-webkit-scrollbar {
           -webkit-appearance: none !important;
           height: 16px !important;
@@ -2056,8 +2056,8 @@ export default function AdminAffiliates() {
         </div>
       )}
       
-      <ToastNotifications notifications={notifications} onRemove={removeToast} />
-      </div>
-    </ProtectedRoute>
+        <ToastNotifications notifications={notifications} onRemove={removeToast} />
+    </div>
+  </ProtectedRoute>
   )
 }
