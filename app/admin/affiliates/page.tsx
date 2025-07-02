@@ -509,7 +509,7 @@ export default function AdminAffiliates() {
            if (!value) return <span className="text-gray-400">-</span>
            
            let displayText = value.length > 30 ? value.substring(0, 30) + '...' : value
-           if (field === 'maps') displayText = '📍 Maps'
+           if (field === 'maps') displayText = 'Maps'
            if (field === 'facebook') displayText = 'Facebook'
            if (field === 'instagram') displayText = 'Instagram'
            
