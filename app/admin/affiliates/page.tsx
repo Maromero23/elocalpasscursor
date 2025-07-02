@@ -105,6 +105,39 @@ export default function AdminAffiliates() {
   const [csvPreview, setCsvPreview] = useState<any>(null)
   const [previewing, setPreviewing] = useState(false)
 
+  // Column widths state for manual resizing
+  const [columnWidths, setColumnWidths] = useState({
+    select: 40,
+    affiliateNum: 48,
+    status: 64,
+    name: 96,
+    firstName: 80,
+    lastName: 80,
+    email: 96,
+    workPhone: 80,
+    whatsApp: 80,
+    address: 96,
+    web: 80,
+    description: 96,
+    city: 64,
+    maps: 80,
+    location: 80,
+    discount: 64,
+    logo: 64,
+    facebook: 80,
+    instagram: 80,
+    category: 80,
+    subCategory: 80,
+    service: 64,
+    type: 64,
+    sticker: 64,
+    rating: 64,
+    recommended: 64,
+    termsConditions: 64,
+    visits: 64,
+    actions: 80
+  })
+
   // Load affiliates
   useEffect(() => {
     loadAffiliates()
@@ -563,6 +596,76 @@ export default function AdminAffiliates() {
             <ChevronUp className={`w-2 h-2 ${isSorted && isAsc ? 'text-blue-600' : 'text-gray-300'}`} />
             <ChevronDown className={`w-2 h-2 -mt-0.5 ${isSorted && !isAsc ? 'text-blue-600' : 'text-gray-300'}`} />
           </div>
+        </div>
+      </th>
+    )
+  }
+
+  // Resizable Header Component with manual column width adjustment
+  const ResizableHeader = ({ field, children, sortable = false }: { 
+    field: keyof typeof columnWidths
+    children: React.ReactNode
+    sortable?: boolean
+  }) => {
+    const [isResizing, setIsResizing] = useState(false)
+    const [startX, setStartX] = useState(0)
+    const [startWidth, setStartWidth] = useState(0)
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsResizing(true)
+      setStartX(e.clientX)
+      setStartWidth(columnWidths[field])
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return
+      const diff = e.clientX - startX
+      const newWidth = Math.max(30, startWidth + diff) // Minimum width of 30px
+      setColumnWidths(prev => ({ ...prev, [field]: newWidth }))
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+    }
+
+    // Add global mouse event listeners when resizing
+    useEffect(() => {
+      if (isResizing) {
+        document.addEventListener('mousemove', handleMouseMove)
+        document.addEventListener('mouseup', handleMouseUp)
+        return () => {
+          document.removeEventListener('mousemove', handleMouseMove)
+          document.removeEventListener('mouseup', handleMouseUp)
+        }
+      }
+    }, [isResizing, startX, startWidth])
+
+    const isActive = sortable && sortField === field
+    
+    return (
+      <th 
+        className={`px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative ${sortable ? 'cursor-pointer hover:bg-gray-100' : ''}`}
+        style={{ width: `${columnWidths[field]}px`, maxWidth: `${columnWidths[field]}px` }}
+        onClick={sortable ? () => handleSort(field as string) : undefined}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-1">
+            <span className="truncate">{children}</span>
+            {isActive && sortable && (
+              <div className="flex flex-col flex-shrink-0">
+                <ChevronUp className={`w-2 h-2 ${sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}`} />
+                <ChevronDown className={`w-2 h-2 -mt-0.5 ${sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`} />
+              </div>
+            )}
+          </div>
+          {/* Resize Handle */}
+          <div
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 bg-transparent"
+            onMouseDown={handleMouseDown}
+            title="Drag to resize column"
+          />
         </div>
       </th>
     )
@@ -1030,111 +1133,111 @@ export default function AdminAffiliates() {
                 }}
               >
                 <table className="min-w-full divide-y divide-gray-100" style={{ 
-                  minWidth: '1800px', 
+                  minWidth: `${Object.values(columnWidths).reduce((sum, width) => sum + width, 0)}px`, 
                   fontSize: '11px',
                   tableLayout: 'fixed',
-                  width: '1800px' // Force exact width
+                  width: `${Object.values(columnWidths).reduce((sum, width) => sum + width, 0)}px`
                 }}>
                   <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10" style={{width: '40px'}}>
+                      <ResizableHeader field="select">
                         <input
                           type="checkbox"
                           checked={selectedAffiliates.length === affiliates.length && affiliates.length > 0}
                           onChange={handleSelectAll}
                           className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
-                      </th>
-                      <SortableHeader field="affiliateNum" className="w-12">
+                      </ResizableHeader>
+                      <ResizableHeader field="affiliateNum" sortable>
                         #
-                      </SortableHeader>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                      </ResizableHeader>
+                      <ResizableHeader field="status">
                         Status
-                      </th>
-                      <SortableHeader field="name" className="w-24">
+                      </ResizableHeader>
+                      <ResizableHeader field="name" sortable>
                         Business Name
-                      </SortableHeader>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      </ResizableHeader>
+                      <ResizableHeader field="firstName">
                         First Name
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      </ResizableHeader>
+                      <ResizableHeader field="lastName">
                         Last Name
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                      </ResizableHeader>
+                      <ResizableHeader field="email">
                         Email
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      </ResizableHeader>
+                      <ResizableHeader field="workPhone">
                         Work Phone
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      </ResizableHeader>
+                      <ResizableHeader field="whatsApp">
                         WhatsApp
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '96px', maxWidth: '96px'}}>
+                      </ResizableHeader>
+                      <ResizableHeader field="address">
                         Address
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '80px', maxWidth: '80px'}}>
+                      </ResizableHeader>
+                      <ResizableHeader field="web">
                         Website
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '96px', maxWidth: '96px'}}>
+                      </ResizableHeader>
+                      <ResizableHeader field="description">
                         Description
-                      </th>
-                      <SortableHeader field="city" className="w-16">
+                      </ResizableHeader>
+                      <ResizableHeader field="city" sortable>
                         City
-                      </SortableHeader>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '80px', maxWidth: '80px'}}>
+                      </ResizableHeader>
+                      <ResizableHeader field="maps">
                         Maps URL
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      </ResizableHeader>
+                      <ResizableHeader field="location">
                         Location
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                      </ResizableHeader>
+                      <ResizableHeader field="discount">
                         Discount
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                      </ResizableHeader>
+                      <ResizableHeader field="logo">
                         Logo
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      </ResizableHeader>
+                      <ResizableHeader field="facebook">
                         Facebook
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      </ResizableHeader>
+                      <ResizableHeader field="instagram">
                         Instagram
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      </ResizableHeader>
+                      <ResizableHeader field="category">
                         Category
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      </ResizableHeader>
+                      <ResizableHeader field="subCategory">
                         Sub-Category
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                      </ResizableHeader>
+                      <ResizableHeader field="service">
                         Service
-                      </th>
-                      <SortableHeader field="type" className="w-16">
+                      </ResizableHeader>
+                      <ResizableHeader field="type" sortable>
                         Type
-                      </SortableHeader>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                      </ResizableHeader>
+                      <ResizableHeader field="sticker">
                         Sticker
-                      </th>
-                      <SortableHeader field="rating" className="w-16">
+                      </ResizableHeader>
+                      <ResizableHeader field="rating" sortable>
                         Rating
-                      </SortableHeader>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                        Recommended
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                        Terms & Conditions
-                      </th>
-                      <th className="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                      </ResizableHeader>
+                      <ResizableHeader field="recommended">
+                        Recommend
+                      </ResizableHeader>
+                      <ResizableHeader field="termsConditions">
+                        T & C
+                      </ResizableHeader>
+                      <ResizableHeader field="visits">
                         Visits
-                      </th>
-                      <th className="px-1 py-1 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                      </ResizableHeader>
+                      <ResizableHeader field="actions">
                         Actions
-                      </th>
+                      </ResizableHeader>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
                     {filteredAffiliates.map((affiliate) => (
                       <tr key={affiliate.id} className="hover:bg-gray-50" style={{ height: '28px', color: '#111827' }}>
-                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 sticky left-0 bg-white z-10" style={{ width: '40px' }}>
+                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 sticky left-0 bg-white z-10" style={{ width: `${columnWidths.select}px`, maxWidth: `${columnWidths.select}px`, overflow: 'hidden' }}>
                           <input
                             type="checkbox"
                             checked={selectedAffiliates.includes(affiliate.id)}
@@ -1142,43 +1245,43 @@ export default function AdminAffiliates() {
                             className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
                         </td>
-                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center font-medium" style={{ width: '48px', color: '#111827' }}>
+                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center font-medium" style={{ width: `${columnWidths.affiliateNum}px`, maxWidth: `${columnWidths.affiliateNum}px`, overflow: 'hidden', color: '#111827' }}>
                           #{affiliate.affiliateNum || affiliate.id.slice(-3)}
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.status}px`, maxWidth: `${columnWidths.status}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="isActive" value={affiliate.isActive} type="boolean" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '96px', maxWidth: '96px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="name" value={affiliate.name} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.firstName}px`, maxWidth: `${columnWidths.firstName}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="firstName" value={affiliate.firstName} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.lastName}px`, maxWidth: `${columnWidths.lastName}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="lastName" value={affiliate.lastName} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '96px', maxWidth: '96px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.email}px`, maxWidth: `${columnWidths.email}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="email" value={affiliate.email} type="email" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.workPhone}px`, maxWidth: `${columnWidths.workPhone}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="workPhone" value={affiliate.workPhone} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.whatsApp}px`, maxWidth: `${columnWidths.whatsApp}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="whatsApp" value={affiliate.whatsApp} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '96px', maxWidth: '96px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.address}px`, maxWidth: `${columnWidths.address}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="address" value={affiliate.address} type="textarea" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.web}px`, maxWidth: `${columnWidths.web}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="web" value={affiliate.web} type="url" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '96px', maxWidth: '96px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.description}px`, maxWidth: `${columnWidths.description}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="description" value={affiliate.description} type="textarea" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.city}px`, maxWidth: `${columnWidths.city}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.maps}px`, maxWidth: `${columnWidths.maps}px`, overflow: 'hidden' }}>
                           <div className="flex items-center space-x-1">
                             {affiliate.maps && (
                               <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex-shrink-0" title="Open in Maps">
@@ -1190,51 +1293,51 @@ export default function AdminAffiliates() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.location}px`, maxWidth: `${columnWidths.location}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.discount}px`, maxWidth: `${columnWidths.discount}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${columnWidths.logo}px`, maxWidth: `${columnWidths.logo}px`, overflow: 'hidden' }}>
                           {affiliate.logo && (
                             <img src={affiliate.logo} alt="Logo" className="w-4 h-4 object-cover rounded mx-auto" title={affiliate.logo} />
                           )}
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.facebook}px`, maxWidth: `${columnWidths.facebook}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="facebook" value={affiliate.facebook} type="url" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.instagram}px`, maxWidth: `${columnWidths.instagram}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="instagram" value={affiliate.instagram} type="url" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.category}px`, maxWidth: `${columnWidths.category}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="category" value={affiliate.category} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.subCategory}px`, maxWidth: `${columnWidths.subCategory}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="subCategory" value={affiliate.subCategory} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.service}px`, maxWidth: `${columnWidths.service}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.type}px`, maxWidth: `${columnWidths.type}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${columnWidths.sticker}px`, maxWidth: `${columnWidths.sticker}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="sticker" value={affiliate.sticker} />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${columnWidths.rating}px`, maxWidth: `${columnWidths.rating}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="rating" value={affiliate.rating} type="number" />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${columnWidths.recommended}px`, maxWidth: `${columnWidths.recommended}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="recommended" value={affiliate.recommended} type="boolean" />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${columnWidths.termsConditions}px`, maxWidth: `${columnWidths.termsConditions}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="termsConditions" value={!!affiliate.termsConditions} type="boolean" />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '64px', maxWidth: '64px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${columnWidths.visits}px`, maxWidth: `${columnWidths.visits}px`, overflow: 'hidden' }}>
                           <div className="text-xs font-medium text-gray-900" style={{ color: '#111827' }}>{affiliate.totalVisits}</div>
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: '80px', maxWidth: '80px', overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${columnWidths.actions}px`, maxWidth: `${columnWidths.actions}px`, overflow: 'hidden' }}>
                           <div className="flex items-center justify-center space-x-0.5">
                             <button
                               onClick={() => setEditingAffiliate(affiliate)}
