@@ -569,21 +569,19 @@ export default function AdminAffiliates() {
          }}
        >
          <span className="truncate text-gray-900" style={{ maxWidth: '100%' }}>{displayValue()}</span>
-         {/* Simple Test Tooltip */}
-         {value && String(value).length > 10 && (
+         {/* SUPER SIMPLE TEST - should show on ANY value */}
+         {value && (
            <div 
-             className="absolute top-0 left-0 bg-red-500 text-white p-2 rounded shadow-lg z-50 min-w-[200px]"
+             className="fixed top-10 left-10 bg-red-500 text-white p-4 rounded shadow-lg z-[9999] text-lg font-bold"
              style={{ 
-               transform: 'translateY(-100%)',
-               pointerEvents: 'auto'
+               border: '5px solid yellow',
+               minWidth: '300px',
+               minHeight: '100px'
              }}
            >
-             <div>🔴 TEST TOOLTIP</div>
-             <div>{String(value).substring(0, 50)}...</div>
-             <div 
-               className="w-4 h-4 bg-blue-500 cursor-se-resize absolute bottom-0 right-0"
-               title="Drag to resize"
-             />
+             <div>🚨 TOOLTIP TEST WORKING! 🚨</div>
+             <div>Value: {String(value)}</div>
+             <div>Length: {String(value).length}</div>
            </div>
          )}
        </div>
