@@ -707,6 +707,26 @@ export default function AdminAffiliates() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .table-scroll-container::-webkit-scrollbar {
+          -webkit-appearance: none !important;
+          height: 16px !important;
+          display: block !important;
+        }
+        .table-scroll-container::-webkit-scrollbar-thumb {
+          border-radius: 8px;
+          border: 2px solid white;
+          background-color: rgba(0, 0, 0, .5);
+        }
+        .table-scroll-container::-webkit-scrollbar-track {
+          background-color: #f1f1f1;
+          border-radius: 8px;
+        }
+        .table-scroll-container {
+          scrollbar-width: auto !important;
+          overflow-x: scroll !important;
+        }
+      `}} />
       <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <div className="bg-white shadow">
@@ -995,7 +1015,10 @@ export default function AdminAffiliates() {
                 className="overflow-x-scroll table-scroll-container" 
                 style={{ 
                   maxHeight: '70vh',
-                  scrollBehavior: 'auto' // Remove smooth for more predictable scrolling
+                  scrollBehavior: 'auto', // Remove smooth for more predictable scrolling
+                  scrollbarWidth: 'auto', // Firefox - force scrollbar to always show
+                  msOverflowStyle: 'scrollbar', // IE - force scrollbar to always show
+                  WebkitOverflowScrolling: 'touch' // iOS - smoother scrolling
                 }}
 
                 onWheel={(e) => {
