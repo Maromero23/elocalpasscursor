@@ -622,12 +622,16 @@ export default function AdminAffiliates() {
 
     return (
       <div 
-        className="relative inline-block"
+        className="fixed bg-white border-4 border-blue-400 rounded-lg shadow-2xl"
         style={{ 
           width: `${size.width}px`, 
           height: `${size.height}px`,
           minWidth: '250px',
-          minHeight: '80px'
+          minHeight: '80px',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 1000
         }}
       >
         <textarea
