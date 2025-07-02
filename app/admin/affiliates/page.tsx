@@ -394,10 +394,16 @@ export default function AdminAffiliates() {
   }
 
   // Inline editing
-  const handleFieldEdit = async (affiliateId: string, field: string, value: any) => {
+  const handleFieldEdit = async (affiliateId: string, field: string, value: any, originalValue: any) => {
     try {
       const affiliate = affiliates.find(a => a.id === affiliateId)
       if (!affiliate) return
+
+      // Compare values - only proceed if there's actually a change
+      if (value === originalValue) {
+        setEditingField(null)
+        return // No change, just close editing mode without notification
+      }
 
       const updatedData = { ...affiliate, [field]: value }
       
@@ -438,12 +444,12 @@ export default function AdminAffiliates() {
             defaultValue={value ? 'yes' : 'no'}
             onBlur={(e) => {
               const newValue = (e.target as HTMLSelectElement).value === 'yes'
-              handleFieldEdit(affiliate.id, field, newValue)
+              handleFieldEdit(affiliate.id, field, newValue, value)
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 const newValue = (e.target as HTMLSelectElement).value === 'yes'
-                handleFieldEdit(affiliate.id, field, newValue)
+                handleFieldEdit(affiliate.id, field, newValue, value)
               } else if (e.key === 'Escape') {
                 setEditingField(null)
               }
@@ -459,8 +465,8 @@ export default function AdminAffiliates() {
         return (
           <ResizableTextarea
             defaultValue={value || ''}
-            onBlur={(value) => handleFieldEdit(affiliate.id, field, value)}
-            onEnter={(value) => handleFieldEdit(affiliate.id, field, value)}
+            onBlur={(newValue) => handleFieldEdit(affiliate.id, field, newValue, value)}
+            onEnter={(newValue) => handleFieldEdit(affiliate.id, field, newValue, value)}
             onEscape={() => setEditingField(null)}
           />
         )
@@ -471,12 +477,12 @@ export default function AdminAffiliates() {
             defaultValue={value || ''}
                          onBlur={(e) => {
                const newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
-               handleFieldEdit(affiliate.id, field, newValue)
+               handleFieldEdit(affiliate.id, field, newValue, value)
              }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 const newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
-                handleFieldEdit(affiliate.id, field, newValue)
+                handleFieldEdit(affiliate.id, field, newValue, value)
               } else if (e.key === 'Escape') {
                 setEditingField(null)
               }
