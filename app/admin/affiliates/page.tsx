@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, TrendingUp, FileSpreadsheet, RefreshCw, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowLeft, ArrowRight } from "lucide-react"
@@ -457,19 +457,11 @@ export default function AdminAffiliates() {
         )
       } else if (type === 'textarea') {
         return (
-          <textarea
+          <ResizableTextarea
             defaultValue={value || ''}
-            onBlur={(e) => handleFieldEdit(affiliate.id, field, (e.target as HTMLTextAreaElement).value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.ctrlKey) {
-                                 handleFieldEdit(affiliate.id, field, (e.target as HTMLTextAreaElement).value)
-              } else if (e.key === 'Escape') {
-                setEditingField(null)
-              }
-            }}
-            autoFocus
-            rows={2}
-            className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+            onBlur={(value) => handleFieldEdit(affiliate.id, field, value)}
+            onEnter={(value) => handleFieldEdit(affiliate.id, field, value)}
+            onEscape={() => setEditingField(null)}
           />
         )
       } else {
@@ -576,6 +568,101 @@ export default function AdminAffiliates() {
        </div>
      )
    }
+
+  // Resizable Textarea Component for editing
+  const ResizableTextarea = ({ 
+    defaultValue, 
+    onBlur, 
+    onEnter, 
+    onEscape 
+  }: { 
+    defaultValue: string
+    onBlur: (value: string) => void
+    onEnter: (value: string) => void
+    onEscape: () => void
+  }) => {
+    const [size, setSize] = useState({ width: 300, height: 120 })
+    const [isResizing, setIsResizing] = useState(false)
+    const [startPos, setStartPos] = useState({ x: 0, y: 0 })
+    const [startSize, setStartSize] = useState({ width: 0, height: 0 })
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsResizing(true)
+      setStartPos({ x: e.clientX, y: e.clientY })
+      setStartSize({ width: size.width, height: size.height })
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return
+      const deltaX = e.clientX - startPos.x
+      const deltaY = e.clientY - startPos.y
+      setSize({
+        width: Math.max(250, startSize.width + deltaX),
+        height: Math.max(80, startSize.height + deltaY)
+      })
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+    }
+
+    useEffect(() => {
+      if (isResizing) {
+        document.addEventListener('mousemove', handleMouseMove)
+        document.addEventListener('mouseup', handleMouseUp)
+        return () => {
+          document.removeEventListener('mousemove', handleMouseMove)
+          document.removeEventListener('mouseup', handleMouseUp)
+        }
+      }
+    }, [isResizing, startPos, startSize])
+
+    return (
+      <div 
+        className="relative inline-block"
+        style={{ 
+          width: `${size.width}px`, 
+          height: `${size.height}px`,
+          minWidth: '250px',
+          minHeight: '80px'
+        }}
+      >
+        <textarea
+          ref={textareaRef}
+          defaultValue={defaultValue}
+          onBlur={(e) => onBlur(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+              onEnter(e.currentTarget.value)
+            } else if (e.key === 'Escape') {
+              onEscape()
+            }
+          }}
+          autoFocus
+          className="w-full h-full px-3 py-2 border-2 border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm resize-none"
+          style={{ 
+            paddingRight: '25px', // Space for resize handle
+            paddingBottom: '25px'
+          }}
+        />
+        
+        {/* Resize handle in bottom-right corner */}
+        <div
+          className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize bg-blue-500 hover:bg-blue-600 border-2 border-blue-700 shadow-lg rounded-tl-lg z-10"
+          onMouseDown={handleMouseDown}
+          title="🔄 Drag corner to resize text area"
+        >
+          {/* Resize icon */}
+          <div className="absolute bottom-0.5 right-0.5 text-white text-xs leading-none font-bold">
+            ⤡
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Resizable Tooltip Component with drag corner
   const ResizableTooltip = ({ content }: { content: string }) => {
