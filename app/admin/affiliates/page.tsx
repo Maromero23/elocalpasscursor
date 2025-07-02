@@ -58,6 +58,29 @@ interface AffiliateResponse {
   }
 }
 
+// Google Drive URL conversion utility
+const convertGoogleDriveUrl = (url: string): string => {
+  if (!url) return url
+  
+  // Check if it's a Google Drive share URL
+  const shareUrlRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)\/view/
+  const shareMatch = url.match(shareUrlRegex)
+  
+  if (shareMatch) {
+    const fileId = shareMatch[1]
+    return `https://drive.google.com/uc?id=${fileId}`
+  }
+  
+  // Check if it's already a direct Google Drive URL
+  const directUrlRegex = /https:\/\/drive\.google\.com\/uc\?id=([a-zA-Z0-9_-]+)/
+  if (directUrlRegex.test(url)) {
+    return url
+  }
+  
+  // Return original URL if not Google Drive
+  return url
+}
+
 export default function AdminAffiliates() {
   const { data: session } = useSession()
   const { notifications, removeToast, success, error } = useToast()
@@ -457,21 +480,38 @@ export default function AdminAffiliates() {
         )
       } else if (type === 'textarea') {
         return (
-          <textarea
-            defaultValue={value || ''}
-            onBlur={(e) => handleFieldEdit(affiliate.id, field, (e.target as HTMLTextAreaElement).value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.ctrlKey) {
-                                 handleFieldEdit(affiliate.id, field, (e.target as HTMLTextAreaElement).value)
-              } else if (e.key === 'Escape') {
-                setEditingField(null)
-              }
-            }}
-            autoFocus
-            rows={2}
-            className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-          />
+          <div className="relative inline-block" style={{ minWidth: '300px', minHeight: '80px' }}>
+            <textarea
+              defaultValue={value || ''}
+              onBlur={(e) => handleFieldEdit(affiliate.id, field, (e.target as HTMLTextAreaElement).value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                  handleFieldEdit(affiliate.id, field, (e.target as HTMLTextAreaElement).value)
+                } else if (e.key === 'Escape') {
+                  setEditingField(null)
+                }
+              }}
+              autoFocus
+              className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              style={{ 
+                minWidth: '300px',
+                minHeight: '80px',
+                resize: 'both',
+                overflow: 'auto'
+              }}
+              rows={3}
+            />
+            {/* Visual resize indicator in bottom-right corner */}
+            <div
+              className="absolute bottom-1 right-1 w-3 h-3 pointer-events-none"
+              style={{
+                background: 'linear-gradient(-45deg, transparent 30%, #94a3b8 30%, #94a3b8 35%, transparent 35%, transparent 65%, #94a3b8 65%, #94a3b8 70%, transparent 70%)',
+                opacity: 0.5
+              }}
+            />
+          </div>
         )
+      }
       } else {
         return (
           <input
@@ -1310,16 +1350,7 @@ export default function AdminAffiliates() {
                           <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
                         </td>
                         <td className="px-1 py-0.5" style={{ width: `${columnWidths.maps}px`, maxWidth: `${columnWidths.maps}px`, overflow: 'hidden' }}>
-                          <div className="flex items-center space-x-1">
-                            {affiliate.maps && (
-                              <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex-shrink-0" title="Open in Maps">
-                                📍
-                              </a>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <EditableField affiliate={affiliate} field="maps" value={affiliate.maps} type="url" />
-                            </div>
-                          </div>
+                          <EditableField affiliate={affiliate} field="maps" value={affiliate.maps} type="url" />
                         </td>
                         <td className="px-1 py-0.5" style={{ width: `${columnWidths.location}px`, maxWidth: `${columnWidths.location}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
@@ -1328,8 +1359,27 @@ export default function AdminAffiliates() {
                           <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
                         </td>
                         <td className="px-1 py-0.5 text-center" style={{ width: `${columnWidths.logo}px`, maxWidth: `${columnWidths.logo}px`, overflow: 'hidden' }}>
-                          {affiliate.logo && (
-                            <img src={affiliate.logo} alt="Logo" className="w-4 h-4 object-cover rounded mx-auto" title={affiliate.logo} />
+                          {affiliate.logo ? (
+                            <img 
+                              src={convertGoogleDriveUrl(affiliate.logo)} 
+                              alt={`${affiliate.name} Logo`}
+                              className="w-8 h-8 object-cover rounded mx-auto border border-gray-200 shadow-sm hover:w-12 hover:h-12 transition-all duration-200" 
+                              title={`${affiliate.name} - Click to view larger`}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.src = `data:image/svg+xml;base64,${btoa(`
+                                  <svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="32" height="32" fill="#f3f4f6"/>
+                                    <text x="16" y="20" font-family="sans-serif" font-size="10" text-anchor="middle" fill="#9ca3af">No Logo</text>
+                                  </svg>
+                                `)}`
+                                target.title = `Logo failed to load: ${affiliate.logo}`
+                              }}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-gray-100 rounded mx-auto flex items-center justify-center border border-gray-200">
+                              <span className="text-xs text-gray-400">No Logo</span>
+                            </div>
                           )}
                         </td>
                         <td className="px-1 py-0.5" style={{ width: `${columnWidths.facebook}px`, maxWidth: `${columnWidths.facebook}px`, overflow: 'hidden' }}>
@@ -1815,13 +1865,37 @@ export default function AdminAffiliates() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Logo URL</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Logo URL 
+                    <span className="text-green-600 font-normal">(Google Drive URLs auto-converted)</span>
+                  </label>
                   <input
                     type="url"
                     value={editingAffiliate.logo || ''}
                     onChange={(e) => setEditingAffiliate({...editingAffiliate, logo: e.target.value})}
+                    onBlur={(e) => {
+                      const convertedUrl = convertGoogleDriveUrl(e.target.value)
+                      if (convertedUrl !== e.target.value) {
+                        setEditingAffiliate({...editingAffiliate, logo: convertedUrl})
+                      }
+                    }}
+                    placeholder="Paste Google Drive share URL or direct image URL..."
                     className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
+                  {editingAffiliate.logo && (
+                    <div className="mt-2 flex items-center space-x-2">
+                      <img 
+                        src={convertGoogleDriveUrl(editingAffiliate.logo)} 
+                        alt="Logo Preview" 
+                        className="w-12 h-12 object-cover rounded border border-gray-200"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                        }}
+                      />
+                      <span className="text-xs text-gray-500">Preview</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div>
@@ -1986,4 +2060,4 @@ export default function AdminAffiliates() {
       </div>
     </ProtectedRoute>
   )
-} 
+}
