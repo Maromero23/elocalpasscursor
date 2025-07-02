@@ -570,7 +570,7 @@ export default function AdminAffiliates() {
        >
          <span className="truncate text-gray-900" style={{ maxWidth: '100%' }}>{displayValue()}</span>
          {/* Resizable Tooltip with drag corner */}
-         {value && String(value).length > 15 && (
+         {value && String(value).length > 10 && (
            <ResizableTooltip content={String(value)} />
          )}
        </div>
@@ -632,23 +632,29 @@ export default function AdminAffiliates() {
         <div 
           className="p-3 h-full overflow-auto text-gray-900 leading-relaxed"
           style={{ 
-            paddingRight: '20px', // Space for resize handle
-            paddingBottom: '20px'
+            paddingRight: '25px', // Space for resize handle
+            paddingBottom: '25px'
           }}
         >
+          <div className="text-xs text-orange-600 mb-1">📏 Resizable Tooltip</div>
           {content}
         </div>
         
         {/* Resize handle in bottom-right corner */}
         <div
-          className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize bg-yellow-500 hover:bg-yellow-600"
+          className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize bg-orange-500 hover:bg-orange-600 border-2 border-orange-700 shadow-lg"
           style={{
             clipPath: 'polygon(100% 0%, 0% 100%, 100% 100%)', // Triangle shape
-            borderBottomRightRadius: '6px'
+            borderBottomRightRadius: '8px'
           }}
           onMouseDown={handleMouseDown}
-          title="Drag to resize"
-        />
+          title="🔄 Drag corner to resize tooltip"
+        >
+          {/* Add visible resize icon */}
+          <div className="absolute bottom-0 right-0 text-white text-xs leading-none p-0.5">
+            ⤡
+          </div>
+        </div>
         
         {/* Arrow pointing down to the cell */}
         <div 
