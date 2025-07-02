@@ -608,31 +608,18 @@ export default function AdminAffiliates() {
          }}
        >
          <span className="truncate text-gray-900" style={{ maxWidth: '100%' }}>{displayValue()}</span>
-         {/* Large Vertical tooltip on hover - expands up/down, not horizontally */}
-         {value && String(value).length > 10 && (
+         {/* Simple tooltip on hover - only for very long text */}
+         {value && String(value).length > 25 && (
            <div 
-             className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-2xl p-4 text-sm z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+             className="absolute left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 opacity-0 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none whitespace-nowrap"
              style={{
-               top: '-15px', // Position above the cell
-               transform: 'translateX(-50%) translateY(-100%)', // Center horizontally, position above
-               minWidth: '300px',
-               maxWidth: '600px',
-               width: 'max-content',
-               wordWrap: 'break-word',
-               whiteSpace: 'pre-wrap',
-               lineHeight: '1.5',
-               maxHeight: '300px',
-               overflowY: 'auto'
+               top: '-30px',
+               transform: 'translateX(-50%)',
+               maxWidth: '200px',
+               fontSize: '11px'
              }}
            >
-             <div className="text-gray-900 font-medium leading-relaxed">
-               {String(value)}
-             </div>
-             {/* Arrow pointing down to the cell */}
-             <div 
-               className="absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-yellow-400"
-               style={{ top: '100%' }}
-             />
+             {String(value).length > 50 ? String(value).substring(0, 50) + '...' : String(value)}
            </div>
          )}
        </div>
