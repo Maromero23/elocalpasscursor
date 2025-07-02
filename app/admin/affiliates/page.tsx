@@ -569,26 +569,15 @@ export default function AdminAffiliates() {
          }}
        >
          <span className="truncate text-gray-900" style={{ maxWidth: '100%' }}>{displayValue()}</span>
-         {/* SUPER SIMPLE TEST - should show on ANY value */}
-         {value && (
-           <div 
-             className="fixed top-10 left-10 bg-red-500 text-white p-4 rounded shadow-lg z-[9999] text-lg font-bold"
-             style={{ 
-               border: '5px solid yellow',
-               minWidth: '300px',
-               minHeight: '100px'
-             }}
-           >
-             <div>🚨 TOOLTIP TEST WORKING! 🚨</div>
-             <div>Value: {String(value)}</div>
-             <div>Length: {String(value).length}</div>
-           </div>
+         {/* Resizable Tooltip with drag corner */}
+         {value && String(value).length > 10 && (
+           <ResizableTooltip content={String(value)} />
          )}
        </div>
      )
    }
 
-  // Resizable Tooltip Component
+  // Resizable Tooltip Component with drag corner
   const ResizableTooltip = ({ content }: { content: string }) => {
     const [size, setSize] = useState({ width: 350, height: 200 })
     const [isResizing, setIsResizing] = useState(false)
@@ -630,7 +619,7 @@ export default function AdminAffiliates() {
 
     return (
       <div 
-        className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-2xl text-sm z-50 opacity-100 transition-opacity duration-200"
+        className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-2xl text-sm z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         style={{
           top: '-15px',
           transform: 'translateX(-50%) translateY(-100%)',
@@ -647,22 +636,18 @@ export default function AdminAffiliates() {
             paddingBottom: '25px'
           }}
         >
-          <div className="text-xs text-orange-600 mb-1">📏 Resizable Tooltip</div>
+          <div className="text-xs text-blue-600 mb-1 font-semibold">📏 Resizable Tooltip</div>
           {content}
         </div>
         
         {/* Resize handle in bottom-right corner */}
         <div
-          className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize bg-orange-500 hover:bg-orange-600 border-2 border-orange-700 shadow-lg"
-          style={{
-            clipPath: 'polygon(100% 0%, 0% 100%, 100% 100%)', // Triangle shape
-            borderBottomRightRadius: '8px'
-          }}
+          className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize bg-orange-500 hover:bg-orange-600 border-2 border-orange-700 shadow-lg rounded-tl-lg"
           onMouseDown={handleMouseDown}
           title="🔄 Drag corner to resize tooltip"
         >
           {/* Add visible resize icon */}
-          <div className="absolute bottom-0 right-0 text-white text-xs leading-none p-0.5">
+          <div className="absolute bottom-0.5 right-0.5 text-white text-xs leading-none font-bold">
             ⤡
           </div>
         </div>
