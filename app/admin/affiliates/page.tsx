@@ -534,7 +534,6 @@ export default function AdminAffiliates() {
           />
         )
       }
-    }
 
     // Display mode
     const displayValue = () => {
@@ -878,7 +877,8 @@ export default function AdminAffiliates() {
 
 
   return (
-    <ProtectedRoute allowedRoles={["ADMIN"]}>      <style dangerouslySetInnerHTML={{__html: `
+    <ProtectedRoute allowedRoles={["ADMIN"]}>
+      <style dangerouslySetInnerHTML={{__html: `
         .table-scroll-container::-webkit-scrollbar {
           -webkit-appearance: none !important;
           height: 16px !important;
