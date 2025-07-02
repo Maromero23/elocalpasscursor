@@ -569,36 +569,95 @@ export default function AdminAffiliates() {
          }}
        >
          <span className="truncate text-gray-900" style={{ maxWidth: '100%' }}>{displayValue()}</span>
-         {/* Large Vertical tooltip on hover - expands up/down, not horizontally */}
-         {value && String(value).length > 10 && (
-           <div 
-             className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-2xl p-4 text-sm z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-             style={{
-               top: '-15px', // Position above the cell
-               transform: 'translateX(-50%) translateY(-100%)', // Center horizontally, position above
-               minWidth: '300px',
-               maxWidth: '600px',
-               width: 'max-content',
-               wordWrap: 'break-word',
-               whiteSpace: 'pre-wrap',
-               lineHeight: '1.5',
-               maxHeight: '300px',
-               overflowY: 'auto'
-             }}
-           >
-             <div className="text-gray-900 font-medium leading-relaxed">
-               {String(value)}
-             </div>
-             {/* Arrow pointing down to the cell */}
-             <div 
-               className="absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-yellow-400"
-               style={{ top: '100%' }}
-             />
-           </div>
+         {/* Resizable Tooltip with drag corner */}
+         {value && String(value).length > 15 && (
+           <ResizableTooltip content={String(value)} />
          )}
        </div>
      )
    }
+
+  // Resizable Tooltip Component
+  const ResizableTooltip = ({ content }: { content: string }) => {
+    const [size, setSize] = useState({ width: 350, height: 200 })
+    const [isResizing, setIsResizing] = useState(false)
+    const [startPos, setStartPos] = useState({ x: 0, y: 0 })
+    const [startSize, setStartSize] = useState({ width: 0, height: 0 })
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsResizing(true)
+      setStartPos({ x: e.clientX, y: e.clientY })
+      setStartSize({ width: size.width, height: size.height })
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return
+      const deltaX = e.clientX - startPos.x
+      const deltaY = e.clientY - startPos.y
+      setSize({
+        width: Math.max(200, startSize.width + deltaX),
+        height: Math.max(100, startSize.height + deltaY)
+      })
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+    }
+
+    useEffect(() => {
+      if (isResizing) {
+        document.addEventListener('mousemove', handleMouseMove)
+        document.addEventListener('mouseup', handleMouseUp)
+        return () => {
+          document.removeEventListener('mousemove', handleMouseMove)
+          document.removeEventListener('mouseup', handleMouseUp)
+        }
+      }
+    }, [isResizing, startPos, startSize])
+
+    return (
+      <div 
+        className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-2xl text-sm z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        style={{
+          top: '-15px',
+          transform: 'translateX(-50%) translateY(-100%)',
+          width: `${size.width}px`,
+          height: `${size.height}px`,
+          pointerEvents: 'auto'
+        }}
+      >
+        {/* Content area with scrolling */}
+        <div 
+          className="p-3 h-full overflow-auto text-gray-900 leading-relaxed"
+          style={{ 
+            paddingRight: '20px', // Space for resize handle
+            paddingBottom: '20px'
+          }}
+        >
+          {content}
+        </div>
+        
+        {/* Resize handle in bottom-right corner */}
+        <div
+          className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize bg-yellow-500 hover:bg-yellow-600"
+          style={{
+            clipPath: 'polygon(100% 0%, 0% 100%, 100% 100%)', // Triangle shape
+            borderBottomRightRadius: '6px'
+          }}
+          onMouseDown={handleMouseDown}
+          title="Drag to resize"
+        />
+        
+        {/* Arrow pointing down to the cell */}
+        <div 
+          className="absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-yellow-400"
+          style={{ top: '100%' }}
+        />
+      </div>
+    )
+  }
 
   // Sortable column header component
   const SortableHeader = ({ field, children, className = "" }: { 
