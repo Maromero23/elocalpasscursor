@@ -973,15 +973,26 @@ export default function AdminAffiliates() {
             )}
           </div>
         </div>
-        {/* Resize Handle - More Visible and Sensitive */}
+        {/* Resize Handle - Smaller and Better Positioned */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-4 cursor-col-resize hover:bg-blue-400 bg-gray-300 border-r-2 border-gray-400 group-hover:bg-gray-400 transition-colors duration-200"
+          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-400 border-r border-gray-600 group-hover:bg-blue-300 transition-colors duration-200"
           onMouseDown={handleMouseDown}
           title="Drag to resize column"
           style={{
-            background: isResizing ? '#3b82f6' : 'linear-gradient(to right, #e5e7eb, #9ca3af)',
-            opacity: isResizing ? 1 : 0.8,
-            zIndex: 10
+            background: isResizing ? '#3b82f6' : '#9ca3af',
+            opacity: isResizing ? 1 : 0.6,
+            zIndex: 10,
+            transform: 'translateX(-1px)' // Move it slightly left to not cover text
+          }}
+        />
+        {/* Invisible larger hit area for easier grabbing */}
+        <div
+          className="absolute right-0 top-0 bottom-0 w-3 cursor-col-resize opacity-0"
+          onMouseDown={handleMouseDown}
+          title="Drag to resize column"
+          style={{
+            zIndex: 9,
+            transform: 'translateX(-1px)'
           }}
         />
       </th>
@@ -1477,7 +1488,7 @@ export default function AdminAffiliates() {
                 }}
                 onScroll={syncScrollFromMain}
               >
-                <table className="min-w-full divide-y divide-gray-100" style={{ 
+                <table className="min-w-full divide-y divide-gray-400" style={{ 
                   minWidth: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0)}px`, 
                   fontSize: '11px',
                   tableLayout: 'fixed',
@@ -1579,7 +1590,7 @@ export default function AdminAffiliates() {
                       </ResizableHeader>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
+                  <tbody className="bg-white divide-y divide-gray-400">
                     {filteredAffiliates.map((affiliate) => (
                       <tr key={affiliate.id} className="hover:bg-gray-50" style={{ height: '28px', color: '#111827' }}>
                         <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 sticky left-0 bg-white z-10" style={{ width: `${actualColumnWidths.select}px`, maxWidth: `${actualColumnWidths.select}px`, overflow: 'hidden' }}>
@@ -2321,9 +2332,9 @@ export default function AdminAffiliates() {
                      <div 
              style={{ 
                width: Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 
-                     (Object.keys(actualColumnWidths).length * 2) + // 2px padding per column
-                     (Object.keys(actualColumnWidths).length * 2) + // 2px border per column
-                     20 + 'px', // Extra margin for safety
+                     (Object.keys(actualColumnWidths).length * 8) + // 8px padding per column (px-1 = 4px each side)
+                     (Object.keys(actualColumnWidths).length * 4) + // 4px for resize handles per column
+                     100 + 'px', // Much larger safety margin
                height: '1px'
              }}
            />
