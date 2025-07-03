@@ -35,23 +35,21 @@ export function FieldAnnotationMenu({
   useEffect(() => {
     if (!isOpen) return
 
-    const handleClickOutside = (event: Event) => {
-      const target = event.target as Node
-      // Don't close if clicking inside the menu
-      if (menuRef.current && menuRef.current.contains(target)) {
-        return
+    const handleDocumentClick = (event: MouseEvent) => {
+      // Only close if clicking outside the menu
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose()
       }
-      onClose()
     }
 
-    // Delay adding the listener to avoid immediate closure
+    // Add listener with a delay to avoid immediate closure
     const timer = setTimeout(() => {
-      document.addEventListener('click', handleClickOutside, true) // Use capture phase
-    }, 150) // Longer delay
+      document.addEventListener('click', handleDocumentClick)
+    }, 100)
 
     return () => {
       clearTimeout(timer)
-      document.removeEventListener('click', handleClickOutside, true)
+      document.removeEventListener('click', handleDocumentClick)
     }
   }, [isOpen, onClose])
 
@@ -100,6 +98,7 @@ export function FieldAnnotationMenu({
         left: Math.min(position.x, window.innerWidth - 300),
         top: Math.min(position.y, window.innerHeight - 300)
       }}
+
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
