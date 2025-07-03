@@ -541,6 +541,16 @@ export default function AdminAffiliates() {
       // Estimate text width (approximately 6.5px per character for small text)
       const estimatedTextWidth = textContent.length * 6.5
       
+      // Debug logging for specific fields
+      if (['discount', 'category', 'subCategory', 'service'].includes(field)) {
+        console.log(`🔍 Tooltip Debug - Field: ${field}, Value: "${value}", TextContent: "${textContent}", ColumnWidth: ${columnWidth}, AvailableWidth: ${availableWidth}, EstimatedWidth: ${estimatedTextWidth}, IsTruncated: ${estimatedTextWidth > availableWidth}`)
+      }
+      
+      // Special handling for narrow columns - show tooltip if content is longer than 5 characters
+      if (['discount', 'category', 'subCategory', 'service'].includes(field) && textContent.length > 5) {
+        return true
+      }
+      
       return estimatedTextWidth > availableWidth
     }
 
