@@ -665,7 +665,13 @@ export default function AdminAffiliates() {
        <div
          onClick={(e) => {
            e.stopPropagation()
-           setEditingField({ affiliateId: affiliate.id, field })
+           // For boolean fields, toggle the value directly instead of entering edit mode
+           if (type === 'boolean') {
+             const newValue = !value
+             handleFieldEdit(affiliate.id, field, newValue, value)
+           } else {
+             setEditingField({ affiliateId: affiliate.id, field })
+           }
          }}
          onContextMenu={(e) => {
            e.preventDefault()
