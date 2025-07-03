@@ -1366,7 +1366,6 @@ export default function AdminAffiliates() {
               <div 
                 className="overflow-x-scroll table-scroll-container" 
                 style={{ 
-                  maxHeight: '70vh',
                   scrollBehavior: 'auto', // Remove smooth for more predictable scrolling
                   scrollbarWidth: 'auto', // Firefox - force scrollbar to always show
                   msOverflowStyle: 'scrollbar', // IE - force scrollbar to always show
