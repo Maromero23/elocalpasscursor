@@ -541,11 +541,6 @@ export default function AdminAffiliates() {
       // Estimate text width (approximately 6.5px per character for small text)
       const estimatedTextWidth = textContent.length * 6.5
       
-      // Special handling for narrow columns - show tooltip if content is longer than 5 characters
-      if (['discount', 'category', 'subCategory', 'service'].includes(field) && textContent.length > 5) {
-        return true
-      }
-      
       return estimatedTextWidth > availableWidth
     }
 
