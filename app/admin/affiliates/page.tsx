@@ -661,9 +661,15 @@ export default function AdminAffiliates() {
            </div>
          )}
          
-         {/* Resizable Tooltip with drag corner - only show if no comment icon and content is long */}
-         {value && String(value).length > 10 && !fieldHasComment && (
-           <ResizableTooltip content={String(value)} />
+         {/* Simple tooltip on hover - only show if no comment icon and content is long */}
+         {value && String(value).length > 30 && !fieldHasComment && (
+           <div className="absolute left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none max-w-xs"
+                style={{
+                  top: '-25px',
+                  transform: 'translateX(-50%) translateY(-100%)'
+                }}>
+             {String(value)}
+           </div>
          )}
        </div>
      )
@@ -768,90 +774,7 @@ export default function AdminAffiliates() {
     )
   }
 
-  // Resizable Tooltip Component with drag corner
-  const ResizableTooltip = ({ content }: { content: string }) => {
-    const [size, setSize] = useState({ width: 350, height: 200 })
-    const [isResizing, setIsResizing] = useState(false)
-    const [startPos, setStartPos] = useState({ x: 0, y: 0 })
-    const [startSize, setStartSize] = useState({ width: 0, height: 0 })
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsResizing(true)
-      setStartPos({ x: e.clientX, y: e.clientY })
-      setStartSize({ width: size.width, height: size.height })
-    }
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return
-      e.preventDefault()
-      const deltaX = e.clientX - startPos.x
-      const deltaY = e.clientY - startPos.y
-      setSize({
-        width: Math.max(200, startSize.width + deltaX),
-        height: Math.max(100, startSize.height + deltaY)
-      })
-    }
-
-    const handleMouseUp = () => {
-      setIsResizing(false)
-    }
-
-    useEffect(() => {
-      if (isResizing) {
-        document.addEventListener('mousemove', handleMouseMove)
-        document.addEventListener('mouseup', handleMouseUp)
-        return () => {
-          document.removeEventListener('mousemove', handleMouseMove)
-          document.removeEventListener('mouseup', handleMouseUp)
-        }
-      }
-    }, [isResizing, startPos, startSize])
-
-    return (
-      <div 
-        className="absolute left-1/2 transform -translate-x-1/2 bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-2xl text-sm z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-        style={{
-          top: '-15px',
-          transform: 'translateX(-50%) translateY(-100%)',
-          width: `${size.width}px`,
-          height: `${size.height}px`,
-          pointerEvents: 'auto'
-        }}
-      >
-        {/* Content area with scrolling */}
-        <div 
-          className="p-3 h-full overflow-auto text-gray-900 leading-relaxed"
-          style={{ 
-            paddingRight: '25px', // Space for resize handle
-            paddingBottom: '25px'
-          }}
-        >
-          <div className="text-xs text-blue-600 mb-1 font-semibold">📏 Resizable Tooltip</div>
-          {content}
-        </div>
-        
-        {/* Resize handle in bottom-right corner */}
-        <div
-          className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize bg-orange-500 hover:bg-orange-600 border-2 border-orange-700 shadow-lg rounded-tl-lg"
-          onMouseDown={handleMouseDown}
-          title="🔄 Drag corner to resize tooltip"
-        >
-          {/* Add visible resize icon */}
-          <div className="absolute bottom-0.5 right-0.5 text-white text-xs leading-none font-bold">
-            ⤡
-          </div>
-        </div>
-        
-        {/* Arrow pointing down to the cell */}
-        <div 
-          className="absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-yellow-400"
-          style={{ top: '100%' }}
-        />
-      </div>
-    )
-  }
 
   // Sortable column header component
   const SortableHeader = ({ field, children, className = "" }: { 
