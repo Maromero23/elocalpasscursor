@@ -34,6 +34,7 @@ model User {
   location           Location?              @relation("LocationSellers", fields: [locationId], references: [id])
   savedConfig        SavedQRConfiguration?  @relation("UserSavedConfig", fields: [savedConfigId], references: [id])
   analytics          QRCodeAnalytics[]      @relation("SellerAnalytics")
+  preferences        UserPreferences?
 
   @@map("users")
 }
@@ -536,4 +537,15 @@ model AffiliateVisit {
   // Ensure once per day per affiliate per QR
   @@unique([affiliateId, qrCodeId, visitDate])
   @@map("affiliate_visits")
+}
+
+model UserPreferences {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  affiliateColumnWidths Json?    // Store column widths as JSON
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
 }
