@@ -177,7 +177,26 @@ export default function AdminAffiliates() {
       const affiliateIds = affiliates.map(a => a.id)
       loadAnnotations(affiliateIds)
     }
-  }, [affiliates, loadAnnotations])
+  }, [affiliates])
+
+  // Close context menu when clicking elsewhere
+  useEffect(() => {
+    if (contextMenu.isOpen) {
+      const handleClickOutside = () => {
+        closeContextMenu()
+      }
+      
+      // Delay adding the listener to avoid immediate closure
+      const timer = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside)
+      }, 100)
+      
+      return () => {
+        clearTimeout(timer)
+        document.removeEventListener('click', handleClickOutside)
+      }
+    }
+  }, [contextMenu.isOpen])
 
   const loadAffiliates = async () => {
     setSearching(true)
@@ -446,7 +465,12 @@ export default function AdminAffiliates() {
     e.stopPropagation()
     
     // Don't allow annotations on status field
-    if (fieldName === 'isActive') return
+    if (fieldName === 'isActive') {
+      console.log('Right-click on status field, ignoring')
+      return
+    }
+    
+    console.log('Opening context menu for:', { affiliateId, fieldName, x: e.clientX, y: e.clientY })
     
     setContextMenu({
       isOpen: true,
@@ -587,14 +611,20 @@ export default function AdminAffiliates() {
 
          return (
        <div
-         onClick={() => setEditingField({ affiliateId: affiliate.id, field })}
-         onContextMenu={(e) => handleRightClick(e, affiliate.id, field)}
+         onClick={(e) => {
+           e.stopPropagation()
+           setEditingField({ affiliateId: affiliate.id, field })
+         }}
+         onContextMenu={(e) => {
+           e.preventDefault()
+           e.stopPropagation()
+           handleRightClick(e, affiliate.id, field)
+         }}
          className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900`}
-         title={String(value || '')}
          style={{ 
            minHeight: '20px',
            height: '20px',
-           overflow: 'hidden',
+           overflow: 'visible', // Changed from hidden to visible for tooltips
            textOverflow: 'ellipsis',
            whiteSpace: 'nowrap',
            display: 'flex',
@@ -606,36 +636,25 @@ export default function AdminAffiliates() {
            backgroundColor: backgroundColor || 'transparent' // Apply annotation color
          }}
        >
-         <span className="truncate text-gray-900 flex-1" style={{ maxWidth: 'calc(100% - 20px)' }}>{displayValue()}</span>
+         <span className="truncate text-gray-900 flex-1" style={{ maxWidth: fieldHasComment ? 'calc(100% - 25px)' : '100%' }}>
+           {displayValue()}
+         </span>
          
          {/* Comment icon - only show if field has comment */}
          {fieldHasComment && (
            <div 
              className="ml-1 flex-shrink-0 relative"
-             onMouseEnter={(e) => {
-               // Show comment tooltip on hover
-               const tooltip = document.createElement('div')
-               tooltip.className = 'fixed z-50 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg max-w-xs'
-               tooltip.style.left = `${e.clientX}px`
-               tooltip.style.top = `${e.clientY - 30}px`
-               tooltip.textContent = annotation?.comment || ''
-               document.body.appendChild(tooltip)
-               
-               e.currentTarget.setAttribute('data-tooltip', 'true')
-               
-               const handleMouseLeave = () => {
-                 document.body.removeChild(tooltip)
-                 e.currentTarget.removeEventListener('mouseleave', handleMouseLeave)
-               }
-               e.currentTarget.addEventListener('mouseleave', handleMouseLeave)
+             title={`Comment: ${annotation?.comment || ''}`}
+             onClick={(e) => {
+               e.stopPropagation()
+               handleRightClick(e, affiliate.id, field)
              }}
-             title="Right-click to edit comment"
            >
-             <span className="text-blue-600 text-xs">💬</span>
+             <span className="text-blue-600 text-xs cursor-pointer hover:text-blue-800">💬</span>
            </div>
          )}
          
-         {/* Resizable Tooltip with drag corner - only show if no comment icon or comment icon not hovered */}
+         {/* Resizable Tooltip with drag corner - only show if no comment icon and content is long */}
          {value && String(value).length > 10 && !fieldHasComment && (
            <ResizableTooltip content={String(value)} />
          )}
@@ -759,6 +778,7 @@ export default function AdminAffiliates() {
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return
+      e.preventDefault()
       const deltaX = e.clientX - startPos.x
       const deltaY = e.clientY - startPos.y
       setSize({
@@ -2217,6 +2237,7 @@ export default function AdminAffiliates() {
         onClose={closeContextMenu}
         currentAnnotation={getAnnotation(contextMenu.affiliateId, contextMenu.fieldName)}
         onSave={async (color, comment) => {
+          console.log('Saving annotation:', { color, comment, affiliateId: contextMenu.affiliateId, fieldName: contextMenu.fieldName })
           const result = await saveAnnotation(contextMenu.affiliateId, contextMenu.fieldName, color, comment)
           if (result) {
             success('Annotation Saved', 'Field annotation updated successfully')
@@ -2226,6 +2247,7 @@ export default function AdminAffiliates() {
           return result
         }}
         onRemove={async () => {
+          console.log('Removing annotation:', { affiliateId: contextMenu.affiliateId, fieldName: contextMenu.fieldName })
           const result = await removeAnnotation(contextMenu.affiliateId, contextMenu.fieldName)
           if (result) {
             success('Annotation Removed', 'Field annotation removed successfully')
