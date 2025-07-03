@@ -451,7 +451,13 @@ export default function AdminAffiliates() {
         return // No change, just close editing mode without notification
       }
 
-      const updatedData = { ...affiliate, [field]: value }
+      // Convert boolean to string for fields that are stored as strings in the database
+      let finalValue = value
+      if (field === 'sticker' || field === 'termsConditions') {
+        finalValue = value ? 'yes' : null // Convert boolean to string/null
+      }
+
+      const updatedData = { ...affiliate, [field]: finalValue }
       
       const response = await fetch(`/api/admin/affiliates/${affiliateId}`, {
         method: 'PUT',
@@ -461,8 +467,10 @@ export default function AdminAffiliates() {
 
       const result = await response.json()
       if (result.success) {
+        // For frontend state, use the converted value for string fields
+        const stateValue = (field === 'sticker' || field === 'termsConditions') ? finalValue : value
         setAffiliates(affiliates.map(a => 
-          a.id === affiliateId ? { ...a, [field]: value } : a
+          a.id === affiliateId ? { ...a, [field]: stateValue } : a
         ))
         setEditingField(null)
         success('Updated', `${field} updated successfully`)
@@ -1577,7 +1585,7 @@ export default function AdminAffiliates() {
                           <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
                         </td>
                         <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.sticker}px`, maxWidth: `${actualColumnWidths.sticker}px`, overflow: 'hidden' }}>
-                          <EditableField affiliate={affiliate} field="sticker" value={affiliate.sticker} />
+                          <EditableField affiliate={affiliate} field="sticker" value={!!affiliate.sticker} type="boolean" />
                         </td>
                         <td className="px-1 py-0.5 text-center" style={{ width: `${actualColumnWidths.rating}px`, maxWidth: `${actualColumnWidths.rating}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="rating" value={affiliate.rating} type="number" />
