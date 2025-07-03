@@ -505,6 +505,48 @@ export default function AdminAffiliates() {
   }) => {
     const isEditing = editingField?.affiliateId === affiliate.id && editingField?.field === field
     
+    // Get annotation for styling
+    const annotation = getAnnotation(affiliate.id, field)
+    const backgroundColor = getFieldBackgroundColor(affiliate.id, field)
+    const fieldHasComment = hasComment(affiliate.id, field)
+
+    // Function to detect if content is truncated based on column width
+    const isContentTruncated = () => {
+      if (!value || value === '') return false
+      
+      const columnWidth = actualColumnWidths[field as keyof typeof actualColumnWidths] || 100
+      const availableWidth = fieldHasComment ? columnWidth - 30 : columnWidth - 10 // Account for padding and comment icon
+      
+      // Get text content based on field type and value
+      let textContent = ''
+      if (field === 'affiliateNum') {
+        textContent = `#${value || affiliate.id.slice(-3)}`
+      } else if (type === 'boolean') {
+        if (field === 'isActive') {
+          textContent = value ? 'Active' : 'Inactive'
+        } else {
+          textContent = value ? '✓ Yes' : 'No'
+        }
+      } else if (type === 'number' && field === 'rating' && value) {
+        textContent = `★ ${value}`
+      } else if (type === 'url' && value) {
+        if (field === 'maps') textContent = 'Maps'
+        else if (field === 'facebook') textContent = 'Facebook'
+        else if (field === 'instagram') textContent = 'Instagram'
+        else textContent = value.length > 30 ? value.substring(0, 30) + '...' : value
+      } else {
+        textContent = String(value || '')
+      }
+      
+      // Estimate text width (approximately 6.5px per character for small text)
+      const estimatedTextWidth = textContent.length * 6.5
+      
+      return estimatedTextWidth > availableWidth
+    }
+
+    const shouldShowTooltip = isContentTruncated() && !fieldHasComment
+    const shouldOpenModal = isContentTruncated() || type === 'textarea'
+    
     if (isEditing) {
       if (type === 'boolean') {
         return (
@@ -529,7 +571,7 @@ export default function AdminAffiliates() {
             <option value="yes">Yes</option>
           </select>
         )
-      } else if (type === 'textarea') {
+      } else if (type === 'textarea' || shouldOpenModal) {
         return (
           <ResizableTextarea
             defaultValue={value || ''}
@@ -619,62 +661,18 @@ export default function AdminAffiliates() {
        }
     }
 
-    // Get annotation for styling
-    const annotation = getAnnotation(affiliate.id, field)
-    const backgroundColor = getFieldBackgroundColor(affiliate.id, field)
-    const fieldHasComment = hasComment(affiliate.id, field)
-
-    // Function to detect if content is truncated based on column width
-    const isContentTruncated = () => {
-      if (!value || value === '') return false
-      
-      const columnWidth = actualColumnWidths[field as keyof typeof actualColumnWidths] || 100
-      const availableWidth = fieldHasComment ? columnWidth - 30 : columnWidth - 10 // Account for padding and comment icon
-      
-      // Get text content based on field type and value
-      let textContent = ''
-      if (field === 'affiliateNum') {
-        textContent = `#${value || affiliate.id.slice(-3)}`
-      } else if (type === 'boolean') {
-        if (field === 'isActive') {
-          textContent = value ? 'Active' : 'Inactive'
-        } else {
-          textContent = value ? '✓ Yes' : 'No'
-        }
-      } else if (type === 'number' && field === 'rating' && value) {
-        textContent = `★ ${value}`
-      } else if (type === 'url' && value) {
-        if (field === 'maps') textContent = 'Maps'
-        else if (field === 'facebook') textContent = 'Facebook'
-        else if (field === 'instagram') textContent = 'Instagram'
-        else textContent = value.length > 30 ? value.substring(0, 30) + '...' : value
-      } else {
-        textContent = String(value || '')
-      }
-      
-      // Estimate text width (approximately 6.5px per character for small text)
-      const estimatedTextWidth = textContent.length * 6.5
-      
-      return estimatedTextWidth > availableWidth
-    }
-
-    const shouldShowTooltip = isContentTruncated() && !fieldHasComment
-    const shouldOpenModal = isContentTruncated() || type === 'textarea'
-
          return (
        <div
          onClick={(e) => {
            e.stopPropagation()
-           if (shouldOpenModal) {
-             setEditingField({ affiliateId: affiliate.id, field })
-           }
+           setEditingField({ affiliateId: affiliate.id, field })
          }}
          onContextMenu={(e) => {
            e.preventDefault()
            e.stopPropagation()
            handleRightClick(e, affiliate.id, field)
          }}
-         className={`${shouldOpenModal ? 'cursor-pointer' : 'cursor-default'} hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900`}
+         className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900`}
          style={{ 
            minHeight: '20px',
            height: '20px',
@@ -1621,7 +1619,7 @@ export default function AdminAffiliates() {
 
               
               {/* Pagination */}
-              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6" style={{ marginBottom: '80px' }}>
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6" style={{ marginBottom: '20px' }}>
                 <div className="flex-1 flex justify-between sm:hidden">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
