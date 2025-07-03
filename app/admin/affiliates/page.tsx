@@ -541,11 +541,6 @@ export default function AdminAffiliates() {
       // Estimate text width (approximately 6.5px per character for small text)
       const estimatedTextWidth = textContent.length * 6.5
       
-      // Debug logging for specific fields
-      if (['discount', 'category', 'subCategory', 'service'].includes(field)) {
-        console.log(`🔍 Tooltip Debug - Field: ${field}, Value: "${value}", TextContent: "${textContent}", ColumnWidth: ${columnWidth}, AvailableWidth: ${availableWidth}, EstimatedWidth: ${estimatedTextWidth}, IsTruncated: ${estimatedTextWidth > availableWidth}`)
-      }
-      
       // Special handling for narrow columns - show tooltip if content is longer than 5 characters
       if (['discount', 'category', 'subCategory', 'service'].includes(field) && textContent.length > 5) {
         return true
@@ -554,7 +549,7 @@ export default function AdminAffiliates() {
       return estimatedTextWidth > availableWidth
     }
 
-    const shouldShowTooltip = isContentTruncated() && !fieldHasComment
+    const shouldShowTooltip = isContentTruncated() // Allow tooltips even when there are comments
     const shouldOpenModal = isContentTruncated() || type === 'textarea'
     
     if (isEditing) {
@@ -716,7 +711,7 @@ export default function AdminAffiliates() {
            </div>
          )}
          
-         {/* Simple tooltip on hover - only show if content is truncated and no comment icon */}
+         {/* Simple tooltip on hover - shows even when there are comments */}
          {shouldShowTooltip && (
            <div className="absolute left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none max-w-xs"
                 style={{
@@ -1554,7 +1549,7 @@ export default function AdminAffiliates() {
                         <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.location}px`, maxWidth: `${actualColumnWidths.location}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.discount}px`, maxWidth: `${actualColumnWidths.discount}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.discount}px`, maxWidth: `${actualColumnWidths.discount}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
                         </td>
                         <td className="px-1 py-0.5 text-center" style={{ width: `${actualColumnWidths.logo}px`, maxWidth: `${actualColumnWidths.logo}px`, overflow: 'hidden' }}>
@@ -1568,13 +1563,13 @@ export default function AdminAffiliates() {
                         <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.instagram}px`, maxWidth: `${actualColumnWidths.instagram}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="instagram" value={affiliate.instagram} type="url" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.category}px`, maxWidth: `${actualColumnWidths.category}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.category}px`, maxWidth: `${actualColumnWidths.category}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="category" value={affiliate.category} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.subCategory}px`, maxWidth: `${actualColumnWidths.subCategory}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.subCategory}px`, maxWidth: `${actualColumnWidths.subCategory}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="subCategory" value={affiliate.subCategory} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.service}px`, maxWidth: `${actualColumnWidths.service}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.service}px`, maxWidth: `${actualColumnWidths.service}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
                         </td>
                         <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.type}px`, maxWidth: `${actualColumnWidths.type}px`, overflow: 'hidden' }}>
