@@ -42,14 +42,14 @@ export function FieldAnnotationMenu({
       }
     }
 
-    // Add listener with a delay to avoid immediate closure
+    // Add listener with a much longer delay to ensure menu is fully rendered
     const timer = setTimeout(() => {
-      document.addEventListener('click', handleDocumentClick)
-    }, 100)
+      document.addEventListener('click', handleDocumentClick, false)
+    }, 500) // Much longer delay
 
     return () => {
       clearTimeout(timer)
-      document.removeEventListener('click', handleDocumentClick)
+      document.removeEventListener('click', handleDocumentClick, false)
     }
   }, [isOpen, onClose])
 
@@ -107,7 +107,10 @@ export function FieldAnnotationMenu({
           Field Annotation
         </h3>
         <button
-          onClick={onClose}
+          onClick={(e) => {
+            e.stopPropagation()
+            onClose()
+          }}
           className="text-gray-400 hover:text-gray-600"
         >
           <X className="w-4 h-4" />
@@ -123,7 +126,10 @@ export function FieldAnnotationMenu({
           {Object.entries(ANNOTATION_COLORS).map(([colorKey, colorConfig]) => (
             <button
               key={colorKey}
-              onClick={() => handleColorSelect(colorKey)}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleColorSelect(colorKey)
+              }}
               className={`
                 p-2 rounded-md border-2 text-xs font-medium transition-all
                 ${selectedColor === colorKey 
@@ -143,7 +149,10 @@ export function FieldAnnotationMenu({
         
         {/* Clear Color Option */}
         <button
-          onClick={() => setSelectedColor(null)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setSelectedColor(null)
+          }}
           className={`
             mt-2 w-full p-2 rounded-md border-2 text-xs font-medium transition-all
             ${selectedColor === null 
@@ -168,6 +177,8 @@ export function FieldAnnotationMenu({
           ref={commentInputRef}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
           placeholder="Add a note about what needs to be done..."
           className="w-full p-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           rows={3}
@@ -177,7 +188,10 @@ export function FieldAnnotationMenu({
       {/* Action Buttons */}
       <div className="flex gap-2">
         <button
-          onClick={handleSave}
+          onClick={(e) => {
+            e.stopPropagation()
+            handleSave()
+          }}
           disabled={saving}
           className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
@@ -186,7 +200,10 @@ export function FieldAnnotationMenu({
         
         {(currentAnnotation?.color || currentAnnotation?.comment) && (
           <button
-            onClick={handleRemove}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleRemove()
+            }}
             disabled={saving}
             className="px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
@@ -195,7 +212,10 @@ export function FieldAnnotationMenu({
         )}
         
         <button
-          onClick={onClose}
+          onClick={(e) => {
+            e.stopPropagation()
+            onClose()
+          }}
           disabled={saving}
           className="px-3 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
