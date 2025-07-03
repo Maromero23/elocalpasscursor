@@ -7,8 +7,21 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    console.log('🔍 API DEBUG: Session check:', {
+      hasSession: !!session,
+      userEmail: session?.user?.email,
+      userRole: session?.user?.role,
+      isAdmin: session?.user?.role === 'ADMIN'
+    })
+    
+    if (!session) {
+      console.log('❌ API DEBUG: No session found')
+      return NextResponse.json({ error: 'No session - Please login' }, { status: 401 })
+    }
+    
+    if (session.user.role !== 'ADMIN') {
+      console.log('❌ API DEBUG: Wrong role:', session.user.role, 'Expected: ADMIN')
+      return NextResponse.json({ error: 'Admin access required' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)

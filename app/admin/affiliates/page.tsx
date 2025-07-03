@@ -201,6 +201,12 @@ export default function AdminAffiliates() {
   const loadAffiliates = async () => {
     setSearching(true)
     try {
+      console.log('🔍 Frontend: Session status:', { 
+        hasSession: !!session, 
+        userEmail: session?.user?.email, 
+        userRole: session?.user?.role 
+      })
+
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: itemsPerPage.toString(),
@@ -213,17 +219,21 @@ export default function AdminAffiliates() {
       })
 
       const response = await fetch(`/api/admin/affiliates?${params}`)
+      console.log('🔍 Frontend: API Response status:', response.status)
+      
       const data: AffiliateResponse = await response.json()
+      console.log('🔍 Frontend: API Response data:', data)
 
       if (data.success) {
         setAffiliates(data.data)
         setPagination(data.pagination)
         setSummary(data.summary)
       } else {
-        error('Failed to load affiliates')
+        console.error('❌ Frontend: API returned error:', data)
+        error('Failed to load affiliates', (data as any).error || 'Unknown error')
       }
     } catch (err) {
-      console.error('Load error:', err)
+      console.error('❌ Frontend: Load error:', err)
       error('Failed to load affiliates')
     } finally {
       setSearching(false)
@@ -466,11 +476,8 @@ export default function AdminAffiliates() {
     
     // Don't allow annotations on status field
     if (fieldName === 'isActive') {
-      console.log('Right-click on status field, ignoring')
       return
     }
-    
-    console.log('Opening context menu for:', { affiliateId, fieldName, x: e.clientX, y: e.clientY })
     
     setContextMenu({
       isOpen: true,
@@ -2237,7 +2244,6 @@ export default function AdminAffiliates() {
         onClose={closeContextMenu}
         currentAnnotation={getAnnotation(contextMenu.affiliateId, contextMenu.fieldName)}
         onSave={async (color, comment) => {
-          console.log('Saving annotation:', { color, comment, affiliateId: contextMenu.affiliateId, fieldName: contextMenu.fieldName })
           const result = await saveAnnotation(contextMenu.affiliateId, contextMenu.fieldName, color, comment)
           if (result) {
             success('Annotation Saved', 'Field annotation updated successfully')
@@ -2247,7 +2253,6 @@ export default function AdminAffiliates() {
           return result
         }}
         onRemove={async () => {
-          console.log('Removing annotation:', { affiliateId: contextMenu.affiliateId, fieldName: contextMenu.fieldName })
           const result = await removeAnnotation(contextMenu.affiliateId, contextMenu.fieldName)
           if (result) {
             success('Annotation Removed', 'Field annotation removed successfully')
