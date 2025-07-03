@@ -103,6 +103,23 @@ export default function AdminAffiliates() {
     affiliateId: '',
     fieldName: ''
   })
+
+  // Refs for synchronizing scroll bars
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const mainScrollRef = useRef<HTMLDivElement>(null)
+
+  // Synchronize scroll positions
+  const syncScrollFromTop = (e: any) => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollLeft = e.target.scrollLeft
+    }
+  }
+
+  const syncScrollFromMain = (e: any) => {
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollLeft = e.target.scrollLeft
+    }
+  }
   
   // Sorting state
   const [sortField, setSortField] = useState<string>('')
@@ -593,13 +610,24 @@ export default function AdminAffiliates() {
           <input
             type={type === 'number' ? 'number' : 'text'}
             defaultValue={value || ''}
+            min={field === 'rating' ? '1' : undefined}
+            max={field === 'rating' ? '5' : undefined}
+            step={field === 'rating' ? '0.1' : undefined}
                          onBlur={(e) => {
-               const newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
+               let newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
+               // Constrain rating to 1-5 range
+               if (field === 'rating' && newValue !== null && typeof newValue === 'number') {
+                 newValue = Math.min(5, Math.max(1, newValue))
+               }
                handleFieldEdit(affiliate.id, field, newValue, value)
              }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                const newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
+                let newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
+                // Constrain rating to 1-5 range
+                if (field === 'rating' && newValue !== null && typeof newValue === 'number') {
+                  newValue = Math.min(5, Math.max(1, newValue))
+                }
                 handleFieldEdit(affiliate.id, field, newValue, value)
               } else if (e.key === 'Escape') {
                 setEditingField(null)
@@ -1376,8 +1404,36 @@ export default function AdminAffiliates() {
           ) : (
             <>
 
-              
+              {/* Top scroll bar - EXACTLY the same as bottom */}
               <div 
+                ref={topScrollRef}
+                className="overflow-x-scroll table-scroll-container" 
+                style={{ 
+                  scrollBehavior: 'auto', // Remove smooth for more predictable scrolling
+                  scrollbarWidth: 'auto', // Firefox - force scrollbar to always show
+                  msOverflowStyle: 'scrollbar', // IE - force scrollbar to always show
+                  WebkitOverflowScrolling: 'touch', // iOS - smoother scrolling
+                  height: '20px' // Just enough to show the scroll bar
+                }}
+
+                onWheel={(e) => {
+                  if (e.shiftKey) {
+                    e.preventDefault()
+                    const container = e.currentTarget
+                    container.scrollLeft += e.deltaY * 3 // Even more sensitive scrolling
+                  }
+                }}
+                onScroll={syncScrollFromTop}
+              >
+                <div style={{ 
+                  width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0)}px`,
+                  height: '1px' // Invisible content to create scroll area
+                }}></div>
+              </div>
+
+              {/* Main table container */}
+              <div 
+                ref={mainScrollRef}
                 className="overflow-x-scroll table-scroll-container" 
                 style={{ 
                   scrollBehavior: 'auto', // Remove smooth for more predictable scrolling
@@ -1393,6 +1449,7 @@ export default function AdminAffiliates() {
                     container.scrollLeft += e.deltaY * 3 // Even more sensitive scrolling
                   }
                 }}
+                onScroll={syncScrollFromMain}
               >
                 <table className="min-w-full divide-y divide-gray-100" style={{ 
                   minWidth: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0)}px`, 
