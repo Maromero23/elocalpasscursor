@@ -923,6 +923,9 @@ export default function AdminAffiliates() {
       setIsResizing(true)
       setStartX(e.clientX)
       setStartWidth(actualColumnWidths[field])
+      // Add visual feedback
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
     }
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -934,6 +937,9 @@ export default function AdminAffiliates() {
 
     const handleMouseUp = () => {
       setIsResizing(false)
+      // Reset visual feedback
+      document.body.style.cursor = 'default'
+      document.body.style.userSelect = 'auto'
     }
 
     // Add global mouse event listeners when resizing
@@ -952,7 +958,7 @@ export default function AdminAffiliates() {
     
     return (
       <th 
-        className={`px-1 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative ${sortable ? 'cursor-pointer hover:bg-gray-100' : ''}`}
+        className={`px-1 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative ${sortable ? 'cursor-pointer hover:bg-gray-100' : ''} group`}
         style={{ width: `${actualColumnWidths[field]}px`, maxWidth: `${actualColumnWidths[field]}px` }}
         onClick={sortable ? () => handleSort(field as string) : undefined}
       >
@@ -967,14 +973,15 @@ export default function AdminAffiliates() {
             )}
           </div>
         </div>
-        {/* Resize Handle - More Visible */}
+        {/* Resize Handle - More Visible and Sensitive */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-400 bg-gray-300 border-r border-gray-400"
+          className="absolute right-0 top-0 bottom-0 w-4 cursor-col-resize hover:bg-blue-400 bg-gray-300 border-r-2 border-gray-400 group-hover:bg-gray-400 transition-colors duration-200"
           onMouseDown={handleMouseDown}
           title="Drag to resize column"
           style={{
             background: isResizing ? '#3b82f6' : 'linear-gradient(to right, #e5e7eb, #9ca3af)',
-            opacity: 0.8
+            opacity: isResizing ? 1 : 0.8,
+            zIndex: 10
           }}
         />
       </th>
@@ -2311,12 +2318,15 @@ export default function AdminAffiliates() {
             }
           }}
         >
-          <div 
-            style={{ 
-              width: Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 'px',
-              height: '1px'
-            }}
-          />
+                     <div 
+             style={{ 
+               width: Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 
+                     (Object.keys(actualColumnWidths).length * 2) + // 2px padding per column
+                     (Object.keys(actualColumnWidths).length * 2) + // 2px border per column
+                     20 + 'px', // Extra margin for safety
+               height: '1px'
+             }}
+           />
         </div>
       </div>
       
