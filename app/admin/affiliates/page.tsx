@@ -179,24 +179,24 @@ export default function AdminAffiliates() {
     }
   }, [affiliates])
 
-  // Close context menu when clicking elsewhere
-  useEffect(() => {
-    if (contextMenu.isOpen) {
-      const handleClickOutside = () => {
-        closeContextMenu()
-      }
+  // TEMPORARILY DISABLED - Close context menu when clicking elsewhere
+  // useEffect(() => {
+  //   if (contextMenu.isOpen) {
+  //     const handleClickOutside = () => {
+  //       closeContextMenu()
+  //     }
       
-      // Delay adding the listener to avoid immediate closure
-      const timer = setTimeout(() => {
-        document.addEventListener('click', handleClickOutside)
-      }, 100)
+  //     // Delay adding the listener to avoid immediate closure
+  //     const timer = setTimeout(() => {
+  //       document.addEventListener('click', handleClickOutside)
+  //     }, 100)
       
-      return () => {
-        clearTimeout(timer)
-        document.removeEventListener('click', handleClickOutside)
-      }
-    }
-  }, [contextMenu.isOpen])
+  //     return () => {
+  //       clearTimeout(timer)
+  //       document.removeEventListener('click', handleClickOutside)
+  //     }
+  //   }
+  // }, [contextMenu.isOpen])
 
   const loadAffiliates = async () => {
     setSearching(true)
