@@ -179,24 +179,29 @@ export default function AdminAffiliates() {
     }
   }, [affiliates])
 
-  // TEMPORARILY DISABLED - Close context menu when clicking elsewhere
-  // useEffect(() => {
-  //   if (contextMenu.isOpen) {
-  //     const handleClickOutside = () => {
-  //       closeContextMenu()
-  //     }
+  // Close context menu when clicking elsewhere (but not in annotation menu)
+  useEffect(() => {
+    if (contextMenu.isOpen) {
+      const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as Element
+        // Don't close if clicking inside the annotation menu
+        if (target.closest('.fixed.z-50')) {
+          return
+        }
+        closeContextMenu()
+      }
       
-  //     // Delay adding the listener to avoid immediate closure
-  //     const timer = setTimeout(() => {
-  //       document.addEventListener('click', handleClickOutside)
-  //     }, 100)
+      // Delay adding the listener to avoid immediate closure
+      const timer = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside)
+      }, 200) // Longer delay than annotation menu
       
-  //     return () => {
-  //       clearTimeout(timer)
-  //       document.removeEventListener('click', handleClickOutside)
-  //     }
-  //   }
-  // }, [contextMenu.isOpen])
+      return () => {
+        clearTimeout(timer)
+        document.removeEventListener('click', handleClickOutside)
+      }
+    }
+  }, [contextMenu.isOpen])
 
   const loadAffiliates = async () => {
     setSearching(true)
@@ -619,18 +624,57 @@ export default function AdminAffiliates() {
     const backgroundColor = getFieldBackgroundColor(affiliate.id, field)
     const fieldHasComment = hasComment(affiliate.id, field)
 
+    // Function to detect if content is truncated based on column width
+    const isContentTruncated = () => {
+      if (!value || value === '') return false
+      
+      const columnWidth = actualColumnWidths[field as keyof typeof actualColumnWidths] || 100
+      const availableWidth = fieldHasComment ? columnWidth - 30 : columnWidth - 10 // Account for padding and comment icon
+      
+      // Get text content based on field type and value
+      let textContent = ''
+      if (field === 'affiliateNum') {
+        textContent = `#${value || affiliate.id.slice(-3)}`
+      } else if (type === 'boolean') {
+        if (field === 'isActive') {
+          textContent = value ? 'Active' : 'Inactive'
+        } else {
+          textContent = value ? '✓ Yes' : 'No'
+        }
+      } else if (type === 'number' && field === 'rating' && value) {
+        textContent = `★ ${value}`
+      } else if (type === 'url' && value) {
+        if (field === 'maps') textContent = 'Maps'
+        else if (field === 'facebook') textContent = 'Facebook'
+        else if (field === 'instagram') textContent = 'Instagram'
+        else textContent = value.length > 30 ? value.substring(0, 30) + '...' : value
+      } else {
+        textContent = String(value || '')
+      }
+      
+      // Estimate text width (approximately 6.5px per character for small text)
+      const estimatedTextWidth = textContent.length * 6.5
+      
+      return estimatedTextWidth > availableWidth
+    }
+
+    const shouldShowTooltip = isContentTruncated() && !fieldHasComment
+    const shouldOpenModal = isContentTruncated() || type === 'textarea'
+
          return (
        <div
          onClick={(e) => {
            e.stopPropagation()
-           setEditingField({ affiliateId: affiliate.id, field })
+           if (shouldOpenModal) {
+             setEditingField({ affiliateId: affiliate.id, field })
+           }
          }}
          onContextMenu={(e) => {
            e.preventDefault()
            e.stopPropagation()
            handleRightClick(e, affiliate.id, field)
          }}
-         className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900`}
+         className={`${shouldOpenModal ? 'cursor-pointer' : 'cursor-default'} hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900`}
          style={{ 
            minHeight: '20px',
            height: '20px',
@@ -664,14 +708,14 @@ export default function AdminAffiliates() {
            </div>
          )}
          
-         {/* Simple tooltip on hover - only show if no comment icon and content is long */}
-         {value && String(value).length > 30 && !fieldHasComment && (
+         {/* Simple tooltip on hover - only show if content is truncated and no comment icon */}
+         {shouldShowTooltip && (
            <div className="absolute left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none max-w-xs"
                 style={{
                   top: '-25px',
                   transform: 'translateX(-50%) translateY(-100%)'
                 }}>
-             {String(value)}
+             {value || ''}
            </div>
          )}
        </div>

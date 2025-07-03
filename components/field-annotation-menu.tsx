@@ -31,27 +31,27 @@ export function FieldAnnotationMenu({
     setComment(currentAnnotation?.comment || '')
   }, [currentAnnotation])
 
-  // TEMPORARILY DISABLED - Close menu when clicking outside
-  // useEffect(() => {
-  //   if (!isOpen) return
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!isOpen) return
 
-  //   const handleDocumentClick = (event: MouseEvent) => {
-  //     // Only close if clicking outside the menu
-  //     if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-  //       onClose()
-  //     }
-  //   }
+    const handleDocumentClick = (event: MouseEvent) => {
+      // Only close if clicking outside the menu
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose()
+      }
+    }
 
-  //   // Add listener with a much longer delay to ensure menu is fully rendered
-  //   const timer = setTimeout(() => {
-  //     document.addEventListener('click', handleDocumentClick, false)
-  //   }, 500) // Much longer delay
+    // Add listener with delay to ensure menu is fully rendered
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleDocumentClick, false)
+    }, 300) // Moderate delay
 
-  //   return () => {
-  //     clearTimeout(timer)
-  //     document.removeEventListener('click', handleDocumentClick, false)
-  //   }
-  // }, [isOpen, onClose])
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('click', handleDocumentClick, false)
+    }
+  }, [isOpen, onClose])
 
   // Focus comment input when menu opens and has comment
   useEffect(() => {
