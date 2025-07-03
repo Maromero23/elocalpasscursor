@@ -1051,12 +1051,54 @@ export default function AdminAffiliates() {
     )
   }
 
+  // Utility function to convert Google Drive URLs to direct image URLs
+  const convertGoogleDriveUrl = (url: string): string => {
+    if (!url) return url
+    
+    // Check if it's already a direct Google Drive URL
+    if (url.includes('drive.google.com/uc?')) {
+      return url
+    }
+    
+    // Convert sharing URL to direct URL
+    if (url.includes('drive.google.com')) {
+      const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/)
+      if (fileIdMatch) {
+        return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`
+      }
+    }
+    
+    return url
+  }
+
+  const handleBulkFixLogos = async () => {
+    try {
+      const response = await fetch('/api/admin/affiliates/bulk-fix-logos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        success('Logos Fixed', `Fixed ${result.fixed} logo URLs successfully`)
+        loadAffiliates()
+      } else {
+        error('Fix Failed', result.error)
+      }
+    } catch (err) {
+      error('Fix Failed', 'Unable to fix logo URLs')
+    }
+  }
+
   const handleLogoEdit = async (affiliate: Affiliate, newLogoUrl: string) => {
     try {
+      // Convert Google Drive URL to direct image URL
+      const convertedUrl = convertGoogleDriveUrl(newLogoUrl)
+      
       const response = await fetch(`/api/admin/affiliates/${affiliate.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...affiliate, logo: newLogoUrl })
+        body: JSON.stringify({ ...affiliate, logo: convertedUrl })
       })
       
       const result = await response.json()
@@ -1429,6 +1471,13 @@ export default function AdminAffiliates() {
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Selected
+              </button>
+              <button
+                onClick={handleBulkFixLogos}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                title="Convert all Google Drive sharing URLs to direct image URLs"
+              >
+                🔧 Fix All Logo URLs
               </button>
             </div>
           )}
