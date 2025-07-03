@@ -35,20 +35,23 @@ export function FieldAnnotationMenu({
   useEffect(() => {
     if (!isOpen) return
 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose()
+    const handleClickOutside = (event: Event) => {
+      const target = event.target as Node
+      // Don't close if clicking inside the menu
+      if (menuRef.current && menuRef.current.contains(target)) {
+        return
       }
+      onClose()
     }
 
     // Delay adding the listener to avoid immediate closure
     const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside)
-    }, 100)
+      document.addEventListener('click', handleClickOutside, true) // Use capture phase
+    }, 150) // Longer delay
 
     return () => {
       clearTimeout(timer)
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('click', handleClickOutside, true)
     }
   }, [isOpen, onClose])
 

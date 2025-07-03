@@ -600,6 +600,9 @@ export default function AdminAffiliates() {
            }
            return value || <span className="text-gray-400">-</span>
          default:
+           if (field === 'affiliateNum') {
+             return `#${value || affiliate.id.slice(-3)}`
+           }
            if (field === 'whatsApp' && value) {
              return (
                <a href={`https://wa.me/${value}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">
@@ -1449,8 +1452,8 @@ export default function AdminAffiliates() {
                             className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
                         </td>
-                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center font-medium" style={{ width: `${actualColumnWidths.affiliateNum}px`, maxWidth: `${actualColumnWidths.affiliateNum}px`, overflow: 'hidden', color: '#111827' }}>
-                          #{affiliate.affiliateNum || affiliate.id.slice(-3)}
+                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center font-medium" style={{ width: `${actualColumnWidths.affiliateNum}px`, maxWidth: `${actualColumnWidths.affiliateNum}px`, overflow: 'visible' }}>
+                          <EditableField affiliate={affiliate} field="affiliateNum" value={affiliate.affiliateNum} type="text" />
                         </td>
                         <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.status}px`, maxWidth: `${actualColumnWidths.status}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="isActive" value={affiliate.isActive} type="boolean" />
