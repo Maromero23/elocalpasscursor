@@ -560,6 +560,12 @@ export default function AdminAffiliates() {
       setLogoModal({isOpen: true, affiliate})
     }
 
+    // Convert Google Drive URL to direct image URL for display
+    const getDisplayUrl = (url: string) => {
+      if (!url) return url
+      return convertGoogleDriveUrl(url)
+    }
+
     if (!affiliate.logo || imageError) {
       return (
         <div 
@@ -580,7 +586,7 @@ export default function AdminAffiliates() {
           </div>
         )}
         <img 
-          src={affiliate.logo} 
+          src={getDisplayUrl(affiliate.logo)} 
           alt={`${affiliate.name} logo`}
           className="w-6 h-6 object-cover rounded cursor-pointer hover:opacity-80 border border-gray-300"
           onError={handleImageError}
@@ -2485,13 +2491,13 @@ export default function AdminAffiliates() {
                     Current Logo:
                   </label>
                   <div className="flex justify-center">
-                    {logoModal.affiliate.logo ? (
+                                        {logoModal.affiliate.logo ? (
                       <div className="relative">
                         <img 
-                          src={logoModal.affiliate.logo} 
+                          src={convertGoogleDriveUrl(logoModal.affiliate.logo)} 
                           alt="Current logo"
                           className="w-24 h-24 object-cover rounded border border-gray-300"
-                                                     onError={(e) => {
+                          onError={(e) => {
                              e.currentTarget.style.display = 'none'
                              const nextElement = e.currentTarget.nextElementSibling as HTMLElement
                              if (nextElement) nextElement.style.display = 'block'
