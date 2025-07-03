@@ -2477,15 +2477,84 @@ export default function AdminAffiliates() {
                   </p>
                 </div>
 
-                {/* Google Drive Instructions */}
+                {/* Smart Google Drive Integration */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <h4 className="text-sm font-medium text-blue-900 mb-2">📗 Google Drive Instructions:</h4>
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">📗 Google Drive Logo Library:</h4>
+                  
+                  {/* Location-based folder suggestions */}
+                  {logoModal.affiliate.city && (
+                    <div className="mb-3">
+                      <p className="text-xs text-blue-800 mb-2">
+                        <strong>Suggested folder for {logoModal.affiliate.city}:</strong>
+                      </p>
+                      {(() => {
+                        const city = logoModal.affiliate.city.toLowerCase()
+                        let folderLink = ''
+                        let folderName = ''
+                        
+                        if (city.includes('playa del carmen') || city.includes('playa')) {
+                          folderLink = 'https://drive.google.com/drive/folders/1qEtSGz0wnpsPvX3CZBhieIvwP3L3XZuW'
+                          folderName = 'Playa del Carmen'
+                        } else if (city.includes('tulum')) {
+                          folderLink = 'https://drive.google.com/drive/folders/1qEtSGz0wnpsPvX3CZBhieIvwP3L3XZuW'
+                          folderName = 'Tulum'
+                        } else if (city.includes('cancun') || city.includes('cancún')) {
+                          folderLink = 'https://drive.google.com/drive/folders/1qEtSGz0wnpsPvX3CZBhieIvwP3L3XZuW'
+                          folderName = 'Cancún Logos Afiliados'
+                        } else if (city.includes('cozumel')) {
+                          folderLink = 'https://drive.google.com/drive/folders/1qEtSGz0wnpsPvX3CZBhieIvwP3L3XZuW'
+                          folderName = 'Cozumel'
+                        } else if (city.includes('bacalar')) {
+                          folderLink = 'https://drive.google.com/drive/folders/1qEtSGz0wnpsPvX3CZBhieIvwP3L3XZuW'
+                          folderName = 'Bacalar'
+                        } else if (city.includes('isla mujeres')) {
+                          folderLink = 'https://drive.google.com/drive/folders/1qEtSGz0wnpsPvX3CZBhieIvwP3L3XZuW'
+                          folderName = 'Isla Mujeres Logos Afiliados'
+                        } else if (city.includes('puerto morelos')) {
+                          folderLink = 'https://drive.google.com/drive/folders/1qEtSGz0wnpsPvX3CZBhieIvwP3L3XZuW'
+                          folderName = 'Puerto Morelos Logos Afiliados'
+                        } else if (city.includes('puerto aventuras')) {
+                          folderLink = 'https://drive.google.com/drive/folders/1qEtSGz0wnpsPvX3CZBhieIvwP3L3XZuW'
+                          folderName = 'Puerto Aventuras Logos Afiliados'
+                        } else {
+                          folderLink = 'https://drive.google.com/drive/folders/1qEtSGz0wnpsPvX3CZBhieIvwP3L3XZuW'
+                          folderName = 'Browse All Folders'
+                        }
+                        
+                        return (
+                          <a 
+                            href={folderLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                          >
+                            📁 Open {folderName} →
+                          </a>
+                        )
+                      })()}
+                    </div>
+                  )}
+                  
+                  {/* General instructions */}
                   <ol className="text-xs text-blue-800 space-y-1">
-                    <li>1. Right-click the image in Google Drive → "Get link"</li>
-                    <li>2. Change permissions to "Anyone with the link can view"</li>
-                    <li>3. Copy the link and paste it above</li>
-                    <li>4. We'll automatically convert it to a direct image URL</li>
+                    <li>1. Click the blue folder button above to browse logos</li>
+                    <li>2. Right-click the image → "Get link"</li>
+                    <li>3. Change permissions to "Anyone with the link can view"</li>
+                    <li>4. Copy the link and paste it above</li>
+                    <li>5. We'll automatically convert it to a direct image URL</li>
                   </ol>
+                  
+                  {/* Quick access to main folder */}
+                  <div className="mt-3 pt-2 border-t border-blue-200">
+                    <a 
+                      href="https://drive.google.com/drive/folders/1qEtSGz0wnpsPvX3CZBhieIvwP3L3XZuW?usp=sharing" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-700 hover:text-blue-900 underline"
+                    >
+                      🗂️ Browse all logo folders →
+                    </a>
+                  </div>
                 </div>
 
                 {/* Action Buttons */}
