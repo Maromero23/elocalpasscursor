@@ -710,8 +710,8 @@ export default function AdminAffiliates() {
          {shouldShowTooltip && (
            <div className="absolute left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none max-w-xs"
                 style={{
-                  top: '-25px',
-                  transform: 'translateX(-50%) translateY(-100%)'
+                  top: affiliate.id === filteredAffiliates[0]?.id ? '25px' : '-25px',
+                  transform: affiliate.id === filteredAffiliates[0]?.id ? 'translateX(-50%)' : 'translateX(-50%) translateY(-100%)'
                 }}>
              {value || ''}
            </div>
