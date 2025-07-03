@@ -107,17 +107,36 @@ export default function AdminAffiliates() {
   // Refs for synchronizing scroll bars
   const topScrollRef = useRef<HTMLDivElement>(null)
   const mainScrollRef = useRef<HTMLDivElement>(null)
+  const fixedScrollRef = useRef<HTMLDivElement>(null)
 
   // Synchronize scroll positions
   const syncScrollFromTop = (e: any) => {
+    const scrollLeft = e.target.scrollLeft
     if (mainScrollRef.current) {
-      mainScrollRef.current.scrollLeft = e.target.scrollLeft
+      mainScrollRef.current.scrollLeft = scrollLeft
+    }
+    if (fixedScrollRef.current) {
+      fixedScrollRef.current.scrollLeft = scrollLeft
     }
   }
 
   const syncScrollFromMain = (e: any) => {
+    const scrollLeft = e.target.scrollLeft
     if (topScrollRef.current) {
-      topScrollRef.current.scrollLeft = e.target.scrollLeft
+      topScrollRef.current.scrollLeft = scrollLeft
+    }
+    if (fixedScrollRef.current) {
+      fixedScrollRef.current.scrollLeft = scrollLeft
+    }
+  }
+
+  const syncScrollFromFixed = (e: any) => {
+    const scrollLeft = e.target.scrollLeft
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollLeft = scrollLeft
+    }
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollLeft = scrollLeft
     }
   }
   
@@ -612,21 +631,21 @@ export default function AdminAffiliates() {
             defaultValue={value || ''}
             min={field === 'rating' ? '1' : undefined}
             max={field === 'rating' ? '5' : undefined}
-            step={field === 'rating' ? '0.1' : undefined}
+            step={field === 'rating' ? '1' : undefined}
                          onBlur={(e) => {
                let newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
-               // Constrain rating to 1-5 range
+               // Constrain rating to 1-5 range (whole numbers only)
                if (field === 'rating' && newValue !== null && typeof newValue === 'number') {
-                 newValue = Math.min(5, Math.max(1, newValue))
+                 newValue = Math.round(Math.min(5, Math.max(1, newValue)))
                }
                handleFieldEdit(affiliate.id, field, newValue, value)
              }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 let newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
-                // Constrain rating to 1-5 range
+                // Constrain rating to 1-5 range (whole numbers only)
                 if (field === 'rating' && newValue !== null && typeof newValue === 'number') {
-                  newValue = Math.min(5, Math.max(1, newValue))
+                  newValue = Math.round(Math.min(5, Math.max(1, newValue)))
                 }
                 handleFieldEdit(affiliate.id, field, newValue, value)
               } else if (e.key === 'Escape') {
@@ -2191,9 +2210,9 @@ export default function AdminAffiliates() {
                     type="number"
                     min="1"
                     max="5"
-                    step="0.1"
+                    step="1"
                     value={editingAffiliate.rating || ''}
-                    onChange={(e) => setEditingAffiliate({...editingAffiliate, rating: parseFloat(e.target.value) || null})}
+                    onChange={(e) => setEditingAffiliate({...editingAffiliate, rating: Math.round(Math.min(5, Math.max(1, parseFloat(e.target.value) || 1)))})}
                     className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
@@ -2272,6 +2291,34 @@ export default function AdminAffiliates() {
           </div>
         </div>
       )}
+      
+      {/* Fixed Bottom Scroll Bar */}
+      <div 
+        className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-40"
+        style={{ height: '20px' }}
+      >
+        <div
+          ref={fixedScrollRef}
+          className="w-full h-full overflow-x-auto overflow-y-hidden"
+          onScroll={syncScrollFromFixed}
+          onWheel={(e) => {
+            // Allow horizontal scrolling with mouse wheel
+            if (e.deltaY !== 0) {
+              e.preventDefault()
+              if (fixedScrollRef.current) {
+                fixedScrollRef.current.scrollLeft += e.deltaY
+              }
+            }
+          }}
+        >
+          <div 
+            style={{ 
+              width: Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 'px',
+              height: '1px'
+            }}
+          />
+        </div>
+      </div>
       
       <ToastNotifications notifications={notifications} onRemove={removeToast} />
       
