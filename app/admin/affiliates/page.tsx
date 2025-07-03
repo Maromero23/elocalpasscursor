@@ -163,6 +163,7 @@ export default function AdminAffiliates() {
   const [csvData, setCsvData] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingAffiliate, setEditingAffiliate] = useState<Affiliate | null>(null)
+  const [logoModal, setLogoModal] = useState<{isOpen: boolean, affiliate: Affiliate | null}>({isOpen: false, affiliate: null})
   const [csvPreview, setCsvPreview] = useState<any>(null)
   const [previewing, setPreviewing] = useState(false)
 
@@ -541,6 +542,57 @@ export default function AdminAffiliates() {
   }
 
   // Inline editing component
+  const LogoImage = ({ affiliate }: { affiliate: Affiliate }) => {
+    const [imageError, setImageError] = useState(false)
+    const [imageLoading, setImageLoading] = useState(true)
+
+    const handleImageError = () => {
+      setImageError(true)
+      setImageLoading(false)
+    }
+
+    const handleImageLoad = () => {
+      setImageError(false)
+      setImageLoading(false)
+    }
+
+    const handleLogoClick = () => {
+      setLogoModal({isOpen: true, affiliate})
+    }
+
+    if (!affiliate.logo || imageError) {
+      return (
+        <div 
+          className="w-6 h-6 bg-gray-200 rounded border-2 border-dashed border-gray-400 flex items-center justify-center cursor-pointer hover:bg-gray-300 mx-auto"
+          onClick={handleLogoClick}
+          title="Click to add/edit logo URL"
+        >
+          <span className="text-gray-500 text-xs">📷</span>
+        </div>
+      )
+    }
+
+    return (
+      <div className="relative w-6 h-6 mx-auto">
+        {imageLoading && (
+          <div className="absolute inset-0 bg-gray-200 rounded animate-pulse flex items-center justify-center">
+            <span className="text-gray-400 text-xs">⏳</span>
+          </div>
+        )}
+        <img 
+          src={affiliate.logo} 
+          alt={`${affiliate.name} logo`}
+          className="w-6 h-6 object-cover rounded cursor-pointer hover:opacity-80 border border-gray-300"
+          onError={handleImageError}
+          onLoad={handleImageLoad}
+          onClick={handleLogoClick}
+          title="Click to edit logo URL"
+          style={{ display: imageLoading ? 'none' : 'block' }}
+        />
+      </div>
+    )
+  }
+
   const EditableField = ({ affiliate, field, value, type = 'text' }: {
     affiliate: Affiliate
     field: string 
@@ -997,6 +1049,27 @@ export default function AdminAffiliates() {
         />
       </th>
     )
+  }
+
+  const handleLogoEdit = async (affiliate: Affiliate, newLogoUrl: string) => {
+    try {
+      const response = await fetch(`/api/admin/affiliates/${affiliate.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...affiliate, logo: newLogoUrl })
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        success('Logo Updated', 'Logo URL updated successfully')
+        setLogoModal({isOpen: false, affiliate: null})
+        loadAffiliates()
+      } else {
+        error('Update Failed', result.error)
+      }
+    } catch (err) {
+      error('Update Failed', 'Unable to update logo URL')
+    }
   }
 
   const handleDuplicateAffiliate = async (affiliate: Affiliate) => {
@@ -1655,10 +1728,8 @@ export default function AdminAffiliates() {
                         <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.discount}px`, maxWidth: `${actualColumnWidths.discount}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${actualColumnWidths.logo}px`, maxWidth: `${actualColumnWidths.logo}px`, overflow: 'hidden' }}>
-                          {affiliate.logo && (
-                            <img src={affiliate.logo} alt="Logo" className="w-4 h-4 object-cover rounded mx-auto" title={affiliate.logo} />
-                          )}
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${actualColumnWidths.logo}px`, maxWidth: `${actualColumnWidths.logo}px`, overflow: 'visible' }}>
+                          <LogoImage affiliate={affiliate} />
                         </td>
                         <td className="px-1 py-0.5" style={{ width: `${actualColumnWidths.facebook}px`, maxWidth: `${actualColumnWidths.facebook}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="facebook" value={affiliate.facebook} type="url" />
@@ -2341,6 +2412,116 @@ export default function AdminAffiliates() {
         </div>
       </div>
       
+      {/* Logo Edit Modal */}
+      {logoModal.isOpen && logoModal.affiliate && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-6 border w-11/12 md:w-2/3 lg:w-1/2 xl:w-1/3 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Edit Logo for {logoModal.affiliate.name}
+                </h3>
+                <button
+                  onClick={() => setLogoModal({isOpen: false, affiliate: null})}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Current Logo Preview */}
+                <div className="text-center">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Logo:
+                  </label>
+                  <div className="flex justify-center">
+                    {logoModal.affiliate.logo ? (
+                      <div className="relative">
+                        <img 
+                          src={logoModal.affiliate.logo} 
+                          alt="Current logo"
+                          className="w-24 h-24 object-cover rounded border border-gray-300"
+                                                     onError={(e) => {
+                             e.currentTarget.style.display = 'none'
+                             const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                             if (nextElement) nextElement.style.display = 'block'
+                           }}
+                        />
+                        <div className="w-24 h-24 bg-gray-200 rounded border-2 border-dashed border-gray-400 flex items-center justify-center hidden">
+                          <span className="text-gray-500 text-sm">❌ Broken</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-24 h-24 bg-gray-200 rounded border-2 border-dashed border-gray-400 flex items-center justify-center">
+                        <span className="text-gray-500 text-sm">No Logo</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Logo URL Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Logo URL:
+                  </label>
+                  <input
+                    type="url"
+                    defaultValue={logoModal.affiliate.logo || ''}
+                    placeholder="https://example.com/logo.png"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    id="logoUrlInput"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Paste the direct URL to the image file. Google Drive links will be converted automatically.
+                  </p>
+                </div>
+
+                {/* Google Drive Instructions */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">📗 Google Drive Instructions:</h4>
+                  <ol className="text-xs text-blue-800 space-y-1">
+                    <li>1. Right-click the image in Google Drive → "Get link"</li>
+                    <li>2. Change permissions to "Anyone with the link can view"</li>
+                    <li>3. Copy the link and paste it above</li>
+                    <li>4. We'll automatically convert it to a direct image URL</li>
+                  </ol>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-3 mt-6 pt-3 border-t">
+                  <button
+                    onClick={() => setLogoModal({isOpen: false, affiliate: null})}
+                    className="px-4 py-2 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const input = document.getElementById('logoUrlInput') as HTMLInputElement
+                      let logoUrl = input.value.trim()
+                      
+                      // Convert Google Drive links to direct image URLs
+                      if (logoUrl.includes('drive.google.com')) {
+                        const fileIdMatch = logoUrl.match(/\/d\/([a-zA-Z0-9-_]+)/)
+                        if (fileIdMatch) {
+                          logoUrl = `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`
+                        }
+                      }
+                      
+                      handleLogoEdit(logoModal.affiliate!, logoUrl)
+                    }}
+                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Update Logo
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ToastNotifications notifications={notifications} onRemove={removeToast} />
       
       {/* Field Annotation Context Menu */}
