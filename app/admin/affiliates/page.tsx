@@ -7,6 +7,8 @@ import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, Tr
 import { ToastNotifications } from "@/components/toast-notification"
 import { useToast } from "@/hooks/use-toast"
 import { useUserPreferences } from "@/hooks/use-user-preferences"
+import { useFieldAnnotations } from "@/hooks/use-field-annotations"
+import { FieldAnnotationMenu } from "@/components/field-annotation-menu"
 
 interface Affiliate {
   id: string
@@ -63,6 +65,14 @@ export default function AdminAffiliates() {
   const { data: session } = useSession()
   const { notifications, removeToast, success, error } = useToast()
   const { columnWidths, updateColumnWidth, loading: preferencesLoading } = useUserPreferences()
+  const { 
+    loadAnnotations, 
+    saveAnnotation, 
+    removeAnnotation, 
+    getAnnotation, 
+    getFieldBackgroundColor, 
+    hasComment 
+  } = useFieldAnnotations()
   
   const [affiliates, setAffiliates] = useState<Affiliate[]>([])
   const [loading, setLoading] = useState(true)
@@ -80,6 +90,19 @@ export default function AdminAffiliates() {
   const [ratingFilter, setRatingFilter] = useState('')
   const [selectedAffiliates, setSelectedAffiliates] = useState<string[]>([])
   const [editingField, setEditingField] = useState<{affiliateId: string, field: string} | null>(null)
+  
+  // Field annotation context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean
+    position: { x: number; y: number }
+    affiliateId: string
+    fieldName: string
+  }>({
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    affiliateId: '',
+    fieldName: ''
+  })
   
   // Sorting state
   const [sortField, setSortField] = useState<string>('')
@@ -147,6 +170,14 @@ export default function AdminAffiliates() {
   useEffect(() => {
     loadAffiliates()
   }, [currentPage, itemsPerPage, searchTerm, statusFilter, categoryFilter, cityFilter, typeFilter, ratingFilter])
+
+  // Load annotations when affiliates change
+  useEffect(() => {
+    if (affiliates.length > 0) {
+      const affiliateIds = affiliates.map(a => a.id)
+      loadAnnotations(affiliateIds)
+    }
+  }, [affiliates, loadAnnotations])
 
   const loadAffiliates = async () => {
     setSearching(true)
@@ -409,6 +440,26 @@ export default function AdminAffiliates() {
     }
   }
 
+  // Context menu handlers
+  const handleRightClick = (e: React.MouseEvent, affiliateId: string, fieldName: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Don't allow annotations on status field
+    if (fieldName === 'isActive') return
+    
+    setContextMenu({
+      isOpen: true,
+      position: { x: e.clientX, y: e.clientY },
+      affiliateId,
+      fieldName
+    })
+  }
+
+  const closeContextMenu = () => {
+    setContextMenu(prev => ({ ...prev, isOpen: false }))
+  }
+
   // Inline editing component
   const EditableField = ({ affiliate, field, value, type = 'text' }: {
     affiliate: Affiliate
@@ -529,9 +580,15 @@ export default function AdminAffiliates() {
        }
     }
 
+    // Get annotation for styling
+    const annotation = getAnnotation(affiliate.id, field)
+    const backgroundColor = getFieldBackgroundColor(affiliate.id, field)
+    const fieldHasComment = hasComment(affiliate.id, field)
+
          return (
        <div
          onClick={() => setEditingField({ affiliateId: affiliate.id, field })}
+         onContextMenu={(e) => handleRightClick(e, affiliate.id, field)}
          className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900`}
          title={String(value || '')}
          style={{ 
@@ -542,14 +599,44 @@ export default function AdminAffiliates() {
            whiteSpace: 'nowrap',
            display: 'flex',
            alignItems: 'center',
+           justifyContent: 'space-between',
            color: '#111827', // Ensure black text
            width: '100%', // Force full width of container
-           maxWidth: '100%' // Prevent expansion beyond container
+           maxWidth: '100%', // Prevent expansion beyond container
+           backgroundColor: backgroundColor || 'transparent' // Apply annotation color
          }}
        >
-         <span className="truncate text-gray-900" style={{ maxWidth: '100%' }}>{displayValue()}</span>
-         {/* Resizable Tooltip with drag corner */}
-         {value && String(value).length > 10 && (
+         <span className="truncate text-gray-900 flex-1" style={{ maxWidth: 'calc(100% - 20px)' }}>{displayValue()}</span>
+         
+         {/* Comment icon - only show if field has comment */}
+         {fieldHasComment && (
+           <div 
+             className="ml-1 flex-shrink-0 relative"
+             onMouseEnter={(e) => {
+               // Show comment tooltip on hover
+               const tooltip = document.createElement('div')
+               tooltip.className = 'fixed z-50 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg max-w-xs'
+               tooltip.style.left = `${e.clientX}px`
+               tooltip.style.top = `${e.clientY - 30}px`
+               tooltip.textContent = annotation?.comment || ''
+               document.body.appendChild(tooltip)
+               
+               e.currentTarget.setAttribute('data-tooltip', 'true')
+               
+               const handleMouseLeave = () => {
+                 document.body.removeChild(tooltip)
+                 e.currentTarget.removeEventListener('mouseleave', handleMouseLeave)
+               }
+               e.currentTarget.addEventListener('mouseleave', handleMouseLeave)
+             }}
+             title="Right-click to edit comment"
+           >
+             <span className="text-blue-600 text-xs">💬</span>
+           </div>
+         )}
+         
+         {/* Resizable Tooltip with drag corner - only show if no comment icon or comment icon not hovered */}
+         {value && String(value).length > 10 && !fieldHasComment && (
            <ResizableTooltip content={String(value)} />
          )}
        </div>
@@ -2122,6 +2209,32 @@ export default function AdminAffiliates() {
       )}
       
       <ToastNotifications notifications={notifications} onRemove={removeToast} />
+      
+      {/* Field Annotation Context Menu */}
+      <FieldAnnotationMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        onClose={closeContextMenu}
+        currentAnnotation={getAnnotation(contextMenu.affiliateId, contextMenu.fieldName)}
+        onSave={async (color, comment) => {
+          const result = await saveAnnotation(contextMenu.affiliateId, contextMenu.fieldName, color, comment)
+          if (result) {
+            success('Annotation Saved', 'Field annotation updated successfully')
+          } else {
+            error('Save Failed', 'Unable to save annotation')
+          }
+          return result
+        }}
+        onRemove={async () => {
+          const result = await removeAnnotation(contextMenu.affiliateId, contextMenu.fieldName)
+          if (result) {
+            success('Annotation Removed', 'Field annotation removed successfully')
+          } else {
+            error('Remove Failed', 'Unable to remove annotation')
+          }
+          return result
+        }}
+      />
       </div>
     </ProtectedRoute>
   )

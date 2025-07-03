@@ -35,6 +35,7 @@ model User {
   savedConfig        SavedQRConfiguration?  @relation("UserSavedConfig", fields: [savedConfigId], references: [id])
   analytics          QRCodeAnalytics[]      @relation("SellerAnalytics")
   preferences        UserPreferences?
+  fieldAnnotations   AffiliateFieldAnnotation[] @relation("FieldAnnotationCreator")
 
   @@map("users")
 }
@@ -495,8 +496,9 @@ model Affiliate {
   updatedAt      DateTime @updatedAt
   
   // Relations
-  sessions       AffiliateSession[] @relation("AffiliateSessions") 
-  visits         AffiliateVisit[]   @relation("AffiliateVisits")
+  sessions       AffiliateSession[]         @relation("AffiliateSessions") 
+  visits         AffiliateVisit[]           @relation("AffiliateVisits")
+  annotations    AffiliateFieldAnnotation[] @relation()
   
   @@map("affiliates")
 }
@@ -548,4 +550,20 @@ model UserPreferences {
   user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
+}
+
+model AffiliateFieldAnnotation {
+  id          String   @id @default(cuid())
+  affiliateId String
+  fieldName   String   // e.g., "name", "email", "address", etc.
+  color       String?  // "yellow", "red", "green", "blue", "orange", or null for no color
+  comment     String?  // Optional comment/note
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String   // User ID who created this annotation
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  creator     User     @relation("FieldAnnotationCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@unique([affiliateId, fieldName])
+  @@map("affiliate_field_annotations")
 }
