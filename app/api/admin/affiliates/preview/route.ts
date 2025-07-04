@@ -79,7 +79,9 @@ export async function POST(request: NextRequest) {
       if (!lines[i].trim()) continue
       
       const values = parseCSVLine(lines[i])
-      const isValid = values.length >= 6 && values[5]?.includes('@')
+      // Valid if: has enough columns AND (email is empty OR contains @)
+      const email = values[5]?.trim()
+      const isValid = values.length >= 6 && (!email || email.includes('@'))
       
       if (isValid) validRows++
       else invalidRows++
@@ -90,7 +92,9 @@ export async function POST(request: NextRequest) {
       if (!lines[i].trim()) continue
       
       const values = parseCSVLine(lines[i])
-      const isValid = values.length >= 6 && values[5]?.includes('@')
+      // Valid if: has enough columns AND (email is empty OR contains @)
+      const email = values[5]?.trim()
+      const isValid = values.length >= 6 && (!email || email.includes('@'))
       
       previewRows.push({
         rowNumber: i + 1,
@@ -98,7 +102,7 @@ export async function POST(request: NextRequest) {
         isValid: isValid,
         issues: !isValid ? [
           values.length < 6 ? `Only ${values.length} columns (expected ${expectedHeaders.length})` : null,
-          !values[5]?.includes('@') ? 'Invalid email format' : null
+          email && !email.includes('@') ? 'Invalid email format' : null
         ].filter(Boolean) : []
       })
     }

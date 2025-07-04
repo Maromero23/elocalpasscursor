@@ -238,8 +238,10 @@ async function handleCSVImport(csvData: string) {
       
       console.log(`📋 Row ${i + 1} - Values count: ${values.length}, Email: ${values[5]}`)
       
-      if (values.length < 6 || !values[5]?.includes('@')) {
-        console.log(`⚠️ Skipping row ${i + 1}: Invalid data - insufficient columns or invalid email`)
+      // Valid if: has enough columns AND (email is empty OR contains @)
+      const email = values[5]?.trim()
+      if (values.length < 6 || (email && !email.includes('@'))) {
+        console.log(`⚠️ Skipping row ${i + 1}: Invalid data - insufficient columns or invalid email format`)
         errors++
         errorDetails.push(`Row ${i + 1}: Invalid data (${values.length} columns, email: ${values[5]})`)
         continue
@@ -251,7 +253,7 @@ async function handleCSVImport(csvData: string) {
         name: values[2] || 'Unknown Business',
         firstName: values[3] || null,
         lastName: values[4] || null,
-        email: values[5]?.toLowerCase(),
+        email: values[5]?.trim()?.toLowerCase() || null,
         workPhone: values[6] || null,
         whatsApp: values[7] || null,
         address: values[8] || null,
@@ -274,14 +276,16 @@ async function handleCSVImport(csvData: string) {
         termsConditions: values[25] || null // TyC field
       }
       
-      // Check if affiliate already exists
-      const existing = await (prisma as any).affiliate.findUnique({
-        where: { email: affiliateData.email }
-      })
-      
-      if (existing) {
-        console.log(`⚠️ Affiliate ${affiliateData.email} already exists, skipping`)
-        continue
+      // Check if affiliate already exists (only if email is provided)
+      if (affiliateData.email) {
+        const existing = await (prisma as any).affiliate.findUnique({
+          where: { email: affiliateData.email }
+        })
+        
+        if (existing) {
+          console.log(`⚠️ Affiliate ${affiliateData.email} already exists, skipping`)
+          continue
+        }
       }
       
       await (prisma as any).affiliate.create({
