@@ -1748,6 +1748,66 @@ export default function AdminAffiliates() {
               >
                 🧪 Test Embedding
               </button>
+              
+              <button
+                onClick={() => {
+                  const fileId = "1AAbbY0fNYbC7_RkFxxZISwj2hJ95V2vV"
+                  const originalUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+                  const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w200-h200`
+                  
+                  console.log('🔬 TESTING ALTERNATIVE GOOGLE DRIVE FORMAT')
+                  console.log('============================================')
+                  console.log('Original format:', originalUrl)
+                  console.log('Thumbnail format:', thumbnailUrl)
+                  console.log('')
+                  
+                  // Test thumbnail format
+                  const testImg = new Image()
+                  testImg.onload = () => {
+                    console.log('🎉 SUCCESS! Thumbnail format works for embedding!')
+                    
+                    // Show success message
+                    const successDiv = document.createElement('div')
+                    successDiv.innerHTML = `
+                      <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+                                  background:green;color:white;padding:20px;border-radius:10px;
+                                  z-index:10000;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+                        <h3>🎉 THUMBNAIL FORMAT WORKS!</h3>
+                        <img src="${thumbnailUrl}" style="max-width:100px;border:2px solid white;margin:10px;">
+                        <p>Use thumbnail format: ${thumbnailUrl}</p>
+                        <button onclick="this.parentElement.parentElement.remove()" 
+                                style="background:white;color:green;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;">
+                          Close
+                        </button>
+                      </div>
+                    `
+                    document.body.appendChild(successDiv)
+                  }
+                  testImg.onerror = () => {
+                    console.log('❌ Thumbnail format also fails')
+                    alert('❌ Thumbnail format also failed. Google Drive embedding is completely blocked.\n\nRecommendation: Use proper image hosting like Imgur or Cloudinary.')
+                  }
+                  testImg.src = thumbnailUrl
+                  
+                  // Also test in a temporary img element
+                  const tempImg = document.createElement('img')
+                  tempImg.src = thumbnailUrl
+                  tempImg.style.cssText = 'position:fixed;top:10px;left:10px;width:100px;height:100px;border:2px solid blue;z-index:9999;'
+                  tempImg.onload = () => {
+                    console.log('✅ Thumbnail image visible in page!')
+                  }
+                  tempImg.onerror = () => {
+                    console.log('❌ Thumbnail image failed in page')
+                    tempImg.remove()
+                  }
+                  document.body.appendChild(tempImg)
+                  setTimeout(() => tempImg.remove(), 10000)
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+                title="Test Google Drive thumbnail format which sometimes works better"
+              >
+                🔬 Test Thumbnail Format
+              </button>
             </div>
           )}
         </div>
