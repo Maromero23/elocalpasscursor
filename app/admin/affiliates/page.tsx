@@ -1530,7 +1530,74 @@ export default function AdminAffiliates() {
                 className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center"
                 title="Test URL conversion with 3D Museum example"
               >
-                🧪 Test Conversion
+                🧪 Test Single URL
+              </button>
+              <button
+                onClick={async () => {
+                  const workingUrls: Array<{name: string, original: string, converted: string, status: string}> = []
+                  const brokenUrls: Array<{name: string, original: string, converted: string, status: string}> = []
+                  let tested = 0
+                  
+                  console.log('🔍 Testing all logo URLs...')
+                  
+                  for (const affiliate of affiliates) {
+                    if (affiliate.logo && affiliate.logo.includes('drive.google.com')) {
+                      const converted = convertGoogleDriveUrl(affiliate.logo)
+                      tested++
+                      
+                      // Test URL by trying to load it
+                      try {
+                        const testImg = new Image()
+                        await new Promise((resolve, reject) => {
+                          testImg.onload = () => {
+                            workingUrls.push({
+                              name: affiliate.name,
+                              original: affiliate.logo!,
+                              converted,
+                              status: 'working'
+                            })
+                            resolve(true)
+                          }
+                          testImg.onerror = () => {
+                            brokenUrls.push({
+                              name: affiliate.name,
+                              original: affiliate.logo!,
+                              converted,
+                              status: 'broken'
+                            })
+                            reject(false)
+                          }
+                          testImg.src = converted
+                        })
+                      } catch (e) {
+                        brokenUrls.push({
+                          name: affiliate.name,
+                          original: affiliate.logo!,
+                          converted,
+                          status: 'broken'
+                        })
+                      }
+                    }
+                  }
+                  
+                  console.log(`📊 URL Test Results:`)
+                  console.log(`✅ Working: ${workingUrls.length}`)
+                  console.log(`❌ Broken: ${brokenUrls.length}`)
+                  console.log(`📋 Total tested: ${tested}`)
+                  
+                  console.log('✅ Working URLs:', workingUrls)
+                  console.log('❌ Broken URLs:', brokenUrls)
+                  
+                  if (brokenUrls.length > 0) {
+                    error('Some URLs Broken', `${brokenUrls.length} of ${tested} URLs don't work. Check console for details.`)
+                  } else {
+                    success('All URLs Working!', `All ${tested} logo URLs work correctly!`)
+                  }
+                }}
+                className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 flex items-center"
+                title="Test all logo URLs to see which ones work and which don't"
+              >
+                🔍 Test All URLs
               </button>
             </div>
           )}
