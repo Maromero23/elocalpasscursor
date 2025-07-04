@@ -560,18 +560,36 @@ export default function AdminAffiliates() {
       setLogoModal({isOpen: true, affiliate})
     }
 
+    // Check if the logo value is actually a URL vs a text description
+    const isActualUrl = (url: string) => {
+      if (!url) return false
+      
+      // Check if it's a URL (starts with http/https or has common image extensions)
+      const isUrl = url.startsWith('http://') || url.startsWith('https://') || 
+                   url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || 
+                   url.includes('.gif') || url.includes('.svg') || url.includes('.webp')
+      
+      // Check if it's a text description (common Spanish phrases)
+      const isTextDescription = /^(sin logo|no logo|muy grande|apostrofe|cerrado|no disponible|pendiente|falta|error)/i.test(url.trim())
+      
+      return isUrl && !isTextDescription
+    }
+
     // Convert Google Drive URL to direct image URL for display
     const getDisplayUrl = (url: string) => {
-      if (!url) return url
+      if (!url || !isActualUrl(url)) return url
       return convertGoogleDriveUrl(url)
     }
 
-    if (!affiliate.logo || imageError) {
+    // Show placeholder if no logo, text description, or image error
+    if (!affiliate.logo || !isActualUrl(affiliate.logo) || imageError) {
       return (
         <div 
           className="w-6 h-6 bg-gray-200 rounded border-2 border-dashed border-gray-400 flex items-center justify-center cursor-pointer hover:bg-gray-300 mx-auto"
           onClick={handleLogoClick}
-          title="Click to add/edit logo URL"
+          title={affiliate.logo && !isActualUrl(affiliate.logo) ? 
+            `Text description: "${affiliate.logo}". Click to add proper URL.` : 
+            "Click to add/edit logo URL"}
         >
           <span className="text-gray-500 text-xs">📷</span>
         </div>
@@ -1061,45 +1079,48 @@ export default function AdminAffiliates() {
   const convertGoogleDriveUrl = (url: string): string => {
     if (!url) return url
     
+    // If it's not a Google Drive URL, return as-is
+    if (!url.includes('drive.google.com')) {
+      return url
+    }
+    
+    // If it's a search URL or folder URL, it's not a file URL
+    if (url.includes('/search?') || url.includes('/drive/folders/') || url.includes('/drive/search?')) {
+      console.warn('❌ Cannot convert Google Drive search/folder URL to direct image URL:', url)
+      return url // Return original URL, will be handled as invalid by isActualUrl check
+    }
+    
     // Check if it's already a direct Google Drive URL
     if (url.includes('drive.google.com/uc?')) {
       return url
     }
     
     // Convert sharing URL to direct URL
-    if (url.includes('drive.google.com')) {
-      // Handle multiple formats:
-      // https://drive.google.com/file/d/ID/view?usp=sharing
-      // https://drive.google.com/file/d/ID
-      // https://drive.google.com/open?id=ID
-      
-      let fileId = ''
-      
-      // Try to extract file ID from different URL formats
-      const patterns = [
-        /\/d\/([a-zA-Z0-9-_]+)/,  // /d/ID format
-        /[?&]id=([a-zA-Z0-9-_]+)/, // ?id=ID format
-      ]
-      
-      for (const pattern of patterns) {
-        const match = url.match(pattern)
-        if (match) {
-          fileId = match[1]
-          break
-        }
-      }
-      
-      if (fileId) {
-        // Try the most reliable format for direct image access
-        const convertedUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
-        console.log('🔄 Converting Google Drive URL:', { original: url, converted: convertedUrl })
-        return convertedUrl
-      } else {
-        console.warn('❌ Could not extract file ID from Google Drive URL:', url)
+    let fileId = ''
+    
+    // Try to extract file ID from different URL formats
+    const patterns = [
+      /\/d\/([a-zA-Z0-9-_]+)/,  // /d/ID format
+      /[?&]id=([a-zA-Z0-9-_]+)/, // ?id=ID format
+    ]
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match) {
+        fileId = match[1]
+        break
       }
     }
     
-    return url
+    if (fileId) {
+      // Try the most reliable format for direct image access
+      const convertedUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+      console.log('🔄 Converting Google Drive URL:', { original: url, converted: convertedUrl })
+      return convertedUrl
+    } else {
+      console.warn('❌ Could not extract file ID from Google Drive URL:', url)
+      return url // Return original URL, will be handled as invalid by isActualUrl check
+    }
   }
 
   const handleBulkFixLogos = async () => {

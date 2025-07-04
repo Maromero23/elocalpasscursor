@@ -7,20 +7,60 @@ import { prisma } from '@/lib/prisma'
 function convertGoogleDriveUrl(url: string): string {
   if (!url) return url
   
+  // If it's not a Google Drive URL, return as-is
+  if (!url.includes('drive.google.com')) {
+    return url
+  }
+  
+  // If it's a search URL or folder URL, it's not a file URL
+  if (url.includes('/search?') || url.includes('/drive/folders/') || url.includes('/drive/search?')) {
+    console.warn('❌ Cannot convert Google Drive search/folder URL to direct image URL:', url)
+    return url // Return original URL, will be handled as invalid by isActualUrl check
+  }
+  
   // Check if it's already a direct Google Drive URL
   if (url.includes('drive.google.com/uc?')) {
     return url
   }
   
   // Convert sharing URL to direct URL
-  if (url.includes('drive.google.com')) {
-    const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/)
-    if (fileIdMatch) {
-      return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`
+  let fileId = ''
+  
+  // Try to extract file ID from different URL formats
+  const patterns = [
+    /\/d\/([a-zA-Z0-9-_]+)/,  // /d/ID format
+    /[?&]id=([a-zA-Z0-9-_]+)/, // ?id=ID format
+  ]
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match) {
+      fileId = match[1]
+      break
     }
   }
   
-  return url
+  if (fileId) {
+    return `https://drive.google.com/uc?export=view&id=${fileId}`
+  } else {
+    console.warn('❌ Could not extract file ID from Google Drive URL:', url)
+    return url // Return original URL, will be handled as invalid by isActualUrl check
+  }
+}
+
+// Check if the logo value is actually a URL vs a text description
+function isActualUrl(url: string): boolean {
+  if (!url) return false
+  
+  // Check if it's a URL (starts with http/https or has common image extensions)
+  const isUrl = url.startsWith('http://') || url.startsWith('https://') || 
+               url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || 
+               url.includes('.gif') || url.includes('.svg') || url.includes('.webp')
+  
+  // Check if it's a text description (common Spanish phrases)
+  const isTextDescription = /^(sin logo|no logo|muy grande|apostrofe|cerrado|no disponible|pendiente|falta|error)/i.test(url.trim())
+  
+  return isUrl && !isTextDescription
 }
 
 export async function POST(request: NextRequest) {
@@ -51,10 +91,25 @@ export async function POST(request: NextRequest) {
     console.log(`📊 Found ${affiliates.length} affiliates with logo URLs`)
 
     let fixed = 0
+    let skipped = 0
     const fixedAffiliates = []
+    const skippedAffiliates = []
 
     for (const affiliate of affiliates) {
       const originalUrl = affiliate.logo
+      
+      // Skip if it's a text description, not an actual URL
+      if (!isActualUrl(originalUrl)) {
+        skipped++
+        skippedAffiliates.push({
+          name: affiliate.name,
+          originalUrl,
+          reason: 'Text description, not a URL'
+        })
+        console.log(`⏭️  Skipped ${affiliate.name} - Text description: "${originalUrl}"`)
+        continue
+      }
+      
       const convertedUrl = convertGoogleDriveUrl(originalUrl)
       
       // Only update if the URL actually changed
@@ -77,14 +132,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`🎉 ADMIN: Bulk logo fix completed - ${fixed} URLs converted`)
+    console.log(`🎉 ADMIN: Bulk logo fix completed - ${fixed} URLs converted, ${skipped} skipped`)
 
     return NextResponse.json({
       success: true,
-      message: `Successfully fixed ${fixed} logo URLs`,
+      message: `Successfully fixed ${fixed} logo URLs, skipped ${skipped} text descriptions`,
       fixed,
+      skipped,
       total: affiliates.length,
-      details: fixedAffiliates.slice(0, 10) // Return first 10 for debugging
+      details: {
+        fixed: fixedAffiliates.slice(0, 10), // Return first 10 for debugging
+        skipped: skippedAffiliates.slice(0, 10)
+      }
     })
 
   } catch (error) {
