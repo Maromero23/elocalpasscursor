@@ -1090,12 +1090,24 @@ export default function AdminAffiliates() {
       return url // Return original URL, will be handled as invalid by isActualUrl check
     }
     
-    // Check if it's already a direct Google Drive URL
-    if (url.includes('drive.google.com/uc?')) {
+    // Check if it's already a thumbnail URL (preferred format)
+    if (url.includes('drive.google.com/thumbnail?')) {
       return url
     }
     
-    // Convert sharing URL to direct URL
+    // Check if it's already a direct Google Drive URL
+    if (url.includes('drive.google.com/uc?')) {
+      // Extract file ID and convert to thumbnail format
+      const fileIdMatch = url.match(/[?&]id=([a-zA-Z0-9-_]+)/)
+      if (fileIdMatch) {
+        const fileId = fileIdMatch[1]
+        const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w200-h200`
+        console.log('🔄 Converting Google Drive URL to thumbnail format:', { original: url, converted: thumbnailUrl })
+        return thumbnailUrl
+      }
+    }
+    
+    // Convert sharing URL to thumbnail URL (PREFERRED FORMAT - WORKS FOR EMBEDDING!)
     let fileId = ''
     
     // Try to extract file ID from different URL formats
@@ -1113,10 +1125,10 @@ export default function AdminAffiliates() {
     }
     
     if (fileId) {
-      // Try the most reliable format for direct image access
-      const convertedUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
-      console.log('🔄 Converting Google Drive URL:', { original: url, converted: convertedUrl })
-      return convertedUrl
+      // Use thumbnail format instead of standard format (thumbnail format works for embedding!)
+      const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w200-h200`
+      console.log('🔄 Converting Google Drive URL to thumbnail format:', { original: url, converted: thumbnailUrl })
+      return thumbnailUrl
     } else {
       console.warn('❌ Could not extract file ID from Google Drive URL:', url)
       return url // Return original URL, will be handled as invalid by isActualUrl check
