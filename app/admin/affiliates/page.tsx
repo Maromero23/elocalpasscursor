@@ -1680,6 +1680,74 @@ export default function AdminAffiliates() {
               >
                 📋 Logo Help
               </button>
+              
+              <button
+                onClick={() => {
+                  const testUrl = "https://drive.google.com/uc?export=view&id=1AAbbY0fNYbC7_RkFxxZISwj2hJ95V2vV"
+                  
+                  console.log('🧪 GOOGLE DRIVE EMBEDDING TEST')
+                  console.log('==================================')
+                  console.log(`Testing URL: ${testUrl}`)
+                  console.log('')
+                  
+                  // Test 1: Direct window open (should work)
+                  console.log('🔍 Test 1: Opening URL in new window (should work)')
+                  window.open(testUrl, '_blank')
+                  
+                  // Test 2: Fetch API (will show CORS errors)
+                  console.log('🔍 Test 2: Fetch API request (will show CORS errors)')
+                  fetch(testUrl, { mode: 'no-cors' })
+                    .then(response => {
+                      console.log('✅ Fetch response:', response.status, response.statusText)
+                    })
+                    .catch(error => {
+                      console.log('❌ Fetch error:', error.message)
+                    })
+                  
+                  // Test 3: Image loading (will fail silently)
+                  console.log('🔍 Test 3: Image loading test (will fail silently)')
+                  const testImg = new Image()
+                  testImg.crossOrigin = 'anonymous'
+                  testImg.onload = () => {
+                    console.log('✅ Image loaded successfully! This is unexpected.')
+                  }
+                  testImg.onerror = (error) => {
+                    console.log('❌ Image loading failed (expected due to CORS/CSP)')
+                    console.log('   Error:', error)
+                  }
+                  testImg.src = testUrl
+                  
+                  // Test 4: Create a temporary image in the page
+                  console.log('🔍 Test 4: Creating temporary image element in page')
+                  const tempImg = document.createElement('img')
+                  tempImg.src = testUrl
+                  tempImg.style.cssText = 'position:fixed;top:10px;right:10px;width:100px;height:100px;border:2px solid red;z-index:9999;'
+                  tempImg.onload = () => {
+                    console.log('✅ Temporary image loaded in page!')
+                    setTimeout(() => tempImg.remove(), 5000)
+                  }
+                  tempImg.onerror = () => {
+                    console.log('❌ Temporary image failed to load in page')
+                    tempImg.remove()
+                  }
+                  document.body.appendChild(tempImg)
+                  
+                  console.log('')
+                  console.log('📋 EXPLANATION:')
+                  console.log('• Test 1 works: Direct browser access bypasses embedding restrictions')
+                  console.log('• Test 2 fails: CORS prevents cross-origin requests')
+                  console.log('• Test 3 fails: Image embedding blocked by browser security')
+                  console.log('• Test 4 fails: Same as Test 3 but visible in page')
+                  console.log('')
+                  console.log('🎯 CONCLUSION: Google Drive URLs work directly but fail when embedded in web apps')
+                  
+                  alert('🧪 Google Drive Embedding Test Started!\n\nCheck the console for detailed results. A new window will open with the image (this should work), but embedding tests will fail.')
+                }}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center"
+                title="Test the difference between direct access and embedded loading"
+              >
+                🧪 Test Embedding
+              </button>
             </div>
           )}
         </div>
