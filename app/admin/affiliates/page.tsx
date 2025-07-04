@@ -1620,6 +1620,66 @@ export default function AdminAffiliates() {
               >
                 🔍 Test All URLs
               </button>
+              
+              <button
+                onClick={() => {
+                  const instructions = `
+🔍 GOOGLE DRIVE LOGO TROUBLESHOOTING
+
+📋 The main issue is that Google Drive blocks direct hotlinking to images, even when properly formatted.
+
+🛠️ SOLUTIONS (in order of recommendation):
+
+1. 🎯 USE PROPER IMAGE HOSTING (RECOMMENDED):
+   • Imgur - Free, allows hotlinking
+   • Cloudinary - Professional image hosting  
+   • GitHub - Store images in repository
+   • Your own server - Full control
+
+2. 🔧 FIX GOOGLE DRIVE PERMISSIONS:
+   • Open each file in Google Drive
+   • Right-click → Share
+   • Change "Restricted" to "Anyone with the link can view"
+   • Copy the link and paste it in logo field
+   • System will auto-convert to direct URL
+
+3. ⚠️ GOOGLE DRIVE LIMITATIONS:
+   • Google Drive has anti-hotlinking security
+   • URLs may work in browser but fail in web apps
+   • Not recommended for production websites
+
+🔍 CURRENT STATUS:
+   • ${affiliates.filter(a => a.logo && a.logo.includes('drive.google.com')).length} Google Drive URLs found
+   • All are likely blocked due to Google's security policies
+   • Consider migrating to a proper image hosting service
+
+📝 NEXT STEPS:
+   • Click logo cells to edit individual URLs
+   • Use the Google Drive folder links for easy access
+   • Consider bulk migration to proper image hosting
+                  `
+                  console.log(instructions)
+                  
+                  // Also test a few different Google Drive URL formats
+                  const testFileId = "1AAbbY0fNYbC7_RkFxxZISwj2hJ95V2vV"
+                  const formats = [
+                    { name: "Current Format", url: `https://drive.google.com/uc?export=view&id=${testFileId}` },
+                    { name: "Thumbnail Format", url: `https://drive.google.com/thumbnail?id=${testFileId}` },
+                    { name: "Drive Direct", url: `https://drive.google.com/uc?id=${testFileId}` }
+                  ]
+                  
+                  console.log('🧪 Testing different Google Drive URL formats:')
+                  formats.forEach(format => {
+                    console.log(`  ${format.name}: ${format.url}`)
+                  })
+                  
+                  alert(instructions)
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                title="Show detailed troubleshooting instructions for Google Drive logos"
+              >
+                📋 Logo Help
+              </button>
             </div>
           )}
         </div>
