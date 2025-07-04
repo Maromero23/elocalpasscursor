@@ -1068,9 +1068,34 @@ export default function AdminAffiliates() {
     
     // Convert sharing URL to direct URL
     if (url.includes('drive.google.com')) {
-      const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/)
-      if (fileIdMatch) {
-        return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`
+      // Handle multiple formats:
+      // https://drive.google.com/file/d/ID/view?usp=sharing
+      // https://drive.google.com/file/d/ID
+      // https://drive.google.com/open?id=ID
+      
+      let fileId = ''
+      
+      // Try to extract file ID from different URL formats
+      const patterns = [
+        /\/d\/([a-zA-Z0-9-_]+)/,  // /d/ID format
+        /[?&]id=([a-zA-Z0-9-_]+)/, // ?id=ID format
+      ]
+      
+      for (const pattern of patterns) {
+        const match = url.match(pattern)
+        if (match) {
+          fileId = match[1]
+          break
+        }
+      }
+      
+      if (fileId) {
+        // Try the most reliable format for direct image access
+        const convertedUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+        console.log('🔄 Converting Google Drive URL:', { original: url, converted: convertedUrl })
+        return convertedUrl
+      } else {
+        console.warn('❌ Could not extract file ID from Google Drive URL:', url)
       }
     }
     
@@ -1484,6 +1509,28 @@ export default function AdminAffiliates() {
                 title="Convert all Google Drive sharing URLs to direct image URLs"
               >
                 🔧 Fix All Logo URLs
+              </button>
+              <button
+                onClick={() => {
+                  // Test the conversion with the 3D Museum URL
+                  const testUrl = 'https://drive.google.com/file/d/1AAbbY0fNYbCZ_RkFxxZIS'
+                  const converted = convertGoogleDriveUrl(testUrl)
+                  console.log('🧪 Test conversion:', { original: testUrl, converted })
+                  
+                  // Test if the converted URL works by trying to load it
+                  const testImg = new Image()
+                  testImg.onload = () => {
+                    success('Test Success', `Converted URL works! ${converted}`)
+                  }
+                  testImg.onerror = () => {
+                    error('Test Failed', `Converted URL doesn't work: ${converted}`)
+                  }
+                  testImg.src = converted
+                }}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center"
+                title="Test URL conversion with 3D Museum example"
+              >
+                🧪 Test Conversion
               </button>
             </div>
           )}
