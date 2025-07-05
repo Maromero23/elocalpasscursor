@@ -166,6 +166,19 @@ export default function AdminAffiliates() {
   const [logoModal, setLogoModal] = useState<{isOpen: boolean, affiliate: Affiliate | null}>({isOpen: false, affiliate: null})
   const [csvPreview, setCsvPreview] = useState<any>(null)
   const [previewing, setPreviewing] = useState(false)
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean
+    affiliateId: string
+    field: string
+    value: string
+    fieldName: string
+  }>({
+    isOpen: false,
+    affiliateId: '',
+    field: '',
+    value: '',
+    fieldName: ''
+  })
 
   // Default column widths
   const defaultColumnWidths = {
@@ -624,49 +637,82 @@ export default function AdminAffiliates() {
     type?: 'text' | 'email' | 'url' | 'number' | 'boolean' | 'textarea'
   }) => {
     const isEditing = editingField?.affiliateId === affiliate.id && editingField?.field === field
-    
-    // Get annotation for styling
     const annotation = getAnnotation(affiliate.id, field)
     const backgroundColor = getFieldBackgroundColor(affiliate.id, field)
     const fieldHasComment = hasComment(affiliate.id, field)
-
-    // Function to detect if content is truncated based on column width
+    
+    // Check if content is truncated
     const isContentTruncated = () => {
-      if (!value || value === '') return false
-      
-      const columnWidth = actualColumnWidths[field as keyof typeof actualColumnWidths] || 100
-      const availableWidth = fieldHasComment ? columnWidth - 30 : columnWidth - 10 // Account for padding and comment icon
-      
-      // Get text content based on field type and value
-      let textContent = ''
-      if (field === 'affiliateNum') {
-        textContent = `#${value || affiliate.id.slice(-3)}`
-      } else if (type === 'boolean') {
-        if (field === 'isActive') {
-          textContent = value ? 'Active' : 'Inactive'
-        } else {
-          textContent = value ? '✓ Yes' : 'No'
-        }
-      } else if (type === 'number' && field === 'rating' && value) {
-        textContent = `★ ${value}`
-      } else if (type === 'url' && value) {
-        if (field === 'maps') textContent = 'Maps'
-        else if (field === 'facebook') textContent = 'Facebook'
-        else if (field === 'instagram') textContent = 'Instagram'
-        else textContent = value.length > 30 ? value.substring(0, 30) + '...' : value
-      } else {
-        textContent = String(value || '')
-      }
-      
-      // Estimate text width (approximately 6.5px per character for small text)
-      const estimatedTextWidth = textContent.length * 6.5
-      
-      return estimatedTextWidth > availableWidth
+      if (!value) return false
+      return String(value).length > 20
     }
 
-    const shouldShowTooltip = isContentTruncated() // Allow tooltips even when there are comments
-    const shouldOpenModal = isContentTruncated() || type === 'textarea'
-    
+    // Check if this is a long field that should use modal editing
+    const shouldUseModal = (field: string, value: any) => {
+      const longFields = ['maps', 'facebook', 'instagram', 'web', 'description', 'address', 'discount']
+      return longFields.includes(field) && value && String(value).length > 30
+    }
+
+    const shouldShowTooltip = isContentTruncated() && value && String(value).length > 0
+
+    // Display value function
+    const displayValue = () => {
+      if (value === null || value === undefined || value === '') {
+        return <span className="text-gray-400">-</span>
+      }
+
+      switch (type) {
+        case 'email':
+          return <a href={`mailto:${value}`} className="text-blue-600 hover:underline">{value}</a>
+        case 'url':
+          if (!value) return <span className="text-gray-400">-</span>
+          
+          let displayText = value.length > 30 ? value.substring(0, 30) + '...' : value
+          if (field === 'maps') displayText = 'Maps'
+          if (field === 'facebook') displayText = 'Facebook'
+          if (field === 'instagram') displayText = 'Instagram'
+          
+          return (
+            <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+              {displayText}
+            </a>
+          )
+        case 'boolean':
+          if (field === 'isActive') {
+            return (
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}>
+                {value ? 'Active' : 'Inactive'}
+              </span>
+            )
+          }
+          return value ? (
+            <span className="text-green-600">✓ Yes</span>
+          ) : (
+            <span className="text-gray-400">No</span>
+          )
+        case 'number':
+          if (field === 'rating' && value) {
+            return <span className="text-yellow-600">★ {value}</span>
+          }
+          return value || <span className="text-gray-400">-</span>
+        default:
+          if (field === 'affiliateNum') {
+            return `#${value || affiliate.id.slice(-3)}`
+          }
+          if (field === 'whatsApp' && value) {
+            return (
+              <a href={`https://wa.me/${value}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">
+                {value}
+              </a>
+            )
+          }
+          return value || <span className="text-gray-400">-</span>
+      }
+    }
+
+    // Handle editing mode
     if (isEditing) {
       if (type === 'boolean') {
         return (
@@ -691,15 +737,6 @@ export default function AdminAffiliates() {
             <option value="yes">Yes</option>
           </select>
         )
-      } else if (type === 'textarea' || shouldOpenModal) {
-        return (
-          <ResizableTextarea
-            defaultValue={value || ''}
-            onBlur={(newValue) => handleFieldEdit(affiliate.id, field, newValue, value)}
-            onEnter={(newValue) => handleFieldEdit(affiliate.id, field, newValue, value)}
-            onEscape={() => setEditingField(null)}
-          />
-        )
       } else {
         return (
           <input
@@ -708,18 +745,16 @@ export default function AdminAffiliates() {
             min={field === 'rating' ? '1' : undefined}
             max={field === 'rating' ? '5' : undefined}
             step={field === 'rating' ? '1' : undefined}
-                         onBlur={(e) => {
-               let newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
-               // Constrain rating to 1-5 range (whole numbers only)
-               if (field === 'rating' && newValue !== null && typeof newValue === 'number') {
-                 newValue = Math.round(Math.min(5, Math.max(1, newValue)))
-               }
-               handleFieldEdit(affiliate.id, field, newValue, value)
-             }}
+            onBlur={(e) => {
+              let newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
+              if (field === 'rating' && newValue !== null && typeof newValue === 'number') {
+                newValue = Math.round(Math.min(5, Math.max(1, newValue)))
+              }
+              handleFieldEdit(affiliate.id, field, newValue, value)
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 let newValue = type === 'number' ? parseFloat((e.target as HTMLInputElement).value) || null : (e.target as HTMLInputElement).value
-                // Constrain rating to 1-5 range (whole numbers only)
                 if (field === 'rating' && newValue !== null && typeof newValue === 'number') {
                   newValue = Math.round(Math.min(5, Math.max(1, newValue)))
                 }
@@ -735,127 +770,148 @@ export default function AdminAffiliates() {
       }
     }
 
-    // Display mode
-    const displayValue = () => {
-      if (value === null || value === undefined || value === '') {
-        return <span className="text-gray-400">-</span>
-      }
+    return (
+      <div
+        onClick={(e) => {
+          e.stopPropagation()
+          // For boolean fields, toggle the value directly instead of entering edit mode
+          if (type === 'boolean') {
+            const newValue = !value
+            handleFieldEdit(affiliate.id, field, newValue, value)
+          } else if (shouldUseModal(field, value)) {
+            // Open modal for long fields
+            setEditModal({
+              isOpen: true,
+              affiliateId: affiliate.id,
+              field: field,
+              value: String(value || ''),
+              fieldName: field.charAt(0).toUpperCase() + field.slice(1)
+            })
+          } else {
+            setEditingField({ affiliateId: affiliate.id, field })
+          }
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          handleRightClick(e, affiliate.id, field)
+        }}
+        className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900`}
+        style={{ 
+          minHeight: '20px',
+          height: '20px',
+          overflow: 'visible',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          color: '#111827',
+          width: '100%',
+          maxWidth: '100%',
+          backgroundColor: backgroundColor || 'transparent'
+        }}
+      >
+        <span className="truncate text-gray-900 flex-1" style={{ maxWidth: fieldHasComment ? 'calc(100% - 25px)' : '100%' }}>
+          {displayValue()}
+        </span>
+        
+        {/* Comment icon - only show if field has comment */}
+        {fieldHasComment && (
+          <div 
+            className="ml-1 flex-shrink-0 relative"
+            title={`Comment: ${annotation?.comment || ''}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleRightClick(e, affiliate.id, field)
+            }}
+          >
+            <span className="text-blue-600 text-xs cursor-pointer hover:text-blue-800">💬</span>
+          </div>
+        )}
+        
+        {/* Simple tooltip on hover - shows even when there are comments */}
+        {shouldShowTooltip && (
+          <div className="absolute left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none max-w-xs"
+               style={{
+                 top: affiliate.id === filteredAffiliates[0]?.id ? '25px' : '-25px',
+                 transform: affiliate.id === filteredAffiliates[0]?.id ? 'translateX(-50%)' : 'translateX(-50%) translateY(-100%)'
+               }}>
+            {value || ''}
+          </div>
+        )}
+      </div>
+    )
+  }
 
-             switch (type) {
-         case 'email':
-           return <a href={`mailto:${value}`} className="text-blue-600 hover:underline">{value}</a>
-         case 'url':
-           if (!value) return <span className="text-gray-400">-</span>
-           
-           let displayText = value.length > 30 ? value.substring(0, 30) + '...' : value
-           if (field === 'maps') displayText = 'Maps'
-           if (field === 'facebook') displayText = 'Facebook'
-           if (field === 'instagram') displayText = 'Instagram'
-           
-           return (
-             <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-               {displayText}
-             </a>
-           )
-         case 'boolean':
-           if (field === 'isActive') {
-             return (
-               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                 value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-               }`}>
-                 {value ? 'Active' : 'Inactive'}
-               </span>
-             )
-           }
-           return value ? (
-             <span className="text-green-600">✓ Yes</span>
-           ) : (
-             <span className="text-gray-400">No</span>
-           )
-         case 'number':
-           if (field === 'rating' && value) {
-             return <span className="text-yellow-600">★ {value}</span>
-           }
-           return value || <span className="text-gray-400">-</span>
-         default:
-           if (field === 'affiliateNum') {
-             return `#${value || affiliate.id.slice(-3)}`
-           }
-           if (field === 'whatsApp' && value) {
-             return (
-               <a href={`https://wa.me/${value}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">
-                 {value}
-               </a>
-             )
-           }
-           return value || <span className="text-gray-400">-</span>
-       }
-    }
+  // ... existing code ...
 
-         return (
-       <div
-         onClick={(e) => {
-           e.stopPropagation()
-           // For boolean fields, toggle the value directly instead of entering edit mode
-           if (type === 'boolean') {
-             const newValue = !value
-             handleFieldEdit(affiliate.id, field, newValue, value)
-           } else {
-             setEditingField({ affiliateId: affiliate.id, field })
-           }
-         }}
-         onContextMenu={(e) => {
-           e.preventDefault()
-           e.stopPropagation()
-           handleRightClick(e, affiliate.id, field)
-         }}
-         className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900`}
-         style={{ 
-           minHeight: '20px',
-           height: '20px',
-           overflow: 'visible', // Changed from hidden to visible for tooltips
-           textOverflow: 'ellipsis',
-           whiteSpace: 'nowrap',
-           display: 'flex',
-           alignItems: 'center',
-           justifyContent: 'space-between',
-           color: '#111827', // Ensure black text
-           width: '100%', // Force full width of container
-           maxWidth: '100%', // Prevent expansion beyond container
-           backgroundColor: backgroundColor || 'transparent' // Apply annotation color
-         }}
-       >
-         <span className="truncate text-gray-900 flex-1" style={{ maxWidth: fieldHasComment ? 'calc(100% - 25px)' : '100%' }}>
-           {displayValue()}
-         </span>
-         
-         {/* Comment icon - only show if field has comment */}
-         {fieldHasComment && (
-           <div 
-             className="ml-1 flex-shrink-0 relative"
-             title={`Comment: ${annotation?.comment || ''}`}
-             onClick={(e) => {
-               e.stopPropagation()
-               handleRightClick(e, affiliate.id, field)
-             }}
-           >
-             <span className="text-blue-600 text-xs cursor-pointer hover:text-blue-800">💬</span>
-           </div>
-         )}
-         
-         {/* Simple tooltip on hover - shows even when there are comments */}
-         {shouldShowTooltip && (
-           <div className="absolute left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none max-w-xs"
-                style={{
-                  top: affiliate.id === filteredAffiliates[0]?.id ? '25px' : '-25px',
-                  transform: affiliate.id === filteredAffiliates[0]?.id ? 'translateX(-50%)' : 'translateX(-50%) translateY(-100%)'
-                }}>
-             {value || ''}
-           </div>
-         )}
-       </div>
-     )
-   }
+      {/* Edit Field Modal */}
+      {editModal.isOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Edit {editModal.fieldName}
+              </h3>
+              <button
+                onClick={() => setEditModal({...editModal, isOpen: false})}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {editModal.fieldName}
+                </label>
+                {editModal.field === 'description' || editModal.field === 'address' ? (
+                  <textarea
+                    value={editModal.value}
+                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={4}
+                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                  />
+                ) : (
+                  <input
+                    type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
+                    value={editModal.value}
+                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                  />
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setEditModal({...editModal, isOpen: false})}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    const affiliate = affiliates.find(a => a.id === editModal.affiliateId)
+                    if (affiliate) {
+                      const originalValue = (affiliate as any)[editModal.field]
+                      handleFieldEdit(editModal.affiliateId, editModal.field, editModal.value, originalValue)
+                    }
+                    setEditModal({...editModal, isOpen: false})
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+// ... existing code ...
 
   // Resizable Textarea Component for editing
   const ResizableTextarea = ({ 
@@ -2149,7 +2205,7 @@ export default function AdminAffiliates() {
                           <EditableField affiliate={affiliate} field="recommended" value={affiliate.recommended} type="boolean" />
                         </td>
                         <td className="px-1 py-0.5 text-center" style={{ width: `${actualColumnWidths.termsConditions}px`, maxWidth: `${actualColumnWidths.termsConditions}px`, overflow: 'hidden' }}>
-                          <EditableField affiliate={affiliate} field="termsConditions" value={!!affiliate.termsConditions} type="boolean" />
+                                                        <EditableField affiliate={affiliate} field="termsConditions" value={affiliate.termsConditions === 'true' || affiliate.termsConditions === 'yes' || affiliate.termsConditions === 'YES' || affiliate.termsConditions === 'TRUE'} type="boolean" />
                         </td>
                         <td className="px-1 py-0.5 text-center" style={{ width: `${actualColumnWidths.visits}px`, maxWidth: `${actualColumnWidths.visits}px`, overflow: 'hidden' }}>
                           <div className="text-xs font-medium text-gray-900" style={{ color: '#111827' }}>{affiliate.totalVisits}</div>
@@ -2382,11 +2438,11 @@ export default function AdminAffiliates() {
                           <tbody className="divide-y divide-gray-200">
                             {csvPreview.previewRows.map((row: any, idx: number) => (
                               <tr key={idx} className={row.isValid ? '' : 'bg-red-50'}>
-                                <td className="px-2 py-1">{row.rowNumber}</td>
-                                <td className="px-2 py-1 font-medium">{row.values[2] || '-'}</td>
-                                <td className="px-2 py-1">{row.values[5] || '-'}</td>
-                                <td className="px-2 py-1">{row.values[11] || '-'}</td>
-                                <td className="px-2 py-1">{row.values[14] || '-'}</td>
+                                <td className="px-2 py-1 text-gray-900">{row.rowNumber}</td>
+                                <td className="px-2 py-1 font-medium text-gray-900">{row.values[2] || '-'}</td>
+                                <td className="px-2 py-1 text-gray-900">{row.values[5] || '-'}</td>
+                                <td className="px-2 py-1 text-gray-900">{row.values[11] || '-'}</td>
+                                <td className="px-2 py-1 text-gray-900">{row.values[14] || '-'}</td>
                                 <td className="px-2 py-1">
                                   {row.isValid ? (
                                     <span className="text-green-600">✓ Valid</span>
@@ -2778,7 +2834,11 @@ export default function AdminAffiliates() {
       >
         <div
           ref={fixedScrollRef}
-          className="w-full h-full overflow-x-auto overflow-y-hidden"
+          className="w-full h-full overflow-x-auto overflow-y-hidden table-scroll-container"
+          style={{
+            scrollbarWidth: 'auto', // Firefox - force scrollbar to always show
+            msOverflowStyle: 'scrollbar', // IE - force scrollbar to always show
+          }}
           onScroll={syncScrollFromFixed}
           onWheel={(e) => {
             // Allow horizontal scrolling with mouse wheel
@@ -2792,10 +2852,10 @@ export default function AdminAffiliates() {
         >
                      <div 
              style={{ 
-               width: Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 
-                     (Object.keys(actualColumnWidths).length * 8) + // 8px padding per column (px-1 = 4px each side)
-                     (Object.keys(actualColumnWidths).length * 4) + // 4px for resize handles per column
-                     100 + 'px', // Much larger safety margin
+               width: `${Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 
+                      (Object.keys(actualColumnWidths).length * 8) + // 8px padding per column (px-1 = 4px each side)
+                      (Object.keys(actualColumnWidths).length * 4) + // 4px for resize handles per column
+                      100}px`, // Much larger safety margin
                height: '1px'
              }}
            />
@@ -3008,6 +3068,72 @@ export default function AdminAffiliates() {
           return result
         }}
       />
+
+      {/* Edit Field Modal */}
+      {editModal.isOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Edit {editModal.fieldName}
+              </h3>
+              <button
+                onClick={() => setEditModal({...editModal, isOpen: false})}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {editModal.fieldName}
+                </label>
+                {editModal.field === 'description' || editModal.field === 'address' ? (
+                  <textarea
+                    value={editModal.value}
+                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={4}
+                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                  />
+                ) : (
+                  <input
+                    type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
+                    value={editModal.value}
+                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                  />
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setEditModal({...editModal, isOpen: false})}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    const affiliate = affiliates.find(a => a.id === editModal.affiliateId)
+                    if (affiliate) {
+                      const originalValue = (affiliate as any)[editModal.field]
+                      handleFieldEdit(editModal.affiliateId, editModal.field, editModal.value, originalValue)
+                    }
+                    setEditModal({...editModal, isOpen: false})
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </ProtectedRoute>
   )
