@@ -955,10 +955,10 @@ export default function AdminAffiliates() {
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return
-      const deltaX = e.clientX - startPos.x
+      const diff = e.clientX - startPos.x
       const deltaY = e.clientY - startPos.y
       setSize({
-        width: Math.max(250, startSize.width + deltaX),
+        width: Math.max(250, startSize.width + diff),
         height: Math.max(80, startSize.height + deltaY)
       })
     }
@@ -1077,7 +1077,9 @@ export default function AdminAffiliates() {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return
       const diff = e.clientX - startX
-      const newWidth = Math.max(30, startWidth + diff) // Minimum width of 30px
+      // Different minimum widths for different columns
+      const minWidth = field === 'select' ? 20 : 30 // Checkbox column can be smaller
+      const newWidth = Math.max(minWidth, startWidth + diff)
       console.log(`📏 Resizing column ${field}: ${startWidth}px → ${newWidth}px (diff: ${diff}px)`)
       updateColumnWidth(field, newWidth)
     }
@@ -1129,7 +1131,7 @@ export default function AdminAffiliates() {
           style={{
             background: isResizing ? '#3b82f6' : '#6b7280',
             opacity: isResizing ? 1 : 0.8,
-            zIndex: 50,
+            zIndex: 100, // Much higher z-index for rightmost columns
             transform: 'translateX(-1px)' // Move it slightly left to not cover content
           }}
         />
@@ -1139,7 +1141,7 @@ export default function AdminAffiliates() {
           onMouseDown={handleMouseDown}
           title="🔄 Drag to resize this column width"
           style={{
-            zIndex: 49,
+            zIndex: 99, // High z-index for rightmost columns
             transform: 'translateX(-2px)' // Position it properly
           }}
         />
@@ -1147,7 +1149,7 @@ export default function AdminAffiliates() {
         <div
           className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none group-hover:block hidden"
           style={{
-            zIndex: 48,
+            zIndex: 98, // High z-index for visibility
             transform: 'translateX(-4px)',
             background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1))',
             borderRight: '2px solid rgba(59, 130, 246, 0.3)'
@@ -1986,7 +1988,7 @@ export default function AdminAffiliates() {
                 <div style={{ 
                   width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
                          (Object.keys(actualColumnWidths).length * 12) + // Extra padding per column 
-                         2500}px`, // Much larger safety margin to ensure ALL columns are reachable
+                         5000}px`, // Extra large safety margin to ensure ALL columns are reachable
                   height: '1px' // Invisible content to create scroll area
                 }}></div>
               </div>
@@ -2013,11 +2015,11 @@ export default function AdminAffiliates() {
               >
                 <table className="min-w-full divide-y divide-gray-400" style={{ 
                   minWidth: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
-                            (Object.keys(actualColumnWidths).length * 12) + 2500}px`, 
+                            (Object.keys(actualColumnWidths).length * 12) + 5000}px`, 
                   fontSize: '11px',
                   tableLayout: 'fixed',
                   width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
-                         (Object.keys(actualColumnWidths).length * 12) + 2500}px`
+                         (Object.keys(actualColumnWidths).length * 12) + 5000}px`
                 }}>
                   <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
@@ -2860,7 +2862,7 @@ export default function AdminAffiliates() {
              style={{ 
                width: `${Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 
                       (Object.keys(actualColumnWidths).length * 12) + // Extra padding per column 
-                      2500}px`, // Much larger safety margin to ensure ALL columns are reachable
+                      5000}px`, // Extra large safety margin to ensure ALL columns are reachable
                height: '1px'
              }}
            />
