@@ -103,8 +103,11 @@ export async function POST(request: NextRequest) {
       if (!values[4]?.trim()) willHaveAnnotations.push('Missing last name (will be marked as red)')
       
       const email = values[5]?.trim()
-      if (!email) willHaveAnnotations.push('Missing email (placeholder email will be generated, marked as red)')
-      else if (!email.includes('@')) willHaveAnnotations.push('Invalid email format (will be marked as red)')
+      if (!email) {
+        willHaveAnnotations.push('Missing email (placeholder email will be generated, marked as red)')
+      } else if (!email.includes('@') || email.length > 100 || email.includes('\n') || email.includes(',')) {
+        willHaveAnnotations.push('Corrupted email data (will be sanitized & marked as red)')
+      }
       
       previewRows.push({
         rowNumber: i + 1,
