@@ -61,10 +61,18 @@ export async function GET(request: NextRequest) {
 
     // Build orderBy clause
     let orderBy: any[] = []
+    let needsCustomSorting = false
     
     if (sortField && sortField !== '') {
-      // Standard field sorting
-      orderBy = [{ [sortField]: sortDirection as any }]
+      // Special handling for affiliateNum - it needs numerical sorting
+      if (sortField === 'affiliateNum') {
+        // We'll sort this manually after fetching the data
+        needsCustomSorting = true
+        // Don't add to orderBy - we'll handle this in JavaScript
+      } else {
+        // Standard field sorting
+        orderBy = [{ [sortField]: sortDirection as any }]
+      }
     } else {
       // Default sorting when no sort is specified
       orderBy = [
@@ -75,12 +83,44 @@ export async function GET(request: NextRequest) {
     }
 
     // Get affiliates with pagination
-    const affiliates = await (prisma as any).affiliate.findMany({
-      where: whereClause,
-      orderBy: orderBy,
-      skip: offset,
-      take: limit
-    })
+    let affiliates
+    
+    if (needsCustomSorting && sortField === 'affiliateNum') {
+      // For affiliate number sorting, we need to fetch all data first, sort it, then paginate
+      // This is necessary because affiliateNum is stored as string but needs numerical sorting
+      const allAffiliates = await (prisma as any).affiliate.findMany({
+        where: whereClause,
+        // Don't add orderBy here, we'll sort manually
+      })
+      
+      // Sort numerically
+      allAffiliates.sort((a: any, b: any) => {
+        const aNum = a.affiliateNum ? parseInt(a.affiliateNum) : 0
+        const bNum = b.affiliateNum ? parseInt(b.affiliateNum) : 0
+        
+        // Handle null/invalid numbers by putting them at the end
+        if (isNaN(aNum) && isNaN(bNum)) return 0
+        if (isNaN(aNum)) return 1
+        if (isNaN(bNum)) return -1
+        
+        if (sortDirection === 'asc') {
+          return aNum - bNum
+        } else {
+          return bNum - aNum
+        }
+      })
+      
+      // Apply pagination after sorting
+      affiliates = allAffiliates.slice(offset, offset + limit)
+    } else {
+      // Normal database sorting for other fields
+      affiliates = await (prisma as any).affiliate.findMany({
+        where: whereClause,
+        orderBy: orderBy,
+        skip: offset,
+        take: limit
+      })
+    }
 
     // Get total count
     const totalCount = await (prisma as any).affiliate.count({
