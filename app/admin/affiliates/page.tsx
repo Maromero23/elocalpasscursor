@@ -219,7 +219,7 @@ export default function AdminAffiliates() {
   // Load affiliates
   useEffect(() => {
     loadAffiliates()
-  }, [currentPage, itemsPerPage, searchTerm, statusFilter, categoryFilter, cityFilter, typeFilter, ratingFilter])
+  }, [currentPage, itemsPerPage, searchTerm, statusFilter, categoryFilter, cityFilter, typeFilter, ratingFilter, sortField, sortDirection])
 
   // Load annotations when affiliates change
   useEffect(() => {
@@ -270,7 +270,9 @@ export default function AdminAffiliates() {
         ...(categoryFilter && { category: categoryFilter }),
         ...(cityFilter && { city: cityFilter }),
         ...(typeFilter && { type: typeFilter }),
-        ...(ratingFilter && { rating: ratingFilter })
+        ...(ratingFilter && { rating: ratingFilter }),
+        ...(sortField && { sortField: sortField }),
+        ...(sortField && { sortDirection: sortDirection })
       })
 
       const response = await fetch(`/api/admin/affiliates?${params}`)
@@ -1356,44 +1358,8 @@ export default function AdminAffiliates() {
     }
   }
 
-  // Apply client-side sorting to server-paginated data
+  // Server handles sorting, so we just use the data as-is
   let filteredAffiliates = [...affiliates]
-  
-  // Apply sorting
-  if (sortField) {
-    filteredAffiliates.sort((a, b) => {
-      let aVal: any = (a as any)[sortField]
-      let bVal: any = (b as any)[sortField]
-      
-      // Handle different field types
-      if (sortField === 'affiliateNum') {
-        // Handle affiliate number sorting properly
-        const aNum = aVal ? parseInt(String(aVal)) : null
-        const bNum = bVal ? parseInt(String(bVal)) : null
-        
-        // Push null/invalid numbers to the end
-        if (aNum === null && bNum === null) return 0
-        if (aNum === null) return sortDirection === 'asc' ? 1 : -1
-        if (bNum === null) return sortDirection === 'asc' ? -1 : 1
-        
-        // Normal numeric comparison
-        if (aNum < bNum) return sortDirection === 'asc' ? -1 : 1
-        if (aNum > bNum) return sortDirection === 'asc' ? 1 : -1
-        return 0
-      } else if (sortField === 'rating') {
-        aVal = aVal || 0
-        bVal = bVal || 0
-      } else if (typeof aVal === 'string') {
-        aVal = aVal?.toLowerCase() || ''
-        bVal = bVal?.toLowerCase() || ''
-      }
-      
-      // Default comparison for other fields
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
-      return 0
-     })
-   }
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>

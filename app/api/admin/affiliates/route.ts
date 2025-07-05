@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') // 'active', 'inactive', 'all'
     const category = searchParams.get('category') || ''
+    const sortField = searchParams.get('sortField') || ''
+    const sortDirection = searchParams.get('sortDirection') || 'asc'
     
     const offset = (page - 1) * limit
 
@@ -55,16 +57,27 @@ export async function GET(request: NextRequest) {
       whereClause.category = { contains: category, mode: 'insensitive' }
     }
 
-    console.log(`📊 ADMIN: Fetching affiliates (page ${page}, limit ${limit})`)
+    console.log(`📊 ADMIN: Fetching affiliates (page ${page}, limit ${limit}, sort: ${sortField} ${sortDirection})`)
+
+    // Build orderBy clause
+    let orderBy: any[] = []
+    
+    if (sortField && sortField !== '') {
+      // Standard field sorting
+      orderBy = [{ [sortField]: sortDirection as any }]
+    } else {
+      // Default sorting when no sort is specified
+      orderBy = [
+        { isActive: 'desc' }, // Active first
+        { totalVisits: 'desc' }, // Most visits first
+        { name: 'asc' }
+      ]
+    }
 
     // Get affiliates with pagination
     const affiliates = await (prisma as any).affiliate.findMany({
       where: whereClause,
-      orderBy: [
-        { isActive: 'desc' }, // Active first
-        { totalVisits: 'desc' }, // Most visits first
-        { name: 'asc' }
-      ],
+      orderBy: orderBy,
       skip: offset,
       take: limit
     })
