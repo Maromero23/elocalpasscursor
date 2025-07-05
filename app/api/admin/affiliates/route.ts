@@ -238,12 +238,11 @@ async function handleCSVImport(csvData: string) {
       
       console.log(`📋 Row ${i + 1} - Values count: ${values.length}, Email: ${values[5]}`)
       
-      // Valid if: has enough columns AND (email is empty OR contains @)
-      const email = values[5]?.trim()
-      if (values.length < 6 || (email && !email.includes('@'))) {
-        console.log(`⚠️ Skipping row ${i + 1}: Invalid data - insufficient columns or invalid email format`)
+      // Only skip rows with insufficient columns - import everything else
+      if (values.length < 6) {
+        console.log(`⚠️ Skipping row ${i + 1}: Insufficient columns (${values.length} < 6)`)
         errors++
-        errorDetails.push(`Row ${i + 1}: Invalid data (${values.length} columns, email: ${values[5]})`)
+        errorDetails.push(`Row ${i + 1}: Insufficient columns (${values.length} < 6)`)
         continue
       }
       
@@ -276,24 +275,87 @@ async function handleCSVImport(csvData: string) {
         termsConditions: values[25] || null // TyC field
       }
       
-      // Check if affiliate already exists (only if email is provided)
+      // Import all affiliates - mark duplicates with annotations instead of skipping
+      let isDuplicate = false
       if (affiliateData.email) {
         const existing = await (prisma as any).affiliate.findUnique({
           where: { email: affiliateData.email }
         })
         
         if (existing) {
-          console.log(`⚠️ Affiliate ${affiliateData.email} already exists, skipping`)
-          continue
+          console.log(`🔄 Affiliate ${affiliateData.email} already exists, importing as duplicate`)
+          isDuplicate = true
         }
       }
       
-      await (prisma as any).affiliate.create({
+      const newAffiliate = await (prisma as any).affiliate.create({
         data: affiliateData
       })
       
+      // Create annotations for problematic data
+      const annotations = []
+      const email = values[5]?.trim()
+      
+      // Mark missing emails
+      if (!email) {
+        annotations.push({
+          affiliateId: newAffiliate.id,
+          fieldName: 'email',
+          color: 'yellow',
+          comment: 'Missing email address - imported from CSV',
+          createdBy: 'admin' // Will be replaced with actual admin ID
+        })
+      }
+      // Mark invalid email format
+      else if (!email.includes('@')) {
+        annotations.push({
+          affiliateId: newAffiliate.id,
+          fieldName: 'email',
+          color: 'red',
+          comment: `Invalid email format: ${email} - needs correction`,
+          createdBy: 'admin'
+        })
+      }
+      
+      // Mark duplicates
+      if (isDuplicate) {
+        annotations.push({
+          affiliateId: newAffiliate.id,
+          fieldName: 'name',
+          color: 'orange',
+          comment: 'Potential duplicate affiliate - review needed',
+          createdBy: 'admin'
+        })
+      }
+      
+      // Get admin user for annotations
+      if (annotations.length > 0) {
+        try {
+          const adminUser = await (prisma as any).user.findFirst({
+            where: { role: 'ADMIN' }
+          })
+          
+          if (adminUser) {
+            // Update annotations with real admin ID
+            annotations.forEach(annotation => {
+              annotation.createdBy = adminUser.id
+            })
+            
+            // Create all annotations
+            await (prisma as any).affiliateFieldAnnotation.createMany({
+              data: annotations,
+              skipDuplicates: true
+            })
+            
+            console.log(`📝 Created ${annotations.length} annotation(s) for ${affiliateData.name}`)
+          }
+        } catch (annotationError) {
+          console.warn(`⚠️ Could not create annotations for ${affiliateData.name}:`, annotationError)
+        }
+      }
+      
       imported++
-      console.log(`✅ Imported: ${affiliateData.name} (${affiliateData.email})`)
+      console.log(`✅ Imported: ${affiliateData.name} (${affiliateData.email || 'no email'})`)
       
     } catch (error) {
       errors++

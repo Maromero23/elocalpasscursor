@@ -74,14 +74,13 @@ export async function POST(request: NextRequest) {
     let validRows = 0
     let invalidRows = 0
     
-    // First pass: Count all valid/invalid rows
+    // First pass: Count all valid/invalid rows (now only invalid if insufficient columns)
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue
       
       const values = parseCSVLine(lines[i])
-      // Valid if: has enough columns AND (email is empty OR contains @)
-      const email = values[5]?.trim()
-      const isValid = values.length >= 6 && (!email || email.includes('@'))
+      // Only invalid if insufficient columns - all others will be imported
+      const isValid = values.length >= 6
       
       if (isValid) validRows++
       else invalidRows++
@@ -92,18 +91,22 @@ export async function POST(request: NextRequest) {
       if (!lines[i].trim()) continue
       
       const values = parseCSVLine(lines[i])
-      // Valid if: has enough columns AND (email is empty OR contains @)
+      // Only invalid if insufficient columns - all others will be imported with annotations
+      const isValid = values.length >= 6
       const email = values[5]?.trim()
-      const isValid = values.length >= 6 && (!email || email.includes('@'))
+      
+      // Determine what annotations will be added
+      const willHaveAnnotations = []
+      if (!email) willHaveAnnotations.push('Missing email (will be marked for update)')
+      else if (!email.includes('@')) willHaveAnnotations.push('Invalid email format (will be marked as error)')
       
       previewRows.push({
         rowNumber: i + 1,
         values: values,
         isValid: isValid,
         issues: !isValid ? [
-          values.length < 6 ? `Only ${values.length} columns (expected ${expectedHeaders.length})` : null,
-          email && !email.includes('@') ? 'Invalid email format' : null
-        ].filter(Boolean) : []
+          values.length < 6 ? `Only ${values.length} columns (expected ${expectedHeaders.length})` : null
+        ].filter(Boolean) : willHaveAnnotations
       })
     }
     
