@@ -713,12 +713,6 @@ export default function AdminAffiliates() {
           }
           return value || <span className="text-gray-400">-</span>
         default:
-          if (field === 'affiliateNum') {
-            // Generate sequential number based on pagination: (page-1) * itemsPerPage + (index+1)
-            const affiliateIndex = filteredAffiliates.findIndex(a => a.id === affiliate.id)
-            const sequentialNumber = (currentPage - 1) * itemsPerPage + (affiliateIndex + 1)
-            return String(sequentialNumber)
-          }
           if (field === 'whatsApp' && value) {
             return (
               <a href={`https://wa.me/${value}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">
