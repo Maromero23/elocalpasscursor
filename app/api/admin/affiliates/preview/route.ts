@@ -40,6 +40,80 @@ function parseCSVLine(line: string): string[] {
   return result
 }
 
+// Reconstruct CSV records that may have embedded line breaks in quoted fields
+function reconstructCSVRecords(csvData: string): string[] {
+  const lines = csvData.trim().split(/\r?\n/)
+  const reconstructedLines = []
+  let currentRecord = ''
+  let inQuotedField = false
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    
+    if (currentRecord === '') {
+      // Start of a new record
+      currentRecord = line
+      inQuotedField = isLineInQuotedField(line)
+    } else {
+      // Continuation of previous record (replace line break with space)
+      currentRecord += ' ' + line
+      inQuotedField = isLineInQuotedField(currentRecord)
+    }
+    
+    // If we're not in a quoted field and this looks like a complete record, save it
+    if (!inQuotedField && isCompleteAffiliateRecord(currentRecord)) {
+      reconstructedLines.push(currentRecord)
+      currentRecord = ''
+    }
+  }
+  
+  // Add any remaining record
+  if (currentRecord !== '') {
+    reconstructedLines.push(currentRecord)
+  }
+  
+  return reconstructedLines
+}
+
+// Check if a line leaves us in a quoted field
+function isLineInQuotedField(line: string): boolean {
+  let inQuote = false
+  let i = 0
+  
+  while (i < line.length) {
+    const char = line[i]
+    
+    if (char === '"') {
+      // Check if this is an escaped quote
+      if (i + 1 < line.length && line[i + 1] === '"') {
+        i += 2 // Skip escaped quote
+        continue
+      }
+      inQuote = !inQuote
+    }
+    i++
+  }
+  
+  return inQuote
+}
+
+// Check if a line represents a complete affiliate record
+function isCompleteAffiliateRecord(line: string): boolean {
+  // Skip header row
+  if (line.includes('Afiliate number') || line.includes('Active')) {
+    return true
+  }
+  
+  // Skip obvious fragments that start with quotes or special characters
+  if (line.startsWith('",') || line.startsWith('#')) {
+    return false
+  }
+  
+  // A complete record should have at least 15 fields
+  const fields = line.split(',')
+  return fields.length >= 15
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -56,9 +130,9 @@ export async function POST(request: NextRequest) {
 
     console.log('📊 ADMIN: Previewing CSV data')
     
-    // Parse CSV data
-    const lines = csvData.trim().split(/\r?\n/)
-    const headers = parseCSVLine(lines[0])
+    // Parse CSV data and reconstruct records that may have embedded line breaks
+    const reconstructedLines = reconstructCSVRecords(csvData)
+    const headers = parseCSVLine(reconstructedLines[0])
     
     // Expected headers for reference (matching user's actual CSV format with empty columns)
     const expectedHeaders = [
@@ -75,19 +149,19 @@ export async function POST(request: NextRequest) {
     let invalidRows = 0
     
     // First pass: Count all valid/invalid rows (ALL rows are valid now - no rejections)
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue
+    for (let i = 1; i < reconstructedLines.length; i++) {
+      if (!reconstructedLines[i].trim()) continue
       
-      const values = parseCSVLine(lines[i])
+      const values = parseCSVLine(reconstructedLines[i])
       // ALL rows are now valid - we import everything with padding
       validRows++
     }
     
     // Second pass: Create preview rows for display (first 5 only)
-    for (let i = 1; i < Math.min(lines.length, 6); i++) {
-      if (!lines[i].trim()) continue
+    for (let i = 1; i < Math.min(reconstructedLines.length, 6); i++) {
+      if (!reconstructedLines[i].trim()) continue
       
-      const values = parseCSVLine(lines[i])
+      const values = parseCSVLine(reconstructedLines[i])
       // ALL rows are now valid - we import everything with padding and annotations
       const isValid = true
       
@@ -118,7 +192,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Count total rows
-    const totalDataRows = lines.length - 1 // Exclude header
+    const totalDataRows = reconstructedLines.length - 1 // Exclude header
     
     return NextResponse.json({
       success: true,

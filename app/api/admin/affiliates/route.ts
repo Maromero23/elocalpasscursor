@@ -211,15 +211,90 @@ function parseCSVLine(line: string): string[] {
   return result
 }
 
+// Reconstruct CSV records that may have embedded line breaks in quoted fields
+function reconstructCSVRecords(csvData: string): string[] {
+  const lines = csvData.trim().split(/\r?\n/)
+  const reconstructedLines = []
+  let currentRecord = ''
+  let inQuotedField = false
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    
+    if (currentRecord === '') {
+      // Start of a new record
+      currentRecord = line
+      inQuotedField = isLineInQuotedField(line)
+    } else {
+      // Continuation of previous record (replace line break with space)
+      currentRecord += ' ' + line
+      inQuotedField = isLineInQuotedField(currentRecord)
+    }
+    
+    // If we're not in a quoted field and this looks like a complete record, save it
+    if (!inQuotedField && isCompleteAffiliateRecord(currentRecord)) {
+      reconstructedLines.push(currentRecord)
+      currentRecord = ''
+    }
+  }
+  
+  // Add any remaining record
+  if (currentRecord !== '') {
+    reconstructedLines.push(currentRecord)
+  }
+  
+  return reconstructedLines
+}
+
+// Check if a line leaves us in a quoted field
+function isLineInQuotedField(line: string): boolean {
+  let inQuote = false
+  let i = 0
+  
+  while (i < line.length) {
+    const char = line[i]
+    
+    if (char === '"') {
+      // Check if this is an escaped quote
+      if (i + 1 < line.length && line[i + 1] === '"') {
+        i += 2 // Skip escaped quote
+        continue
+      }
+      inQuote = !inQuote
+    }
+    i++
+  }
+  
+  return inQuote
+}
+
+// Check if a line represents a complete affiliate record
+function isCompleteAffiliateRecord(line: string): boolean {
+  // Skip header row
+  if (line.includes('Afiliate number') || line.includes('Active')) {
+    return true
+  }
+  
+  // Skip obvious fragments that start with quotes or special characters
+  if (line.startsWith('",') || line.startsWith('#')) {
+    return false
+  }
+  
+  // A complete record should have at least 15 fields
+  const fields = line.split(',')
+  return fields.length >= 15
+}
+
 async function handleCSVImport(csvData: string) {
   console.log('📊 ADMIN: Starting CSV import of affiliates')
   
-  // Parse CSV data properly
-  const lines = csvData.trim().split(/\r?\n/)
-  const headers = parseCSVLine(lines[0])
+  // First, properly reconstruct CSV records that may have embedded line breaks
+  const reconstructedLines = reconstructCSVRecords(csvData)
+  const headers = parseCSVLine(reconstructedLines[0])
   
   console.log('📋 CSV Headers:', headers)
   console.log('📋 Headers count:', headers.length)
+  console.log('📋 Original lines vs reconstructed:', csvData.split(/\r?\n/).length, 'vs', reconstructedLines.length)
   
   // Expected headers: Affiliate #,Active,Name,FirstName,LastName,Email,WorkPhone,WhatsApp,Address,Web,Descripcion,City,Maps,Location,Discount,Logo,Facebook,Instagram,Category,Sub-Categoria,Service,Type,Sticker,Rating,Recommended,Terms&Cond
   
@@ -227,14 +302,14 @@ async function handleCSVImport(csvData: string) {
   let errors = 0
   const errorDetails = []
   
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = 1; i < reconstructedLines.length; i++) {
     try {
-      if (!lines[i].trim()) {
+      if (!reconstructedLines[i].trim()) {
         console.log(`⚠️ Skipping empty row ${i + 1}`)
         continue
       }
       
-      const values = parseCSVLine(lines[i])
+      const values = parseCSVLine(reconstructedLines[i])
       
       console.log(`📋 Row ${i + 1} - Values count: ${values.length}, Email: ${values[5]}`)
       
