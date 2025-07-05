@@ -1077,9 +1077,8 @@ export default function AdminAffiliates() {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return
       const diff = e.clientX - startX
-      // Different minimum widths for different columns
-      const minWidth = field === 'select' ? 20 : 30 // Checkbox column can be smaller
-      const newWidth = Math.max(minWidth, startWidth + diff)
+      // Allow columns to be made extremely small - only 1px minimum to prevent disappearing
+      const newWidth = Math.max(1, startWidth + diff)
       console.log(`📏 Resizing column ${field}: ${startWidth}px → ${newWidth}px (diff: ${diff}px)`)
       updateColumnWidth(field, newWidth)
     }
