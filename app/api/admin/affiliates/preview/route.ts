@@ -74,16 +74,13 @@ export async function POST(request: NextRequest) {
     let validRows = 0
     let invalidRows = 0
     
-    // First pass: Count all valid/invalid rows (now only invalid if insufficient columns)
+    // First pass: Count all valid/invalid rows (ALL rows are valid now - no rejections)
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue
       
       const values = parseCSVLine(lines[i])
-      // Only invalid if insufficient columns - all others will be imported
-      const isValid = values.length >= 6
-      
-      if (isValid) validRows++
-      else invalidRows++
+      // ALL rows are now valid - we import everything with padding
+      validRows++
     }
     
     // Second pass: Create preview rows for display (first 5 only)
@@ -91,22 +88,29 @@ export async function POST(request: NextRequest) {
       if (!lines[i].trim()) continue
       
       const values = parseCSVLine(lines[i])
-      // Only invalid if insufficient columns - all others will be imported with annotations
-      const isValid = values.length >= 6
-      const email = values[5]?.trim()
+      // ALL rows are now valid - we import everything with padding and annotations
+      const isValid = true
+      
+      // Pad values to ensure we have enough columns for display
+      while (values.length < 26) {
+        values.push('')
+      }
       
       // Determine what annotations will be added
       const willHaveAnnotations = []
-      if (!email) willHaveAnnotations.push('Missing email (will be marked for update)')
-      else if (!email.includes('@')) willHaveAnnotations.push('Invalid email format (will be marked as error)')
+      if (!values[2]?.trim()) willHaveAnnotations.push('Missing name (will be marked as red)')
+      if (!values[3]?.trim()) willHaveAnnotations.push('Missing first name (will be marked as red)')
+      if (!values[4]?.trim()) willHaveAnnotations.push('Missing last name (will be marked as red)')
+      
+      const email = values[5]?.trim()
+      if (!email) willHaveAnnotations.push('Missing email (will be marked as red)')
+      else if (!email.includes('@')) willHaveAnnotations.push('Invalid email format (will be marked as red)')
       
       previewRows.push({
         rowNumber: i + 1,
         values: values,
         isValid: isValid,
-        issues: !isValid ? [
-          values.length < 6 ? `Only ${values.length} columns (expected ${expectedHeaders.length})` : null
-        ].filter(Boolean) : willHaveAnnotations
+        issues: willHaveAnnotations
       })
     }
     
@@ -122,7 +126,7 @@ export async function POST(request: NextRequest) {
         totalRows: totalDataRows,
         previewRows: previewRows,
         estimatedValid: validRows,
-        estimatedInvalid: invalidRows
+        estimatedInvalid: 0 // No invalid rows - everything is imported
       }
     })
 

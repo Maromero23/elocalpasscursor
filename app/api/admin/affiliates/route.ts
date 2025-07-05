@@ -238,53 +238,56 @@ async function handleCSVImport(csvData: string) {
       
       console.log(`📋 Row ${i + 1} - Values count: ${values.length}, Email: ${values[5]}`)
       
-      // Only skip rows with insufficient columns - import everything else
-      if (values.length < 6) {
-        console.log(`⚠️ Skipping row ${i + 1}: Insufficient columns (${values.length} < 6)`)
-        errors++
-        errorDetails.push(`Row ${i + 1}: Insufficient columns (${values.length} < 6)`)
-        continue
+      // Import ALL rows regardless of column count - pad with nulls if needed
+      while (values.length < 26) {
+        values.push('') // Pad missing columns with empty strings
       }
+      console.log(`📋 Row ${i + 1} padded to ${values.length} columns for import`)
       
       const affiliateData = {
         affiliateNum: values[0] || null, // First column (sometimes has sequence number)
         isActive: values[1]?.toLowerCase() === 'true' || values[1] === '1',
-        name: values[2] || 'Unknown Business',
-        firstName: values[3] || null,
-        lastName: values[4] || null,
+        name: values[2]?.trim() || `Unnamed-${i}`, // Ensure every affiliate has a name
+        firstName: values[3]?.trim() || null,
+        lastName: values[4]?.trim() || null,
         email: values[5]?.trim()?.toLowerCase() || null,
-        workPhone: values[6] || null,
-        whatsApp: values[7] || null,
-        address: values[8] || null,
-        web: values[9] || null,
-        description: values[10] || null,
-        city: values[11] || null,
-        maps: values[12] || null,
-        location: values[13] || null,
-        discount: values[14] || null,
-        logo: values[15] || null,
-        facebook: values[16] || null,
-        instagram: values[17] || null,
-        category: values[18] || null,
-        subCategory: values[19] || null,
-        service: values[20] || null,
-        type: values[21] || null,
-        sticker: values[22] || null,
-        rating: values[23] ? parseFloat(values[23]) : null,
+        workPhone: values[6]?.trim() || null,
+        whatsApp: values[7]?.trim() || null,
+        address: values[8]?.trim() || null,
+        web: values[9]?.trim() || null,
+        description: values[10]?.trim() || null,
+        city: values[11]?.trim() || null,
+        maps: values[12]?.trim() || null,
+        location: values[13]?.trim() || null,
+        discount: values[14]?.trim() || null,
+        logo: values[15]?.trim() || null,
+        facebook: values[16]?.trim() || null,
+        instagram: values[17]?.trim() || null,
+        category: values[18]?.trim() || null,
+        subCategory: values[19]?.trim() || null,
+        service: values[20]?.trim() || null,
+        type: values[21]?.trim() || null,
+        sticker: values[22]?.trim() || null,
+        rating: values[23] && values[23].trim() ? parseFloat(values[23]) : null,
         recommended: values[24]?.toLowerCase() === 'true' || values[24] === '1',
-        termsConditions: values[25] || null // TyC field
+        termsConditions: values[25]?.trim() || null // TyC field
       }
       
       // Import all affiliates - mark duplicates with annotations instead of skipping
       let isDuplicate = false
       if (affiliateData.email) {
-        const existing = await (prisma as any).affiliate.findUnique({
-          where: { email: affiliateData.email }
-        })
-        
-        if (existing) {
-          console.log(`🔄 Affiliate ${affiliateData.email} already exists, importing as duplicate`)
-          isDuplicate = true
+        try {
+          const existing = await (prisma as any).affiliate.findUnique({
+            where: { email: affiliateData.email }
+          })
+          
+          if (existing) {
+            console.log(`🔄 Affiliate ${affiliateData.email} already exists, importing as duplicate`)
+            isDuplicate = true
+          }
+        } catch (duplicateError) {
+          console.warn(`⚠️ Could not check for duplicate email ${affiliateData.email}:`, duplicateError)
+          // Continue with import anyway
         }
       }
       
@@ -294,16 +297,46 @@ async function handleCSVImport(csvData: string) {
       
       // Create annotations for problematic data
       const annotations = []
-      const email = values[5]?.trim()
       
-      // Mark missing emails
-      if (!email) {
+      // Mark missing critical fields as RED (as requested by user)
+      if (!values[2]?.trim()) { // Missing name
+        annotations.push({
+          affiliateId: newAffiliate.id,
+          fieldName: 'name',
+          color: 'red',
+          comment: 'Missing business name - imported from CSV',
+          createdBy: 'admin'
+        })
+      }
+      
+      if (!values[3]?.trim()) { // Missing firstName
+        annotations.push({
+          affiliateId: newAffiliate.id,
+          fieldName: 'firstName',
+          color: 'red',
+          comment: 'Missing first name - imported from CSV',
+          createdBy: 'admin'
+        })
+      }
+      
+      if (!values[4]?.trim()) { // Missing lastName
+        annotations.push({
+          affiliateId: newAffiliate.id,
+          fieldName: 'lastName',
+          color: 'red',
+          comment: 'Missing last name - imported from CSV',
+          createdBy: 'admin'
+        })
+      }
+      
+      const email = values[5]?.trim()
+      if (!email) { // Missing email
         annotations.push({
           affiliateId: newAffiliate.id,
           fieldName: 'email',
-          color: 'yellow',
+          color: 'red',
           comment: 'Missing email address - imported from CSV',
-          createdBy: 'admin' // Will be replaced with actual admin ID
+          createdBy: 'admin'
         })
       }
       // Mark invalid email format
