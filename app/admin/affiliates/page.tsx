@@ -210,11 +210,25 @@ export default function AdminAffiliates() {
     recommended: 105,        // "RECOMMENDED" (11 chars + padding)
     termsConditions: 45,     // "T&C" (3 chars + padding)
     visits: 65,              // "VISITS" (6 chars + padding)
-    actions: 75              // "ACTIONS" (7 chars + padding)
+    actions: 30              // "ACTIONS" - Made much smaller for just icons
   }
 
   // Column widths are now managed by the useUserPreferences hook
   const actualColumnWidths = Object.keys(columnWidths).length > 0 ? columnWidths : defaultColumnWidths
+
+  // Reset column widths to defaults
+  const resetColumnWidths = async () => {
+    try {
+      // Reset all columns to their default widths
+      for (const [field, width] of Object.entries(defaultColumnWidths)) {
+        await updateColumnWidth(field, width)
+      }
+      success('Column Widths Reset', 'All columns have been reset to their default sizes')
+    } catch (err) {
+      console.error('Error resetting column widths:', err)
+      error('Reset Failed', 'Unable to reset column widths')
+    }
+  }
 
   // Load affiliates
   useEffect(() => {
@@ -1122,27 +1136,11 @@ export default function AdminAffiliates() {
             )}
           </div>
         </div>
-        {/* Visible Resize Handle - Made wider and more visible */}
+        {/* Simplified Resize Handle using CSS */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-500 bg-gray-500 border-r border-gray-700 transition-colors duration-200"
+          className={`column-resize-handle ${isResizing ? 'resizing' : ''}`}
           onMouseDown={handleMouseDown}
           title="Drag to resize column"
-          style={{
-            background: isResizing ? '#3b82f6' : '#6b7280',
-            opacity: isResizing ? 1 : 0.8,
-            zIndex: 100, // Much higher z-index for rightmost columns
-            transform: 'translateX(-1px)' // Move it slightly left to not cover content
-          }}
-        />
-        {/* Larger invisible hit area for easier grabbing */}
-        <div
-          className="absolute right-0 top-0 bottom-0 w-6 cursor-col-resize opacity-0 hover:opacity-10 hover:bg-blue-300"
-          onMouseDown={handleMouseDown}
-          title="🔄 Drag to resize this column width"
-          style={{
-            zIndex: 99, // High z-index for rightmost columns
-            transform: 'translateX(-2px)' // Position it properly
-          }}
         />
         {/* Resize indicator on hover */}
         <div
@@ -1395,6 +1393,44 @@ export default function AdminAffiliates() {
           scrollbar-width: auto !important;
           overflow-x: scroll !important;
         }
+        /* Force fixed table layout and prevent column expansion */
+        .affiliate-table {
+          table-layout: fixed !important;
+          width: 100% !important;
+        }
+        .affiliate-table th,
+        .affiliate-table td {
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+          box-sizing: border-box !important;
+        }
+        .affiliate-table th {
+          position: relative !important;
+        }
+        /* Make resize handles more visible and easier to grab */
+        .column-resize-handle {
+          position: absolute !important;
+          right: 0 !important;
+          top: 0 !important;
+          bottom: 0 !important;
+          width: 4px !important;
+          cursor: col-resize !important;
+          background: #6b7280 !important;
+          opacity: 0.8 !important;
+          transition: all 0.2s ease !important;
+          z-index: 200 !important;
+        }
+        .column-resize-handle:hover {
+          background: #3b82f6 !important;
+          opacity: 1 !important;
+          width: 6px !important;
+        }
+        .column-resize-handle.resizing {
+          background: #ef4444 !important;
+          opacity: 1 !important;
+          width: 6px !important;
+        }
       `}} />
       <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -1422,6 +1458,14 @@ export default function AdminAffiliates() {
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
+              </button>
+              <button
+                onClick={resetColumnWidths}
+                className="flex items-center px-4 py-2 text-orange-600 border border-orange-600 rounded-md hover:bg-orange-50"
+                title="Reset all column widths to default sizes"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Reset Widths
               </button>
               {summary.total > 0 && (
                 <button
@@ -2012,11 +2056,10 @@ export default function AdminAffiliates() {
                 }}
                 onScroll={syncScrollFromMain}
               >
-                <table className="min-w-full divide-y divide-gray-400" style={{ 
+                <table className="min-w-full divide-y divide-gray-400 affiliate-table" style={{ 
                   minWidth: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
                             (Object.keys(actualColumnWidths).length * 12) + 5000}px`, 
                   fontSize: '11px',
-                  tableLayout: 'fixed',
                   width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
                          (Object.keys(actualColumnWidths).length * 12) + 5000}px`
                 }}>
