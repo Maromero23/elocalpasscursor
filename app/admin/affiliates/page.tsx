@@ -1984,7 +1984,7 @@ export default function AdminAffiliates() {
                 <div style={{ 
                   width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
                          (Object.keys(actualColumnWidths).length * 12) + // Extra padding per column 
-                         200}px`, // Large safety margin to ensure last columns are reachable
+                         800}px`, // Much larger safety margin to ensure ALL columns are reachable
                   height: '1px' // Invisible content to create scroll area
                 }}></div>
               </div>
@@ -2011,11 +2011,11 @@ export default function AdminAffiliates() {
               >
                 <table className="min-w-full divide-y divide-gray-400" style={{ 
                   minWidth: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
-                            (Object.keys(actualColumnWidths).length * 12) + 200}px`, 
+                            (Object.keys(actualColumnWidths).length * 12) + 800}px`, 
                   fontSize: '11px',
                   tableLayout: 'fixed',
                   width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
-                         (Object.keys(actualColumnWidths).length * 12) + 200}px`
+                         (Object.keys(actualColumnWidths).length * 12) + 800}px`
                 }}>
                   <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
@@ -2858,7 +2858,7 @@ export default function AdminAffiliates() {
              style={{ 
                width: `${Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 
                       (Object.keys(actualColumnWidths).length * 12) + // Extra padding per column 
-                      200}px`, // Large safety margin to ensure last columns are reachable
+                      800}px`, // Much larger safety margin to ensure ALL columns are reachable
                height: '1px'
              }}
            />
