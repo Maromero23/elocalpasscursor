@@ -180,37 +180,37 @@ export default function AdminAffiliates() {
     fieldName: ''
   })
 
-  // Default column widths
+  // Default column widths - sized to fit header text
   const defaultColumnWidths = {
-    select: 40,
-    affiliateNum: 48,
-    status: 64,
-    name: 96,
-    firstName: 80,
-    lastName: 80,
-    email: 96,
-    workPhone: 80,
-    whatsApp: 80,
-    address: 96,
-    web: 80,
-    description: 96,
-    city: 64,
-    maps: 80,
-    location: 80,
-    discount: 64,
-    logo: 64,
-    facebook: 80,
-    instagram: 80,
-    category: 80,
-    subCategory: 80,
-    service: 64,
-    type: 64,
-    sticker: 64,
-    rating: 64,
-    recommended: 64,
-    termsConditions: 64,
-    visits: 64,
-    actions: 80
+    select: 40,              // Checkbox
+    affiliateNum: 45,        // "No." (3 chars + padding)
+    status: 70,              // "STATUS" (6 chars + padding)
+    name: 120,               // "BUSINESS NAME" (13 chars + padding)
+    firstName: 90,           // "FIRST NAME" (10 chars + padding)
+    lastName: 85,            // "LAST NAME" (9 chars + padding)
+    email: 60,               // "EMAIL" (5 chars + padding)
+    workPhone: 95,           // "WORK PHONE" (10 chars + padding)
+    whatsApp: 80,            // "WHATSAPP" (8 chars + padding)
+    address: 75,             // "ADDRESS" (7 chars + padding)
+    web: 45,                 // "WEB" (3 chars + padding)
+    description: 105,        // "DESCRIPTION" (11 chars + padding)
+    city: 50,                // "CITY" (4 chars + padding)
+    maps: 50,                // "MAPS" (4 chars + padding)
+    location: 80,            // "LOCATION" (8 chars + padding)
+    discount: 80,            // "DISCOUNT" (8 chars + padding)
+    logo: 50,                // "LOGO" (4 chars + padding)
+    facebook: 80,            // "FACEBOOK" (8 chars + padding)
+    instagram: 90,           // "INSTAGRAM" (9 chars + padding)
+    category: 80,            // "CATEGORY" (8 chars + padding)
+    subCategory: 115,        // "SUB CATEGORY" (12 chars + padding)
+    service: 75,             // "SERVICE" (7 chars + padding)
+    type: 50,                // "TYPE" (4 chars + padding)
+    sticker: 75,             // "STICKER" (7 chars + padding)
+    rating: 65,              // "RATING" (6 chars + padding)
+    recommended: 105,        // "RECOMMENDED" (11 chars + padding)
+    termsConditions: 45,     // "T&C" (3 chars + padding)
+    visits: 65,              // "VISITS" (6 chars + padding)
+    actions: 75              // "ACTIONS" (7 chars + padding)
   }
 
   // Column widths are now managed by the useUserPreferences hook
