@@ -2002,7 +2002,7 @@ export default function AdminAffiliates() {
                 <div style={{ 
                   width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
                          (Object.keys(actualColumnWidths).length * 12) + // Extra padding per column 
-                         1500}px`, // Much larger safety margin to ensure ALL columns are reachable
+                         2500}px`, // Much larger safety margin to ensure ALL columns are reachable
                   height: '1px' // Invisible content to create scroll area
                 }}></div>
               </div>
@@ -2029,11 +2029,11 @@ export default function AdminAffiliates() {
               >
                 <table className="min-w-full divide-y divide-gray-400" style={{ 
                   minWidth: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
-                            (Object.keys(actualColumnWidths).length * 12) + 1500}px`, 
+                            (Object.keys(actualColumnWidths).length * 12) + 2500}px`, 
                   fontSize: '11px',
                   tableLayout: 'fixed',
                   width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
-                         (Object.keys(actualColumnWidths).length * 12) + 1500}px`
+                         (Object.keys(actualColumnWidths).length * 12) + 2500}px`
                 }}>
                   <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
@@ -2852,7 +2852,7 @@ export default function AdminAffiliates() {
       {/* Fixed Bottom Scroll Bar */}
       <div 
         className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-40"
-        style={{ height: '20px' }}
+        style={{ height: '12px' }}
       >
         <div
           ref={fixedScrollRef}
@@ -2876,7 +2876,7 @@ export default function AdminAffiliates() {
              style={{ 
                width: `${Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 
                       (Object.keys(actualColumnWidths).length * 12) + // Extra padding per column 
-                      1500}px`, // Much larger safety margin to ensure ALL columns are reachable
+                      2500}px`, // Much larger safety margin to ensure ALL columns are reachable
                height: '1px'
              }}
            />
