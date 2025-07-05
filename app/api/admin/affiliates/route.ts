@@ -244,13 +244,19 @@ async function handleCSVImport(csvData: string) {
       }
       console.log(`📋 Row ${i + 1} padded to ${values.length} columns for import`)
       
+      // Generate unique placeholder email if missing (to avoid unique constraint violation)
+      let processedEmail = values[5]?.trim()?.toLowerCase() || null
+      if (!processedEmail) {
+        processedEmail = `missing-email-row-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@placeholder.local`
+      }
+      
       const affiliateData = {
         affiliateNum: values[0] || null, // First column (sometimes has sequence number)
         isActive: values[1]?.toLowerCase() === 'true' || values[1] === '1',
         name: values[2]?.trim() || `Unnamed-${i}`, // Ensure every affiliate has a name
         firstName: values[3]?.trim() || null,
         lastName: values[4]?.trim() || null,
-        email: values[5]?.trim()?.toLowerCase() || null,
+        email: processedEmail, // Now guaranteed to be unique
         workPhone: values[6]?.trim() || null,
         whatsApp: values[7]?.trim() || null,
         address: values[8]?.trim() || null,
@@ -275,7 +281,7 @@ async function handleCSVImport(csvData: string) {
       
       // Import all affiliates - mark duplicates with annotations instead of skipping
       let isDuplicate = false
-      if (affiliateData.email) {
+      if (affiliateData.email && !affiliateData.email.includes('@placeholder.local')) {
         try {
           const existing = await (prisma as any).affiliate.findUnique({
             where: { email: affiliateData.email }
@@ -329,8 +335,8 @@ async function handleCSVImport(csvData: string) {
         })
       }
       
-      const email = values[5]?.trim()
-      if (!email) { // Missing email
+      const originalEmail = values[5]?.trim()
+      if (!originalEmail) { // Missing email - we created a placeholder
         annotations.push({
           affiliateId: newAffiliate.id,
           fieldName: 'email',
@@ -339,13 +345,13 @@ async function handleCSVImport(csvData: string) {
           createdBy: 'admin'
         })
       }
-      // Mark invalid email format
-      else if (!email.includes('@')) {
+      // Mark invalid email format (but not placeholder emails)
+      else if (!originalEmail.includes('@')) {
         annotations.push({
           affiliateId: newAffiliate.id,
           fieldName: 'email',
           color: 'red',
-          comment: `Invalid email format: ${email} - needs correction`,
+          comment: `Invalid email format: ${originalEmail} - needs correction`,
           createdBy: 'admin'
         })
       }
