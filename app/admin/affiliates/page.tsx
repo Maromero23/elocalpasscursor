@@ -1078,6 +1078,7 @@ export default function AdminAffiliates() {
       if (!isResizing) return
       const diff = e.clientX - startX
       const newWidth = Math.max(30, startWidth + diff) // Minimum width of 30px
+      console.log(`📏 Resizing column ${field}: ${startWidth}px → ${newWidth}px (diff: ${diff}px)`)
       updateColumnWidth(field, newWidth)
     }
 
@@ -1086,6 +1087,7 @@ export default function AdminAffiliates() {
       // Reset visual feedback
       document.body.style.cursor = 'default'
       document.body.style.userSelect = 'auto'
+      console.log(`✅ Finished resizing column ${field} to ${actualColumnWidths[field]}px`)
     }
 
     // Add global mouse event listeners when resizing
@@ -1119,26 +1121,36 @@ export default function AdminAffiliates() {
             )}
           </div>
         </div>
-        {/* Resize Handle - Smaller and Better Positioned */}
+        {/* Visible Resize Handle - Made wider and more visible */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400 bg-gray-400 border-r border-gray-600 group-hover:bg-blue-300 transition-colors duration-200"
+          className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-500 bg-gray-500 border-r border-gray-700 transition-colors duration-200"
           onMouseDown={handleMouseDown}
           title="Drag to resize column"
           style={{
-            background: isResizing ? '#3b82f6' : '#9ca3af',
-            opacity: isResizing ? 1 : 0.6,
-            zIndex: 10,
-            transform: 'translateX(-1px)' // Move it slightly left to not cover text
+            background: isResizing ? '#3b82f6' : '#6b7280',
+            opacity: isResizing ? 1 : 0.8,
+            zIndex: 50,
+            transform: 'translateX(-1px)' // Move it slightly left to not cover content
           }}
         />
-        {/* Invisible larger hit area for easier grabbing */}
+        {/* Larger invisible hit area for easier grabbing */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-3 cursor-col-resize opacity-0"
+          className="absolute right-0 top-0 bottom-0 w-6 cursor-col-resize opacity-0 hover:opacity-10 hover:bg-blue-300"
           onMouseDown={handleMouseDown}
-          title="Drag to resize column"
+          title="🔄 Drag to resize this column width"
           style={{
-            zIndex: 9,
-            transform: 'translateX(-1px)'
+            zIndex: 49,
+            transform: 'translateX(-2px)' // Position it properly
+          }}
+        />
+        {/* Resize indicator on hover */}
+        <div
+          className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none group-hover:block hidden"
+          style={{
+            zIndex: 48,
+            transform: 'translateX(-4px)',
+            background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1))',
+            borderRight: '2px solid rgba(59, 130, 246, 0.3)'
           }}
         />
       </th>
