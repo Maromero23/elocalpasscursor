@@ -1367,8 +1367,19 @@ export default function AdminAffiliates() {
       
       // Handle different field types
       if (sortField === 'affiliateNum') {
-        aVal = parseInt(aVal) || 0
-        bVal = parseInt(bVal) || 0
+        // Handle affiliate number sorting properly
+        const aNum = aVal ? parseInt(String(aVal)) : null
+        const bNum = bVal ? parseInt(String(bVal)) : null
+        
+        // Push null/invalid numbers to the end
+        if (aNum === null && bNum === null) return 0
+        if (aNum === null) return sortDirection === 'asc' ? 1 : -1
+        if (bNum === null) return sortDirection === 'asc' ? -1 : 1
+        
+        // Normal numeric comparison
+        if (aNum < bNum) return sortDirection === 'asc' ? -1 : 1
+        if (aNum > bNum) return sortDirection === 'asc' ? 1 : -1
+        return 0
       } else if (sortField === 'rating') {
         aVal = aVal || 0
         bVal = bVal || 0
@@ -1377,9 +1388,10 @@ export default function AdminAffiliates() {
         bVal = bVal?.toLowerCase() || ''
       }
       
+      // Default comparison for other fields
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
-             return 0
+      return 0
      })
    }
 
