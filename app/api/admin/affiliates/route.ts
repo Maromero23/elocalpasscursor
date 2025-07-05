@@ -244,39 +244,57 @@ async function handleCSVImport(csvData: string) {
       }
       console.log(`📋 Row ${i + 1} padded to ${values.length} columns for import`)
       
-      // Generate unique placeholder email if missing (to avoid unique constraint violation)
+      // Generate unique placeholder email if missing or invalid (to avoid unique constraint violation)
       let processedEmail = values[5]?.trim()?.toLowerCase() || null
+      
+      // Sanitize email field - if it's clearly not an email, treat as missing
+      if (processedEmail && (!processedEmail.includes('@') || processedEmail.length > 100 || processedEmail.includes('\n') || processedEmail.includes(','))) {
+        console.log(`⚠️ Row ${i + 1}: Invalid email detected: "${processedEmail.substring(0, 50)}..." - treating as missing`)
+        processedEmail = null
+      }
+      
       if (!processedEmail) {
         processedEmail = `missing-email-row-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@placeholder.local`
       }
       
+      // Helper function to safely truncate and clean text fields
+      const cleanTextField = (value: any, maxLength = 500): string | null => {
+        if (!value) return null
+        let cleaned = value.toString().trim()
+        if (cleaned.length > maxLength) {
+          console.log(`⚠️ Row ${i + 1}: Truncating field from ${cleaned.length} to ${maxLength} characters`)
+          cleaned = cleaned.substring(0, maxLength) + '...'
+        }
+        return cleaned || null
+      }
+
       const affiliateData = {
-        affiliateNum: values[0] || null, // First column (sometimes has sequence number)
+        affiliateNum: cleanTextField(values[0], 50),
         isActive: values[1]?.toLowerCase() === 'true' || values[1] === '1',
-        name: values[2]?.trim() || `Unnamed-${i}`, // Ensure every affiliate has a name
-        firstName: values[3]?.trim() || null,
-        lastName: values[4]?.trim() || null,
-        email: processedEmail, // Now guaranteed to be unique
-        workPhone: values[6]?.trim() || null,
-        whatsApp: values[7]?.trim() || null,
-        address: values[8]?.trim() || null,
-        web: values[9]?.trim() || null,
-        description: values[10]?.trim() || null,
-        city: values[11]?.trim() || null,
-        maps: values[12]?.trim() || null,
-        location: values[13]?.trim() || null,
-        discount: values[14]?.trim() || null,
-        logo: values[15]?.trim() || null,
-        facebook: values[16]?.trim() || null,
-        instagram: values[17]?.trim() || null,
-        category: values[18]?.trim() || null,
-        subCategory: values[19]?.trim() || null,
-        service: values[20]?.trim() || null,
-        type: values[21]?.trim() || null,
-        sticker: values[22]?.trim() || null,
-        rating: values[23] && values[23].trim() ? parseFloat(values[23]) : null,
+        name: cleanTextField(values[2], 200) || `Unnamed-${i}`, // Ensure every affiliate has a name
+        firstName: cleanTextField(values[3], 100),
+        lastName: cleanTextField(values[4], 100),
+        email: processedEmail, // Already sanitized above
+        workPhone: cleanTextField(values[6], 20),
+        whatsApp: cleanTextField(values[7], 20),
+        address: cleanTextField(values[8], 300),
+        web: cleanTextField(values[9], 500),
+        description: cleanTextField(values[10], 1000), // Allow longer descriptions
+        city: cleanTextField(values[11], 100),
+        maps: cleanTextField(values[12], 1000), // Google Maps URLs can be long
+        location: cleanTextField(values[13], 200),
+        discount: cleanTextField(values[14], 100),
+        logo: cleanTextField(values[15], 1000), // URLs can be long
+        facebook: cleanTextField(values[16], 500),
+        instagram: cleanTextField(values[17], 500),
+        category: cleanTextField(values[18], 100),
+        subCategory: cleanTextField(values[19], 100),
+        service: cleanTextField(values[20], 200),
+        type: cleanTextField(values[21], 100),
+        sticker: cleanTextField(values[22], 100),
+        rating: values[23] && values[23].toString().trim() && !isNaN(parseFloat(values[23])) ? Math.max(0, Math.min(5, parseFloat(values[23]))) : null,
         recommended: values[24]?.toLowerCase() === 'true' || values[24] === '1',
-        termsConditions: values[25]?.trim() || null // TyC field
+        termsConditions: cleanTextField(values[25], 500)
       }
       
       // Import all affiliates - mark duplicates with annotations instead of skipping
@@ -297,9 +315,38 @@ async function handleCSVImport(csvData: string) {
         }
       }
       
-      const newAffiliate = await (prisma as any).affiliate.create({
-        data: affiliateData
-      })
+      let newAffiliate
+      try {
+        newAffiliate = await (prisma as any).affiliate.create({
+          data: affiliateData
+        })
+        console.log(`✅ Created affiliate: ${affiliateData.name} (Row ${i + 1})`)
+      } catch (dbError) {
+        console.error(`❌ Database error for row ${i + 1} (${affiliateData.name}):`, dbError)
+        // Try with even more sanitized data
+        const fallbackData = {
+          ...affiliateData,
+          name: `Affiliate-Row-${i}`, // Ultra-safe fallback name
+          email: `error-row-${i}-${Date.now()}@placeholder.local`, // New unique email
+          description: affiliateData.description ? affiliateData.description.substring(0, 200) + '...' : null,
+          address: affiliateData.address ? affiliateData.address.substring(0, 100) + '...' : null,
+          web: affiliateData.web && affiliateData.web.length > 200 ? affiliateData.web.substring(0, 200) + '...' : affiliateData.web,
+          maps: affiliateData.maps && affiliateData.maps.length > 200 ? affiliateData.maps.substring(0, 200) + '...' : affiliateData.maps,
+          logo: affiliateData.logo && affiliateData.logo.length > 200 ? affiliateData.logo.substring(0, 200) + '...' : affiliateData.logo
+        }
+        
+        try {
+          newAffiliate = await (prisma as any).affiliate.create({
+            data: fallbackData
+          })
+          console.log(`✅ Created affiliate with fallback data: ${fallbackData.name} (Row ${i + 1})`)
+        } catch (fallbackError) {
+          console.error(`❌ Even fallback failed for row ${i + 1}:`, fallbackError)
+          errors++
+          errorDetails.push(`Row ${i + 1}: Database error - ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`)
+          continue // Skip this row entirely
+        }
+      }
       
       // Create annotations for problematic data
       const annotations = []
@@ -346,12 +393,12 @@ async function handleCSVImport(csvData: string) {
         })
       }
       // Mark invalid email format (but not placeholder emails)
-      else if (!originalEmail.includes('@')) {
+      else if (!originalEmail.includes('@') || originalEmail.length > 100 || originalEmail.includes('\n') || originalEmail.includes(',')) {
         annotations.push({
           affiliateId: newAffiliate.id,
           fieldName: 'email',
           color: 'red',
-          comment: `Invalid email format: ${originalEmail} - needs correction`,
+          comment: `Invalid/corrupted email data: ${originalEmail.substring(0, 50)}${originalEmail.length > 50 ? '...' : ''} - needs correction`,
           createdBy: 'admin'
         })
       }
