@@ -649,7 +649,7 @@ export default function AdminAffiliates() {
 
     // Check if this is a long field that should use modal editing
     const shouldUseModal = (field: string, value: any) => {
-      const longFields = ['maps', 'facebook', 'instagram', 'web', 'description', 'address', 'discount']
+      const longFields = ['maps', 'facebook', 'instagram', 'web', 'description', 'address', 'discount', 'location', 'category', 'subCategory', 'service']
       return longFields.includes(field) && value && String(value).length > 30
     }
 
@@ -1982,7 +1982,9 @@ export default function AdminAffiliates() {
                 onScroll={syncScrollFromTop}
               >
                 <div style={{ 
-                  width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0)}px`,
+                  width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
+                         (Object.keys(actualColumnWidths).length * 12) + // Extra padding per column 
+                         200}px`, // Large safety margin to ensure last columns are reachable
                   height: '1px' // Invisible content to create scroll area
                 }}></div>
               </div>
@@ -2008,10 +2010,12 @@ export default function AdminAffiliates() {
                 onScroll={syncScrollFromMain}
               >
                 <table className="min-w-full divide-y divide-gray-400" style={{ 
-                  minWidth: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0)}px`, 
+                  minWidth: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
+                            (Object.keys(actualColumnWidths).length * 12) + 200}px`, 
                   fontSize: '11px',
                   tableLayout: 'fixed',
-                  width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0)}px`
+                  width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
+                         (Object.keys(actualColumnWidths).length * 12) + 200}px`
                 }}>
                   <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
@@ -2853,9 +2857,8 @@ export default function AdminAffiliates() {
                      <div 
              style={{ 
                width: `${Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 
-                      (Object.keys(actualColumnWidths).length * 8) + // 8px padding per column (px-1 = 4px each side)
-                      (Object.keys(actualColumnWidths).length * 4) + // 4px for resize handles per column
-                      100}px`, // Much larger safety margin
+                      (Object.keys(actualColumnWidths).length * 12) + // Extra padding per column 
+                      200}px`, // Large safety margin to ensure last columns are reachable
                height: '1px'
              }}
            />
