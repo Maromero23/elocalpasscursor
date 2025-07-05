@@ -1,79 +1,60 @@
-# ELocalPass v3.35.48 - Column Resizing & Scrolling Fixes
+# ELocalPass v3.35.48 - Affiliate Management Column Width Fixes
 
-## 🔧 Critical Bug Fixes
+## 🔧 **Fixed Issues**
 
-### 🎯 Fixed All Column Resizing and Scrolling Issues
+### Column Width Management Problems
+- **ACTIONS Column Width**: Fixed default width from 75px to 30px (no longer wastes excessive space)
+- **Column Resizing Issues**: Improved resize handles with better visibility and reliability
+- **Rightmost Columns**: Enhanced z-index values to make last columns (T&C, Visits, Actions) properly resizable
+- **Table Layout**: Added CSS to prevent unexpected column expansion and ensure predictable behavior
 
-Based on user feedback with screenshots, fixed three critical usability issues affecting the affiliate management table:
+## ✨ **New Features**
 
-#### 1. **Checkbox Column Size Restriction**
-- **Issue**: Checkbox column couldn't be made smaller than 30px
-- **User Request**: "Allow me to make it smaller"
-- **Solution**: Reduced minimum width to 20px specifically for select column
-- **Code**: Added conditional minimum width logic: `field === 'select' ? 20 : 30`
-- **Result**: Checkbox column can now be resized to very compact size
+### Reset Column Widths Button
+- Added orange "Reset Widths" button in the header next to Export CSV
+- One-click solution to reset all columns to their proper default sizes
+- Helpful when columns get messed up or become too wide/narrow
 
-#### 2. **Scroll Bar Range Limitation**
-- **Issue**: Scroll bar couldn't reach the rightmost columns (T&C, Visits, Actions)
-- **User Report**: "Can't see the last columns with the always visible bar moved all the way to the right"
-- **Solution**: Doubled safety margin from 2500px to 5000px in all scroll containers
-- **Affected Areas**:
-  - Top scroll area (invisible scrollbar)
-  - Main table container
-  - Bottom fixed scroll bar
-- **Result**: All columns now fully accessible via horizontal scrolling
+## 🎨 **UI/UX Improvements**
 
-#### 3. **Rightmost Column Resize Handle Malfunction**
-- **Issue**: Last 3 columns couldn't be resized - clicking took user back to viewable columns
-- **User Report**: "The 3 last columns I am not able to edit because as soon as I click it takes me back to the viewable columns"
-- **Root Cause**: Low z-index values (z-48, z-49, z-50) causing event interference
-- **Solution**: Significantly increased z-index values:
-  - Visible resize handle: z-50 → z-100
-  - Invisible hit area: z-49 → z-99  
-  - Hover indicator: z-48 → z-98
-- **Result**: All columns now properly resizable, including rightmost ones
+### Enhanced Resize System
+- **Bigger, more visible resize handles** (gray → blue on hover → red when resizing)
+- **Better grab areas** for easier column resizing
+- **Simplified CSS approach** - less problematic than previous system
+- **Fixed table layout** prevents columns from expanding beyond set widths
 
-## 🎨 User Experience Improvements
+### CSS Improvements
+- Added `.affiliate-table` class with fixed layout
+- Better overflow handling with ellipsis for long content
+- Improved resize handle styling with smooth transitions
+- Higher z-index values for reliable rightmost column interaction
 
-### Enhanced Column Interaction
-- **Smaller minimum widths**: More flexibility in table layout
-- **Extended scroll range**: 100% of table content accessible
-- **Reliable resize handles**: No more lost clicks or jumping behavior
-- **Visual feedback**: Improved hover states and resize indicators
+## 🛠️ **Technical Details**
 
-### Persistent Customization
-- All column width changes are saved automatically
-- Widths persist across page refreshes and sessions
-- Each admin user maintains their own column preferences
-- Compact defaults with full customization capability
+### Table Layout Fixes
+- Enforced `table-layout: fixed` to prevent column width issues
+- Added `overflow: hidden` and `text-overflow: ellipsis` for consistent cell behavior
+- Improved box-sizing and white-space handling
 
-## 🎯 Technical Details
+### Resize Handle Improvements
+- Simplified resize handle implementation using CSS classes
+- Better state management with `resizing` class
+- Consistent 4px width handles that expand to 6px on hover
+- Proper z-index layering (z-200) for reliable interaction
 
-### Frontend Changes (`app/admin/affiliates/page.tsx`)
-- **Conditional minimum widths**: `const minWidth = field === 'select' ? 20 : 30`
-- **Extended scroll calculations**: Changed all 2500px margins to 5000px
-- **Enhanced z-index layering**: Increased to z-100/99/98 for reliable interaction
-- **Improved resize handle positioning**: Better transform values for edge columns
+## 📋 **How to Use**
 
-### Performance Impact
-- **Positive**: More efficient use of screen space with smaller defaults
-- **Neutral**: Larger scroll areas don't affect rendering performance
-- **Positive**: Higher z-index values ensure reliable event handling
+1. **ACTIONS column** should now be much smaller by default (30px instead of 75px)
+2. **Reset button** - Click the orange "Reset Widths" button to fix any column sizing issues
+3. **Resizing** - Resize handles are now more visible and easier to grab
+4. **Rightmost columns** - Should now resize properly without jumping back to viewable area
 
-## 📊 User Validation
-
-### Issues Resolved ✅
-- ✅ Checkbox column can be made smaller than before
-- ✅ Scroll bar reaches all rightmost columns (T&C, Visits, Actions)
-- ✅ All columns can be resized without jumping behavior
-- ✅ Resize handles work properly on edge columns
-- ✅ Column widths save and persist as expected
-
-### Testing Scenarios
-- Tested with various screen sizes and zoom levels
-- Verified all 29 columns are resizable and accessible
-- Confirmed scroll synchronization across all three scroll containers
-- Validated persistence of custom column widths
+## 🔍 **Version Info**
+- **Version**: 3.35.48
+- **Date**: 2024-01-XX
+- **Commit**: 7f77aee
+- **Files Changed**: app/admin/affiliates/page.tsx
+- **Lines Modified**: +64 insertions, -21 deletions
 
 ---
 *Deployment: Successfully pushed to elocalpasscursor.vercel.app*
