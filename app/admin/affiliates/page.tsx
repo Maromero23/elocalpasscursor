@@ -638,8 +638,23 @@ export default function AdminAffiliates() {
   }) => {
     const isEditing = editingField?.affiliateId === affiliate.id && editingField?.field === field
     const annotation = getAnnotation(affiliate.id, field)
-    const backgroundColor = getFieldBackgroundColor(affiliate.id, field)
     const fieldHasComment = hasComment(affiliate.id, field)
+    
+    // Check if field is empty (null, undefined, empty string, or just whitespace)
+    const isEmpty = value === null || value === undefined || value === '' || 
+                   (typeof value === 'string' && value.trim() === '')
+    
+    // Get background color - prioritize existing annotations, then apply orange for empty fields
+    const backgroundColor = (() => {
+      const annotationColor = getFieldBackgroundColor(affiliate.id, field)
+      if (annotationColor) {
+        return annotationColor // Use existing annotation color
+      }
+      if (isEmpty && field !== 'isActive' && field !== 'affiliateNum') {
+        return '#fed7aa' // Orange "Review Needed" color for empty fields
+      }
+      return 'transparent'
+    })()
     
     // Check if content is truncated
     const isContentTruncated = () => {
@@ -1987,7 +2002,7 @@ export default function AdminAffiliates() {
                 <div style={{ 
                   width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
                          (Object.keys(actualColumnWidths).length * 12) + // Extra padding per column 
-                         800}px`, // Much larger safety margin to ensure ALL columns are reachable
+                         1500}px`, // Much larger safety margin to ensure ALL columns are reachable
                   height: '1px' // Invisible content to create scroll area
                 }}></div>
               </div>
@@ -2014,11 +2029,11 @@ export default function AdminAffiliates() {
               >
                 <table className="min-w-full divide-y divide-gray-400" style={{ 
                   minWidth: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
-                            (Object.keys(actualColumnWidths).length * 12) + 800}px`, 
+                            (Object.keys(actualColumnWidths).length * 12) + 1500}px`, 
                   fontSize: '11px',
                   tableLayout: 'fixed',
                   width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
-                         (Object.keys(actualColumnWidths).length * 12) + 800}px`
+                         (Object.keys(actualColumnWidths).length * 12) + 1500}px`
                 }}>
                   <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
@@ -2031,7 +2046,7 @@ export default function AdminAffiliates() {
                         />
                       </ResizableHeader>
                       <ResizableHeader field="affiliateNum" sortable>
-                        #
+                        No.
                       </ResizableHeader>
                       <ResizableHeader field="status">
                         Status
@@ -2861,7 +2876,7 @@ export default function AdminAffiliates() {
              style={{ 
                width: `${Object.values(actualColumnWidths).reduce((sum, width) => sum + width, 0) + 
                       (Object.keys(actualColumnWidths).length * 12) + // Extra padding per column 
-                      800}px`, // Much larger safety margin to ensure ALL columns are reachable
+                      1500}px`, // Much larger safety margin to ensure ALL columns are reachable
                height: '1px'
              }}
            />
