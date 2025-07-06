@@ -75,22 +75,60 @@ export default function AdminAffiliates() {
   } = useFieldAnnotations()
   
   const [affiliates, setAffiliates] = useState<Affiliate[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searching, setSearching] = useState(false)
-  const [importing, setImporting] = useState(false)
+  const [filteredAffiliates, setFilteredAffiliates] = useState<Affiliate[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
+  const [summary, setSummary] = useState({ total: 0, active: 0, totalVisits: 0 })
+  const [editingField, setEditingField] = useState<{ affiliateId: string, field: string } | null>(null)
+  const [editingAffiliate, setEditingAffiliate] = useState<Affiliate | null>(null)
+  const [selectedAffiliates, setSelectedAffiliates] = useState<string[]>([])
+  const [showWidthInputs, setShowWidthInputs] = useState(false)
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean
+    affiliateId: string
+    field: string
+    value: string
+    fieldName: string
+  }>({
+    isOpen: false,
+    affiliateId: '',
+    field: '',
+    value: '',
+    fieldName: ''
+  })
+  const [modalSize, setModalSize] = useState({ width: 500, height: 400 })
+  const [isResizingModal, setIsResizingModal] = useState(false)
+  const [modalResizeStart, setModalResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 })
   
   // Filters and pagination
-  const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(50)
-  const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // 'active', 'inactive', 'all'
   const [categoryFilter, setCategoryFilter] = useState('')
   const [cityFilter, setCityFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [ratingFilter, setRatingFilter] = useState('')
   const [selectedAffiliates, setSelectedAffiliates] = useState<string[]>([])
-  const [editingField, setEditingField] = useState<{affiliateId: string, field: string} | null>(null)
-  
+  const [logoModal, setLogoModal] = useState<{isOpen: boolean, affiliate: Affiliate | null}>({isOpen: false, affiliate: null})
+  const [csvPreview, setCsvPreview] = useState<any>(null)
+  const [previewing, setPreviewing] = useState(false)
+  const [showWidthInputs, setShowWidthInputs] = useState(false)
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean
+    affiliateId: string
+    field: string
+    value: string
+    fieldName: string
+  }>({
+    isOpen: false,
+    affiliateId: '',
+    field: '',
+    value: '',
+    fieldName: ''
+  })
+
   // Field annotation context menu state
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean
@@ -162,7 +200,6 @@ export default function AdminAffiliates() {
   const [showImportModal, setShowImportModal] = useState(false)
   const [csvData, setCsvData] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
-  const [editingAffiliate, setEditingAffiliate] = useState<Affiliate | null>(null)
   const [logoModal, setLogoModal] = useState<{isOpen: boolean, affiliate: Affiliate | null}>({isOpen: false, affiliate: null})
   const [csvPreview, setCsvPreview] = useState<any>(null)
   const [previewing, setPreviewing] = useState(false)
@@ -278,7 +315,7 @@ export default function AdminAffiliates() {
   }, [contextMenu.isOpen])
 
   const loadAffiliates = async () => {
-    setSearching(true)
+    setIsLoading(true)
     try {
       console.log('🔍 Frontend: Session status:', { 
         hasSession: !!session, 
@@ -317,8 +354,7 @@ export default function AdminAffiliates() {
       console.error('❌ Frontend: Load error:', err)
       error('Failed to load affiliates')
     } finally {
-      setSearching(false)
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
@@ -382,7 +418,7 @@ export default function AdminAffiliates() {
       return
     }
 
-    setImporting(true)
+    setIsLoading(true)
     try {
       const response = await fetch('/api/admin/affiliates', {
         method: 'POST',
@@ -408,7 +444,7 @@ export default function AdminAffiliates() {
       console.error('Import error:', err)
       error('Import Failed', 'Unable to process CSV data')
     } finally {
-      setImporting(false)
+      setIsLoading(false)
     }
   }
 
@@ -690,8 +726,8 @@ export default function AdminAffiliates() {
 
     // Check if this is a long field that should use modal editing
     const shouldUseModal = (field: string, value: any) => {
-      const longFields = ['maps', 'facebook', 'instagram', 'web', 'description', 'address', 'discount', 'location', 'category', 'subCategory', 'service']
-      return longFields.includes(field) && value && String(value).length > 30
+      const modalFields = ['name', 'maps', 'facebook', 'instagram', 'web', 'description', 'address', 'discount', 'location', 'category', 'subCategory', 'service']
+      return modalFields.includes(field) // Always open modal for these fields, regardless of content length
     }
 
     const shouldShowTooltip = isContentTruncated() && value && String(value).length > 0
@@ -877,8 +913,17 @@ export default function AdminAffiliates() {
       {/* Edit Field Modal */}
       {editModal.isOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
+          <div 
+            className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl flex flex-col"
+            style={{ 
+              width: '500px', 
+              height: '400px',
+              minWidth: '300px',
+              minHeight: '200px'
+            }}
+          >
+            {/* Header with drag handle */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0 cursor-move bg-blue-50">
               <h3 className="text-lg font-medium text-gray-900">
                 Edit {editModal.fieldName}
               </h3>
@@ -890,50 +935,65 @@ export default function AdminAffiliates() {
               </button>
             </div>
             
-            <div className="space-y-4">
-              <div>
+            {/* Content */}
+            <div className="flex-1 p-4 overflow-hidden">
+              <div className="h-full flex flex-col">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {editModal.fieldName}
                 </label>
-                {editModal.field === 'description' || editModal.field === 'address' ? (
-                  <textarea
-                    value={editModal.value}
-                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    rows={4}
-                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
-                  />
-                ) : (
-                  <input
-                    type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
-                    value={editModal.value}
-                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
-                  />
-                )}
+                <div className="flex-1 mb-4">
+                  {editModal.field === 'description' || editModal.field === 'address' || editModal.field === 'discount' || editModal.field === 'service' ? (
+                    <textarea
+                      value={editModal.value}
+                      onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                      className="w-full h-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                      autoFocus
+                    />
+                  ) : (
+                    <input
+                      type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
+                      value={editModal.value}
+                      onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                      autoFocus
+                    />
+                  )}
+                </div>
+                
+                {/* Buttons */}
+                <div className="flex justify-end space-x-3 flex-shrink-0">
+                  <button
+                    onClick={() => setEditModal({...editModal, isOpen: false})}
+                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const affiliate = affiliates.find(a => a.id === editModal.affiliateId)
+                      if (affiliate) {
+                        const originalValue = (affiliate as any)[editModal.field]
+                        handleFieldEdit(editModal.affiliateId, editModal.field, editModal.value, originalValue)
+                      }
+                      setEditModal({...editModal, isOpen: false})
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
-              
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setEditModal({...editModal, isOpen: false})}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    const affiliate = affiliates.find(a => a.id === editModal.affiliateId)
-                    if (affiliate) {
-                      const originalValue = (affiliate as any)[editModal.field]
-                      handleFieldEdit(editModal.affiliateId, editModal.field, editModal.value, originalValue)
-                    }
-                    setEditModal({...editModal, isOpen: false})
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Save
-                </button>
+            </div>
+
+            {/* Resize handle in bottom-right corner */}
+            <div
+              className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize bg-blue-500 hover:bg-blue-600 border-2 border-blue-700 shadow-lg rounded-tl-lg z-10"
+              title="🔄 Drag corner to resize modal"
+            >
+              <div className="absolute bottom-0.5 right-0.5 text-white text-xs leading-none font-bold">
+                ⤡
               </div>
             </div>
           </div>
@@ -2201,7 +2261,7 @@ export default function AdminAffiliates() {
             </div>
           </div>
           
-          {loading ? (
+          {isLoading ? (
             <div className="px-6 py-12 text-center">
               <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-4" />
               <p className="text-gray-500">Loading affiliates...</p>
@@ -3376,8 +3436,17 @@ export default function AdminAffiliates() {
       {/* Edit Field Modal */}
       {editModal.isOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
+          <div 
+            className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl flex flex-col"
+            style={{ 
+              width: '500px', 
+              height: '400px',
+              minWidth: '300px',
+              minHeight: '200px'
+            }}
+          >
+            {/* Header with drag handle */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0 cursor-move bg-blue-50">
               <h3 className="text-lg font-medium text-gray-900">
                 Edit {editModal.fieldName}
               </h3>
@@ -3389,50 +3458,65 @@ export default function AdminAffiliates() {
               </button>
             </div>
             
-            <div className="space-y-4">
-              <div>
+            {/* Content */}
+            <div className="flex-1 p-4 overflow-hidden">
+              <div className="h-full flex flex-col">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {editModal.fieldName}
                 </label>
-                {editModal.field === 'description' || editModal.field === 'address' ? (
-                  <textarea
-                    value={editModal.value}
-                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    rows={4}
-                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
-                  />
-                ) : (
-                  <input
-                    type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
-                    value={editModal.value}
-                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
-                  />
-                )}
+                <div className="flex-1 mb-4">
+                  {editModal.field === 'description' || editModal.field === 'address' || editModal.field === 'discount' || editModal.field === 'service' ? (
+                    <textarea
+                      value={editModal.value}
+                      onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                      className="w-full h-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                      autoFocus
+                    />
+                  ) : (
+                    <input
+                      type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
+                      value={editModal.value}
+                      onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                      autoFocus
+                    />
+                  )}
+                </div>
+                
+                {/* Buttons */}
+                <div className="flex justify-end space-x-3 flex-shrink-0">
+                  <button
+                    onClick={() => setEditModal({...editModal, isOpen: false})}
+                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const affiliate = affiliates.find(a => a.id === editModal.affiliateId)
+                      if (affiliate) {
+                        const originalValue = (affiliate as any)[editModal.field]
+                        handleFieldEdit(editModal.affiliateId, editModal.field, editModal.value, originalValue)
+                      }
+                      setEditModal({...editModal, isOpen: false})
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
-              
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setEditModal({...editModal, isOpen: false})}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    const affiliate = affiliates.find(a => a.id === editModal.affiliateId)
-                    if (affiliate) {
-                      const originalValue = (affiliate as any)[editModal.field]
-                      handleFieldEdit(editModal.affiliateId, editModal.field, editModal.value, originalValue)
-                    }
-                    setEditModal({...editModal, isOpen: false})
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Save
-                </button>
+            </div>
+
+            {/* Resize handle in bottom-right corner */}
+            <div
+              className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize bg-blue-500 hover:bg-blue-600 border-2 border-blue-700 shadow-lg rounded-tl-lg z-10"
+              title="🔄 Drag corner to resize modal"
+            >
+              <div className="absolute bottom-0.5 right-0.5 text-white text-xs leading-none font-bold">
+                ⤡
               </div>
             </div>
           </div>
