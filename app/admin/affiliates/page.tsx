@@ -181,47 +181,47 @@ export default function AdminAffiliates() {
     fieldName: ''
   })
 
-  // Default column widths - sized to fit header text
+  // Default column widths - much more compact
   const defaultColumnWidths = {
-    select: 25,              // Checkbox - made smaller
-    affiliateNum: 45,        // "No." (3 chars + padding)
-    status: 70,              // "STATUS" (6 chars + padding)
-    name: 120,               // "BUSINESS NAME" (13 chars + padding)
-    firstName: 90,           // "FIRST NAME" (10 chars + padding)
-    lastName: 85,            // "LAST NAME" (9 chars + padding)
-    email: 60,               // "EMAIL" (5 chars + padding)
-    workPhone: 95,           // "WORK PHONE" (10 chars + padding)
-    whatsApp: 80,            // "WHATSAPP" (8 chars + padding)
-    address: 75,             // "ADDRESS" (7 chars + padding)
-    web: 45,                 // "WEB" (3 chars + padding)
-    description: 105,        // "DESCRIPTION" (11 chars + padding)
-    city: 50,                // "CITY" (4 chars + padding)
-    maps: 50,                // "MAPS" (4 chars + padding)
-    location: 80,            // "LOCATION" (8 chars + padding)
-    discount: 80,            // "DISCOUNT" (8 chars + padding)
-    logo: 50,                // "LOGO" (4 chars + padding)
-    facebook: 80,            // "FACEBOOK" (8 chars + padding)
-    instagram: 90,           // "INSTAGRAM" (9 chars + padding)
-    category: 80,            // "CATEGORY" (8 chars + padding)
-    subCategory: 115,        // "SUB CATEGORY" (12 chars + padding)
-    service: 75,             // "SERVICE" (7 chars + padding)
-    type: 50,                // "TYPE" (4 chars + padding)
-    sticker: 75,             // "STICKER" (7 chars + padding)
-    rating: 65,              // "RATING" (6 chars + padding)
-    recommended: 105,        // "RECOMMENDED" (11 chars + padding)
-    termsConditions: 45,     // "T&C" (3 chars + padding)
-    visits: 65,              // "VISITS" (6 chars + padding)
-    actions: 60              // "ACTIONS" - Smaller but usable
+    select: 20,              // Checkbox - very compact
+    affiliateNum: 35,        // "No." - smaller
+    status: 50,              // "STATUS" - smaller
+    name: 100,               // "BUSINESS NAME" - more compact
+    firstName: 70,           // "FIRST NAME" - smaller
+    lastName: 70,            // "LAST NAME" - smaller
+    email: 80,               // "EMAIL" - smaller
+    workPhone: 75,           // "WORK PHONE" - smaller
+    whatsApp: 65,            // "WHATSAPP" - smaller
+    address: 60,             // "ADDRESS" - smaller
+    web: 35,                 // "WEB" - smaller
+    description: 80,         // "DESCRIPTION" - smaller
+    city: 40,                // "CITY" - smaller
+    maps: 40,                // "MAPS" - smaller
+    location: 60,            // "LOCATION" - smaller
+    discount: 60,            // "DISCOUNT" - smaller
+    logo: 40,                // "LOGO" - smaller
+    facebook: 60,            // "FACEBOOK" - smaller
+    instagram: 70,           // "INSTAGRAM" - smaller
+    category: 60,            // "CATEGORY" - smaller
+    subCategory: 90,         // "SUB CATEGORY" - smaller
+    service: 60,             // "SERVICE" - smaller
+    type: 40,                // "TYPE" - smaller
+    sticker: 50,             // "STICKER" - smaller
+    rating: 45,              // "RATING" - smaller
+    recommended: 75,         // "RECOMMENDED" - smaller
+    termsConditions: 35,     // "T&C" - smaller
+    visits: 45,              // "VISITS" - smaller
+    actions: 50              // "ACTIONS" - very compact
   }
 
   // Column widths are now managed by the useUserPreferences hook
   const actualColumnWidths = Object.keys(columnWidths).length > 0 ? columnWidths : defaultColumnWidths
 
-  // Simple column width function - much less restrictive
+  // Simple column width function - NO restrictions whatsoever
   const getColumnWidth = (field: string) => {
     const width = (actualColumnWidths as any)[field] || (defaultColumnWidths as any)[field]
-    // Just ensure a reasonable minimum - no complex constraints
-    return Math.max(15, width)
+    // No minimum constraints - user has full control
+    return Math.max(1, width) // Only 1px to prevent complete disappearing
   }
 
   // Reset column widths to defaults
@@ -232,11 +232,11 @@ export default function AdminAffiliates() {
         await updateColumnWidth(field, width)
       }
       
-      // Set specific optimal sizes for edge columns
-      await updateColumnWidth('select', 25) // Checkbox column - compact
-      await updateColumnWidth('actions', 60) // Actions column - compact but usable
+      // Set very compact sizes for edge columns
+      await updateColumnWidth('select', 20) // Checkbox column - very compact
+      await updateColumnWidth('actions', 50) // Actions column - compact but usable
       
-      success('Column Widths Reset', 'All columns have been reset to optimal sizes')
+      success('Column Widths Reset', 'All columns have been reset to compact sizes')
     } catch (err) {
       console.error('Error resetting column widths:', err)
       error('Reset Failed', 'Unable to reset column widths')
@@ -1104,7 +1104,7 @@ export default function AdminAffiliates() {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return
       const diff = e.clientX - startX
-      let newWidth = Math.max(15, startWidth + diff) // Much more generous minimum
+      let newWidth = Math.max(1, startWidth + diff) // Only 1px minimum to prevent disappearing
       
       console.log(`📏 Resizing column ${field}: ${startWidth}px → ${newWidth}px (diff: ${diff}px)`)
       updateColumnWidth(field, newWidth)
@@ -1194,12 +1194,12 @@ export default function AdminAffiliates() {
               type="number"
               value={getColumnWidth(field)}
               onChange={(e) => {
-                const newWidth = Math.max(15, parseInt(e.target.value) || 15)
+                const newWidth = Math.max(1, parseInt(e.target.value) || 1) // Only 1px minimum
                 updateColumnWidth(field, newWidth)
               }}
               className="w-16 px-1 py-0.5 text-xs border border-gray-300 rounded text-center bg-white"
-              min="15"
-              step="5"
+              min="1"
+              step="1"
               title={`Set exact width for ${field} column`}
             />
           </div>
