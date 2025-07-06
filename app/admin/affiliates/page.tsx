@@ -3228,12 +3228,22 @@ export default function AdminAffiliates() {
                 
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">City</label>
-                  <input
-                    type="text"
+                  <select
                     value={editingAffiliate.city || ''}
                     onChange={(e) => setEditingAffiliate({...editingAffiliate, city: e.target.value})}
                     className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Select city...</option>
+                    <option value="Bacalar">Bacalar</option>
+                    <option value="Cancun">Cancun</option>
+                    <option value="Cozumel">Cozumel</option>
+                    <option value="Holbox">Holbox</option>
+                    <option value="Isla Mujeres">Isla Mujeres</option>
+                    <option value="Playa del Carmen">Playa del Carmen</option>
+                    <option value="Puerto Aventuras">Puerto Aventuras</option>
+                    <option value="Puerto Morelos">Puerto Morelos</option>
+                    <option value="Tulum">Tulum</option>
+                  </select>
                 </div>
                 
                 <div>
@@ -3328,22 +3338,29 @@ export default function AdminAffiliates() {
                 
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
-                  <input
-                    type="text"
+                  <select
                     value={editingAffiliate.type || ''}
                     onChange={(e) => setEditingAffiliate({...editingAffiliate, type: e.target.value})}
                     className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Select type...</option>
+                    <option value="Restaurants">Restaurants</option>
+                    <option value="Stores">Stores</option>
+                    <option value="Services">Services</option>
+                  </select>
                 </div>
                 
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Sticker</label>
-                  <input
-                    type="text"
+                  <select
                     value={editingAffiliate.sticker || ''}
                     onChange={(e) => setEditingAffiliate({...editingAffiliate, sticker: e.target.value})}
                     className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Select...</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
                 </div>
                 
                 <div>
