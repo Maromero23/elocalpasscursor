@@ -180,3 +180,55 @@ Applied to ALL columns: select, affiliateNum, status, name, firstName, lastName,
 - **Multiple Methods**: Choose your preferred resizing method
 - **Visual Feedback**: Clear indicators for all interactions
 - **Persistent Settings**: Column widths saved automatically 
+
+## 🚀 COMPLETE NEW APPROACH - CSS Grid Layout
+
+### Problem Summary
+After multiple attempts to fix table-based column resizing, we discovered the root issue was the HTML table structure itself. Tables have inherent limitations for dynamic column resizing.
+
+### Solution: Complete Architecture Change
+**REPLACED ENTIRE TABLE with CSS GRID + CUSTOM PROPERTIES**
+
+### What Changed
+- ❌ **REMOVED**: HTML `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<td>` structure
+- ✅ **ADDED**: CSS Grid with `display: grid` and `grid-template-columns`
+- ✅ **ADDED**: CSS Custom Properties (`--col-select`, `--col-name`, etc.)
+- ✅ **ADDED**: Direct CSS manipulation via `document.documentElement.style.setProperty`
+
+### Technical Implementation
+```css
+.affiliate-grid {
+  display: grid;
+  grid-template-columns: 
+    var(--col-select, 20px) 
+    var(--col-affiliateNum, 35px) 
+    var(--col-status, 50px)
+    /* ... all 29 columns ... */;
+}
+```
+
+```javascript
+// Dynamic resizing via CSS custom properties
+const updateGridColumnWidth = (field, width) => {
+  document.documentElement.style.setProperty(`--col-${field}`, `${width}px`)
+}
+```
+
+### Why This Works Better
+1. **No Table Constraints**: CSS Grid doesn't have table layout limitations
+2. **Real-time Updates**: CSS custom properties update immediately
+3. **No Conflicts**: No more maxWidth/width conflicts
+4. **Flexible**: Can resize both bigger AND smaller
+5. **Performance**: Direct CSS manipulation is faster than React state
+
+### User Experience
+- ✅ **Drag resize handles** - Works both directions now
+- ✅ **Double-click auto-size** - Smart defaults
+- ✅ **Direct width input** - Type exact pixel values
+- ✅ **Make columns tiny** - Down to 1px if needed
+- ✅ **Make columns huge** - No upper limits
+- ✅ **Reset to defaults** - Clean slate
+
+**This approach abandons the problematic table structure entirely for a modern, flexible CSS Grid solution.**
+
+## 🎯 CRITICAL FIX - Root Cause of Column Resizing Issue
