@@ -29,7 +29,13 @@ export async function POST(request: NextRequest) {
       console.log(`❌ QR CODE NOT FOUND: ${qrCode}`)
       return NextResponse.json({ 
         error: 'QR code not found',
-        details: 'This QR code is not valid or has expired'
+        details: 'This QR code is not valid or has expired',
+        debugInfo: {
+          searchedQrCode: qrCode.trim(),
+          currentServerTime: new Date().toISOString(),
+          errorType: 'NOT_FOUND',
+          message: 'QR code does not exist in database'
+        }
       }, { status: 404 })
     }
     
@@ -54,7 +60,17 @@ export async function POST(request: NextRequest) {
       console.log(`❌ QR CODE INACTIVE: ${qrCode}`)
       return NextResponse.json({ 
         error: 'QR code is inactive',
-        details: 'This ELocalPass has been deactivated'
+        details: 'This ELocalPass has been deactivated',
+        debugInfo: {
+          qrCode: qrCode,
+          currentServerTime: new Date().toISOString(),
+          qrCreatedAt: qrRecord.createdAt.toISOString(),
+          customerName: qrRecord.customerName,
+          isActive: qrRecord.isActive,
+          expiresAt: qrRecord.expiresAt.toISOString(),
+          errorType: 'INACTIVE',
+          message: 'QR code exists but is marked as inactive'
+        }
       }, { status: 400 })
     }
     

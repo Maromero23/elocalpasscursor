@@ -40,11 +40,18 @@ interface ScanResult {
   details?: string
   debugInfo?: {
     currentServerTime: string
-    qrExpiresAt: string
-    timeDifferenceMs: number
-    qrCreatedAt: string
-    daysValid: number
-    customerName: string
+    qrExpiresAt?: string
+    timeDifferenceMs?: number
+    qrCreatedAt?: string
+    daysValid?: number
+    customerName?: string
+    qrCode?: string
+    searchedQrCode?: string
+    isActive?: boolean
+    expiresAt?: string
+    errorType?: string
+    message?: string
+    expiredAgoMs?: number
   }
 }
 
@@ -253,20 +260,50 @@ export default function AffiliateDashboard() {
         if (result.debugInfo) {
           console.log('🔍 QR SCAN DEBUG INFO:', result.debugInfo)
           
-          // Show detailed debug info in a more user-friendly way
-          const debugMessage = `
-Debug Information:
-• Server Time: ${new Date(result.debugInfo.currentServerTime).toLocaleString()}
-• QR Expires: ${new Date(result.debugInfo.qrExpiresAt).toLocaleString()}
-• Time Difference: ${result.debugInfo.timeDifferenceMs}ms
-• QR Created: ${new Date(result.debugInfo.qrCreatedAt).toLocaleString()}
-• Days Valid: ${result.debugInfo.daysValid}
-• Customer: ${result.debugInfo.customerName}
-          `.trim()
+          // Build debug message based on available information
+          let debugMessage = 'Debug Information:\n'
+          debugMessage += `• Error Type: ${result.debugInfo.errorType || 'UNKNOWN'}\n`
+          debugMessage += `• Server Time: ${new Date(result.debugInfo.currentServerTime).toLocaleString()}\n`
+          
+          if (result.debugInfo.searchedQrCode) {
+            debugMessage += `• Searched QR: ${result.debugInfo.searchedQrCode}\n`
+          }
+          
+          if (result.debugInfo.qrCode) {
+            debugMessage += `• QR Code: ${result.debugInfo.qrCode}\n`
+          }
+          
+          if (result.debugInfo.customerName) {
+            debugMessage += `• Customer: ${result.debugInfo.customerName}\n`
+          }
+          
+          if (result.debugInfo.qrCreatedAt) {
+            debugMessage += `• QR Created: ${new Date(result.debugInfo.qrCreatedAt).toLocaleString()}\n`
+          }
+          
+          if (result.debugInfo.qrExpiresAt) {
+            debugMessage += `• QR Expires: ${new Date(result.debugInfo.qrExpiresAt).toLocaleString()}\n`
+          }
+          
+          if (result.debugInfo.timeDifferenceMs !== undefined) {
+            debugMessage += `• Time Difference: ${result.debugInfo.timeDifferenceMs}ms\n`
+          }
+          
+          if (result.debugInfo.daysValid !== undefined) {
+            debugMessage += `• Days Valid: ${result.debugInfo.daysValid}\n`
+          }
+          
+          if (result.debugInfo.isActive !== undefined) {
+            debugMessage += `• Is Active: ${result.debugInfo.isActive}\n`
+          }
+          
+          if (result.debugInfo.message) {
+            debugMessage += `• Details: ${result.debugInfo.message}`
+          }
           
           // Show debug info in a second toast for troubleshooting
           setTimeout(() => {
-            error('Debug Info', debugMessage)
+            error('Debug Info', debugMessage.trim())
           }, 1000)
         }
         
