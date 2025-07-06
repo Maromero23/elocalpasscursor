@@ -227,14 +227,11 @@ export default function AdminAffiliates() {
   // Reset column widths to defaults
   const resetColumnWidths = async () => {
     try {
-      // Reset all columns to their default widths
+      // Reset all columns to their default widths using both methods
       for (const [field, width] of Object.entries(defaultColumnWidths)) {
-        await updateColumnWidth(field, width)
+        await updateColumnWidth(field, width) // For persistence
+        updateGridColumnWidth(field, width) // For immediate CSS update
       }
-      
-      // Set very compact sizes for edge columns
-      await updateColumnWidth('select', 20) // Checkbox column - very compact
-      await updateColumnWidth('actions', 50) // Actions column - compact but usable
       
       success('Column Widths Reset', 'All columns have been reset to compact sizes')
     } catch (err) {
@@ -1080,6 +1077,98 @@ export default function AdminAffiliates() {
     )
   }
 
+  // NEW: CSS Grid approach with custom properties
+  const updateGridColumnWidth = (field: string, width: number) => {
+    const root = document.documentElement
+    const finalWidth = Math.max(1, width) // Only 1px minimum
+    root.style.setProperty(`--col-${field}`, `${finalWidth}px`)
+    
+    // Also save to preferences for persistence
+    updateColumnWidth(field, finalWidth)
+  }
+
+  const getGridColumnWidth = (field: string) => {
+    const root = document.documentElement
+    const cssValue = root.style.getPropertyValue(`--col-${field}`)
+    if (cssValue) {
+      return parseInt(cssValue.replace('px', ''))
+    }
+    return (defaultColumnWidths as any)[field] || 50
+  }
+
+  // Initialize CSS custom properties on component mount
+  useEffect(() => {
+    const root = document.documentElement
+    Object.entries(actualColumnWidths).forEach(([field, width]) => {
+      root.style.setProperty(`--col-${field}`, `${width}px`)
+    })
+  }, [actualColumnWidths])
+
+  // NEW: Grid resize handler
+  const GridResizeHandle = ({ field }: { field: string }) => {
+    const [isResizing, setIsResizing] = useState(false)
+    const [startX, setStartX] = useState(0)
+    const [startWidth, setStartWidth] = useState(0)
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsResizing(true)
+      setStartX(e.clientX)
+      setStartWidth(getGridColumnWidth(field))
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return
+      const diff = e.clientX - startX
+      const newWidth = Math.max(1, startWidth + diff)
+      updateGridColumnWidth(field, newWidth)
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      document.body.style.cursor = 'default'
+      document.body.style.userSelect = 'auto'
+    }
+
+    const handleDoubleClick = (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      
+      // Auto-size based on content
+      let autoWidth = 50
+      if (field === 'select') autoWidth = 20
+      else if (field === 'actions') autoWidth = 70
+      else if (field === 'email' || field === 'name') autoWidth = 150
+      else if (field === 'description' || field === 'address') autoWidth = 200
+      else if (field === 'affiliateNum' || field === 'rating') autoWidth = 40
+      
+      updateGridColumnWidth(field, autoWidth)
+    }
+
+    useEffect(() => {
+      if (isResizing) {
+        document.addEventListener('mousemove', handleMouseMove)
+        document.addEventListener('mouseup', handleMouseUp)
+        return () => {
+          document.removeEventListener('mousemove', handleMouseMove)
+          document.removeEventListener('mouseup', handleMouseUp)
+        }
+      }
+    }, [isResizing, startX, startWidth])
+
+    return (
+      <div
+        className="grid-resize-handle"
+        onMouseDown={handleMouseDown}
+        onDoubleClick={handleDoubleClick}
+        title="Drag to resize | Double-click to auto-size"
+      />
+    )
+  }
+
   // Resizable Header Component with much easier resizing
   const ResizableHeader = ({ field, children, sortable = false }: { 
     field: keyof typeof actualColumnWidths
@@ -1426,16 +1515,14 @@ export default function AdminAffiliates() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{ __html: `
         .table-scroll-container::-webkit-scrollbar {
-          -webkit-appearance: none !important;
-          height: 16px !important;
-          display: block !important;
+          height: 12px;
         }
         .table-scroll-container::-webkit-scrollbar-thumb {
+          background-color: #cbd5e0;
           border-radius: 8px;
-          border: 2px solid white;
-          background-color: rgba(0, 0, 0, .5);
+          border: 2px solid #f7fafc;
         }
         .table-scroll-container::-webkit-scrollbar-track {
           background-color: #f1f1f1;
@@ -1445,26 +1532,94 @@ export default function AdminAffiliates() {
           scrollbar-width: auto !important;
           overflow-x: scroll !important;
         }
-        /* Force flexible table layout and allow column resizing */
-        .affiliate-table {
-          table-layout: auto !important;
-          width: 100% !important;
+        
+        /* NEW: CSS Grid approach with custom properties */
+        .affiliate-grid {
+          display: grid;
+          grid-template-columns: 
+            var(--col-select, 20px) 
+            var(--col-affiliateNum, 35px) 
+            var(--col-status, 50px) 
+            var(--col-name, 100px) 
+            var(--col-firstName, 70px) 
+            var(--col-lastName, 70px) 
+            var(--col-email, 80px) 
+            var(--col-workPhone, 75px) 
+            var(--col-whatsApp, 65px) 
+            var(--col-address, 60px) 
+            var(--col-web, 35px) 
+            var(--col-description, 80px) 
+            var(--col-city, 40px) 
+            var(--col-maps, 40px) 
+            var(--col-location, 60px) 
+            var(--col-discount, 60px) 
+            var(--col-logo, 40px) 
+            var(--col-facebook, 60px) 
+            var(--col-instagram, 70px) 
+            var(--col-category, 60px) 
+            var(--col-subCategory, 90px) 
+            var(--col-service, 60px) 
+            var(--col-type, 40px) 
+            var(--col-sticker, 50px) 
+            var(--col-rating, 45px) 
+            var(--col-recommended, 75px) 
+            var(--col-termsConditions, 35px) 
+            var(--col-visits, 45px) 
+            var(--col-actions, 50px);
+          gap: 1px;
+          background-color: #e5e7eb;
+          border: 1px solid #d1d5db;
         }
-        .affiliate-table th,
-        .affiliate-table td {
-          box-sizing: border-box !important;
+        
+        .affiliate-grid-header,
+        .affiliate-grid-row {
+          display: contents;
         }
-        .affiliate-table th {
-          position: relative !important;
+        
+        .affiliate-grid-cell {
+          background-color: white;
+          padding: 4px 8px;
+          border-right: 1px solid #e5e7eb;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          min-height: 28px;
         }
-        /* Simple and reliable column resizing */
-        .affiliate-table th:hover .resize-handle {
-          opacity: 1 !important;
+        
+        .affiliate-grid-header-cell {
+          background-color: #f9fafb;
+          font-weight: 600;
+          color: #374151;
+          text-transform: uppercase;
+          font-size: 10px;
+          letter-spacing: 0.05em;
+          position: relative;
+          justify-content: center;
+          text-align: center;
         }
-        .resize-handle:active,
-        .resize-handle.resizing {
-          background-color: #ef4444 !important;
-          opacity: 1 !important;
+        
+        .grid-resize-handle {
+          position: absolute;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          width: 6px;
+          background: transparent;
+          cursor: col-resize;
+          z-index: 10;
+        }
+        
+        .grid-resize-handle:hover {
+          background: #3b82f6;
+          opacity: 0.8;
+        }
+        
+        .grid-resize-handle:active {
+          background: #ef4444;
+          opacity: 1;
         }
 
       `}} />
@@ -2104,239 +2259,286 @@ export default function AdminAffiliates() {
                 }}
                 onScroll={syncScrollFromMain}
               >
-                <table className="min-w-full divide-y divide-gray-400 affiliate-table" style={{ 
-                  minWidth: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
-                            (Object.keys(actualColumnWidths).length * 12) + 5000}px`, 
-                  fontSize: '11px',
-                  width: `${(Object.values(actualColumnWidths) as number[]).reduce((sum: number, width: number) => sum + width, 0) + 
-                         (Object.keys(actualColumnWidths).length * 12) + 5000}px`
-                }}>
-                  <thead className="bg-gray-50 sticky top-0 z-20">
-                    <tr>
-                      <ResizableHeader field="select">
+                <div className="affiliate-grid">
+                  {/* Header Row */}
+                  <div className="affiliate-grid-header">
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      <input
+                        type="checkbox"
+                        checked={selectedAffiliates.length === affiliates.length && affiliates.length > 0}
+                        onChange={handleSelectAll}
+                        className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <GridResizeHandle field="select" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell" onClick={() => handleSort('affiliateNum')}>
+                      No.
+                      {sortField === 'affiliateNum' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                      <GridResizeHandle field="affiliateNum" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Status
+                      <GridResizeHandle field="status" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell" onClick={() => handleSort('name')}>
+                      Business Name
+                      {sortField === 'name' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                      <GridResizeHandle field="name" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      First Name
+                      <GridResizeHandle field="firstName" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Last Name
+                      <GridResizeHandle field="lastName" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Email
+                      <GridResizeHandle field="email" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Work Phone
+                      <GridResizeHandle field="workPhone" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      WhatsApp
+                      <GridResizeHandle field="whatsApp" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Address
+                      <GridResizeHandle field="address" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Website
+                      <GridResizeHandle field="web" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Description
+                      <GridResizeHandle field="description" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell" onClick={() => handleSort('city')}>
+                      City
+                      {sortField === 'city' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                      <GridResizeHandle field="city" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Maps URL
+                      <GridResizeHandle field="maps" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Location
+                      <GridResizeHandle field="location" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Discount
+                      <GridResizeHandle field="discount" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Logo
+                      <GridResizeHandle field="logo" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Facebook
+                      <GridResizeHandle field="facebook" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Instagram
+                      <GridResizeHandle field="instagram" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Category
+                      <GridResizeHandle field="category" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Sub-Category
+                      <GridResizeHandle field="subCategory" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Service
+                      <GridResizeHandle field="service" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell" onClick={() => handleSort('type')}>
+                      Type
+                      {sortField === 'type' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                      <GridResizeHandle field="type" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Sticker
+                      <GridResizeHandle field="sticker" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell" onClick={() => handleSort('rating')}>
+                      Rating
+                      {sortField === 'rating' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                      <GridResizeHandle field="rating" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Recommend
+                      <GridResizeHandle field="recommended" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      T & C
+                      <GridResizeHandle field="termsConditions" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Visits
+                      <GridResizeHandle field="visits" />
+                    </div>
+                    <div className="affiliate-grid-cell affiliate-grid-header-cell">
+                      Actions
+                      <GridResizeHandle field="actions" />
+                    </div>
+                  </div>
+
+                  {/* Data Rows */}
+                  {filteredAffiliates.map((affiliate) => (
+                    <div key={affiliate.id} className="affiliate-grid-row">
+                      <div className="affiliate-grid-cell">
                         <input
                           type="checkbox"
-                          checked={selectedAffiliates.length === affiliates.length && affiliates.length > 0}
-                          onChange={handleSelectAll}
+                          checked={selectedAffiliates.includes(affiliate.id)}
+                          onChange={() => handleSelectAffiliate(affiliate.id)}
                           className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
-                      </ResizableHeader>
-                      <ResizableHeader field="affiliateNum" sortable>
-                        No.
-                      </ResizableHeader>
-                      <ResizableHeader field="status">
-                        Status
-                      </ResizableHeader>
-                      <ResizableHeader field="name" sortable>
-                        Business Name
-                      </ResizableHeader>
-                      <ResizableHeader field="firstName">
-                        First Name
-                      </ResizableHeader>
-                      <ResizableHeader field="lastName">
-                        Last Name
-                      </ResizableHeader>
-                      <ResizableHeader field="email">
-                        Email
-                      </ResizableHeader>
-                      <ResizableHeader field="workPhone">
-                        Work Phone
-                      </ResizableHeader>
-                      <ResizableHeader field="whatsApp">
-                        WhatsApp
-                      </ResizableHeader>
-                      <ResizableHeader field="address">
-                        Address
-                      </ResizableHeader>
-                      <ResizableHeader field="web">
-                        Website
-                      </ResizableHeader>
-                      <ResizableHeader field="description">
-                        Description
-                      </ResizableHeader>
-                      <ResizableHeader field="city" sortable>
-                        City
-                      </ResizableHeader>
-                      <ResizableHeader field="maps">
-                        Maps URL
-                      </ResizableHeader>
-                      <ResizableHeader field="location">
-                        Location
-                      </ResizableHeader>
-                      <ResizableHeader field="discount">
-                        Discount
-                      </ResizableHeader>
-                      <ResizableHeader field="logo">
-                        Logo
-                      </ResizableHeader>
-                      <ResizableHeader field="facebook">
-                        Facebook
-                      </ResizableHeader>
-                      <ResizableHeader field="instagram">
-                        Instagram
-                      </ResizableHeader>
-                      <ResizableHeader field="category">
-                        Category
-                      </ResizableHeader>
-                      <ResizableHeader field="subCategory">
-                        Sub-Category
-                      </ResizableHeader>
-                      <ResizableHeader field="service">
-                        Service
-                      </ResizableHeader>
-                      <ResizableHeader field="type" sortable>
-                        Type
-                      </ResizableHeader>
-                      <ResizableHeader field="sticker">
-                        Sticker
-                      </ResizableHeader>
-                      <ResizableHeader field="rating" sortable>
-                        Rating
-                      </ResizableHeader>
-                      <ResizableHeader field="recommended">
-                        Recommend
-                      </ResizableHeader>
-                      <ResizableHeader field="termsConditions">
-                        T & C
-                      </ResizableHeader>
-                      <ResizableHeader field="visits">
-                        Visits
-                      </ResizableHeader>
-                      <ResizableHeader field="actions">
-                        Actions
-                      </ResizableHeader>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-400">
-                    {filteredAffiliates.map((affiliate) => (
-                      <tr key={affiliate.id} className="hover:bg-gray-50" style={{ height: '28px', color: '#111827' }}>
-                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 sticky left-0 bg-white z-10" style={{ width: `${getColumnWidth('select')}px`, overflow: 'hidden' }}>
-                          <input
-                            type="checkbox"
-                            checked={selectedAffiliates.includes(affiliate.id)}
-                            onChange={() => handleSelectAffiliate(affiliate.id)}
-                            className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center font-medium" style={{ width: `${getColumnWidth('affiliateNum')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="affiliateNum" value={affiliate.affiliateNum} type="text" />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('status')}px`, overflow: 'hidden' }}>
-                          <EditableField affiliate={affiliate} field="isActive" value={affiliate.isActive} type="boolean" />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('name')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="name" value={affiliate.name} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('firstName')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="firstName" value={affiliate.firstName} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('lastName')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="lastName" value={affiliate.lastName} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('email')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="email" value={affiliate.email} type="email" />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('workPhone')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="workPhone" value={affiliate.workPhone} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('whatsApp')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="whatsApp" value={affiliate.whatsApp} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('address')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="address" value={affiliate.address} type="textarea" />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('web')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="web" value={affiliate.web} type="url" />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('description')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="description" value={affiliate.description} type="textarea" />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('city')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('maps')}px`, overflow: 'visible' }}>
-                          <div className="flex items-center space-x-1">
-                            {affiliate.maps && (
-                              <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex-shrink-0" title="Open in Maps">
-                                📍
-                              </a>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <EditableField affiliate={affiliate} field="maps" value={affiliate.maps} type="url" />
-                            </div>
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="affiliateNum" value={affiliate.affiliateNum} type="text" />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="isActive" value={affiliate.isActive} type="boolean" />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="name" value={affiliate.name} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="firstName" value={affiliate.firstName} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="lastName" value={affiliate.lastName} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="email" value={affiliate.email} type="email" />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="workPhone" value={affiliate.workPhone} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="whatsApp" value={affiliate.whatsApp} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="address" value={affiliate.address} type="textarea" />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="web" value={affiliate.web} type="url" />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="description" value={affiliate.description} type="textarea" />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <div className="flex items-center space-x-1">
+                          {affiliate.maps && (
+                            <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex-shrink-0" title="Open in Maps">
+                              📍
+                            </a>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <EditableField affiliate={affiliate} field="maps" value={affiliate.maps} type="url" />
                           </div>
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('location')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('discount')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
-                        </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('logo')}px`, overflow: 'visible' }}>
-                          <LogoImage affiliate={affiliate} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('facebook')}px`, overflow: 'hidden' }}>
-                          <EditableField affiliate={affiliate} field="facebook" value={affiliate.facebook} type="url" />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('instagram')}px`, overflow: 'hidden' }}>
-                          <EditableField affiliate={affiliate} field="instagram" value={affiliate.instagram} type="url" />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('category')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="category" value={affiliate.category} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('subCategory')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="subCategory" value={affiliate.subCategory} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('service')}px`, overflow: 'visible' }}>
-                          <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('type')}px`, overflow: 'hidden' }}>
-                          <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
-                        </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('sticker')}px`, overflow: 'hidden' }}>
-                          <EditableField affiliate={affiliate} field="sticker" value={!!affiliate.sticker} type="boolean" />
-                        </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('rating')}px`, overflow: 'hidden' }}>
-                          <EditableField affiliate={affiliate} field="rating" value={affiliate.rating} type="number" />
-                        </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('recommended')}px`, overflow: 'hidden' }}>
-                          <EditableField affiliate={affiliate} field="recommended" value={affiliate.recommended} type="boolean" />
-                        </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('termsConditions')}px`, overflow: 'hidden' }}>
-                          <EditableField affiliate={affiliate} field="termsConditions" value={affiliate.termsConditions === 'true' || affiliate.termsConditions === 'yes' || affiliate.termsConditions === 'YES' || affiliate.termsConditions === 'TRUE'} type="boolean" />
-                        </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('visits')}px`, overflow: 'hidden' }}>
-                          <div className="text-xs font-medium text-gray-900" style={{ color: '#111827' }}>{affiliate.totalVisits}</div>
-                        </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('actions')}px`, overflow: 'hidden' }}>
-                          <div className="flex items-center justify-center space-x-0.5">
-                            <button
-                              onClick={() => setEditingAffiliate(affiliate)}
-                              className="text-blue-600 hover:text-blue-900 p-0.5"
-                              title="Edit"
-                            >
-                              <Edit className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleDuplicateAffiliate(affiliate)}
-                              className="text-green-600 hover:text-green-900 p-0.5"
-                              title="Copy"
-                            >
-                              <Users className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteAffiliate(affiliate.id, affiliate.name)}
-                              className="text-red-600 hover:text-red-900 p-0.5"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
+                      </div>
+                      <div className="affiliate-grid-cell justify-center">
+                        <LogoImage affiliate={affiliate} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="facebook" value={affiliate.facebook} type="url" />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="instagram" value={affiliate.instagram} type="url" />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="category" value={affiliate.category} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="subCategory" value={affiliate.subCategory} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
+                      </div>
+                      <div className="affiliate-grid-cell">
+                        <EditableField affiliate={affiliate} field="sticker" value={!!affiliate.sticker} type="boolean" />
+                      </div>
+                      <div className="affiliate-grid-cell justify-center">
+                        <EditableField affiliate={affiliate} field="rating" value={affiliate.rating} type="number" />
+                      </div>
+                      <div className="affiliate-grid-cell justify-center">
+                        <EditableField affiliate={affiliate} field="recommended" value={affiliate.recommended} type="boolean" />
+                      </div>
+                      <div className="affiliate-grid-cell justify-center">
+                        <EditableField affiliate={affiliate} field="termsConditions" value={affiliate.termsConditions === 'true' || affiliate.termsConditions === 'yes' || affiliate.termsConditions === 'YES' || affiliate.termsConditions === 'TRUE'} type="boolean" />
+                      </div>
+                      <div className="affiliate-grid-cell justify-center">
+                        <div className="text-xs font-medium text-gray-900">{affiliate.totalVisits}</div>
+                      </div>
+                      <div className="affiliate-grid-cell justify-center">
+                        <div className="flex items-center justify-center space-x-0.5">
+                          <button
+                            onClick={() => setEditingAffiliate(affiliate)}
+                            className="text-blue-600 hover:text-blue-900 p-0.5"
+                            title="Edit"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDuplicateAffiliate(affiliate)}
+                            className="text-green-600 hover:text-green-900 p-0.5"
+                            title="Copy"
+                          >
+                            <Users className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAffiliate(affiliate.id, affiliate.name)}
+                            className="text-red-600 hover:text-red-900 p-0.5"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               
