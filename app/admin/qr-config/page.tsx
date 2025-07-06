@@ -4567,17 +4567,14 @@ function QRConfigPageContent() {
                                   <h5 className="font-semibold text-gray-900">Guest & Day Limits</h5>
                                 </div>
                                 <div className="text-sm text-gray-700 space-y-1">
-                                  {!config.config.button1GuestsLocked ? (
-                                    <>
-                                      <p><strong>Guests:</strong> 1-{config.config.button1GuestsRangeMax} (default: {config.config.button1GuestsDefault})</p>
-                                      <p><strong>Days:</strong> {!config.config.button1DaysLocked ? `1-${config.config.button1DaysRangeMax} (default: ${config.config.button1DaysDefault})` : `Fixed at ${config.config.button1DaysDefault}`}</p>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <p><strong>Guests:</strong> Fixed at {config.config.button1GuestsDefault}</p>
-                                      <p><strong>Days:</strong> Fixed at {config.config.button1DaysDefault}</p>
-                                    </>
-                                  )}
+                                  <p><strong>Guests:</strong> {config.config.button1GuestsLocked 
+                                    ? `Fixed at ${config.config.button1GuestsDefault}`
+                                    : `1-${config.config.button1GuestsRangeMax} Open`
+                                  }</p>
+                                  <p><strong>Days:</strong> {config.config.button1DaysLocked 
+                                    ? `Fixed at ${config.config.button1DaysDefault}`
+                                    : `1-${config.config.button1DaysRangeMax} Open`
+                                  }</p>
                                 </div>
                               </div>
 

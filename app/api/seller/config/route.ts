@@ -106,10 +106,10 @@ export async function GET(request: NextRequest) {
           // Default Button 1 fields
           button1GuestsLocked: false,
           button1GuestsDefault: 2,
-          button1GuestsRangeMax: 10,
+          button1GuestsRangeMax: 2, // Use the default value as the range max for legacy configs
           button1DaysLocked: false,
           button1DaysDefault: 3,
-          button1DaysRangeMax: 30,
+          button1DaysRangeMax: 3, // Use the default value as the range max for legacy configs
           
           // Default Button 2 fields
           button2PricingType: 'FIXED',
