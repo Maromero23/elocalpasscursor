@@ -61,20 +61,17 @@ export default function AffiliateDashboard() {
   const { notifications, removeToast, success, error } = useToast()
   const [affiliate, setAffiliate] = useState<Affiliate | null>(null)
   const [loading, setLoading] = useState(true)
+  const [recentVisits, setRecentVisits] = useState<Visit[]>([])
+  const [stats, setStats] = useState({ today: 0, total: 0 })
   const [scanning, setScanning] = useState(false)
   const [qrInput, setQrInput] = useState('')
-  const [recentVisits, setRecentVisits] = useState<Visit[]>([])
-  const [stats, setStats] = useState({
-    today: 0,
-    thisWeek: 0,
-    thisMonth: 0
-  })
-
-  // Camera scanning states
-  const [cameraActive, setCameraActive] = useState(false)
-  const [cameraError, setCameraError] = useState<string | null>(null)
   const [showManualInput, setShowManualInput] = useState(false)
+  const [cameraActive, setCameraActive] = useState(false)
   const [cameraLoading, setCameraLoading] = useState(false)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false)
+  const [autoStartAttempted, setAutoStartAttempted] = useState(false)
+  
   const videoRef = useRef<HTMLVideoElement>(null)
   const qrScannerRef = useRef<QrScanner | null>(null)
 
@@ -82,6 +79,24 @@ export default function AffiliateDashboard() {
   useEffect(() => {
     checkAuth()
   }, [])
+
+  // Check camera permission on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      checkCameraPermission()
+    }
+  }, [])
+
+  // Auto-start camera after auth is complete
+  useEffect(() => {
+    if (affiliate && !autoStartAttempted && !loading) {
+      setAutoStartAttempted(true)
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        startCameraScanning()
+      }, 500)
+    }
+  }, [affiliate, autoStartAttempted, loading])
 
   // Cleanup camera on unmount
   useEffect(() => {
@@ -100,7 +115,7 @@ export default function AffiliateDashboard() {
         const data = await response.json()
         setAffiliate(data.affiliate)
         setRecentVisits(data.recentVisits || [])
-        setStats(data.stats || { today: 0, thisWeek: 0, thisMonth: 0 })
+        setStats(data.stats || { today: 0, total: 0 })
       } else {
         // Redirect to login
         window.location.href = '/affiliate/login'
@@ -110,6 +125,72 @@ export default function AffiliateDashboard() {
       window.location.href = '/affiliate/login'
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Check if camera permission was previously granted
+  const checkCameraPermission = async (): Promise<boolean> => {
+    try {
+      // Check localStorage for previous permission
+      const storedPermission = localStorage.getItem('camera-permission-granted')
+      if (storedPermission === 'true') {
+        setCameraPermissionGranted(true)
+        return true
+      }
+
+      // Check using Permissions API if available
+      if (navigator.permissions && navigator.permissions.query) {
+        const permission = await navigator.permissions.query({ name: 'camera' as PermissionName })
+        if (permission.state === 'granted') {
+          setCameraPermissionGranted(true)
+          localStorage.setItem('camera-permission-granted', 'true')
+          return true
+        }
+      }
+
+      return false
+    } catch (error) {
+      console.log('Permission check not available:', error)
+      return false
+    }
+  }
+
+  // Request camera permission and store the result
+  const requestCameraPermission = async (): Promise<boolean> => {
+    try {
+      console.log('Requesting camera permissions...')
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: { ideal: 'environment' } // Prefer back camera
+        } 
+      })
+      
+      // Stop the test stream immediately
+      stream.getTracks().forEach(track => track.stop())
+      console.log('Camera permissions granted')
+      
+      // Store permission state
+      setCameraPermissionGranted(true)
+      localStorage.setItem('camera-permission-granted', 'true')
+      return true
+    } catch (permissionError: any) {
+      console.error('Camera permission error:', permissionError)
+      setCameraPermissionGranted(false)
+      localStorage.setItem('camera-permission-granted', 'false')
+      
+      let errorMessage = 'Camera access denied'
+      
+      if (permissionError.name === 'NotAllowedError') {
+        errorMessage = 'Camera access denied. Please allow camera access in your browser settings.'
+      } else if (permissionError.name === 'NotFoundError') {
+        errorMessage = 'No camera found on this device'
+      } else if (permissionError.name === 'NotSupportedError') {
+        errorMessage = 'Camera not supported by this browser'
+      } else if (permissionError.name === 'NotReadableError') {
+        errorMessage = 'Camera is being used by another application'
+      }
+      
+      throw new Error(errorMessage)
     }
   }
 
@@ -135,33 +216,16 @@ export default function AffiliateDashboard() {
         throw new Error('No camera detected on this device')
       }
 
-      // Request camera permissions explicitly for iOS
-      console.log('Requesting camera permissions...')
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: { ideal: 'environment' } // Prefer back camera
-          } 
-        })
-        
-        // Stop the test stream immediately
-        stream.getTracks().forEach(track => track.stop())
-        console.log('Camera permissions granted')
-      } catch (permissionError: any) {
-        console.error('Camera permission error:', permissionError)
-        let errorMessage = 'Camera access denied'
-        
-        if (permissionError.name === 'NotAllowedError') {
-          errorMessage = 'Camera access denied. Please allow camera access in your browser settings.'
-        } else if (permissionError.name === 'NotFoundError') {
-          errorMessage = 'No camera found on this device'
-        } else if (permissionError.name === 'NotSupportedError') {
-          errorMessage = 'Camera not supported by this browser'
-        } else if (permissionError.name === 'NotReadableError') {
-          errorMessage = 'Camera is being used by another application'
-        }
-        
-        throw new Error(errorMessage)
+      // Check if we already have permission or need to request it
+      let hasPermission = await checkCameraPermission()
+      
+      if (!hasPermission) {
+        // Only request permission if we don't have it
+        hasPermission = await requestCameraPermission()
+      }
+
+      if (!hasPermission) {
+        throw new Error('Camera permission denied')
       }
 
       // Set camera active first and wait for video element to be ready
@@ -212,7 +276,11 @@ export default function AffiliateDashboard() {
       console.error('Camera startup error:', err)
       setCameraError(err.message || 'Failed to access camera')
       setCameraActive(false)
-      setShowManualInput(true) // Auto-fallback to manual input
+      
+      // If this was an auto-start attempt, silently fall back to manual input
+      if (autoStartAttempted && !cameraActive) {
+        setShowManualInput(true)
+      }
     } finally {
       setCameraLoading(false)
     }
@@ -483,7 +551,7 @@ export default function AffiliateDashboard() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">This Week</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.thisWeek}</dd>
+                  <dd className="text-lg font-medium text-gray-900">{stats.total - stats.today}</dd>
                 </dl>
               </div>
             </div>
@@ -496,8 +564,8 @@ export default function AffiliateDashboard() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">This Month</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.thisMonth}</dd>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total Visits</dt>
+                  <dd className="text-lg font-medium text-gray-900">{stats.total}</dd>
                 </dl>
               </div>
             </div>
@@ -511,96 +579,74 @@ export default function AffiliateDashboard() {
             Scan Customer QR Code
           </h3>
 
-          {/* Always render video element but hide it when not active */}
-          <div className="relative">
-            <video
-              ref={videoRef}
-              className={`w-full h-64 sm:h-80 md:h-96 object-cover rounded-lg bg-black ${
-                cameraActive ? 'block' : 'hidden'
-              }`}
-              playsInline
-              muted
-            />
-            {/* Show scanning overlay when processing QR codes */}
-            {scanning && cameraActive && (
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                <div className="text-center text-white">
-                  <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
-                  <p>Processing QR code...</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Camera Scanner UI */}
+          {/* QR Code Scanner */}
           {!showManualInput && (
             <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-gray-900">QR Code Scanner</h4>
+                <button
+                  onClick={() => setShowManualInput(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                >
+                  <Type className="w-4 h-4 mr-1" />
+                  Manual input
+                </button>
+              </div>
+              
               {!cameraActive ? (
-                <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
-                  <Camera className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Camera QR Scanner</h4>
-                  <p className="text-gray-600 mb-4">Point your camera at the customer's QR code</p>
-                  <div className="space-y-3">
+                <div className="space-y-3">
+                  {cameraLoading ? (
+                    <div className="w-full px-6 py-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-center">
+                      <RefreshCw className="w-5 h-5 mr-2 animate-spin text-blue-600" />
+                      <span className="text-blue-800">Starting camera...</span>
+                    </div>
+                  ) : cameraError ? (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-sm text-red-800">
+                          <strong>Camera Error:</strong> {cameraError}
+                        </p>
+                      </div>
+                      <button
+                        onClick={startCameraScanning}
+                        className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center font-medium"
+                      >
+                        <Camera className="w-5 h-5 mr-2" />
+                        Try Camera Again
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       onClick={startCameraScanning}
-                      disabled={cameraLoading}
-                      className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center font-medium"
                     >
-                      {cameraLoading ? (
-                        <>
-                          <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                          Starting Camera...
-                        </>
-                      ) : (
-                        <>
-                          <Camera className="w-5 h-5 mr-2" />
-                          Start Camera Scanner
-                        </>
-                      )}
+                      <Camera className="w-5 h-5 mr-2" />
+                      {cameraPermissionGranted ? 'Start Camera Scanner' : 'Start Camera Scanner (Permission Required)'}
                     </button>
-                    <button
-                      onClick={() => setShowManualInput(true)}
-                      disabled={cameraLoading}
-                      className="w-full px-6 py-2 text-gray-600 hover:text-gray-800 flex items-center justify-center text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Type className="w-4 h-4 mr-2" />
-                      Use manual input instead
-                    </button>
-                  </div>
-                  {cameraError && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                      <p className="text-sm text-red-800">
-                        <strong>Camera Error:</strong> {cameraError}
-                      </p>
-                      <div className="mt-3 space-y-2">
-                        <button
-                          onClick={() => setShowManualInput(true)}
-                          className="block w-full text-sm text-red-600 underline hover:text-red-800"
-                        >
-                          Switch to manual input
-                        </button>
-                        <button
-                          onClick={() => {
-                            setCameraError(null)
-                            startCameraScanning()
-                          }}
-                          className="block w-full text-sm text-blue-600 underline hover:text-blue-800"
-                        >
-                          Try camera again
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {cameraLoading && (
-                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                      <p className="text-sm text-blue-800">
-                        <strong>Setting up camera...</strong> Please allow camera access when prompted.
-                      </p>
-                    </div>
                   )}
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* Camera video element */}
+                  <div className="relative">
+                    <video
+                      ref={videoRef}
+                      className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-lg bg-black"
+                      playsInline
+                      muted
+                    />
+                    {/* Show scanning overlay when processing QR codes */}
+                    {scanning && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                        <div className="text-center text-white">
+                          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
+                          <p>Processing QR code...</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Camera controls */}
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       onClick={stopCameraScanning}
@@ -621,6 +667,7 @@ export default function AffiliateDashboard() {
                     </button>
                   </div>
                   
+                  {/* Scanning tips */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-start space-x-3">
                       <Camera className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -646,7 +693,14 @@ export default function AffiliateDashboard() {
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-gray-900">Manual QR Code Entry</h4>
                 <button
-                  onClick={() => setShowManualInput(false)}
+                  onClick={() => {
+                    setShowManualInput(false)
+                    setCameraError(null)
+                    // Try to start camera again when switching back
+                    if (!cameraActive) {
+                      startCameraScanning()
+                    }
+                  }}
                   className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
                 >
                   <Camera className="w-4 h-4 mr-1" />
