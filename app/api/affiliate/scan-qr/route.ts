@@ -63,7 +63,18 @@ export async function POST(request: NextRequest) {
       console.log(`   Expired ${Math.abs(qrExpiresAt.getTime() - currentTime.getTime())}ms ago`)
       return NextResponse.json({ 
         error: 'QR code has expired',
-        details: `This ELocalPass expired on ${qrRecord.expiresAt.toLocaleDateString()}. Current time: ${currentTime.toLocaleDateString()}`
+        details: `This ELocalPass expired on ${qrRecord.expiresAt.toLocaleDateString()}. Current time: ${currentTime.toLocaleDateString()}`,
+        debugInfo: {
+          currentServerTime: currentTime.toISOString(),
+          qrExpiresAt: qrExpiresAt.toISOString(),
+          timeDifferenceMs: qrExpiresAt.getTime() - currentTime.getTime(),
+          qrCreatedAt: qrRecord.createdAt.toISOString(),
+          qrCode: qrCode,
+          customerName: qrRecord.customerName,
+          daysValid: qrRecord.days,
+          isActive: qrRecord.isActive,
+          expiredAgoMs: Math.abs(qrExpiresAt.getTime() - currentTime.getTime())
+        }
       }, { status: 400 })
     }
     

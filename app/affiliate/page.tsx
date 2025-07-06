@@ -38,6 +38,14 @@ interface ScanResult {
   visit?: Visit
   error?: string
   details?: string
+  debugInfo?: {
+    currentServerTime: string
+    qrExpiresAt: string
+    timeDifferenceMs: number
+    qrCreatedAt: string
+    daysValid: number
+    customerName: string
+  }
 }
 
 export default function AffiliateDashboard() {
@@ -240,6 +248,27 @@ export default function AffiliateDashboard() {
         stopCameraScanning()
       } else {
         error('Scan Failed', result.details || result.error || 'Unknown error')
+        
+        // Show debug information if available (for troubleshooting)
+        if (result.debugInfo) {
+          console.log('🔍 QR SCAN DEBUG INFO:', result.debugInfo)
+          
+          // Show detailed debug info in a more user-friendly way
+          const debugMessage = `
+Debug Information:
+• Server Time: ${new Date(result.debugInfo.currentServerTime).toLocaleString()}
+• QR Expires: ${new Date(result.debugInfo.qrExpiresAt).toLocaleString()}
+• Time Difference: ${result.debugInfo.timeDifferenceMs}ms
+• QR Created: ${new Date(result.debugInfo.qrCreatedAt).toLocaleString()}
+• Days Valid: ${result.debugInfo.daysValid}
+• Customer: ${result.debugInfo.customerName}
+          `.trim()
+          
+          // Show debug info in a second toast for troubleshooting
+          setTimeout(() => {
+            error('Debug Info', debugMessage)
+          }, 1000)
+        }
         
         // Restart camera for another attempt
         if (cameraActive && qrScannerRef.current) {
