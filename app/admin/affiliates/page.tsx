@@ -182,7 +182,7 @@ export default function AdminAffiliates() {
 
   // Default column widths - sized to fit header text
   const defaultColumnWidths = {
-    select: 40,              // Checkbox
+    select: 25,              // Checkbox - made smaller
     affiliateNum: 45,        // "No." (3 chars + padding)
     status: 70,              // "STATUS" (6 chars + padding)
     name: 120,               // "BUSINESS NAME" (13 chars + padding)
@@ -210,7 +210,7 @@ export default function AdminAffiliates() {
     recommended: 105,        // "RECOMMENDED" (11 chars + padding)
     termsConditions: 45,     // "T&C" (3 chars + padding)
     visits: 65,              // "VISITS" (6 chars + padding)
-    actions: 30              // "ACTIONS" - Made much smaller for just icons
+    actions: 60              // "ACTIONS" - Smaller but usable
   }
 
   // Column widths are now managed by the useUserPreferences hook
@@ -220,12 +220,17 @@ export default function AdminAffiliates() {
   const getColumnWidth = (field: string) => {
     const width = (actualColumnWidths as any)[field] || (defaultColumnWidths as any)[field]
     
-    // Special handling for ACTIONS column - force maximum width
+    // Special handling for ACTIONS column - allow it to be small but prevent it from being excessively wide
     if (field === 'actions') {
-      return Math.min(width, 80) // Never allow actions column to be wider than 80px
+      return Math.max(20, Math.min(width, 120)) // Between 20px and 120px
     }
     
-    return width
+    // Special handling for SELECT column - allow it to be very small
+    if (field === 'select') {
+      return Math.max(15, width) // Minimum 15px but no maximum limit
+    }
+    
+    return Math.max(10, width) // All other columns minimum 10px
   }
 
   // Reset column widths to defaults
@@ -236,10 +241,11 @@ export default function AdminAffiliates() {
         await updateColumnWidth(field, width)
       }
       
-      // Force ACTIONS column to be extra small
-      await updateColumnWidth('actions', 30)
+      // Set specific optimal sizes for edge columns
+      await updateColumnWidth('select', 25) // Checkbox column - compact
+      await updateColumnWidth('actions', 60) // Actions column - compact but usable
       
-      success('Column Widths Reset', 'All columns have been reset to their default sizes')
+      success('Column Widths Reset', 'All columns have been reset to optimal sizes')
     } catch (err) {
       console.error('Error resetting column widths:', err)
       error('Reset Failed', 'Unable to reset column widths')
@@ -1107,12 +1113,16 @@ export default function AdminAffiliates() {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return
       const diff = e.clientX - startX
-      // Allow columns to be made extremely small - only 1px minimum to prevent disappearing
-      let newWidth = Math.max(1, startWidth + diff)
+      // Allow columns to be made very small - minimum based on column type
+      let newWidth = Math.max(5, startWidth + diff) // Base minimum 5px
       
-      // Special handling for ACTIONS column - force maximum width
+      // Special handling for different columns
       if (field === 'actions') {
-        newWidth = Math.min(newWidth, 80) // Never allow actions column to be wider than 80px
+        newWidth = Math.max(20, Math.min(newWidth, 120)) // ACTIONS: 20px to 120px
+      } else if (field === 'select') {
+        newWidth = Math.max(15, newWidth) // SELECT: minimum 15px, no maximum
+      } else {
+        newWidth = Math.max(10, newWidth) // Others: minimum 10px, no maximum
       }
       
       console.log(`📏 Resizing column ${field}: ${startWidth}px → ${newWidth}px (diff: ${diff}px)`)
@@ -1453,15 +1463,7 @@ export default function AdminAffiliates() {
           opacity: 1 !important;
           width: 6px !important;
         }
-        /* Force ACTIONS column to be compact */
-        .affiliate-table td:last-child {
-          max-width: 80px !important;
-          width: 80px !important;
-        }
-        .affiliate-table th:last-child {
-          max-width: 80px !important;
-          width: 80px !important;
-        }
+
       `}} />
       <div className="min-h-screen bg-gray-100">
       {/* Header */}
