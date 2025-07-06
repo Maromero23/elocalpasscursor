@@ -131,26 +131,41 @@ export default function AffiliateDashboard() {
   // Check if camera permission was previously granted
   const checkCameraPermission = async (): Promise<boolean> => {
     try {
-      // Check localStorage for previous permission
-      const storedPermission = localStorage.getItem('camera-permission-granted')
-      if (storedPermission === 'true') {
+      // First check if we have permission in this session
+      const sessionPermission = sessionStorage.getItem('camera-permission-granted')
+      if (sessionPermission === 'true') {
         setCameraPermissionGranted(true)
         return true
       }
 
-      // Check using Permissions API if available
-      if (navigator.permissions && navigator.permissions.query) {
-        const permission = await navigator.permissions.query({ name: 'camera' as PermissionName })
-        if (permission.state === 'granted') {
-          setCameraPermissionGranted(true)
-          localStorage.setItem('camera-permission-granted', 'true')
-          return true
-        }
+      // Check localStorage for previous permission
+      const storedPermission = localStorage.getItem('camera-permission-granted')
+      if (storedPermission === 'true') {
+        setCameraPermissionGranted(true)
+        // Also set session storage to avoid repeated checks
+        sessionStorage.setItem('camera-permission-granted', 'true')
+        return true
       }
 
-      return false
+      // Try to access camera directly without explicit permission request
+      // This will work if permission was already granted in the past
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: { ideal: 'environment' } } 
+        })
+        // If we get here, permission was already granted
+        stream.getTracks().forEach(track => track.stop())
+        setCameraPermissionGranted(true)
+        localStorage.setItem('camera-permission-granted', 'true')
+        sessionStorage.setItem('camera-permission-granted', 'true')
+        return true
+      } catch (silentError) {
+        // Permission not granted, but don't throw error here
+        console.log('Camera permission not available:', silentError instanceof Error ? silentError.name : 'Unknown error')
+        return false
+      }
     } catch (error) {
-      console.log('Permission check not available:', error)
+      console.log('Permission check error:', error)
       return false
     }
   }
@@ -158,6 +173,13 @@ export default function AffiliateDashboard() {
   // Request camera permission and store the result
   const requestCameraPermission = async (): Promise<boolean> => {
     try {
+      // Check if we've already asked for permission in this session
+      const sessionAsked = sessionStorage.getItem('camera-permission-asked')
+      if (sessionAsked === 'true') {
+        // Don't ask again in the same session
+        throw new Error('Camera permission was already requested. Please check your browser settings.')
+      }
+
       console.log('Requesting camera permissions...')
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
@@ -169,14 +191,17 @@ export default function AffiliateDashboard() {
       stream.getTracks().forEach(track => track.stop())
       console.log('Camera permissions granted')
       
-      // Store permission state
+      // Store permission state in both localStorage and sessionStorage
       setCameraPermissionGranted(true)
       localStorage.setItem('camera-permission-granted', 'true')
+      sessionStorage.setItem('camera-permission-granted', 'true')
+      sessionStorage.setItem('camera-permission-asked', 'true')
       return true
     } catch (permissionError: any) {
       console.error('Camera permission error:', permissionError)
       setCameraPermissionGranted(false)
       localStorage.setItem('camera-permission-granted', 'false')
+      sessionStorage.setItem('camera-permission-asked', 'true')
       
       let errorMessage = 'Camera access denied'
       
