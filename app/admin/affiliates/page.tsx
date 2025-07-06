@@ -690,8 +690,8 @@ export default function AdminAffiliates() {
 
     // Check if this is a long field that should use modal editing
     const shouldUseModal = (field: string, value: any) => {
-      const longFields = ['maps', 'facebook', 'instagram', 'web', 'description', 'address', 'discount', 'location', 'category', 'subCategory', 'service']
-      return longFields.includes(field) && value && String(value).length > 30
+      const modalFields = ['name', 'maps', 'facebook', 'instagram', 'web', 'description', 'address', 'discount', 'location', 'category', 'subCategory', 'service']
+      return modalFields.includes(field) // Always open modal for these fields, regardless of content length
     }
 
     const shouldShowTooltip = isContentTruncated() && value && String(value).length > 0
@@ -877,64 +877,86 @@ export default function AdminAffiliates() {
       {/* Edit Field Modal */}
       {editModal.isOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
+          <div 
+            className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl flex flex-col"
+            style={{ 
+              width: '600px', 
+              height: '500px',
+              minWidth: '400px',
+              minHeight: '300px'
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0 bg-blue-50">
               <h3 className="text-lg font-medium text-gray-900">
                 Edit {editModal.fieldName}
               </h3>
               <button
                 onClick={() => setEditModal({...editModal, isOpen: false})}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Content */}
+            <div className="flex-1 p-6 overflow-hidden">
+              <div className="h-full flex flex-col">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
                   {editModal.fieldName}
                 </label>
-                {editModal.field === 'description' || editModal.field === 'address' ? (
-                  <textarea
-                    value={editModal.value}
-                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    rows={4}
-                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
-                  />
-                ) : (
-                  <input
-                    type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
-                    value={editModal.value}
-                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
-                  />
-                )}
+                <div className="flex-1 mb-6">
+                  {editModal.field === 'description' || editModal.field === 'address' || editModal.field === 'discount' || editModal.field === 'service' ? (
+                    <textarea
+                      value={editModal.value}
+                      onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                      className="w-full h-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                      placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                      autoFocus
+                    />
+                  ) : (
+                    <input
+                      type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
+                      value={editModal.value}
+                      onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                      autoFocus
+                    />
+                  )}
+                </div>
+                
+                {/* Buttons */}
+                <div className="flex justify-end space-x-3 flex-shrink-0">
+                  <button
+                    onClick={() => setEditModal({...editModal, isOpen: false})}
+                    className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const affiliate = affiliates.find(a => a.id === editModal.affiliateId)
+                      if (affiliate) {
+                        const originalValue = (affiliate as any)[editModal.field]
+                        handleFieldEdit(editModal.affiliateId, editModal.field, editModal.value, originalValue)
+                      }
+                      setEditModal({...editModal, isOpen: false})
+                    }}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                </div>
               </div>
-              
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setEditModal({...editModal, isOpen: false})}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    const affiliate = affiliates.find(a => a.id === editModal.affiliateId)
-                    if (affiliate) {
-                      const originalValue = (affiliate as any)[editModal.field]
-                      handleFieldEdit(editModal.affiliateId, editModal.field, editModal.value, originalValue)
-                    }
-                    setEditModal({...editModal, isOpen: false})
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Save
-                </button>
-              </div>
+            </div>
+
+            {/* Visual resize indicator (for future enhancement) */}
+            <div
+              className="absolute bottom-1 right-1 w-4 h-4 opacity-30"
+              title="Larger editing modal"
+            >
+              <div className="text-gray-400 text-xs">⤡</div>
             </div>
           </div>
         </div>
@@ -3376,64 +3398,86 @@ export default function AdminAffiliates() {
       {/* Edit Field Modal */}
       {editModal.isOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
+          <div 
+            className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl flex flex-col"
+            style={{ 
+              width: '600px', 
+              height: '500px',
+              minWidth: '400px',
+              minHeight: '300px'
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0 bg-blue-50">
               <h3 className="text-lg font-medium text-gray-900">
                 Edit {editModal.fieldName}
               </h3>
               <button
                 onClick={() => setEditModal({...editModal, isOpen: false})}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Content */}
+            <div className="flex-1 p-6 overflow-hidden">
+              <div className="h-full flex flex-col">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
                   {editModal.fieldName}
                 </label>
-                {editModal.field === 'description' || editModal.field === 'address' ? (
-                  <textarea
-                    value={editModal.value}
-                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    rows={4}
-                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
-                  />
-                ) : (
-                  <input
-                    type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
-                    value={editModal.value}
-                    onChange={(e) => setEditModal({...editModal, value: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
-                  />
-                )}
+                <div className="flex-1 mb-6">
+                  {editModal.field === 'description' || editModal.field === 'address' || editModal.field === 'discount' || editModal.field === 'service' ? (
+                    <textarea
+                      value={editModal.value}
+                      onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                      className="w-full h-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                      placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                      autoFocus
+                    />
+                  ) : (
+                    <input
+                      type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
+                      value={editModal.value}
+                      onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
+                      autoFocus
+                    />
+                  )}
+                </div>
+                
+                {/* Buttons */}
+                <div className="flex justify-end space-x-3 flex-shrink-0">
+                  <button
+                    onClick={() => setEditModal({...editModal, isOpen: false})}
+                    className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const affiliate = affiliates.find(a => a.id === editModal.affiliateId)
+                      if (affiliate) {
+                        const originalValue = (affiliate as any)[editModal.field]
+                        handleFieldEdit(editModal.affiliateId, editModal.field, editModal.value, originalValue)
+                      }
+                      setEditModal({...editModal, isOpen: false})
+                    }}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                </div>
               </div>
-              
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setEditModal({...editModal, isOpen: false})}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    const affiliate = affiliates.find(a => a.id === editModal.affiliateId)
-                    if (affiliate) {
-                      const originalValue = (affiliate as any)[editModal.field]
-                      handleFieldEdit(editModal.affiliateId, editModal.field, editModal.value, originalValue)
-                    }
-                    setEditModal({...editModal, isOpen: false})
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Save
-                </button>
-              </div>
+            </div>
+
+            {/* Visual resize indicator (for future enhancement) */}
+            <div
+              className="absolute bottom-1 right-1 w-4 h-4 opacity-30"
+              title="Larger editing modal"
+            >
+              <div className="text-gray-400 text-xs">⤡</div>
             </div>
           </div>
         </div>
