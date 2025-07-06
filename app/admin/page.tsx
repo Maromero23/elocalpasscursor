@@ -51,8 +51,6 @@ export default function AdminPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-xs text-orange-200">1:50 PM</span>
-                <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"

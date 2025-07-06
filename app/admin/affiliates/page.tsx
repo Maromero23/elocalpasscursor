@@ -1,14 +1,31 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, TrendingUp, FileSpreadsheet, RefreshCw, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowLeft, ArrowRight, Settings, MessageSquare } from "lucide-react"
+import Link from "next/link"
+import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, TrendingUp, FileSpreadsheet, RefreshCw, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowLeft, ArrowRight, Settings, MessageSquare, MapPin, QrCode, Clock } from "lucide-react"
 import { ToastNotifications } from "@/components/toast-notification"
 import { useToast } from "@/hooks/use-toast"
 import { useUserPreferences } from "@/hooks/use-user-preferences"
 import { useFieldAnnotations } from "@/hooks/use-field-annotations"
 import { FieldAnnotationMenu } from "@/components/field-annotation-menu"
+
+const getNavItems = (userRole: string) => {
+  if (userRole === "ADMIN") {
+    return [
+      { href: "/admin", label: "Dashboard", icon: Building2 },
+      { href: "/admin/distributors", label: "Distributors", icon: Users },
+      { href: "/admin/locations", label: "Locations", icon: MapPin },
+      { href: "/admin/sellers", label: "Sellers", icon: Users },
+      { href: "/admin/affiliates", label: "Affiliates", icon: Building2 },
+      { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
+      { href: "/admin/scheduled", label: "Scheduled QRs", icon: Clock },
+      { href: "/admin/analytics", label: "Analytics", icon: TrendingUp },
+    ]
+  }
+  return []
+}
 
 interface Affiliate {
   id: string
@@ -63,6 +80,7 @@ interface AffiliateResponse {
 
 export default function AdminAffiliates() {
   const { data: session } = useSession()
+  const navItems = getNavItems(session?.user?.role || "")
   const { notifications, removeToast, success, error } = useToast()
   const { columnWidths, updateColumnWidth, loading: preferencesLoading } = useUserPreferences()
   const { 
@@ -1683,6 +1701,40 @@ export default function AdminAffiliates() {
 
       `}} />
       <div className="min-h-screen bg-gray-100">
+        {/* Navigation */}
+        <nav className="bg-orange-400 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center space-x-8">
+                <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
+                <div className="flex space-x-4">
+                  {navItems.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-orange-100 hover:text-white hover:bg-orange-500"
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {item.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => signOut()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </nav>
+
       {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
