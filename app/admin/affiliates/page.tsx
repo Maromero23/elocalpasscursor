@@ -3277,13 +3277,79 @@ export default function AdminAffiliates() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Logo URL</label>
-                  <input
-                    type="url"
-                    value={editingAffiliate.logo || ''}
-                    onChange={(e) => setEditingAffiliate({...editingAffiliate, logo: e.target.value})}
-                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Logo</label>
+                  
+                  {/* File Upload Option */}
+                  <div className="mb-2">
+                    <label className="block text-xs text-gray-600 mb-1">Upload Logo File:</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        
+                        const formData = new FormData()
+                        formData.append('file', file)
+                        formData.append('affiliateId', editingAffiliate.id)
+                        formData.append('affiliateName', editingAffiliate.name)
+                        
+                        try {
+                          const response = await fetch('/api/admin/affiliates/upload-logo', {
+                            method: 'POST',
+                            body: formData
+                          })
+                          
+                          const result = await response.json()
+                          if (result.success) {
+                            setEditingAffiliate({...editingAffiliate, logo: result.url})
+                            success('Logo uploaded successfully!')
+                          } else {
+                            error('Upload failed', result.error)
+                          }
+                        } catch (err) {
+                          error('Upload failed', 'Unable to upload logo file')
+                        }
+                      }}
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF, WebP • Max 5MB</p>
+                  </div>
+                  
+                  {/* OR Separator */}
+                  <div className="relative mb-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300" />
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="px-1 bg-white text-gray-500">OR</span>
+                    </div>
+                  </div>
+                  
+                  {/* URL Input Option */}
+                  <div className="mb-2">
+                    <label className="block text-xs text-gray-600 mb-1">Logo URL:</label>
+                    <input
+                      type="url"
+                      value={editingAffiliate.logo || ''}
+                      onChange={(e) => setEditingAffiliate({...editingAffiliate, logo: e.target.value})}
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  {/* Logo Preview */}
+                  {editingAffiliate.logo && (
+                    <div className="text-center">
+                      <img 
+                        src={editingAffiliate.logo} 
+                        alt="Logo preview" 
+                        className="w-12 h-12 object-cover rounded border border-gray-300 mx-auto"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
                 
                 <div>
@@ -3530,6 +3596,58 @@ export default function AdminAffiliates() {
                         <span className="text-gray-500 text-sm">No Logo</span>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* File Upload Option */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Upload New Logo:
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      
+                      const formData = new FormData()
+                      formData.append('file', file)
+                      formData.append('affiliateId', logoModal.affiliate!.id)
+                      formData.append('affiliateName', logoModal.affiliate!.name)
+                      
+                      try {
+                        const response = await fetch('/api/admin/affiliates/upload-logo', {
+                          method: 'POST',
+                          body: formData
+                        })
+                        
+                        const result = await response.json()
+                        if (result.success) {
+                          // Update the affiliate record immediately
+                          await handleLogoEdit(logoModal.affiliate!, result.url)
+                          success('Logo uploaded and saved successfully!')
+                        } else {
+                          error('Upload failed', result.error)
+                        }
+                      } catch (err) {
+                        error('Upload failed', 'Unable to upload logo file')
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    JPG, PNG, GIF, or WebP • Max 5MB • Will be saved automatically
+                  </p>
+                </div>
+
+                {/* OR Separator */}
+                <div className="relative mb-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">OR</span>
                   </div>
                 </div>
 
@@ -4235,16 +4353,88 @@ export default function AdminAffiliates() {
                     />
                   </div>
                   
-                  {/* Logo URL - Full width */}
+                  {/* Logo - Full width */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
-                    <input
-                      type="url"
-                      value={newAffiliate.logo}
-                      onChange={(e) => setNewAffiliate({...newAffiliate, logo: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter logo URL..."
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
+                    
+                    {/* File Upload Option */}
+                    <div className="mb-3">
+                      <label className="block text-xs text-gray-600 mb-1">Upload Logo File:</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          
+                          if (!newAffiliate.name) {
+                            error('Please enter a business name first')
+                            e.target.value = ''
+                            return
+                          }
+                          
+                          const formData = new FormData()
+                          formData.append('file', file)
+                          formData.append('affiliateId', 'new')
+                          formData.append('affiliateName', newAffiliate.name)
+                          
+                          try {
+                            const response = await fetch('/api/admin/affiliates/upload-logo', {
+                              method: 'POST',
+                              body: formData
+                            })
+                            
+                            const result = await response.json()
+                            if (result.success) {
+                              setNewAffiliate({...newAffiliate, logo: result.url})
+                              success('Logo uploaded successfully!')
+                            } else {
+                              error('Upload failed', result.error)
+                            }
+                          } catch (err) {
+                            error('Upload failed', 'Unable to upload logo file')
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF, or WebP • Max 5MB</p>
+                    </div>
+                    
+                    {/* OR Separator */}
+                    <div className="relative mb-3">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300" />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="px-2 bg-white text-gray-500">OR</span>
+                      </div>
+                    </div>
+                    
+                    {/* URL Input Option */}
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Logo URL:</label>
+                      <input
+                        type="url"
+                        value={newAffiliate.logo}
+                        onChange={(e) => setNewAffiliate({...newAffiliate, logo: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter logo URL..."
+                      />
+                    </div>
+                    
+                    {/* Logo Preview */}
+                    {newAffiliate.logo && (
+                      <div className="mt-2 text-center">
+                        <img 
+                          src={newAffiliate.logo} 
+                          alt="Logo preview" 
+                          className="w-16 h-16 object-cover rounded border border-gray-300 mx-auto"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
