@@ -33,6 +33,22 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
     
+    // Enhanced debugging for date comparison
+    const currentTime = new Date()
+    const qrExpiresAt = qrRecord.expiresAt
+    const isExpired = currentTime > qrExpiresAt
+    
+    console.log(`🕐 DATE COMPARISON DEBUG:`)
+    console.log(`   Current Server Time: ${currentTime.toISOString()} (${currentTime.getTime()})`)
+    console.log(`   QR Expires At: ${qrExpiresAt.toISOString()} (${qrExpiresAt.getTime()})`)
+    console.log(`   Time Difference: ${qrExpiresAt.getTime() - currentTime.getTime()}ms`)
+    console.log(`   Is Expired: ${isExpired}`)
+    console.log(`   QR Created At: ${qrRecord.createdAt.toISOString()}`)
+    console.log(`   QR Code: ${qrCode}`)
+    console.log(`   Customer: ${qrRecord.customerName}`)
+    console.log(`   Days Valid: ${qrRecord.days}`)
+    console.log(`   Is Active: ${qrRecord.isActive}`)
+    
     // Check if QR code is active and not expired
     if (!qrRecord.isActive) {
       console.log(`❌ QR CODE INACTIVE: ${qrCode}`)
@@ -42,11 +58,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    if (new Date() > qrRecord.expiresAt) {
-      console.log(`❌ QR CODE EXPIRED: ${qrCode} (expired ${qrRecord.expiresAt})`)
+    if (isExpired) {
+      console.log(`❌ QR CODE EXPIRED: ${qrCode} (expired ${qrRecord.expiresAt.toISOString()})`)
+      console.log(`   Expired ${Math.abs(qrExpiresAt.getTime() - currentTime.getTime())}ms ago`)
       return NextResponse.json({ 
         error: 'QR code has expired',
-        details: `This ELocalPass expired on ${qrRecord.expiresAt.toLocaleDateString()}`
+        details: `This ELocalPass expired on ${qrRecord.expiresAt.toLocaleDateString()}. Current time: ${currentTime.toLocaleDateString()}`
       }, { status: 400 })
     }
     
