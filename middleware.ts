@@ -15,6 +15,8 @@ export default withAuth(
       pathname.startsWith("/api/customer") ||
       pathname.startsWith("/landing") ||
       pathname.startsWith("/landing-enhanced") ||
+      pathname.startsWith("/affiliate") ||
+      pathname.startsWith("/api/affiliate") ||
       pathname.startsWith("/_next") ||
       pathname.startsWith("/favicon")
     ) {
@@ -65,6 +67,8 @@ export default withAuth(
           pathname.startsWith("/api/customer") ||
           pathname.startsWith("/landing") ||
           pathname.startsWith("/landing-enhanced") ||
+          pathname.startsWith("/affiliate") ||
+          pathname.startsWith("/api/affiliate") ||
           pathname.startsWith("/_next") ||
           pathname.startsWith("/favicon")
         ) {
