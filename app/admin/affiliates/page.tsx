@@ -1445,16 +1445,13 @@ export default function AdminAffiliates() {
           scrollbar-width: auto !important;
           overflow-x: scroll !important;
         }
-        /* Force fixed table layout and prevent column expansion */
+        /* Force flexible table layout and allow column resizing */
         .affiliate-table {
-          table-layout: fixed !important;
+          table-layout: auto !important;
           width: 100% !important;
         }
         .affiliate-table th,
         .affiliate-table td {
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-          white-space: nowrap !important;
           box-sizing: border-box !important;
         }
         .affiliate-table th {
