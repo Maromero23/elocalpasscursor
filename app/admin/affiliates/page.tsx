@@ -1150,7 +1150,7 @@ export default function AdminAffiliates() {
     return (
       <th 
         className={`px-1 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative ${sortable ? 'cursor-pointer hover:bg-gray-100' : ''} group border-r border-gray-300`}
-        style={{ width: `${getColumnWidth(field)}px`, maxWidth: `${getColumnWidth(field)}px` }}
+        style={{ width: `${getColumnWidth(field)}px` }}
         onClick={sortable ? () => handleSort(field as string) : undefined}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
@@ -2213,7 +2213,7 @@ export default function AdminAffiliates() {
                   <tbody className="bg-white divide-y divide-gray-400">
                     {filteredAffiliates.map((affiliate) => (
                       <tr key={affiliate.id} className="hover:bg-gray-50" style={{ height: '28px', color: '#111827' }}>
-                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 sticky left-0 bg-white z-10" style={{ width: `${getColumnWidth('select')}px`, maxWidth: `${getColumnWidth('select')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 sticky left-0 bg-white z-10" style={{ width: `${getColumnWidth('select')}px`, overflow: 'hidden' }}>
                           <input
                             type="checkbox"
                             checked={selectedAffiliates.includes(affiliate.id)}
@@ -2221,43 +2221,43 @@ export default function AdminAffiliates() {
                             className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
                         </td>
-                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center font-medium" style={{ width: `${getColumnWidth('affiliateNum')}px`, maxWidth: `${getColumnWidth('affiliateNum')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5 whitespace-nowrap text-xs text-gray-900 text-center font-medium" style={{ width: `${getColumnWidth('affiliateNum')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="affiliateNum" value={affiliate.affiliateNum} type="text" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('status')}px`, maxWidth: `${getColumnWidth('status')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('status')}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="isActive" value={affiliate.isActive} type="boolean" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('name')}px`, maxWidth: `${getColumnWidth('name')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('name')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="name" value={affiliate.name} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('firstName')}px`, maxWidth: `${getColumnWidth('firstName')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('firstName')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="firstName" value={affiliate.firstName} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('lastName')}px`, maxWidth: `${getColumnWidth('lastName')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('lastName')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="lastName" value={affiliate.lastName} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('email')}px`, maxWidth: `${getColumnWidth('email')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('email')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="email" value={affiliate.email} type="email" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('workPhone')}px`, maxWidth: `${getColumnWidth('workPhone')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('workPhone')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="workPhone" value={affiliate.workPhone} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('whatsApp')}px`, maxWidth: `${getColumnWidth('whatsApp')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('whatsApp')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="whatsApp" value={affiliate.whatsApp} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('address')}px`, maxWidth: `${getColumnWidth('address')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('address')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="address" value={affiliate.address} type="textarea" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('web')}px`, maxWidth: `${getColumnWidth('web')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('web')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="web" value={affiliate.web} type="url" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('description')}px`, maxWidth: `${getColumnWidth('description')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('description')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="description" value={affiliate.description} type="textarea" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('city')}px`, maxWidth: `${getColumnWidth('city')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('city')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('maps')}px`, maxWidth: `${getColumnWidth('maps')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('maps')}px`, overflow: 'visible' }}>
                           <div className="flex items-center space-x-1">
                             {affiliate.maps && (
                               <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex-shrink-0" title="Open in Maps">
@@ -2269,49 +2269,49 @@ export default function AdminAffiliates() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('location')}px`, maxWidth: `${getColumnWidth('location')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('location')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('discount')}px`, maxWidth: `${getColumnWidth('discount')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('discount')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('logo')}px`, maxWidth: `${getColumnWidth('logo')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('logo')}px`, overflow: 'visible' }}>
                           <LogoImage affiliate={affiliate} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('facebook')}px`, maxWidth: `${getColumnWidth('facebook')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('facebook')}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="facebook" value={affiliate.facebook} type="url" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('instagram')}px`, maxWidth: `${getColumnWidth('instagram')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('instagram')}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="instagram" value={affiliate.instagram} type="url" />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('category')}px`, maxWidth: `${getColumnWidth('category')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('category')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="category" value={affiliate.category} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('subCategory')}px`, maxWidth: `${getColumnWidth('subCategory')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('subCategory')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="subCategory" value={affiliate.subCategory} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('service')}px`, maxWidth: `${getColumnWidth('service')}px`, overflow: 'visible' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('service')}px`, overflow: 'visible' }}>
                           <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('type')}px`, maxWidth: `${getColumnWidth('type')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('type')}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
                         </td>
-                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('sticker')}px`, maxWidth: `${getColumnWidth('sticker')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5" style={{ width: `${getColumnWidth('sticker')}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="sticker" value={!!affiliate.sticker} type="boolean" />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('rating')}px`, maxWidth: `${getColumnWidth('rating')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('rating')}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="rating" value={affiliate.rating} type="number" />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('recommended')}px`, maxWidth: `${getColumnWidth('recommended')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('recommended')}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="recommended" value={affiliate.recommended} type="boolean" />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('termsConditions')}px`, maxWidth: `${getColumnWidth('termsConditions')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('termsConditions')}px`, overflow: 'hidden' }}>
                           <EditableField affiliate={affiliate} field="termsConditions" value={affiliate.termsConditions === 'true' || affiliate.termsConditions === 'yes' || affiliate.termsConditions === 'YES' || affiliate.termsConditions === 'TRUE'} type="boolean" />
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('visits')}px`, maxWidth: `${getColumnWidth('visits')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('visits')}px`, overflow: 'hidden' }}>
                           <div className="text-xs font-medium text-gray-900" style={{ color: '#111827' }}>{affiliate.totalVisits}</div>
                         </td>
-                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('actions')}px`, maxWidth: `${getColumnWidth('actions')}px`, overflow: 'hidden' }}>
+                        <td className="px-1 py-0.5 text-center" style={{ width: `${getColumnWidth('actions')}px`, overflow: 'hidden' }}>
                           <div className="flex items-center justify-center space-x-0.5">
                             <button
                               onClick={() => setEditingAffiliate(affiliate)}

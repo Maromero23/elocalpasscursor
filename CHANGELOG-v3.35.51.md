@@ -122,6 +122,29 @@ return Math.max(15, width) // Just reasonable minimum
 
 **This should make column resizing a pleasure instead of a pain!** 🎉 
 
+## 🎯 CRITICAL FIX - Root Cause of Column Resizing Issue
+
+### Issue Identified and Fixed
+- **PROBLEM**: Every table cell had `maxWidth: ${getColumnWidth(field)}px` which created rigid constraints
+- **EFFECT**: Columns couldn't shrink below their current width, despite resize attempts
+- **ROOT CAUSE**: Both headers AND cells were enforcing maximum width limits
+- **SOLUTION**: Removed ALL `maxWidth` constraints from every table cell (30+ cells)
+
+### What Was Fixed
+- ✅ **Header constraints**: Already had `maxWidth` removed in previous version
+- ✅ **Cell constraints**: Removed `maxWidth` from ALL 30+ table cells
+- ✅ **Resize handler**: Already had 1px minimum (not 15px)
+- ✅ **Input constraints**: Already had 1px minimum (not 15px)
+- ✅ **Function constraints**: Already had 1px minimum (not 15px)
+
+### Technical Details
+```diff
+- style={{ width: `${getColumnWidth('select')}px`, maxWidth: `${getColumnWidth('select')}px`, overflow: 'hidden' }}
++ style={{ width: `${getColumnWidth('select')}px`, overflow: 'hidden' }}
+```
+
+Applied to ALL columns: select, affiliateNum, status, name, firstName, lastName, email, workPhone, whatsApp, address, web, description, city, maps, location, discount, logo, facebook, instagram, category, subCategory, service, type, sticker, rating, recommended, termsConditions, visits, actions
+
 ## Complete Column Resizing Overhaul
 
 ### NO SIZE LIMITS - Ultimate Flexibility
