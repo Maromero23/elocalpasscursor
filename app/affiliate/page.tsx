@@ -147,12 +147,19 @@ export default function AffiliateDashboard() {
         throw new Error(errorMessage)
       }
 
+      // Set camera active first and wait for video element to be ready
+      setCameraActive(true)
+      
+      // Wait for video element to be rendered
+      console.log('Waiting for video element...')
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
       if (!videoRef.current) {
-        throw new Error('Video element not ready')
+        console.error('Video element still not ready after waiting')
+        throw new Error('Video element not ready - please try again')
       }
 
       console.log('Creating QR scanner...')
-      setCameraActive(true)
       
       // Create QR scanner instance with iOS-friendly options
       qrScannerRef.current = new QrScanner(
@@ -428,6 +435,27 @@ export default function AffiliateDashboard() {
             Scan Customer QR Code
           </h3>
 
+          {/* Always render video element but hide it when not active */}
+          <div className="relative">
+            <video
+              ref={videoRef}
+              className={`w-full h-64 sm:h-80 md:h-96 object-cover rounded-lg bg-black ${
+                cameraActive ? 'block' : 'hidden'
+              }`}
+              playsInline
+              muted
+            />
+            {/* Show scanning overlay when processing QR codes */}
+            {scanning && cameraActive && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                <div className="text-center text-white">
+                  <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
+                  <p>Processing QR code...</p>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Camera Scanner UI */}
           {!showManualInput && (
             <div className="space-y-4">
@@ -497,24 +525,6 @@ export default function AffiliateDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Camera Preview */}
-                  <div className="relative">
-                    <video
-                      ref={videoRef}
-                      className="w-full h-64 sm:h-80 md:h-96 object-cover rounded-lg bg-black"
-                      playsInline
-                      muted
-                    />
-                    {scanning && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                        <div className="text-center text-white">
-                          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
-                          <p>Processing QR code...</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       onClick={stopCameraScanning}
