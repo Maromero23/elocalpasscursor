@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, TrendingUp, FileSpreadsheet, RefreshCw, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowLeft, ArrowRight } from "lucide-react"
+import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, TrendingUp, FileSpreadsheet, RefreshCw, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowLeft, ArrowRight, Settings } from "lucide-react"
 import { ToastNotifications } from "@/components/toast-notification"
 import { useToast } from "@/hooks/use-toast"
 import { useUserPreferences } from "@/hooks/use-user-preferences"
@@ -166,6 +166,7 @@ export default function AdminAffiliates() {
   const [logoModal, setLogoModal] = useState<{isOpen: boolean, affiliate: Affiliate | null}>({isOpen: false, affiliate: null})
   const [csvPreview, setCsvPreview] = useState<any>(null)
   const [previewing, setPreviewing] = useState(false)
+  const [showWidthInputs, setShowWidthInputs] = useState(false)
   const [editModal, setEditModal] = useState<{
     isOpen: boolean
     affiliateId: string
@@ -216,21 +217,11 @@ export default function AdminAffiliates() {
   // Column widths are now managed by the useUserPreferences hook
   const actualColumnWidths = Object.keys(columnWidths).length > 0 ? columnWidths : defaultColumnWidths
 
-  // Force ACTIONS column to be reasonable size and ensure it can be resized
+  // Simple column width function - much less restrictive
   const getColumnWidth = (field: string) => {
     const width = (actualColumnWidths as any)[field] || (defaultColumnWidths as any)[field]
-    
-    // Special handling for ACTIONS column - allow it to be small but prevent it from being excessively wide
-    if (field === 'actions') {
-      return Math.max(20, Math.min(width, 120)) // Between 20px and 120px
-    }
-    
-    // Special handling for SELECT column - allow it to be very small
-    if (field === 'select') {
-      return Math.max(15, width) // Minimum 15px but no maximum limit
-    }
-    
-    return Math.max(10, width) // All other columns minimum 10px
+    // Just ensure a reasonable minimum - no complex constraints
+    return Math.max(15, width)
   }
 
   // Reset column widths to defaults
@@ -1089,13 +1080,14 @@ export default function AdminAffiliates() {
     )
   }
 
-  // Resizable Header Component with manual column width adjustment
+  // Resizable Header Component with much easier resizing
   const ResizableHeader = ({ field, children, sortable = false }: { 
     field: keyof typeof actualColumnWidths
     children: React.ReactNode
     sortable?: boolean
   }) => {
     const [isResizing, setIsResizing] = useState(false)
+    const [isHovering, setIsHovering] = useState(false)
     const [startX, setStartX] = useState(0)
     const [startWidth, setStartWidth] = useState(0)
 
@@ -1104,8 +1096,7 @@ export default function AdminAffiliates() {
       e.stopPropagation()
       setIsResizing(true)
       setStartX(e.clientX)
-      setStartWidth(actualColumnWidths[field])
-      // Add visual feedback
+      setStartWidth(getColumnWidth(field))
       document.body.style.cursor = 'col-resize'
       document.body.style.userSelect = 'none'
     }
@@ -1113,17 +1104,7 @@ export default function AdminAffiliates() {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return
       const diff = e.clientX - startX
-      // Allow columns to be made very small - minimum based on column type
-      let newWidth = Math.max(5, startWidth + diff) // Base minimum 5px
-      
-      // Special handling for different columns
-      if (field === 'actions') {
-        newWidth = Math.max(20, Math.min(newWidth, 120)) // ACTIONS: 20px to 120px
-      } else if (field === 'select') {
-        newWidth = Math.max(15, newWidth) // SELECT: minimum 15px, no maximum
-      } else {
-        newWidth = Math.max(10, newWidth) // Others: minimum 10px, no maximum
-      }
+      let newWidth = Math.max(15, startWidth + diff) // Much more generous minimum
       
       console.log(`📏 Resizing column ${field}: ${startWidth}px → ${newWidth}px (diff: ${diff}px)`)
       updateColumnWidth(field, newWidth)
@@ -1131,13 +1112,28 @@ export default function AdminAffiliates() {
 
     const handleMouseUp = () => {
       setIsResizing(false)
-      // Reset visual feedback
       document.body.style.cursor = 'default'
       document.body.style.userSelect = 'auto'
-      console.log(`✅ Finished resizing column ${field} to ${actualColumnWidths[field]}px`)
+      console.log(`✅ Finished resizing column ${field} to ${getColumnWidth(field)}px`)
     }
 
-    // Add global mouse event listeners when resizing
+    // Double-click to auto-size column
+    const handleDoubleClick = (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      
+      // Auto-size based on content - use reasonable defaults
+      let autoWidth = 50
+      if (field === 'select') autoWidth = 20
+      else if (field === 'actions') autoWidth = 70
+      else if (field === 'email' || field === 'name') autoWidth = 150
+      else if (field === 'description' || field === 'address') autoWidth = 200
+      else if (field === 'affiliateNum' || field === 'rating') autoWidth = 40
+      
+      updateColumnWidth(field, autoWidth)
+      console.log(`🔄 Auto-sized column ${field} to ${autoWidth}px`)
+    }
+
     useEffect(() => {
       if (isResizing) {
         document.addEventListener('mousemove', handleMouseMove)
@@ -1153,9 +1149,11 @@ export default function AdminAffiliates() {
     
     return (
       <th 
-        className={`px-1 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative ${sortable ? 'cursor-pointer hover:bg-gray-100' : ''} group`}
+        className={`px-1 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative ${sortable ? 'cursor-pointer hover:bg-gray-100' : ''} group border-r border-gray-300`}
         style={{ width: `${getColumnWidth(field)}px`, maxWidth: `${getColumnWidth(field)}px` }}
         onClick={sortable ? () => handleSort(field as string) : undefined}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
       >
         <div className="flex items-center justify-center">
           <div className="flex items-center space-x-1">
@@ -1168,22 +1166,44 @@ export default function AdminAffiliates() {
             )}
           </div>
         </div>
-        {/* Simplified Resize Handle using CSS */}
+        
+        {/* Much larger, easier resize area - entire right border */}
         <div
-          className={`column-resize-handle ${isResizing ? 'resizing' : ''}`}
+          className={`absolute right-0 top-0 bottom-0 w-3 cursor-col-resize transition-all duration-200 ${
+            isHovering || isResizing 
+              ? 'bg-blue-500 opacity-80' 
+              : 'bg-gray-400 opacity-0 hover:opacity-60'
+          }`}
           onMouseDown={handleMouseDown}
-          title="Drag to resize column"
+          onDoubleClick={handleDoubleClick}
+          title="Drag to resize | Double-click to auto-size"
+          style={{ zIndex: 300 }}
         />
-        {/* Resize indicator on hover */}
-        <div
-          className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none group-hover:block hidden"
-          style={{
-            zIndex: 98, // High z-index for visibility
-            transform: 'translateX(-4px)',
-            background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1))',
-            borderRight: '2px solid rgba(59, 130, 246, 0.3)'
-          }}
-        />
+        
+        {/* Width display on hover */}
+        {isHovering && (
+          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white px-2 py-1 text-xs rounded z-50">
+            {getColumnWidth(field)}px
+          </div>
+        )}
+        
+        {/* Width input field when enabled */}
+        {showWidthInputs && (
+          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+            <input
+              type="number"
+              value={getColumnWidth(field)}
+              onChange={(e) => {
+                const newWidth = Math.max(15, parseInt(e.target.value) || 15)
+                updateColumnWidth(field, newWidth)
+              }}
+              className="w-16 px-1 py-0.5 text-xs border border-gray-300 rounded text-center bg-white"
+              min="15"
+              step="5"
+              title={`Set exact width for ${field} column`}
+            />
+          </div>
+        )}
       </th>
     )
   }
@@ -1440,28 +1460,14 @@ export default function AdminAffiliates() {
         .affiliate-table th {
           position: relative !important;
         }
-        /* Make resize handles more visible and easier to grab */
-        .column-resize-handle {
-          position: absolute !important;
-          right: 0 !important;
-          top: 0 !important;
-          bottom: 0 !important;
-          width: 4px !important;
-          cursor: col-resize !important;
-          background: #6b7280 !important;
-          opacity: 0.8 !important;
-          transition: all 0.2s ease !important;
-          z-index: 200 !important;
-        }
-        .column-resize-handle:hover {
-          background: #3b82f6 !important;
+        /* Simple and reliable column resizing */
+        .affiliate-table th:hover .resize-handle {
           opacity: 1 !important;
-          width: 6px !important;
         }
-        .column-resize-handle.resizing {
-          background: #ef4444 !important;
+        .resize-handle:active,
+        .resize-handle.resizing {
+          background-color: #ef4444 !important;
           opacity: 1 !important;
-          width: 6px !important;
         }
 
       `}} />
@@ -1499,6 +1505,18 @@ export default function AdminAffiliates() {
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Reset Widths
+              </button>
+              <button
+                onClick={() => setShowWidthInputs(!showWidthInputs)}
+                className={`flex items-center px-4 py-2 border rounded-md ${
+                  showWidthInputs 
+                    ? 'bg-purple-100 text-purple-700 border-purple-600' 
+                    : 'text-purple-600 border-purple-600 hover:bg-purple-50'
+                }`}
+                title="Toggle width input fields for precise column sizing"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                {showWidthInputs ? 'Hide' : 'Show'} Width Controls
               </button>
               {summary.total > 0 && (
                 <button
