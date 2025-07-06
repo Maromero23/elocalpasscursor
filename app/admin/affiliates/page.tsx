@@ -879,12 +879,23 @@ export default function AdminAffiliates() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
           <div 
             className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl flex flex-col"
-            style={{ 
-              width: '600px', 
-              height: '500px',
-              minWidth: '400px',
-              minHeight: '300px'
-            }}
+            style={(() => {
+              // Adaptive sizing based on field type and content
+              const isTextAreaField = ['description', 'address', 'discount', 'service'].includes(editModal.field)
+              const isUrlField = ['web', 'maps', 'facebook', 'instagram'].includes(editModal.field)
+              const contentLength = String(editModal.value || '').length
+              
+              if (isTextAreaField) {
+                // Large modal for multi-line content
+                return { width: '600px', height: '500px', minWidth: '500px', minHeight: '400px' }
+              } else if (isUrlField || contentLength > 50) {
+                // Medium modal for URLs and longer content
+                return { width: '500px', height: '300px', minWidth: '400px', minHeight: '250px' }
+              } else {
+                // Small modal for simple fields
+                return { width: '400px', height: '250px', minWidth: '350px', minHeight: '200px' }
+              }
+            })()}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0 bg-blue-50">
@@ -914,9 +925,19 @@ export default function AdminAffiliates() {
                       placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
                       autoFocus
                     />
+                  ) : editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? (
+                    // URL fields use textarea for better visibility of long URLs
+                    <textarea
+                      value={editModal.value}
+                      onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                      className="w-full h-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm font-mono"
+                      placeholder={`Enter ${editModal.fieldName.toLowerCase()} URL...`}
+                      autoFocus
+                      style={{ minHeight: '80px' }}
+                    />
                   ) : (
                     <input
-                      type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
+                      type="text"
                       value={editModal.value}
                       onChange={(e) => setEditModal({...editModal, value: e.target.value})}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
@@ -925,6 +946,13 @@ export default function AdminAffiliates() {
                     />
                   )}
                 </div>
+                
+                {/* Show character count for long fields */}
+                {(editModal.field === 'description' || editModal.field === 'address' || editModal.field === 'discount' || editModal.field === 'service') && (
+                  <div className="text-xs text-gray-500 mb-3">
+                    {String(editModal.value || '').length} characters
+                  </div>
+                )}
                 
                 {/* Buttons */}
                 <div className="flex justify-end space-x-3 flex-shrink-0">
@@ -951,10 +979,14 @@ export default function AdminAffiliates() {
               </div>
             </div>
 
-            {/* Visual resize indicator (for future enhancement) */}
+            {/* Visual resize indicator showing modal size */}
             <div
               className="absolute bottom-1 right-1 w-4 h-4 opacity-30"
-              title="Larger editing modal"
+              title={(() => {
+                const isTextAreaField = ['description', 'address', 'discount', 'service'].includes(editModal.field)
+                const isUrlField = ['web', 'maps', 'facebook', 'instagram'].includes(editModal.field)
+                return isTextAreaField ? 'Large modal' : isUrlField ? 'Medium modal' : 'Compact modal'
+              })()}
             >
               <div className="text-gray-400 text-xs">⤡</div>
             </div>
@@ -3400,12 +3432,23 @@ export default function AdminAffiliates() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
           <div 
             className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl flex flex-col"
-            style={{ 
-              width: '600px', 
-              height: '500px',
-              minWidth: '400px',
-              minHeight: '300px'
-            }}
+            style={(() => {
+              // Adaptive sizing based on field type and content
+              const isTextAreaField = ['description', 'address', 'discount', 'service'].includes(editModal.field)
+              const isUrlField = ['web', 'maps', 'facebook', 'instagram'].includes(editModal.field)
+              const contentLength = String(editModal.value || '').length
+              
+              if (isTextAreaField) {
+                // Large modal for multi-line content
+                return { width: '600px', height: '500px', minWidth: '500px', minHeight: '400px' }
+              } else if (isUrlField || contentLength > 50) {
+                // Medium modal for URLs and longer content
+                return { width: '500px', height: '300px', minWidth: '400px', minHeight: '250px' }
+              } else {
+                // Small modal for simple fields
+                return { width: '400px', height: '250px', minWidth: '350px', minHeight: '200px' }
+              }
+            })()}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0 bg-blue-50">
@@ -3435,9 +3478,19 @@ export default function AdminAffiliates() {
                       placeholder={`Enter ${editModal.fieldName.toLowerCase()}...`}
                       autoFocus
                     />
+                  ) : editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? (
+                    // URL fields use textarea for better visibility of long URLs
+                    <textarea
+                      value={editModal.value}
+                      onChange={(e) => setEditModal({...editModal, value: e.target.value})}
+                      className="w-full h-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm font-mono"
+                      placeholder={`Enter ${editModal.fieldName.toLowerCase()} URL...`}
+                      autoFocus
+                      style={{ minHeight: '80px' }}
+                    />
                   ) : (
                     <input
-                      type={editModal.field === 'web' || editModal.field === 'maps' || editModal.field === 'facebook' || editModal.field === 'instagram' ? 'url' : 'text'}
+                      type="text"
                       value={editModal.value}
                       onChange={(e) => setEditModal({...editModal, value: e.target.value})}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
@@ -3446,6 +3499,13 @@ export default function AdminAffiliates() {
                     />
                   )}
                 </div>
+                
+                {/* Show character count for long fields */}
+                {(editModal.field === 'description' || editModal.field === 'address' || editModal.field === 'discount' || editModal.field === 'service') && (
+                  <div className="text-xs text-gray-500 mb-3">
+                    {String(editModal.value || '').length} characters
+                  </div>
+                )}
                 
                 {/* Buttons */}
                 <div className="flex justify-end space-x-3 flex-shrink-0">
@@ -3472,10 +3532,14 @@ export default function AdminAffiliates() {
               </div>
             </div>
 
-            {/* Visual resize indicator (for future enhancement) */}
+            {/* Visual resize indicator showing modal size */}
             <div
               className="absolute bottom-1 right-1 w-4 h-4 opacity-30"
-              title="Larger editing modal"
+              title={(() => {
+                const isTextAreaField = ['description', 'address', 'discount', 'service'].includes(editModal.field)
+                const isUrlField = ['web', 'maps', 'facebook', 'instagram'].includes(editModal.field)
+                return isTextAreaField ? 'Large modal' : isUrlField ? 'Medium modal' : 'Compact modal'
+              })()}
             >
               <div className="text-gray-400 text-xs">⤡</div>
             </div>
