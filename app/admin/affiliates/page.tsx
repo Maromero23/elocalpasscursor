@@ -215,6 +215,35 @@ export default function AdminAffiliates() {
   // Super admin password (in production, this should be environment variable)
   const SUPER_ADMIN_PASSWORD = "ELP2024@SuperAdmin!"
 
+  // Add Affiliate form state
+  const [newAffiliate, setNewAffiliate] = useState({
+    name: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    workPhone: '',
+    whatsApp: '',
+    address: '',
+    web: '',
+    description: '',
+    city: '',
+    maps: '',
+    location: '',
+    discount: '',
+    logo: '',
+    facebook: '',
+    instagram: '',
+    category: '',
+    subCategory: '',
+    service: '',
+    type: '',
+    sticker: '',
+    rating: null as number | null,
+    recommended: false,
+    termsConditions: '',
+    isActive: true
+  })
+
   // Default column widths - much more compact
   const defaultColumnWidths = {
     select: 20,              // Checkbox - very compact
@@ -1633,6 +1662,76 @@ export default function AdminAffiliates() {
     }
   }
 
+  // Add new affiliate function
+  const handleAddAffiliate = async () => {
+    try {
+      // Validate required fields
+      if (!newAffiliate.name.trim()) {
+        error('Validation Error', 'Business name is required')
+        return
+      }
+      if (!newAffiliate.email.trim()) {
+        error('Validation Error', 'Email is required')
+        return
+      }
+
+      // Prepare the data for submission
+      const affiliateData = {
+        ...newAffiliate,
+        rating: newAffiliate.rating ? parseFloat(newAffiliate.rating) : null,
+        recommended: newAffiliate.recommended,
+        isActive: newAffiliate.isActive
+      }
+
+      const response = await fetch('/api/admin/affiliates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(affiliateData)
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        success('Affiliate Added', 'New affiliate has been successfully added')
+        setShowAddModal(false)
+        // Reset form
+        setNewAffiliate({
+          name: '',
+          firstName: '',
+          lastName: '',
+          email: '',
+          workPhone: '',
+          whatsApp: '',
+          address: '',
+          web: '',
+          description: '',
+          city: '',
+          maps: '',
+          location: '',
+          discount: '',
+          logo: '',
+          facebook: '',
+          instagram: '',
+          category: '',
+          subCategory: '',
+          service: '',
+          type: '',
+          sticker: '',
+          rating: null,
+          recommended: false,
+          termsConditions: '',
+          isActive: true
+        })
+        loadAffiliates()
+      } else {
+        error('Add Failed', result.error || 'Unable to add affiliate')
+      }
+    } catch (err) {
+      console.error('Add affiliate error:', err)
+      error('Add Failed', 'Unable to add affiliate')
+    }
+  }
+
   // Server handles sorting, so we just use the data as-is
   let filteredAffiliates = [...affiliates]
 
@@ -1689,8 +1788,6 @@ export default function AdminAffiliates() {
             var(--col-termsConditions, 35px) 
             var(--col-visits, 45px) 
             var(--col-actions, 50px);
-          gap: 1px;
-          background-color: #e5e7eb;
           border: 1px solid #d1d5db;
         }
         
@@ -1702,7 +1799,7 @@ export default function AdminAffiliates() {
         .affiliate-grid-cell {
           background-color: white;
           padding: 4px 8px;
-          border-right: 1px solid #e5e7eb;
+          border-bottom: 1px solid #e5e7eb;
           overflow: visible; /* Changed from hidden to visible for tooltips */
           font-size: 12px;
           display: flex;
@@ -1737,6 +1834,7 @@ export default function AdminAffiliates() {
           position: relative;
           justify-content: center;
           text-align: center;
+          border-bottom: 2px solid #d1d5db;
         }
         
         .grid-resize-handle {
@@ -3720,6 +3818,321 @@ export default function AdminAffiliates() {
                 className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
                 🗑️ Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Affiliate Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="relative bg-white border-4 border-blue-400 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0 bg-blue-50">
+              <h3 className="text-lg font-medium text-gray-900">
+                ➕ Add New Affiliate
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 p-6 overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Business Name - Required */}
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Business Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newAffiliate.name}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter business name..."
+                    required
+                  />
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <select
+                    value={newAffiliate.isActive ? 'active' : 'inactive'}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, isActive: e.target.value === 'active'})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+
+                {/* First Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                  <input
+                    type="text"
+                    value={newAffiliate.firstName}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, firstName: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter first name..."
+                  />
+                </div>
+
+                {/* Last Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                  <input
+                    type="text"
+                    value={newAffiliate.lastName}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, lastName: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter last name..."
+                  />
+                </div>
+
+                {/* Email - Required */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={newAffiliate.email}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter email address..."
+                    required
+                  />
+                </div>
+
+                {/* Work Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Work Phone</label>
+                  <input
+                    type="tel"
+                    value={newAffiliate.workPhone}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, workPhone: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter work phone..."
+                  />
+                </div>
+
+                {/* WhatsApp */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp</label>
+                  <input
+                    type="tel"
+                    value={newAffiliate.whatsApp}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, whatsApp: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter WhatsApp number..."
+                  />
+                </div>
+
+                {/* Website */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                  <input
+                    type="url"
+                    value={newAffiliate.web}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, web: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter website URL..."
+                  />
+                </div>
+
+                {/* City */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={newAffiliate.city}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, city: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter city..."
+                  />
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <input
+                    type="text"
+                    value={newAffiliate.category}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, category: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter category..."
+                  />
+                </div>
+
+                {/* Sub Category */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sub Category</label>
+                  <input
+                    type="text"
+                    value={newAffiliate.subCategory}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, subCategory: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter sub category..."
+                  />
+                </div>
+
+                {/* Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                  <input
+                    type="text"
+                    value={newAffiliate.type}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, type: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter type..."
+                  />
+                </div>
+
+                {/* Rating */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    step="0.1"
+                    value={newAffiliate.rating || ''}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, rating: e.target.value ? parseFloat(e.target.value) : null})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter rating (1-5)..."
+                  />
+                </div>
+
+                {/* Recommended */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Recommended</label>
+                  <select
+                    value={newAffiliate.recommended ? 'true' : 'false'}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, recommended: e.target.value === 'true'})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </div>
+
+                {/* Address - Full width */}
+                <div className="lg:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <textarea
+                    value={newAffiliate.address}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, address: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows="2"
+                    placeholder="Enter full address..."
+                  />
+                </div>
+
+                {/* Description - Full width */}
+                <div className="lg:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <textarea
+                    value={newAffiliate.description}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, description: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows="3"
+                    placeholder="Enter business description..."
+                  />
+                </div>
+
+                {/* Discount - Full width */}
+                <div className="lg:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Discount</label>
+                  <textarea
+                    value={newAffiliate.discount}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, discount: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows="2"
+                    placeholder="Enter discount information..."
+                  />
+                </div>
+
+                {/* Service - Full width */}
+                <div className="lg:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Service</label>
+                  <textarea
+                    value={newAffiliate.service}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, service: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows="2"
+                    placeholder="Enter services offered..."
+                  />
+                </div>
+
+                {/* Social Media and Additional Info */}
+                <div className="lg:col-span-3">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3 border-b pb-2">Social Media & Additional Info</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
+                      <input
+                        type="url"
+                        value={newAffiliate.facebook}
+                        onChange={(e) => setNewAffiliate({...newAffiliate, facebook: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter Facebook URL..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
+                      <input
+                        type="url"
+                        value={newAffiliate.instagram}
+                        onChange={(e) => setNewAffiliate({...newAffiliate, instagram: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter Instagram URL..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Google Maps</label>
+                      <input
+                        type="url"
+                        value={newAffiliate.maps}
+                        onChange={(e) => setNewAffiliate({...newAffiliate, maps: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter Google Maps URL..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+                      <input
+                        type="url"
+                        value={newAffiliate.logo}
+                        onChange={(e) => setNewAffiliate({...newAffiliate, logo: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter logo URL..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Buttons */}
+            <div className="flex justify-end space-x-3 p-4 border-t bg-gray-50 flex-shrink-0">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddAffiliate}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                ➕ Add Affiliate
               </button>
             </div>
           </div>
