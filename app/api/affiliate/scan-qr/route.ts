@@ -2,6 +2,40 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAffiliateAuth } from '@/lib/affiliate-auth'
 
+// Function to extract QR code from various URL formats
+function extractQRCode(input: string): string {
+  const trimmed = input.trim()
+  
+  // If it's already a QR code format (starts with EL-), return as is
+  if (trimmed.startsWith('EL-')) {
+    return trimmed
+  }
+  
+  // Try to parse as URL and extract QR code from path
+  try {
+    const url = new URL(trimmed)
+    const pathSegments = url.pathname.split('/')
+    
+    // Look for QR code in URL path (format: /landing/EL-xxxxx or /landing-enhanced/EL-xxxxx)
+    for (const segment of pathSegments) {
+      if (segment.startsWith('EL-')) {
+        return segment
+      }
+    }
+    
+    // If no QR code found in path, check query parameters
+    const qrFromQuery = url.searchParams.get('qr') || url.searchParams.get('code')
+    if (qrFromQuery && qrFromQuery.startsWith('EL-')) {
+      return qrFromQuery
+    }
+  } catch (e) {
+    // Not a valid URL, continue with original logic
+  }
+  
+  // If all else fails, return the original input
+  return trimmed
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Validate affiliate authentication
@@ -13,11 +47,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'QR code is required' }, { status: 400 })
     }
     
+    // Extract the actual QR code from URL if needed
+    const actualQRCode = extractQRCode(qrCode)
+    
     console.log(`🔍 AFFILIATE SCAN: ${affiliate.name} scanning QR ${qrCode}`)
+    console.log(`📋 EXTRACTED QR CODE: ${actualQRCode}`)
     
     // Find the QR code in our system
     const qrRecord = await (prisma as any).qRCode.findUnique({
-      where: { code: qrCode.trim() },
+      where: { code: actualQRCode },
       include: {
         seller: {
           select: { name: true, email: true }
@@ -26,12 +64,13 @@ export async function POST(request: NextRequest) {
     })
     
     if (!qrRecord) {
-      console.log(`❌ QR CODE NOT FOUND: ${qrCode}`)
+      console.log(`❌ QR CODE NOT FOUND: ${actualQRCode}`)
       return NextResponse.json({ 
         error: 'QR code not found',
         details: 'This QR code is not valid or has expired',
         debugInfo: {
-          searchedQrCode: qrCode.trim(),
+          originalScannedContent: qrCode.trim(),
+          extractedQRCode: actualQRCode,
           currentServerTime: new Date().toISOString(),
           errorType: 'NOT_FOUND',
           message: 'QR code does not exist in database'
@@ -50,19 +89,19 @@ export async function POST(request: NextRequest) {
     console.log(`   Time Difference: ${qrExpiresAt.getTime() - currentTime.getTime()}ms`)
     console.log(`   Is Expired: ${isExpired}`)
     console.log(`   QR Created At: ${qrRecord.createdAt.toISOString()}`)
-    console.log(`   QR Code: ${qrCode}`)
+    console.log(`   QR Code: ${actualQRCode}`)
     console.log(`   Customer: ${qrRecord.customerName}`)
     console.log(`   Days Valid: ${qrRecord.days}`)
     console.log(`   Is Active: ${qrRecord.isActive}`)
     
     // Check if QR code is active and not expired
     if (!qrRecord.isActive) {
-      console.log(`❌ QR CODE INACTIVE: ${qrCode}`)
+      console.log(`❌ QR CODE INACTIVE: ${actualQRCode}`)
       return NextResponse.json({ 
         error: 'QR code is inactive',
         details: 'This ELocalPass has been deactivated',
         debugInfo: {
-          qrCode: qrCode,
+          qrCode: actualQRCode,
           currentServerTime: new Date().toISOString(),
           qrCreatedAt: qrRecord.createdAt.toISOString(),
           customerName: qrRecord.customerName,
@@ -75,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (isExpired) {
-      console.log(`❌ QR CODE EXPIRED: ${qrCode} (expired ${qrRecord.expiresAt.toISOString()})`)
+      console.log(`❌ QR CODE EXPIRED: ${actualQRCode} (expired ${qrRecord.expiresAt.toISOString()})`)
       console.log(`   Expired ${Math.abs(qrExpiresAt.getTime() - currentTime.getTime())}ms ago`)
       return NextResponse.json({ 
         error: 'QR code has expired',
@@ -85,7 +124,7 @@ export async function POST(request: NextRequest) {
           qrExpiresAt: qrExpiresAt.toISOString(),
           timeDifferenceMs: qrExpiresAt.getTime() - currentTime.getTime(),
           qrCreatedAt: qrRecord.createdAt.toISOString(),
-          qrCode: qrCode,
+          qrCode: actualQRCode,
           customerName: qrRecord.customerName,
           daysValid: qrRecord.days,
           isActive: qrRecord.isActive,
@@ -109,7 +148,7 @@ export async function POST(request: NextRequest) {
     })
     
     if (existingVisit) {
-      console.log(`⚠️ DUPLICATE VISIT: ${affiliate.name} already scanned ${qrCode} today`)
+      console.log(`⚠️ DUPLICATE VISIT: ${affiliate.name} already scanned ${actualQRCode} today`)
       return NextResponse.json({ 
         error: 'Already visited today',
         details: 'This customer has already visited your business today',
@@ -128,7 +167,7 @@ export async function POST(request: NextRequest) {
       data: {
         affiliateId: affiliate.id,
         qrCodeId: qrRecord.id,
-        qrCode: qrCode.trim(),
+        qrCode: actualQRCode,
         customerName: qrRecord.customerName || 'Unknown',
         customerEmail: qrRecord.customerEmail || 'Unknown',
         discountApplied: affiliate.discount || 'No discount specified',
@@ -146,7 +185,7 @@ export async function POST(request: NextRequest) {
       }
     })
     
-    console.log(`✅ VISIT LOGGED: ${affiliate.name} scanned ${qrCode} for ${qrRecord.customerName}`)
+    console.log(`✅ VISIT LOGGED: ${affiliate.name} scanned ${actualQRCode} for ${qrRecord.customerName}`)
     
     return NextResponse.json({
       success: true,
@@ -158,7 +197,7 @@ export async function POST(request: NextRequest) {
         discount: affiliate.discount,
         visitedAt: visit.visitedAt,
         qrDetails: {
-          code: qrCode,
+          code: actualQRCode,
           guests: qrRecord.guests,
           days: qrRecord.days,
           expiresAt: qrRecord.expiresAt

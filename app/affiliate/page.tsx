@@ -40,6 +40,8 @@ interface ScanResult {
   details?: string
   debugInfo?: {
     currentServerTime: string
+    originalScannedContent?: string
+    extractedQRCode?: string
     qrExpiresAt?: string
     timeDifferenceMs?: number
     qrCreatedAt?: string
@@ -264,6 +266,14 @@ export default function AffiliateDashboard() {
           let debugMessage = 'Debug Information:\n'
           debugMessage += `• Error Type: ${result.debugInfo.errorType || 'UNKNOWN'}\n`
           debugMessage += `• Server Time: ${new Date(result.debugInfo.currentServerTime).toLocaleString()}\n`
+          
+          if (result.debugInfo.originalScannedContent) {
+            debugMessage += `• Original Scanned: ${result.debugInfo.originalScannedContent}\n`
+          }
+          
+          if (result.debugInfo.extractedQRCode) {
+            debugMessage += `• Extracted QR Code: ${result.debugInfo.extractedQRCode}\n`
+          }
           
           if (result.debugInfo.searchedQrCode) {
             debugMessage += `• Searched QR: ${result.debugInfo.searchedQrCode}\n`
