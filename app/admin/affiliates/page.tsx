@@ -1716,10 +1716,10 @@ export default function AdminAffiliates() {
           subCategory: '',
           service: '',
           type: '',
-          sticker: '',
+          sticker: null,
           rating: null,
           recommended: false,
-          termsConditions: '',
+          termsConditions: null,
           isActive: true
         })
         loadAffiliates()
@@ -3986,13 +3986,16 @@ export default function AdminAffiliates() {
                 {/* Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-                  <input
-                    type="text"
+                  <select
                     value={newAffiliate.type}
                     onChange={(e) => setNewAffiliate({...newAffiliate, type: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter type..."
-                  />
+                  >
+                    <option value="">Select type...</option>
+                    <option value="Restaurants">Restaurants</option>
+                    <option value="Stores">Stores</option>
+                    <option value="Services">Services</option>
+                  </select>
                 </div>
 
                 {/* Rating */}
@@ -4020,6 +4023,44 @@ export default function AdminAffiliates() {
                   >
                     <option value="false">No</option>
                     <option value="true">Yes</option>
+                  </select>
+                </div>
+
+                {/* Location */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                  <input
+                    type="text"
+                    value={newAffiliate.location}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, location: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter location..."
+                  />
+                </div>
+
+                {/* Sticker */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sticker</label>
+                  <select
+                    value={newAffiliate.sticker || ''}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, sticker: e.target.value || null})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">No</option>
+                    <option value="yes">Yes</option>
+                  </select>
+                </div>
+
+                {/* Terms & Conditions */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Terms & Conditions</label>
+                  <select
+                    value={newAffiliate.termsConditions || ''}
+                    onChange={(e) => setNewAffiliate({...newAffiliate, termsConditions: e.target.value || null})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">No</option>
+                    <option value="yes">Yes</option>
                   </select>
                 </div>
 
@@ -4074,47 +4115,53 @@ export default function AdminAffiliates() {
                 {/* Social Media and Additional Info */}
                 <div className="lg:col-span-3">
                   <h4 className="text-sm font-medium text-gray-700 mb-3 border-b pb-2">Social Media & Additional Info</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
-                      <input
-                        type="url"
-                        value={newAffiliate.facebook}
-                        onChange={(e) => setNewAffiliate({...newAffiliate, facebook: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter Facebook URL..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
-                      <input
-                        type="url"
-                        value={newAffiliate.instagram}
-                        onChange={(e) => setNewAffiliate({...newAffiliate, instagram: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter Instagram URL..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Google Maps</label>
-                      <input
-                        type="url"
-                        value={newAffiliate.maps}
-                        onChange={(e) => setNewAffiliate({...newAffiliate, maps: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter Google Maps URL..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
-                      <input
-                        type="url"
-                        value={newAffiliate.logo}
-                        onChange={(e) => setNewAffiliate({...newAffiliate, logo: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter logo URL..."
-                      />
-                    </div>
+                  
+                  {/* Facebook - Full width */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
+                    <input
+                      type="url"
+                      value={newAffiliate.facebook}
+                      onChange={(e) => setNewAffiliate({...newAffiliate, facebook: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter Facebook URL..."
+                    />
+                  </div>
+                  
+                  {/* Instagram - Full width */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
+                    <input
+                      type="url"
+                      value={newAffiliate.instagram}
+                      onChange={(e) => setNewAffiliate({...newAffiliate, instagram: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter Instagram URL..."
+                    />
+                  </div>
+                  
+                  {/* Google Maps - Full width */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Google Maps</label>
+                    <input
+                      type="url"
+                      value={newAffiliate.maps}
+                      onChange={(e) => setNewAffiliate({...newAffiliate, maps: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter Google Maps URL..."
+                    />
+                  </div>
+                  
+                  {/* Logo URL - Full width */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+                    <input
+                      type="url"
+                      value={newAffiliate.logo}
+                      onChange={(e) => setNewAffiliate({...newAffiliate, logo: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter logo URL..."
+                    />
                   </div>
                 </div>
               </div>
