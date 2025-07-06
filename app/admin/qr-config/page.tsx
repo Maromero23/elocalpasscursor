@@ -2219,7 +2219,7 @@ function QRConfigPageContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">QR Configuration System</h1>
-                  <p className="text-gray-600 mt-1">Configure the 5-button QR generation system for all sellers</p>
+                  <p className="text-gray-600 mt-1">Configure the 6-button QR generation system for all sellers</p>
                 </div>
                 <div className="flex items-center space-x-3">
                   {/* Auto-save status indicator */}
@@ -3206,7 +3206,7 @@ function QRConfigPageContent() {
                       <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
                         <p className="text-xs text-amber-800">
                           <strong>Note:</strong> URLs created here are temporary and only exist during this configuration session. 
-                          They will be permanently saved only when you save the complete 5-button configuration.
+                          They will be permanently saved only when you save the complete 6-button configuration.
                         </p>
                       </div>
                       <button 
@@ -3241,7 +3241,7 @@ function QRConfigPageContent() {
                       <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
                         <p className="text-xs text-amber-800">
                           <strong>Note:</strong> URLs created here are temporary and only exist during this configuration session. 
-                          They will be permanently saved only when you save the complete 5-button configuration.
+                          They will be permanently saved only when you save the complete 6-button configuration.
                         </p>
                       </div>
                       <button 
@@ -4084,7 +4084,7 @@ function QRConfigPageContent() {
 
               <div className="bg-gray-50 p-3 rounded-md">
                 <p className="text-xs text-gray-600">
-                  This will save your current 5-button configuration for reuse with any seller.
+                  This will save your current 6-button configuration for reuse with any seller.
                 </p>
               </div>
             </div>
@@ -4214,7 +4214,7 @@ function QRConfigPageContent() {
                   </svg>
                 </div>
                 <h4 className="text-lg font-medium text-gray-900 mb-2">No Saved Configurations</h4>
-                <p className="text-gray-600 mb-4">Complete all 5 button configurations and save them to see them here.</p>
+                <p className="text-gray-600 mb-4">Complete all 6 button configurations and save them to see them here.</p>
                 <button
                   onClick={() => setShowConfigLibrary(false)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -4955,6 +4955,23 @@ function QRConfigPageContent() {
                                       )}
                                     </>
                                   )}
+                                </div>
+                              </div>
+
+                              {/* 6. Future QR */}
+                              <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <div className="flex items-center mb-3">
+                                  <div className="w-6 h-6 bg-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-3">
+                                    6
+                                  </div>
+                                  <h5 className="font-semibold text-gray-900">Future QR</h5>
+                                </div>
+                                <div className="text-sm text-gray-700 space-y-1">
+                                  <p><strong>Enabled:</strong> {config.config.button6AllowFutureQR ? "Yes" : "No"}</p>
+                                  <p><strong>Description:</strong> {config.config.button6AllowFutureQR 
+                                    ? "Customers can access future QR codes for upcoming bookings"
+                                    : "Future QR code access is disabled for this configuration"
+                                  }</p>
                                 </div>
                               </div>
 
