@@ -71,9 +71,11 @@ export default function AffiliateDashboard() {
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false)
   const [autoStartAttempted, setAutoStartAttempted] = useState(false)
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const qrScannerRef = useRef<QrScanner | null>(null)
+  const deferredPrompt = useRef<any>(null)
 
   // Check authentication on load
   useEffect(() => {
@@ -97,6 +99,41 @@ export default function AffiliateDashboard() {
       }, 500)
     }
   }, [affiliate, autoStartAttempted, loading])
+
+  // PWA Install prompt detection
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault()
+      // Stash the event so it can be triggered later
+      deferredPrompt.current = e
+      // Show our custom install prompt
+      setShowInstallPrompt(true)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+
+    // Check if running in standalone mode (already installed)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    if (isStandalone) {
+      setShowInstallPrompt(false)
+    }
+
+    // For iOS devices, show install prompt since they don't trigger beforeinstallprompt
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+    const isInStandaloneMode = (navigator as any).standalone === true
+    
+    if (isIOS && !isInStandaloneMode) {
+      // Show install prompt for iOS users who haven't installed the app
+      setTimeout(() => {
+        setShowInstallPrompt(true)
+      }, 3000) // Show after 3 seconds
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
+  }, [])
 
   // Cleanup camera on unmount
   useEffect(() => {
@@ -453,6 +490,19 @@ export default function AffiliateDashboard() {
     }
   }
 
+  const handleInstallApp = async () => {
+    if (deferredPrompt.current) {
+      // Show the install prompt
+      deferredPrompt.current.prompt()
+      // Wait for the user to respond to the prompt
+      const { outcome } = await deferredPrompt.current.userChoice
+      console.log(`User response to the install prompt: ${outcome}`)
+      // Clear the saved prompt since it can't be used again
+      deferredPrompt.current = null
+      setShowInstallPrompt(false)
+    }
+  }
+
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString()
   }
@@ -518,6 +568,41 @@ export default function AffiliateDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* PWA Install Prompt */}
+        {showInstallPrompt && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <QrCode className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-blue-800 mb-1">
+                  Install ELocalPass Scanner
+                </h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  Add this app to your home screen for a better experience and persistent camera permissions. No more permission prompts!
+                </p>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleInstallApp}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    Install App
+                  </button>
+                  <button
+                    onClick={() => setShowInstallPrompt(false)}
+                    className="px-3 py-1.5 text-blue-600 text-sm hover:text-blue-800"
+                  >
+                    Maybe Later
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Affiliate Info */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -632,6 +717,15 @@ export default function AffiliateDashboard() {
                           <strong>Camera Error:</strong> {cameraError}
                         </p>
                       </div>
+                      
+                      {/* iOS-specific help message */}
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                        <p className="text-sm text-amber-800">
+                          <strong>iOS Safari Tip:</strong> Safari resets camera permissions on each page refresh. 
+                          To fix this permanently, add this app to your home screen using the "Add to Home Screen" option in Safari's share menu.
+                        </p>
+                      </div>
+                      
                       <button
                         onClick={startCameraScanning}
                         className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center font-medium"
