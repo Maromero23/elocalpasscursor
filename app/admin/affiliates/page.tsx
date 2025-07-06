@@ -199,6 +199,22 @@ export default function AdminAffiliates() {
     fieldName: ''
   })
 
+  // Password protection for delete operations
+  const [deletePasswordModal, setDeletePasswordModal] = useState<{
+    isOpen: boolean
+    type: 'single' | 'bulk' | 'clearAll'
+    affiliateId?: string
+    affiliateName?: string
+    password: string
+  }>({
+    isOpen: false,
+    type: 'single',
+    password: ''
+  })
+
+  // Super admin password (in production, this should be environment variable)
+  const SUPER_ADMIN_PASSWORD = "ELP2024@SuperAdmin!"
+
   // Default column widths - much more compact
   const defaultColumnWidths = {
     select: 20,              // Checkbox - very compact
@@ -431,27 +447,13 @@ export default function AdminAffiliates() {
   }
 
   const handleDeleteAffiliate = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"? This will also delete all visit records.`)) {
-      return
-    }
-
-    try {
-      const response = await fetch(`/api/admin/affiliates/${id}`, {
-        method: 'DELETE'
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        success('Affiliate Deleted', result.message)
-        loadAffiliates()
-      } else {
-        error('Delete Failed', result.error || 'Unknown error')
-      }
-    } catch (err) {
-      console.error('Delete error:', err)
-      error('Delete Failed', 'Unable to delete affiliate')
-    }
+    setDeletePasswordModal({
+      isOpen: true,
+      type: 'single',
+      affiliateId: id,
+      affiliateName: name,
+      password: ''
+    })
   }
 
   const handleBulkDelete = async () => {
@@ -460,60 +462,16 @@ export default function AdminAffiliates() {
       return
     }
     
-    const confirmed = confirm(`Are you sure you want to delete ${selectedAffiliates.length} selected affiliates? This action cannot be undone.`)
-    if (!confirmed) return
-
-    try {
-      const response = await fetch('/api/admin/affiliates/bulk-delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: selectedAffiliates })
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        success('Bulk Delete Complete', `Successfully deleted ${result.deleted} affiliates`)
-        setSelectedAffiliates([])
-        loadAffiliates()
-      } else {
-        error('Bulk Delete Failed', result.error || 'Unknown error')
-      }
-    } catch (err) {
-      console.error('Bulk delete error:', err)
-      error('Bulk Delete Failed', 'Unable to delete selected affiliates')
-    }
+    setDeletePasswordModal({
+      isOpen: true,
+      type: 'bulk',
+      password: ''
+    })
   }
 
   const handleClearAllData = async () => {
-    try {
-      // Get all affiliate IDs
-      const allIds = affiliates.map(a => a.id)
-      
-      if (allIds.length === 0) {
-        error('No Data', 'No affiliates to delete')
-        return
-      }
-
-      const response = await fetch('/api/admin/affiliates/bulk-delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: allIds })
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        success('All Data Cleared', `Successfully deleted ${result.deleted} affiliates and their visit records`)
-        setSelectedAffiliates([])
-        loadAffiliates()
-      } else {
-        error('Clear All Failed', result.error || 'Unknown error')
-      }
-    } catch (err) {
-      console.error('Clear all error:', err)
-      error('Clear All Failed', 'Unable to clear all affiliate data')
-    }
+    // This function is just a placeholder - the actual execution is handled by executeClearAllData
+    // after password verification
   }
 
   // Bulk operations
@@ -1570,6 +1528,109 @@ export default function AdminAffiliates() {
       setSortField(field)
       setSortDirection('asc')
     }
+    setCurrentPage(1) // Reset to first page when sorting
+  }
+
+  // Password verification functions
+  const verifyPasswordAndExecute = async (password: string, type: 'single' | 'bulk' | 'clearAll', affiliateId?: string, affiliateName?: string) => {
+    if (password !== SUPER_ADMIN_PASSWORD) {
+      error('Incorrect Password', 'Invalid super admin password')
+      return
+    }
+
+    setDeletePasswordModal({ isOpen: false, type: 'single', password: '' })
+
+    try {
+      if (type === 'single' && affiliateId && affiliateName) {
+        await executeDeleteAffiliate(affiliateId, affiliateName)
+      } else if (type === 'bulk') {
+        await executeBulkDelete()
+      } else if (type === 'clearAll') {
+        await executeClearAllData()
+      }
+    } catch (err) {
+      console.error('Delete operation failed:', err)
+      error('Delete Failed', 'Operation failed after password verification')
+    }
+  }
+
+  const executeDeleteAffiliate = async (id: string, name: string) => {
+    try {
+      const response = await fetch(`/api/admin/affiliates/${id}`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        success('Affiliate Deleted', result.message)
+        loadAffiliates()
+      } else {
+        error('Delete Failed', result.error || 'Unknown error')
+      }
+    } catch (err) {
+      console.error('Delete error:', err)
+      error('Delete Failed', 'Unable to delete affiliate')
+    }
+  }
+
+  const executeBulkDelete = async () => {
+    if (selectedAffiliates.length === 0) {
+      error('No Selection', 'Please select affiliates to delete')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/admin/affiliates/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedAffiliates })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        success('Bulk Delete Complete', `Successfully deleted ${result.deleted} affiliates`)
+        setSelectedAffiliates([])
+        loadAffiliates()
+      } else {
+        error('Bulk Delete Failed', result.error || 'Unknown error')
+      }
+    } catch (err) {
+      console.error('Bulk delete error:', err)
+      error('Bulk Delete Failed', 'Unable to delete selected affiliates')
+    }
+  }
+
+  const executeClearAllData = async () => {
+    try {
+      // Get all affiliate IDs
+      const allIds = affiliates.map(a => a.id)
+      
+      if (allIds.length === 0) {
+        error('No Data', 'No affiliates to delete')
+        return
+      }
+
+      const response = await fetch('/api/admin/affiliates/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: allIds })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        success('All Data Cleared', `Successfully deleted ${result.deleted} affiliates and their visit records`)
+        setSelectedAffiliates([])
+        loadAffiliates()
+      } else {
+        error('Clear All Failed', result.error || 'Unknown error')
+      }
+    } catch (err) {
+      console.error('Clear all error:', err)
+      error('Clear All Failed', 'Unable to clear all affiliate data')
+    }
   }
 
   // Server handles sorting, so we just use the data as-is
@@ -1761,34 +1822,14 @@ export default function AdminAffiliates() {
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </button>
-              <button
-                onClick={resetColumnWidths}
-                className="flex items-center px-4 py-2 text-orange-600 border border-orange-600 rounded-md hover:bg-orange-50"
-                title="Reset all column widths to default sizes"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Reset Widths
-              </button>
-              <button
-                onClick={() => setShowWidthInputs(!showWidthInputs)}
-                className={`flex items-center px-4 py-2 border rounded-md ${
-                  showWidthInputs 
-                    ? 'bg-purple-100 text-purple-700 border-purple-600' 
-                    : 'text-purple-600 border-purple-600 hover:bg-purple-50'
-                }`}
-                title="Toggle width input fields for precise column sizing"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                {showWidthInputs ? 'Hide' : 'Show'} Width Controls
-              </button>
               {summary.total > 0 && (
                 <button
                   onClick={() => {
-                    if (confirm(`⚠️ WARNING: This will delete ALL ${summary.total} affiliates and their visit records. This cannot be undone. Are you absolutely sure?`)) {
-                      if (confirm(`🚨 FINAL CONFIRMATION: Delete ${summary.total} affiliates permanently?`)) {
-                        handleClearAllData()
-                      }
-                    }
+                    setDeletePasswordModal({
+                      isOpen: true,
+                      type: 'clearAll',
+                      password: ''
+                    })
                   }}
                   className="flex items-center px-4 py-2 text-red-600 border border-red-600 rounded-md hover:bg-red-50"
                 >
@@ -3594,6 +3635,92 @@ export default function AdminAffiliates() {
               })()}
             >
               <div className="text-gray-400 text-xs">⤡</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Protection Modal */}
+      {deletePasswordModal.isOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="relative bg-white border-4 border-red-400 rounded-lg shadow-2xl w-96 p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                🔒 Super Admin Access Required
+              </h3>
+              <button
+                onClick={() => setDeletePasswordModal({...deletePasswordModal, isOpen: false})}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {/* Warning Message */}
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800">
+                {deletePasswordModal.type === 'single' && deletePasswordModal.affiliateName && (
+                  <>⚠️ You are about to permanently delete "<strong>{deletePasswordModal.affiliateName}</strong>" and all associated data.</>
+                )}
+                {deletePasswordModal.type === 'bulk' && selectedAffiliates.length > 0 && (
+                  <>⚠️ You are about to permanently delete <strong>{selectedAffiliates.length} selected affiliates</strong> and all associated data.</>
+                )}
+                {deletePasswordModal.type === 'clearAll' && (
+                  <>⚠️ You are about to permanently delete <strong>ALL {summary.total} affiliates</strong> and all associated data.</>
+                )}
+              </p>
+              <p className="text-xs text-red-600 mt-2">
+                This action cannot be undone. Please enter the super admin password to confirm.
+              </p>
+            </div>
+            
+            {/* Password Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Super Admin Password
+              </label>
+              <input
+                type="password"
+                value={deletePasswordModal.password}
+                onChange={(e) => setDeletePasswordModal({...deletePasswordModal, password: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                placeholder="Enter super admin password..."
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    verifyPasswordAndExecute(
+                      deletePasswordModal.password, 
+                      deletePasswordModal.type, 
+                      deletePasswordModal.affiliateId, 
+                      deletePasswordModal.affiliateName
+                    )
+                  }
+                }}
+              />
+            </div>
+            
+            {/* Buttons */}
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setDeletePasswordModal({...deletePasswordModal, isOpen: false})}
+                className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  verifyPasswordAndExecute(
+                    deletePasswordModal.password, 
+                    deletePasswordModal.type, 
+                    deletePasswordModal.affiliateId, 
+                    deletePasswordModal.affiliateName
+                  )
+                }}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                🗑️ Confirm Delete
+              </button>
             </div>
           </div>
         </div>
