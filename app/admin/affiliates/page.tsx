@@ -665,7 +665,7 @@ export default function AdminAffiliates() {
     affiliate: Affiliate
     field: string 
     value: any
-    type?: 'text' | 'email' | 'url' | 'number' | 'boolean' | 'textarea'
+    type?: 'text' | 'email' | 'url' | 'number' | 'boolean' | 'textarea' | 'select'
   }) => {
     const isEditing = editingField?.affiliateId === affiliate.id && editingField?.field === field
     const annotation = getAnnotation(affiliate.id, field)
@@ -700,6 +700,34 @@ export default function AdminAffiliates() {
     }
 
     const shouldShowTooltip = isContentTruncated() && value && String(value).length > 0
+
+    // Get dropdown options for select fields
+    const getSelectOptions = (fieldName: string) => {
+      switch (fieldName) {
+        case 'type':
+          return [
+            { value: '', label: 'Select type...' },
+            { value: 'Restaurants', label: 'Restaurants' },
+            { value: 'Stores', label: 'Stores' },
+            { value: 'Services', label: 'Services' }
+          ]
+        case 'city':
+          return [
+            { value: '', label: 'Select city...' },
+            { value: 'Bacalar', label: 'Bacalar' },
+            { value: 'Cancun', label: 'Cancun' },
+            { value: 'Cozumel', label: 'Cozumel' },
+            { value: 'Holbox', label: 'Holbox' },
+            { value: 'Isla Mujeres', label: 'Isla Mujeres' },
+            { value: 'Playa del Carmen', label: 'Playa del Carmen' },
+            { value: 'Puerto Aventuras', label: 'Puerto Aventuras' },
+            { value: 'Puerto Morelos', label: 'Puerto Morelos' },
+            { value: 'Tulum', label: 'Tulum' }
+          ]
+        default:
+          return []
+      }
+    }
 
     // Display value function
     const displayValue = () => {
@@ -743,6 +771,8 @@ export default function AdminAffiliates() {
             return <span className="text-yellow-600">★ {value}</span>
           }
           return value || <span className="text-gray-400">-</span>
+        case 'select':
+          return value || <span className="text-gray-400">-</span>
         default:
           if (field === 'whatsApp' && value) {
             return (
@@ -778,6 +808,33 @@ export default function AdminAffiliates() {
           >
             <option value="no">No</option>
             <option value="yes">Yes</option>
+          </select>
+        )
+      } else if (type === 'select') {
+        const options = getSelectOptions(field)
+        return (
+          <select
+            defaultValue={value || ''}
+            onBlur={(e) => {
+              const newValue = (e.target as HTMLSelectElement).value
+              handleFieldEdit(affiliate.id, field, newValue, value)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const newValue = (e.target as HTMLSelectElement).value
+                handleFieldEdit(affiliate.id, field, newValue, value)
+              } else if (e.key === 'Escape') {
+                setEditingField(null)
+              }
+            }}
+            autoFocus
+            className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+          >
+            {options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         )
       } else {
@@ -2705,7 +2762,7 @@ export default function AdminAffiliates() {
                         <EditableField affiliate={affiliate} field="description" value={affiliate.description} type="textarea" />
                       </div>
                       <div className="affiliate-grid-cell group">
-                        <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
+                        <EditableField affiliate={affiliate} field="city" value={affiliate.city} type="select" />
                       </div>
                       <div className="affiliate-grid-cell group">
                         <div className="flex items-center space-x-1 w-full">
@@ -2744,7 +2801,7 @@ export default function AdminAffiliates() {
                         <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
                       </div>
                       <div className="affiliate-grid-cell group">
-                        <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
+                        <EditableField affiliate={affiliate} field="type" value={affiliate.type} type="select" />
                       </div>
                       <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="sticker" value={!!affiliate.sticker} type="boolean" />
@@ -3950,13 +4007,22 @@ export default function AdminAffiliates() {
                 {/* City */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                  <input
-                    type="text"
+                  <select
                     value={newAffiliate.city}
                     onChange={(e) => setNewAffiliate({...newAffiliate, city: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter city..."
-                  />
+                  >
+                    <option value="">Select city...</option>
+                    <option value="Bacalar">Bacalar</option>
+                    <option value="Cancun">Cancun</option>
+                    <option value="Cozumel">Cozumel</option>
+                    <option value="Holbox">Holbox</option>
+                    <option value="Isla Mujeres">Isla Mujeres</option>
+                    <option value="Playa del Carmen">Playa del Carmen</option>
+                    <option value="Puerto Aventuras">Puerto Aventuras</option>
+                    <option value="Puerto Morelos">Puerto Morelos</option>
+                    <option value="Tulum">Tulum</option>
+                  </select>
                 </div>
 
                 {/* Category */}
