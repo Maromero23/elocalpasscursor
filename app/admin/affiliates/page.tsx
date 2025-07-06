@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, TrendingUp, FileSpreadsheet, RefreshCw, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowLeft, ArrowRight, Settings } from "lucide-react"
+import { Building2, Plus, Search, Upload, Download, Edit, Trash2, Eye, Users, TrendingUp, FileSpreadsheet, RefreshCw, CheckCircle, XCircle, Filter, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowLeft, ArrowRight, Settings, MessageSquare } from "lucide-react"
 import { ToastNotifications } from "@/components/toast-notification"
 import { useToast } from "@/hooks/use-toast"
 import { useUserPreferences } from "@/hooks/use-user-preferences"
@@ -834,21 +834,14 @@ export default function AdminAffiliates() {
           e.stopPropagation()
           handleRightClick(e, affiliate.id, field)
         }}
-        className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900`}
+        className={`cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded text-xs relative group text-gray-900 w-full h-full flex items-center justify-between`}
         style={{ 
+          backgroundColor: backgroundColor || 'transparent',
           minHeight: '20px',
-          height: '20px',
           overflow: 'visible',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          color: '#111827',
-          width: '100%',
-          maxWidth: '100%',
-          backgroundColor: backgroundColor || 'transparent'
+          position: 'relative'
         }}
+        title={shouldShowTooltip ? String(value || '') : undefined}
       >
         <span className="truncate text-gray-900 flex-1" style={{ maxWidth: fieldHasComment ? 'calc(100% - 25px)' : '100%' }}>
           {displayValue()}
@@ -859,21 +852,18 @@ export default function AdminAffiliates() {
           <div 
             className="ml-1 flex-shrink-0 relative"
             title={`Comment: ${annotation?.comment || ''}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              handleRightClick(e, affiliate.id, field)
-            }}
           >
-            <span className="text-blue-600 text-xs cursor-pointer hover:text-blue-800">💬</span>
+            <MessageSquare className="w-3 h-3 text-blue-500" />
           </div>
         )}
         
-        {/* Simple tooltip on hover - shows even when there are comments */}
+        {/* Enhanced tooltip on hover - shows even when there are comments */}
         {shouldShowTooltip && (
-          <div className="absolute left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none max-w-xs"
+          <div className="absolute left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none max-w-xs whitespace-nowrap"
                style={{
-                 top: affiliate.id === filteredAffiliates[0]?.id ? '25px' : '-25px',
-                 transform: affiliate.id === filteredAffiliates[0]?.id ? 'translateX(-50%)' : 'translateX(-50%) translateY(-100%)'
+                 top: '-30px',
+                 transform: 'translateX(-50%)',
+                 zIndex: 1000
                }}>
             {value || ''}
           </div>
@@ -1580,13 +1570,28 @@ export default function AdminAffiliates() {
           background-color: white;
           padding: 4px 8px;
           border-right: 1px solid #e5e7eb;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          overflow: visible; /* Changed from hidden to visible for tooltips */
           font-size: 12px;
           display: flex;
           align-items: center;
           min-height: 28px;
+          position: relative; /* Important for tooltips */
+        }
+        
+        /* Grid cells need group behavior for tooltips */
+        .affiliate-grid-cell:hover {
+          background-color: #f3f4f6;
+          z-index: 10; /* Ensure hovered cells are above others */
+        }
+        
+        /* Ensure tooltip container doesn't get clipped */
+        .affiliate-grid-cell.group {
+          position: relative;
+        }
+        
+        /* Make sure tooltips appear above everything */
+        .affiliate-grid-cell .group-hover\\:opacity-100 {
+          z-index: 1000;
         }
         
         .affiliate-grid-header-cell {
@@ -2413,7 +2418,7 @@ export default function AdminAffiliates() {
                   {/* Data Rows */}
                   {filteredAffiliates.map((affiliate) => (
                     <div key={affiliate.id} className="affiliate-grid-row">
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <input
                           type="checkbox"
                           checked={selectedAffiliates.includes(affiliate.id)}
@@ -2421,44 +2426,44 @@ export default function AdminAffiliates() {
                           className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="affiliateNum" value={affiliate.affiliateNum} type="text" />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="isActive" value={affiliate.isActive} type="boolean" />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="name" value={affiliate.name} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="firstName" value={affiliate.firstName} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="lastName" value={affiliate.lastName} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="email" value={affiliate.email} type="email" />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="workPhone" value={affiliate.workPhone} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="whatsApp" value={affiliate.whatsApp} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="address" value={affiliate.address} type="textarea" />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="web" value={affiliate.web} type="url" />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="description" value={affiliate.description} type="textarea" />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="city" value={affiliate.city} />
                       </div>
-                      <div className="affiliate-grid-cell">
-                        <div className="flex items-center space-x-1">
+                      <div className="affiliate-grid-cell group">
+                        <div className="flex items-center space-x-1 w-full">
                           {affiliate.maps && (
                             <a href={affiliate.maps} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 flex-shrink-0" title="Open in Maps">
                               📍
@@ -2469,49 +2474,49 @@ export default function AdminAffiliates() {
                           </div>
                         </div>
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="location" value={affiliate.location} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="discount" value={affiliate.discount} />
                       </div>
-                      <div className="affiliate-grid-cell justify-center">
+                      <div className="affiliate-grid-cell justify-center group">
                         <LogoImage affiliate={affiliate} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="facebook" value={affiliate.facebook} type="url" />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="instagram" value={affiliate.instagram} type="url" />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="category" value={affiliate.category} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="subCategory" value={affiliate.subCategory} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="service" value={affiliate.service} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="type" value={affiliate.type} />
                       </div>
-                      <div className="affiliate-grid-cell">
+                      <div className="affiliate-grid-cell group">
                         <EditableField affiliate={affiliate} field="sticker" value={!!affiliate.sticker} type="boolean" />
                       </div>
-                      <div className="affiliate-grid-cell justify-center">
+                      <div className="affiliate-grid-cell justify-center group">
                         <EditableField affiliate={affiliate} field="rating" value={affiliate.rating} type="number" />
                       </div>
-                      <div className="affiliate-grid-cell justify-center">
+                      <div className="affiliate-grid-cell justify-center group">
                         <EditableField affiliate={affiliate} field="recommended" value={affiliate.recommended} type="boolean" />
                       </div>
-                      <div className="affiliate-grid-cell justify-center">
+                      <div className="affiliate-grid-cell justify-center group">
                         <EditableField affiliate={affiliate} field="termsConditions" value={affiliate.termsConditions === 'true' || affiliate.termsConditions === 'yes' || affiliate.termsConditions === 'YES' || affiliate.termsConditions === 'TRUE'} type="boolean" />
                       </div>
-                      <div className="affiliate-grid-cell justify-center">
+                      <div className="affiliate-grid-cell justify-center group">
                         <div className="text-xs font-medium text-gray-900">{affiliate.totalVisits}</div>
                       </div>
-                      <div className="affiliate-grid-cell justify-center">
+                      <div className="affiliate-grid-cell justify-center group">
                         <div className="flex items-center justify-center space-x-0.5">
                           <button
                             onClick={() => setEditingAffiliate(affiliate)}
