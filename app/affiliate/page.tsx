@@ -710,6 +710,30 @@ export default function AffiliateDashboard() {
           </div>
         )}
 
+        {/* PWA Installation Guide - Show only if not in standalone mode */}
+        {typeof window !== 'undefined' && !((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) && (
+          <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6">
+            <h3 className="text-lg font-bold text-blue-800 mb-3">📱 PWA Installation Guide</h3>
+            <div className="text-sm text-blue-700 space-y-2">
+              <p className="font-medium">To fix camera permission issues, install as PWA:</p>
+              <ol className="list-decimal list-inside space-y-1 ml-2">
+                <li><strong>Open Safari</strong> (not Chrome/other browsers)</li>
+                <li><strong>Go to:</strong> elocalpasscursor.vercel.app/affiliate/login</li>
+                <li><strong>Tap Share button</strong> (box with arrow up)</li>
+                <li><strong>Tap "Add to Home Screen"</strong></li>
+                <li><strong>Name it "ELocalPass"</strong> and tap "Add"</li>
+                <li><strong>Open from HOME SCREEN</strong> (not Safari!)</li>
+              </ol>
+              <div className="bg-blue-100 border border-blue-200 rounded p-2 mt-3">
+                <p className="text-xs font-bold text-blue-800">✅ Success Check:</p>
+                <p className="text-xs text-blue-700">
+                  When working correctly, you'll see no browser address bar/buttons, and debug info will show "PWA MODE ACTIVE"
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Affiliate Info */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
