@@ -716,18 +716,46 @@ export default function AffiliateDashboard() {
             <h3 className="text-lg font-bold text-blue-800 mb-3">📱 PWA Installation Guide</h3>
             <div className="text-sm text-blue-700 space-y-2">
               <p className="font-medium">To fix camera permission issues, install as PWA:</p>
+              
+              <div className="bg-red-100 border border-red-300 rounded p-2 mb-3">
+                <p className="text-xs font-bold text-red-700">⚠️ COMMON MISTAKE:</p>
+                <p className="text-xs text-red-700">
+                  If delete shows "bookmark" (not "app") or opens in Safari → it's NOT a PWA!
+                </p>
+              </div>
+
               <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li><strong>Open Safari</strong> (not Chrome/other browsers)</li>
-                <li><strong>Go to:</strong> elocalpasscursor.vercel.app/affiliate/login</li>
+                <li><strong>Make sure Safari is your DEFAULT browser temporarily</strong>
+                  <div className="text-xs ml-4 mt-1 text-blue-600">
+                    Settings → Safari → Default Browser App → Safari
+                  </div>
+                </li>
+                <li><strong>Close ALL browser apps</strong> (Safari, Chrome, etc.)</li>
+                <li><strong>Open Safari fresh</strong></li>
+                <li><strong>Type in address bar:</strong> elocalpasscursor.vercel.app/affiliate/login</li>
+                <li><strong>Wait for page to fully load</strong></li>
                 <li><strong>Tap Share button</strong> (box with arrow up)</li>
-                <li><strong>Tap "Add to Home Screen"</strong></li>
-                <li><strong>Name it "ELocalPass"</strong> and tap "Add"</li>
-                <li><strong>Open from HOME SCREEN</strong> (not Safari!)</li>
+                <li><strong>Look for "Add to Home Screen"</strong> (not "Add Bookmark"!)</li>
+                <li><strong>Name it "ELocalPass Scanner"</strong> and tap "Add"</li>
+                <li><strong>Test: Delete should say "Delete App" (not bookmark)</strong></li>
+                <li><strong>Open from HOME SCREEN - should have NO browser bars</strong></li>
               </ol>
+              
               <div className="bg-blue-100 border border-blue-200 rounded p-2 mt-3">
                 <p className="text-xs font-bold text-blue-800">✅ Success Check:</p>
                 <p className="text-xs text-blue-700">
-                  When working correctly, you'll see no browser address bar/buttons, and debug info will show "PWA MODE ACTIVE"
+                  • Delete shows "Delete App" (not "Delete Bookmark")<br/>
+                  • Opens with NO Safari address bar/buttons<br/>
+                  • Debug shows "PWA MODE ACTIVE"
+                </p>
+              </div>
+
+              <div className="bg-yellow-100 border border-yellow-300 rounded p-2 mt-2">
+                <p className="text-xs font-bold text-yellow-700">🔧 If still not working:</p>
+                <p className="text-xs text-yellow-700">
+                  1. Change iPhone default browser to Safari in Settings<br/>
+                  2. Restart iPhone<br/>
+                  3. Try installation steps again
                 </p>
               </div>
             </div>

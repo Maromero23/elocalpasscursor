@@ -1,13 +1,17 @@
 {
-  "name": "ELocalPass QR Scanner",
+  "name": "ELocalPass Scanner",
   "short_name": "ELocalPass",
   "description": "QR code scanner for ELocalPass affiliates",
-  "start_url": "/affiliate/login?source=pwa",
+  "start_url": "/affiliate/login",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
   "orientation": "portrait-primary",
+  "id": "/",
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "icons": [
     {
       "src": "/icon-192x192.png",
@@ -37,5 +41,9 @@
   "categories": ["business", "productivity"],
   "lang": "en",
   "dir": "ltr",
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "screenshots": []
 } 

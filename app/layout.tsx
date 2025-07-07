@@ -6,7 +6,7 @@ import { AuthProvider } from '../components/providers/session-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'ELocalPass - Affiliate QR Scanner',
+  title: 'ELocalPass',
   description: 'QR code scanner for ELocalPass affiliates',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -45,6 +45,20 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
         <link rel="apple-touch-startup-image" href="/icon-192x192.png" />
         <link rel="manifest" href="/manifest.json" />
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                  .then(function(registration) {
+                    console.log('SW registered: ', registration);
+                  }, function(registrationError) {
+                    console.log('SW registration failed: ', registrationError);
+                  });
+              });
+            }
+          `
+        }} />
       </head>
       <body className={inter.className}>
         <AuthProvider>
