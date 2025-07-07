@@ -614,13 +614,26 @@ export default function AffiliateDashboard() {
               <p><strong>Is iOS:</strong> {/iPad|iPhone|iPod/.test(navigator.userAgent) ? 'Yes' : 'No'}</p>
               <p><strong>Standalone Mode:</strong> {(navigator as any).standalone ? 'Yes' : 'No'}</p>
               <p><strong>Display Mode:</strong> {window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
-              <p><strong>User Agent:</strong> {navigator.userAgent.substring(0, 60)}...</p>
-              <p><strong>Current URL:</strong> {window.location.href}</p>
+              <p><strong>Window Navigator Standalone:</strong> {String((navigator as any).standalone)}</p>
+              <p><strong>Display Mode Query:</strong> {String(window.matchMedia('(display-mode: standalone)').matches)}</p>
+              <p><strong>Window Location:</strong> {window.location.href}</p>
+              <p><strong>Referrer:</strong> {document.referrer || 'None'}</p>
+              <p><strong>User Agent:</strong> {navigator.userAgent.substring(0, 80)}...</p>
               <p className="text-red-600 font-medium">
                 {((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) 
                   ? '✅ PWA MODE ACTIVE - Camera permissions should persist!'
                   : '❌ BROWSER MODE - Camera permissions will reset on refresh'}
               </p>
+              {!((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) && (
+                <div className="bg-red-100 border border-red-300 rounded p-2 mt-2">
+                  <p className="text-xs text-red-700 font-bold">TROUBLESHOOTING:</p>
+                  <p className="text-xs text-red-700">
+                    • Are you opening from HOME SCREEN icon (not Safari browser)?<br/>
+                    • Did you install from Safari (not Chrome)?<br/>
+                    • Try: Delete app → Open Safari → Go to /affiliate/login → Add to Home Screen
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
