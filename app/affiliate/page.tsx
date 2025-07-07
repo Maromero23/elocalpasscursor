@@ -568,8 +568,20 @@ export default function AffiliateDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* iOS Camera Permission Warning - Always show for iOS users */}
-        {typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator as any).standalone && (
+        {/* Debug Info - Show current app mode */}
+        {typeof window !== 'undefined' && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-xs">
+            <p><strong>Debug Info:</strong></p>
+            <p>• Is iOS: {/iPad|iPhone|iPod/.test(navigator.userAgent) ? 'Yes' : 'No'}</p>
+            <p>• Standalone Mode: {(navigator as any).standalone ? 'Yes' : 'No'}</p>
+            <p>• Display Mode: {window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
+            <p>• User Agent: {navigator.userAgent.substring(0, 50)}...</p>
+            <p>• Current URL: {window.location.href}</p>
+          </div>
+        )}
+
+        {/* iOS Camera Permission Warning - Only show if NOT in standalone mode */}
+        {typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator as any).standalone && !window.matchMedia('(display-mode: standalone)').matches && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
