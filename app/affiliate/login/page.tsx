@@ -30,8 +30,17 @@ export default function AffiliateLogin() {
 
       if (result.success) {
         success('Login Successful!', `Welcome ${result.affiliate.name}`)
-        // Redirect to dashboard
-        window.location.href = '/affiliate'
+        
+        // For PWA compatibility, check if we're in standalone mode
+        const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
+        
+        if (isStandalone) {
+          // If in standalone mode, redirect within the PWA to avoid breaking out to Safari
+          window.location.replace('/affiliate')
+        } else {
+          // If in browser mode, use regular redirect
+          window.location.href = '/affiliate'
+        }
       } else {
         error('Login Failed', result.error || 'Authentication failed')
       }

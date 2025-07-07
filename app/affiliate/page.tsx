@@ -154,12 +154,30 @@ export default function AffiliateDashboard() {
         setRecentVisits(data.recentVisits || [])
         setStats(data.stats || { today: 0, total: 0 })
       } else {
-        // Redirect to login
-        window.location.href = '/affiliate/login'
+        // For PWA compatibility, check if we're in standalone mode
+        const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
+        
+        if (isStandalone) {
+          // If in standalone mode, redirect within the PWA to avoid breaking out to Safari
+          window.location.replace('/affiliate/login')
+        } else {
+          // If in browser mode, use regular redirect
+          window.location.href = '/affiliate/login'
+        }
       }
     } catch (err) {
       console.error('Auth check failed:', err)
-      window.location.href = '/affiliate/login'
+      
+      // For PWA compatibility, check if we're in standalone mode
+      const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
+      
+      if (isStandalone) {
+        // If in standalone mode, redirect within the PWA to avoid breaking out to Safari
+        window.location.replace('/affiliate/login')
+      } else {
+        // If in browser mode, use regular redirect
+        window.location.href = '/affiliate/login'
+      }
     } finally {
       setLoading(false)
     }
@@ -483,10 +501,30 @@ export default function AffiliateDashboard() {
   const handleLogout = async () => {
     try {
       await fetch('/api/affiliate/auth/logout', { method: 'POST' })
-      window.location.href = '/affiliate/login'
+      
+      // For PWA compatibility, check if we're in standalone mode
+      const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
+      
+      if (isStandalone) {
+        // If in standalone mode, redirect within the PWA to avoid breaking out to Safari
+        window.location.replace('/affiliate/login')
+      } else {
+        // If in browser mode, use regular redirect
+        window.location.href = '/affiliate/login'
+      }
     } catch (err) {
       console.error('Logout error:', err)
-      window.location.href = '/affiliate/login'
+      
+      // For PWA compatibility, check if we're in standalone mode
+      const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
+      
+      if (isStandalone) {
+        // If in standalone mode, redirect within the PWA to avoid breaking out to Safari
+        window.location.replace('/affiliate/login')
+      } else {
+        // If in browser mode, use regular redirect
+        window.location.href = '/affiliate/login'
+      }
     }
   }
 
