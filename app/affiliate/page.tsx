@@ -608,13 +608,20 @@ export default function AffiliateDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Debug Info - Show current app mode */}
         {typeof window !== 'undefined' && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-xs">
-            <p><strong>Debug Info:</strong></p>
-            <p>• Is iOS: {/iPad|iPhone|iPod/.test(navigator.userAgent) ? 'Yes' : 'No'}</p>
-            <p>• Standalone Mode: {(navigator as any).standalone ? 'Yes' : 'No'}</p>
-            <p>• Display Mode: {window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
-            <p>• User Agent: {navigator.userAgent.substring(0, 50)}...</p>
-            <p>• Current URL: {window.location.href}</p>
+          <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4 mb-6">
+            <p className="text-lg font-bold text-yellow-800 mb-2">🔧 DEBUG INFO</p>
+            <div className="text-sm space-y-1">
+              <p><strong>Is iOS:</strong> {/iPad|iPhone|iPod/.test(navigator.userAgent) ? 'Yes' : 'No'}</p>
+              <p><strong>Standalone Mode:</strong> {(navigator as any).standalone ? 'Yes' : 'No'}</p>
+              <p><strong>Display Mode:</strong> {window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
+              <p><strong>User Agent:</strong> {navigator.userAgent.substring(0, 60)}...</p>
+              <p><strong>Current URL:</strong> {window.location.href}</p>
+              <p className="text-red-600 font-medium">
+                {((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) 
+                  ? '✅ PWA MODE ACTIVE - Camera permissions should persist!'
+                  : '❌ BROWSER MODE - Camera permissions will reset on refresh'}
+              </p>
+            </div>
           </div>
         )}
 
