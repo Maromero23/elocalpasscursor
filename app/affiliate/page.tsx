@@ -568,6 +568,40 @@ export default function AffiliateDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* iOS Camera Permission Warning - Always show for iOS users */}
+        {typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator as any).standalone && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-red-800 mb-1">
+                  iOS Camera Permission Issue
+                </h3>
+                <p className="text-sm text-red-700 mb-3">
+                  iOS Safari resets camera permissions on every page refresh. This is a Safari security feature that cannot be disabled.
+                  <strong> The ONLY solution is to add this app to your home screen.</strong>
+                </p>
+                <div className="bg-white rounded-md p-3 mb-3">
+                  <p className="text-sm text-gray-800 font-medium mb-2">📱 How to fix this permanently:</p>
+                  <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+                    <li>Tap the <strong>Share button</strong> (square with arrow) in Safari</li>
+                    <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                    <li>Tap <strong>"Add"</strong> in the top right</li>
+                    <li>Use the app from your home screen (not Safari)</li>
+                  </ol>
+                </div>
+                <p className="text-xs text-red-600">
+                  ⚠️ Until you install to home screen, you'll get permission prompts on every page refresh.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* PWA Install Prompt */}
         {showInstallPrompt && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
