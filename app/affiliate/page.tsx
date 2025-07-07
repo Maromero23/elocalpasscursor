@@ -627,7 +627,7 @@ export default function AffiliateDashboard() {
 
         {/* iOS Camera Permission Warning - Only show if NOT in standalone mode */}
         {typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator as any).standalone && !window.matchMedia('(display-mode: standalone)').matches && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="bg-red-50 border-2 border-red-400 rounded-lg p-4 mb-6">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
@@ -635,25 +635,28 @@ export default function AffiliateDashboard() {
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-red-800 mb-1">
-                  iOS Camera Permission Issue
+                <h3 className="text-lg font-bold text-red-800 mb-2">
+                  🚨 PWA Not Working - Camera Permissions Will Reset
                 </h3>
                 <p className="text-sm text-red-700 mb-3">
-                  iOS Safari resets camera permissions on every page refresh. This is a Safari security feature that cannot be disabled.
-                  <strong> The ONLY solution is to add this app to your home screen.</strong>
+                  The app is running in browser mode instead of standalone PWA mode. This means camera permissions reset on every refresh.
                 </p>
                 <div className="bg-white rounded-md p-3 mb-3">
-                  <p className="text-sm text-gray-800 font-medium mb-2">📱 How to fix this permanently:</p>
-                  <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
-                    <li>Tap the <strong>Share button</strong> (square with arrow) in Safari</li>
-                    <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
-                    <li>Tap <strong>"Add"</strong> in the top right</li>
-                    <li>Use the app from your home screen (not Safari)</li>
+                  <p className="text-sm text-gray-800 font-bold mb-2">📱 REINSTALL REQUIRED:</p>
+                  <ol className="text-sm text-gray-700 space-y-2 list-decimal list-inside">
+                    <li><strong>Delete current app</strong> from home screen (long press → delete)</li>
+                    <li><strong>Open Safari</strong> and go to: elocalpasscursor.vercel.app</li>
+                    <li><strong>Tap Share button</strong> (square with arrow) at bottom</li>
+                    <li><strong>Tap "Add to Home Screen"</strong></li>
+                    <li><strong>Tap "Add"</strong> in top right</li>
+                    <li><strong>Only use the app from home screen</strong> (never Safari)</li>
                   </ol>
                 </div>
-                <p className="text-xs text-red-600">
-                  ⚠️ Until you install to home screen, you'll get permission prompts on every page refresh.
-                </p>
+                <div className="bg-yellow-100 border border-yellow-400 rounded p-2">
+                  <p className="text-xs text-yellow-800 font-medium">
+                    ⚠️ After reinstalling, the debug box should show "✅ PWA MODE ACTIVE"
+                  </p>
+                </div>
               </div>
             </div>
           </div>

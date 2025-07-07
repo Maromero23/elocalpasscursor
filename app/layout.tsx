@@ -11,8 +11,11 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
-    title: 'ELocalPass Scanner',
+    statusBarStyle: 'black-translucent',
+    title: 'ELocalPass',
+    startupImage: [
+      '/icon-192x192.png'
+    ]
   },
   formatDetection: {
     telephone: false,
