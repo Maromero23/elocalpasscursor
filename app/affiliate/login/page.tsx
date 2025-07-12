@@ -224,6 +224,52 @@ export default function AffiliateLogin() {
               <p><strong>Install Prompt Available:</strong> {installPrompt ? 'Yes ✅' : 'No (iOS doesn\'t support auto-install)'}</p>
               <p><strong>Current URL:</strong> {window.location.href}</p>
               <p><strong>Referrer:</strong> {document.referrer || 'None'}</p>
+              
+              {/* Manual test button */}
+              <div className="mt-3">
+                <button 
+                  onClick={() => {
+                    console.log('Manual PWA test triggered');
+                    
+                    // Test Service Worker
+                    const swElement = document.getElementById('sw-status');
+                    if (swElement) swElement.textContent = 'Testing...';
+                    
+                    if ('serviceWorker' in navigator) {
+                      navigator.serviceWorker.register('/sw.js')
+                        .then(() => {
+                          if (swElement) swElement.textContent = 'SUCCESS ✅';
+                        })
+                        .catch((error) => {
+                          if (swElement) swElement.textContent = 'FAILED ❌';
+                          console.error('SW failed:', error);
+                        });
+                    } else {
+                      if (swElement) swElement.textContent = 'Not Supported ❌';
+                    }
+                    
+                    // Test Manifest
+                    const manifestElement = document.getElementById('manifest-status');
+                    if (manifestElement) manifestElement.textContent = 'Testing...';
+                    
+                    fetch('/manifest.json')
+                      .then(response => {
+                        if (response.ok) {
+                          if (manifestElement) manifestElement.textContent = 'SUCCESS ✅';
+                        } else {
+                          if (manifestElement) manifestElement.textContent = 'HTTP ' + response.status + ' ❌';
+                        }
+                      })
+                      .catch(error => {
+                        if (manifestElement) manifestElement.textContent = 'NETWORK ERROR ❌';
+                        console.error('Manifest failed:', error);
+                      });
+                  }}
+                  className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                >
+                  🔧 Manual Test
+                </button>
+              </div>
               <p className="text-red-600 font-medium">
                 {((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) 
                   ? '✅ PWA MODE ACTIVE - Camera permissions should persist!'
@@ -245,61 +291,72 @@ export default function AffiliateLogin() {
           
           <script dangerouslySetInnerHTML={{
             __html: `
-              // Immediate PWA status check for iOS Safari
-              console.log('PWA Debug: Immediate checks starting...');
-              
-              // Immediate status display
-              document.getElementById('sw-status').textContent = 'Testing...';
-              document.getElementById('manifest-status').textContent = 'Testing...';
-              
-              // Test 1: Service Worker (immediate)
-              setTimeout(() => {
-                if ('serviceWorker' in navigator) {
-                  document.getElementById('sw-status').textContent = 'Attempting Registration...';
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(reg => {
-                      document.getElementById('sw-status').textContent = 'SUCCESS ✅';
-                      console.log('SW: Registered successfully');
-                    })
-                    .catch(err => {
-                      document.getElementById('sw-status').textContent = 'FAILED ❌ (' + err.name + ')';
-                      console.log('SW: Failed -', err);
-                    });
-                } else {
-                  document.getElementById('sw-status').textContent = 'Not Supported ❌';
-                }
-              }, 500);
-              
-              // Test 2: Manifest (immediate)  
-              setTimeout(() => {
-                document.getElementById('manifest-status').textContent = 'Fetching...';
-                fetch('/manifest.json')
-                  .then(response => {
-                    if (response.ok) {
-                      document.getElementById('manifest-status').textContent = 'SUCCESS ✅ (HTTP ' + response.status + ')';
-                      console.log('Manifest: Loaded successfully');
-                    } else {
-                      document.getElementById('manifest-status').textContent = 'HTTP ERROR ❌ (' + response.status + ')';
-                      console.log('Manifest: HTTP error', response.status);
-                    }
-                  })
-                  .catch(err => {
-                    document.getElementById('manifest-status').textContent = 'NETWORK ERROR ❌';
-                    console.log('Manifest: Network error', err);
-                  });
-              }, 1000);
-              
-              // Status update every 2 seconds
-              let checkCount = 0;
-              const statusInterval = setInterval(() => {
-                checkCount++;
-                console.log('Status check #' + checkCount + ':', {
-                  sw: document.getElementById('sw-status').textContent,
-                  manifest: document.getElementById('manifest-status').textContent
-                });
+              // Robust PWA debug script for iOS Safari
+              (function() {
+                console.log('PWA Debug: Starting robust checks...');
                 
-                if (checkCount >= 10) clearInterval(statusInterval);
-              }, 2000);
+                function updateStatus(id, text) {
+                  const element = document.getElementById(id);
+                  if (element) {
+                    element.textContent = text;
+                    console.log('Updated ' + id + ': ' + text);
+                  } else {
+                    console.log('Element not found: ' + id);
+                  }
+                }
+                
+                // Wait for DOM to be ready
+                function startChecks() {
+                  console.log('DOM ready, starting PWA checks...');
+                  
+                  // Immediate updates
+                  updateStatus('sw-status', 'Starting...');
+                  updateStatus('manifest-status', 'Starting...');
+                  
+                  // Test Service Worker
+                  console.log('Testing Service Worker...');
+                  if ('serviceWorker' in navigator) {
+                    updateStatus('sw-status', 'Registering...');
+                    navigator.serviceWorker.register('/sw.js')
+                      .then(function(registration) {
+                        updateStatus('sw-status', 'SUCCESS ✅');
+                        console.log('Service Worker: Registration successful');
+                      })
+                      .catch(function(error) {
+                        updateStatus('sw-status', 'FAILED ❌');
+                        console.error('Service Worker: Registration failed', error);
+                      });
+                  } else {
+                    updateStatus('sw-status', 'Not Supported ❌');
+                  }
+                  
+                  // Test Manifest
+                  console.log('Testing Manifest...');
+                  updateStatus('manifest-status', 'Fetching...');
+                  fetch('/manifest.json')
+                    .then(function(response) {
+                      if (response.ok) {
+                        updateStatus('manifest-status', 'SUCCESS ✅');
+                        console.log('Manifest: Fetch successful');
+                      } else {
+                        updateStatus('manifest-status', 'HTTP ' + response.status + ' ❌');
+                        console.error('Manifest: HTTP error', response.status);
+                      }
+                    })
+                    .catch(function(error) {
+                      updateStatus('manifest-status', 'NETWORK ERROR ❌');
+                      console.error('Manifest: Network error', error);
+                    });
+                }
+                
+                // Start checks when DOM is ready
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', startChecks);
+                } else {
+                  // DOM is already ready
+                  setTimeout(startChecks, 100);
+                }
+              })();
             `
           }} />
         </div>
