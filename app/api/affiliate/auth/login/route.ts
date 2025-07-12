@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
     // Set cookie with PWA-optimized settings
     const response = NextResponse.json({
       success: true,
+      sessionToken, // Include session token in response for localStorage backup
       affiliate: {
         id: affiliate.id,
         name: affiliate.name,

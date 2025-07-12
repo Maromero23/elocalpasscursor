@@ -72,6 +72,7 @@ export default function AffiliateDashboard() {
   const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false)
   const [autoStartAttempted, setAutoStartAttempted] = useState(false)
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
+  const [sessionRecovering, setSessionRecovering] = useState(false)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const qrScannerRef = useRef<QrScanner | null>(null)
@@ -193,33 +194,75 @@ export default function AffiliateDashboard() {
         setAffiliate(data.affiliate)
         setRecentVisits(data.recentVisits || [])
         setStats(data.stats || { today: 0, total: 0 })
+        console.log('✅ Normal authentication successful')
       } else {
-        // For PWA compatibility, check if we're in standalone mode
-        const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
-        
-        if (isStandalone) {
-          // If in standalone mode, redirect within the PWA to avoid breaking out to Safari
-          window.location.replace('/affiliate/login')
-        } else {
-          // If in browser mode, use regular redirect
-          window.location.href = '/affiliate/login'
-        }
+        console.log('❌ Normal authentication failed, attempting session recovery...')
+        // Attempt session recovery from localStorage
+        await attemptSessionRecovery()
       }
     } catch (err) {
       console.error('Auth check failed:', err)
-      
-      // For PWA compatibility, check if we're in standalone mode
-      const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
-      
-      if (isStandalone) {
-        // If in standalone mode, redirect within the PWA to avoid breaking out to Safari
-        window.location.replace('/affiliate/login')
-      } else {
-        // If in browser mode, use regular redirect
-        window.location.href = '/affiliate/login'
-      }
+      console.log('🔄 Attempting session recovery from localStorage...')
+      // Attempt session recovery from localStorage
+      await attemptSessionRecovery()
     } finally {
       setLoading(false)
+    }
+  }
+
+  const attemptSessionRecovery = async () => {
+    try {
+      setSessionRecovering(true)
+      const backupToken = localStorage.getItem('affiliate-session-backup')
+      const backupEmail = localStorage.getItem('affiliate-email')
+      
+      if (!backupToken || !backupEmail) {
+        console.log('❌ No session backup found, redirecting to login')
+        redirectToLogin()
+        return
+      }
+      
+      console.log('🔄 Attempting session recovery for:', backupEmail)
+      
+      // Try to validate the backup session
+      const response = await fetch('/api/affiliate/session/recover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: backupToken })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Session recovery successful!')
+        setAffiliate(data.affiliate)
+        setRecentVisits(data.recentVisits || [])
+        setStats(data.stats || { today: 0, total: 0 })
+      } else {
+        console.log('❌ Session recovery failed, clearing backup and redirecting to login')
+        // Clear invalid backup data
+        localStorage.removeItem('affiliate-session-backup')
+        localStorage.removeItem('affiliate-email')
+        localStorage.removeItem('affiliate-name')
+        redirectToLogin()
+      }
+    } catch (error) {
+      console.error('Session recovery error:', error)
+      redirectToLogin()
+    } finally {
+      setSessionRecovering(false)
+    }
+  }
+  
+  const redirectToLogin = () => {
+    // For PWA compatibility, check if we're in standalone mode
+    const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
+    
+    if (isStandalone) {
+      // If in standalone mode, redirect within the PWA to avoid breaking out to Safari
+      window.location.replace('/affiliate/login')
+    } else {
+      // If in browser mode, use regular redirect
+      window.location.href = '/affiliate/login'
     }
   }
 
@@ -542,6 +585,12 @@ export default function AffiliateDashboard() {
     try {
       await fetch('/api/affiliate/auth/logout', { method: 'POST' })
       
+      // Clear localStorage backup when explicitly logging out
+      localStorage.removeItem('affiliate-session-backup')
+      localStorage.removeItem('affiliate-email')
+      localStorage.removeItem('affiliate-name')
+      console.log('🗑️ Session backup cleared on logout')
+      
       // For PWA compatibility, check if we're in standalone mode
       const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
       
@@ -554,6 +603,12 @@ export default function AffiliateDashboard() {
       }
     } catch (err) {
       console.error('Logout error:', err)
+      
+      // Clear localStorage backup even if logout API fails
+      localStorage.removeItem('affiliate-session-backup')
+      localStorage.removeItem('affiliate-email')
+      localStorage.removeItem('affiliate-name')
+      console.log('🗑️ Session backup cleared on logout error')
       
       // For PWA compatibility, check if we're in standalone mode
       const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
@@ -603,7 +658,14 @@ export default function AffiliateDashboard() {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          {sessionRecovering ? (
+            <div>
+              <p className="text-gray-600 font-medium">Recovering your session...</p>
+              <p className="text-sm text-gray-500 mt-2">Restoring login from device backup</p>
+            </div>
+          ) : (
+            <p className="text-gray-600">Loading...</p>
+          )}
         </div>
       </div>
     )

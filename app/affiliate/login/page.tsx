@@ -57,6 +57,14 @@ export default function AffiliateLogin() {
       if (result.success) {
         success('Login Successful!', `Welcome ${result.affiliate.name}`)
         
+        // Store session backup in localStorage for persistence across restarts
+        if (result.sessionToken) {
+          localStorage.setItem('affiliate-session-backup', result.sessionToken)
+          localStorage.setItem('affiliate-email', result.affiliate.email)
+          localStorage.setItem('affiliate-name', result.affiliate.name)
+          console.log('💾 Session backup stored in localStorage')
+        }
+        
         // For PWA compatibility, check if we're in standalone mode
         const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
         
