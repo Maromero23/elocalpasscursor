@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Building2, Mail, LogIn, AlertCircle } from "lucide-react"
 import { ToastNotifications } from "@/components/toast-notification"
 import { useToast } from "@/hooks/use-toast"
@@ -9,6 +9,32 @@ export default function AffiliateLogin() {
   const { notifications, removeToast, success, error } = useToast()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState<any>(null)
+
+  useEffect(() => {
+    // Listen for PWA install prompt
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
+  }, [])
+
+  const handlePWAInstall = async () => {
+    if (installPrompt) {
+      installPrompt.prompt()
+      const result = await installPrompt.userChoice
+      if (result.outcome === 'accepted') {
+        success('PWA Installed!', 'App added to home screen')
+      }
+      setInstallPrompt(null)
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -158,6 +184,31 @@ export default function AffiliateLogin() {
         </div>
       </div>
       
+      {/* Manual PWA Install Button for iOS */}
+      {typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) && (
+        <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-purple-100 border-2 border-purple-400 rounded-lg p-4">
+            <h3 className="text-lg font-bold text-purple-800 mb-2">📲 INSTALL AS PWA APP</h3>
+            <p className="text-sm text-purple-700 mb-3">
+              For persistent camera permissions, install as a PWA:
+            </p>
+            <div className="bg-white border border-purple-300 rounded p-3 mb-3">
+              <p className="text-xs font-bold text-purple-800 mb-2">📋 MANUAL INSTALLATION:</p>
+              <ol className="text-xs text-purple-700 space-y-1">
+                <li>1. Tap Safari's <strong>Share button</strong> ⬇️</li>
+                <li>2. Scroll down to <strong>"Add to Home Screen"</strong></li>
+                <li>3. Change name to <strong>"ELocalPass Scanner"</strong></li>
+                <li>4. Tap <strong>"Add"</strong></li>
+                <li>5. Open from <strong>HOME SCREEN</strong> (not Safari!)</li>
+              </ol>
+            </div>
+            <div className="text-xs text-purple-600">
+              ⚠️ <strong>Note:</strong> iOS doesn't support automatic PWA installation. Must be done manually through Safari's Share menu.
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* PWA Debug Info - Show current app mode */}
       {typeof window !== 'undefined' && (
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -170,11 +221,9 @@ export default function AffiliateLogin() {
               <p><strong>Service Worker:</strong> {'serviceWorker' in navigator ? 'Supported' : 'Not Supported'}</p>
               <p><strong>SW Registration:</strong> <span id="sw-status">Checking...</span></p>
               <p><strong>Manifest Available:</strong> <span id="manifest-status">Checking...</span></p>
-              <p><strong>Window Navigator Standalone:</strong> {String((navigator as any).standalone)}</p>
-              <p><strong>Display Mode Query:</strong> {String(window.matchMedia('(display-mode: standalone)').matches)}</p>
-              <p><strong>Window Location:</strong> {window.location.href}</p>
+              <p><strong>Install Prompt Available:</strong> {installPrompt ? 'Yes ✅' : 'No (iOS doesn\'t support auto-install)'}</p>
+              <p><strong>Current URL:</strong> {window.location.href}</p>
               <p><strong>Referrer:</strong> {document.referrer || 'None'}</p>
-              <p><strong>User Agent:</strong> {navigator.userAgent.substring(0, 80)}...</p>
               <p className="text-red-600 font-medium">
                 {((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) 
                   ? '✅ PWA MODE ACTIVE - Camera permissions should persist!'
@@ -187,8 +236,7 @@ export default function AffiliateLogin() {
                     You're in BROWSER MODE but should be in PWA MODE for camera permissions!
                   </p>
                   <p className="text-xs text-red-700 mt-1">
-                    <strong>Most Common Cause:</strong> Chrome is your default browser.<br/>
-                    <strong>Solution:</strong> iPhone Settings → Safari → Default Browser App → Safari
+                    <strong>Solution:</strong> Use Safari's Share → "Add to Home Screen" manually
                   </p>
                 </div>
               )}
@@ -197,34 +245,80 @@ export default function AffiliateLogin() {
           
           <script dangerouslySetInnerHTML={{
             __html: `
+              // Enhanced PWA debugging for iOS Safari
+              console.log('PWA Debug: Starting checks...');
+              
               // Check service worker registration
               if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js')
                   .then(function(registration) {
                     document.getElementById('sw-status').textContent = 'Registered ✅';
-                    console.log('SW registered: ', registration);
+                    console.log('SW registered successfully: ', registration);
+                    
+                    // Check if SW is actually active
+                    if (registration.active) {
+                      console.log('SW is active');
+                    } else {
+                      console.log('SW registered but not active yet');
+                    }
                   })
                   .catch(function(registrationError) {
                     document.getElementById('sw-status').textContent = 'Failed ❌';
-                    console.log('SW registration failed: ', registrationError);
+                    console.error('SW registration failed: ', registrationError);
                   });
               } else {
                 document.getElementById('sw-status').textContent = 'Not Supported ❌';
+                console.log('Service workers not supported');
               }
               
-              // Check manifest availability
+              // Check manifest availability and content
               fetch('/manifest.json')
                 .then(response => {
                   if (response.ok) {
                     document.getElementById('manifest-status').textContent = 'Available ✅';
+                    console.log('Manifest fetch successful');
+                    return response.json();
                   } else {
-                    document.getElementById('manifest-status').textContent = 'Failed ❌';
+                    document.getElementById('manifest-status').textContent = 'Failed ❌ (' + response.status + ')';
+                    console.error('Manifest fetch failed:', response.status);
+                    throw new Error('Manifest fetch failed');
+                  }
+                })
+                .then(manifest => {
+                  console.log('Manifest content:', manifest);
+                  // Check if all required PWA fields are present
+                  const required = ['name', 'short_name', 'start_url', 'display', 'icons'];
+                  const missing = required.filter(field => !manifest[field]);
+                  if (missing.length > 0) {
+                    console.warn('Missing manifest fields:', missing);
+                  } else {
+                    console.log('Manifest has all required fields');
                   }
                 })
                 .catch(error => {
                   document.getElementById('manifest-status').textContent = 'Error ❌';
-                  console.log('Manifest check failed:', error);
+                  console.error('Manifest check failed:', error);
                 });
+                
+              // Check if page was loaded from PWA
+              const urlParams = new URLSearchParams(window.location.search);
+              if (urlParams.get('pwa') === '1') {
+                console.log('Page loaded from PWA start_url');
+              } else {
+                console.log('Page loaded normally (not from PWA)');
+              }
+              
+              // Log iOS specific info
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+              const isStandalone = navigator.standalone;
+              const isDisplayModeStandalone = window.matchMedia('(display-mode: standalone)').matches;
+              
+              console.log('iOS Detection:', {
+                isIOS: isIOS,
+                standalone: isStandalone,
+                displayMode: isDisplayModeStandalone,
+                userAgent: navigator.userAgent
+              });
             `
           }} />
         </div>
