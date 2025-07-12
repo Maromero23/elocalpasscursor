@@ -167,6 +167,9 @@ export default function AffiliateLogin() {
               <p><strong>Is iOS:</strong> {/iPad|iPhone|iPod/.test(navigator.userAgent) ? 'Yes' : 'No'}</p>
               <p><strong>Standalone Mode:</strong> {(navigator as any).standalone ? 'Yes' : 'No'}</p>
               <p><strong>Display Mode:</strong> {window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
+              <p><strong>Service Worker:</strong> {'serviceWorker' in navigator ? 'Supported' : 'Not Supported'}</p>
+              <p><strong>SW Registration:</strong> <span id="sw-status">Checking...</span></p>
+              <p><strong>Manifest Available:</strong> <span id="manifest-status">Checking...</span></p>
               <p><strong>Window Navigator Standalone:</strong> {String((navigator as any).standalone)}</p>
               <p><strong>Display Mode Query:</strong> {String(window.matchMedia('(display-mode: standalone)').matches)}</p>
               <p><strong>Window Location:</strong> {window.location.href}</p>
@@ -189,6 +192,39 @@ export default function AffiliateLogin() {
               )}
             </div>
           </div>
+          
+          <script dangerouslySetInnerHTML={{
+            __html: `
+              // Check service worker registration
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                  .then(function(registration) {
+                    document.getElementById('sw-status').textContent = 'Registered ✅';
+                    console.log('SW registered: ', registration);
+                  })
+                  .catch(function(registrationError) {
+                    document.getElementById('sw-status').textContent = 'Failed ❌';
+                    console.log('SW registration failed: ', registrationError);
+                  });
+              } else {
+                document.getElementById('sw-status').textContent = 'Not Supported ❌';
+              }
+              
+              // Check manifest availability
+              fetch('/manifest.json')
+                .then(response => {
+                  if (response.ok) {
+                    document.getElementById('manifest-status').textContent = 'Available ✅';
+                  } else {
+                    document.getElementById('manifest-status').textContent = 'Failed ❌';
+                  }
+                })
+                .catch(error => {
+                  document.getElementById('manifest-status').textContent = 'Error ❌';
+                  console.log('Manifest check failed:', error);
+                });
+            `
+          }} />
         </div>
       )}
 
