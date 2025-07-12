@@ -245,80 +245,70 @@ export default function AffiliateLogin() {
           
           <script dangerouslySetInnerHTML={{
             __html: `
-              // Enhanced PWA debugging for iOS Safari
-              console.log('PWA Debug: Starting checks...');
+              // Simplified PWA debugging for iOS Safari
+              console.log('PWA Debug: Starting simplified checks...');
               
-              // Check service worker registration
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js')
-                  .then(function(registration) {
-                    document.getElementById('sw-status').textContent = 'Registered ✅';
-                    console.log('SW registered successfully: ', registration);
-                    
-                    // Check if SW is actually active
-                    if (registration.active) {
-                      console.log('SW is active');
+              // Immediate status updates
+              setTimeout(() => {
+                document.getElementById('sw-status').textContent = 'Testing...';
+                document.getElementById('manifest-status').textContent = 'Testing...';
+              }, 100);
+              
+              // Test service worker registration with timeout
+              const testServiceWorker = () => {
+                if ('serviceWorker' in navigator) {
+                  const timeout = setTimeout(() => {
+                    document.getElementById('sw-status').textContent = 'Timeout ⏰';
+                  }, 5000);
+                  
+                  navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                      clearTimeout(timeout);
+                      document.getElementById('sw-status').textContent = 'Registered ✅';
+                      console.log('SW: SUCCESS');
+                    })
+                    .catch(function(error) {
+                      clearTimeout(timeout);
+                      document.getElementById('sw-status').textContent = 'Failed ❌ (' + error.name + ')';
+                      console.log('SW: FAILED', error);
+                    });
+                } else {
+                  document.getElementById('sw-status').textContent = 'Not Supported ❌';
+                }
+              };
+              
+              // Test manifest with timeout
+              const testManifest = () => {
+                const timeout = setTimeout(() => {
+                  document.getElementById('manifest-status').textContent = 'Timeout ⏰';
+                }, 5000);
+                
+                fetch('/manifest.json')
+                  .then(response => {
+                    clearTimeout(timeout);
+                    if (response.ok) {
+                      document.getElementById('manifest-status').textContent = 'Available ✅ (' + response.status + ')';
+                      console.log('Manifest: SUCCESS');
                     } else {
-                      console.log('SW registered but not active yet');
+                      document.getElementById('manifest-status').textContent = 'HTTP ' + response.status + ' ❌';
+                      console.log('Manifest: HTTP ERROR', response.status);
                     }
                   })
-                  .catch(function(registrationError) {
-                    document.getElementById('sw-status').textContent = 'Failed ❌';
-                    console.error('SW registration failed: ', registrationError);
+                  .catch(error => {
+                    clearTimeout(timeout);
+                    document.getElementById('manifest-status').textContent = 'Network Error ❌';
+                    console.log('Manifest: NETWORK ERROR', error);
                   });
-              } else {
-                document.getElementById('sw-status').textContent = 'Not Supported ❌';
-                console.log('Service workers not supported');
-              }
+              };
               
-              // Check manifest availability and content
-              fetch('/manifest.json')
-                .then(response => {
-                  if (response.ok) {
-                    document.getElementById('manifest-status').textContent = 'Available ✅';
-                    console.log('Manifest fetch successful');
-                    return response.json();
-                  } else {
-                    document.getElementById('manifest-status').textContent = 'Failed ❌ (' + response.status + ')';
-                    console.error('Manifest fetch failed:', response.status);
-                    throw new Error('Manifest fetch failed');
-                  }
-                })
-                .then(manifest => {
-                  console.log('Manifest content:', manifest);
-                  // Check if all required PWA fields are present
-                  const required = ['name', 'short_name', 'start_url', 'display', 'icons'];
-                  const missing = required.filter(field => !manifest[field]);
-                  if (missing.length > 0) {
-                    console.warn('Missing manifest fields:', missing);
-                  } else {
-                    console.log('Manifest has all required fields');
-                  }
-                })
-                .catch(error => {
-                  document.getElementById('manifest-status').textContent = 'Error ❌';
-                  console.error('Manifest check failed:', error);
-                });
-                
-              // Check if page was loaded from PWA
-              const urlParams = new URLSearchParams(window.location.search);
-              if (urlParams.get('pwa') === '1') {
-                console.log('Page loaded from PWA start_url');
-              } else {
-                console.log('Page loaded normally (not from PWA)');
-              }
+              // Run tests
+              testServiceWorker();
+              testManifest();
               
-              // Log iOS specific info
-              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-              const isStandalone = navigator.standalone;
-              const isDisplayModeStandalone = window.matchMedia('(display-mode: standalone)').matches;
-              
-              console.log('iOS Detection:', {
-                isIOS: isIOS,
-                standalone: isStandalone,
-                displayMode: isDisplayModeStandalone,
-                userAgent: navigator.userAgent
-              });
+              // Log basic info
+              console.log('iOS:', /iPad|iPhone|iPod/.test(navigator.userAgent));
+              console.log('Standalone:', navigator.standalone);
+              console.log('URL:', window.location.href);
             `
           }} />
         </div>

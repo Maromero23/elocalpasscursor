@@ -18,7 +18,10 @@ export default withAuth(
       pathname.startsWith("/affiliate") ||
       pathname.startsWith("/api/affiliate") ||
       pathname.startsWith("/_next") ||
-      pathname.startsWith("/favicon")
+      pathname.startsWith("/favicon") ||
+      pathname === "/manifest.json" ||
+      pathname === "/sw.js" ||
+      pathname.startsWith("/icon-")
     ) {
       return NextResponse.next()
     }
@@ -70,7 +73,10 @@ export default withAuth(
           pathname.startsWith("/affiliate") ||
           pathname.startsWith("/api/affiliate") ||
           pathname.startsWith("/_next") ||
-          pathname.startsWith("/favicon")
+          pathname.startsWith("/favicon") ||
+          pathname === "/manifest.json" ||
+          pathname === "/sw.js" ||
+          pathname.startsWith("/icon-")
         ) {
           return true
         }
