@@ -182,11 +182,13 @@ export default function AffiliateLogin() {
               </p>
               {!((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) && (
                 <div className="bg-red-100 border border-red-300 rounded p-2 mt-2">
-                  <p className="text-xs text-red-700 font-bold">TROUBLESHOOTING:</p>
-                  <p className="text-xs text-red-700">
-                    • Are you opening from HOME SCREEN icon (not Safari browser)?<br/>
-                    • Did you install from Safari (not Chrome)?<br/>
-                    • Try: Delete app → Open Safari → Go to this page → Add to Home Screen
+                  <p className="text-xs text-red-700 font-bold">⚠️ CRITICAL ISSUE DETECTED:</p>
+                  <p className="text-xs text-red-700 font-bold">
+                    You're in BROWSER MODE but should be in PWA MODE for camera permissions!
+                  </p>
+                  <p className="text-xs text-red-700 mt-1">
+                    <strong>Most Common Cause:</strong> Chrome is your default browser.<br/>
+                    <strong>Solution:</strong> iPhone Settings → Safari → Default Browser App → Safari
                   </p>
                 </div>
               )}
@@ -232,51 +234,40 @@ export default function AffiliateLogin() {
       {typeof window !== 'undefined' && !((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) && (
         <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-            <h3 className="text-lg font-bold text-blue-800 mb-3">📱 PWA Installation Guide</h3>
+            <h3 className="text-lg font-bold text-blue-800 mb-3">📱 FIX PWA INSTALLATION</h3>
             <div className="text-sm text-blue-700 space-y-2">
-              <p className="font-medium">To fix camera permission issues, install as PWA:</p>
               
-              <div className="bg-red-100 border border-red-300 rounded p-2 mb-3">
-                <p className="text-xs font-bold text-red-700">⚠️ COMMON MISTAKE:</p>
-                <p className="text-xs text-red-700">
-                  If delete shows "bookmark" (not "app") or opens in Safari → it's NOT a PWA!
+              <div className="bg-red-100 border border-red-300 rounded p-3 mb-3">
+                <p className="text-sm font-bold text-red-700">🔴 STEP 1: CHECK DEFAULT BROWSER</p>
+                <p className="text-xs text-red-700 mt-1">
+                  <strong>iPhone Settings → Safari → Default Browser App</strong><br/>
+                  Must be set to <strong>"Safari"</strong> (not Chrome/Edge/etc.)
                 </p>
               </div>
 
-              <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li><strong>Make sure Safari is your DEFAULT browser temporarily</strong>
-                  <div className="text-xs ml-4 mt-1 text-blue-600">
-                    Settings → Safari → Default Browser App → Safari
-                  </div>
-                </li>
-                <li><strong>Close ALL browser apps</strong> (Safari, Chrome, etc.)</li>
-                <li><strong>Open Safari fresh</strong></li>
-                <li><strong>Type in address bar:</strong> elocalpasscursor.vercel.app/affiliate/login</li>
-                <li><strong>Wait for page to fully load</strong></li>
-                <li><strong>Tap Share button</strong> (box with arrow up)</li>
-                <li><strong>Look for "Add to Home Screen"</strong> (not "Add Bookmark"!)</li>
-                <li><strong>Name it "ELocalPass Scanner"</strong> and tap "Add"</li>
-                <li><strong>Test: Delete should say "Delete App" (not bookmark)</strong></li>
-                <li><strong>Open from HOME SCREEN - should have NO browser bars</strong></li>
-              </ol>
-              
-              <div className="bg-blue-100 border border-blue-200 rounded p-2 mt-3">
-                <p className="text-xs font-bold text-blue-800">✅ Success Check:</p>
-                <p className="text-xs text-blue-700">
-                  • Delete shows "Delete App" (not "Delete Bookmark")<br/>
-                  • Opens with NO Safari address bar/buttons<br/>
-                  • Debug shows "PWA MODE ACTIVE"
+              <div className="bg-orange-100 border border-orange-300 rounded p-3 mb-3">
+                <p className="text-sm font-bold text-orange-700">🟠 STEP 2: FRESH INSTALLATION</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2 text-xs text-orange-700 mt-1">
+                  <li>Delete current home screen icon</li>
+                  <li>Force close ALL browser apps</li>
+                  <li>Open Safari (not from bookmark!)</li>
+                  <li>Type: elocalpasscursor.vercel.app/affiliate/login</li>
+                  <li>Tap Share → "Add to Home Screen"</li>
+                  <li>Name: "ELocalPass Scanner"</li>
+                </ol>
+              </div>
+
+              <div className="bg-green-100 border border-green-300 rounded p-3">
+                <p className="text-sm font-bold text-green-700">🟢 STEP 3: VERIFY SUCCESS</p>
+                <p className="text-xs text-green-700 mt-1">
+                  ✅ Long-press icon → shows "Delete App" (not "Delete Bookmark")<br/>
+                  ✅ Opens with NO Safari address bar<br/>
+                  ✅ Debug shows "PWA MODE ACTIVE"<br/>
+                  ✅ Service Worker: Registered ✅<br/>
+                  ✅ Manifest Available: Available ✅
                 </p>
               </div>
 
-              <div className="bg-yellow-100 border border-yellow-300 rounded p-2 mt-2">
-                <p className="text-xs font-bold text-yellow-700">🔧 If still not working:</p>
-                <p className="text-xs text-yellow-700">
-                  1. Change iPhone default browser to Safari in Settings<br/>
-                  2. Restart iPhone<br/>
-                  3. Try installation steps again
-                </p>
-              </div>
             </div>
           </div>
         </div>
