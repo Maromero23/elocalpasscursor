@@ -245,70 +245,61 @@ export default function AffiliateLogin() {
           
           <script dangerouslySetInnerHTML={{
             __html: `
-              // Simplified PWA debugging for iOS Safari
-              console.log('PWA Debug: Starting simplified checks...');
+              // Immediate PWA status check for iOS Safari
+              console.log('PWA Debug: Immediate checks starting...');
               
-              // Immediate status updates
+              // Immediate status display
+              document.getElementById('sw-status').textContent = 'Testing...';
+              document.getElementById('manifest-status').textContent = 'Testing...';
+              
+              // Test 1: Service Worker (immediate)
               setTimeout(() => {
-                document.getElementById('sw-status').textContent = 'Testing...';
-                document.getElementById('manifest-status').textContent = 'Testing...';
-              }, 100);
-              
-              // Test service worker registration with timeout
-              const testServiceWorker = () => {
                 if ('serviceWorker' in navigator) {
-                  const timeout = setTimeout(() => {
-                    document.getElementById('sw-status').textContent = 'Timeout ⏰';
-                  }, 5000);
-                  
+                  document.getElementById('sw-status').textContent = 'Attempting Registration...';
                   navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                      clearTimeout(timeout);
-                      document.getElementById('sw-status').textContent = 'Registered ✅';
-                      console.log('SW: SUCCESS');
+                    .then(reg => {
+                      document.getElementById('sw-status').textContent = 'SUCCESS ✅';
+                      console.log('SW: Registered successfully');
                     })
-                    .catch(function(error) {
-                      clearTimeout(timeout);
-                      document.getElementById('sw-status').textContent = 'Failed ❌ (' + error.name + ')';
-                      console.log('SW: FAILED', error);
+                    .catch(err => {
+                      document.getElementById('sw-status').textContent = 'FAILED ❌ (' + err.name + ')';
+                      console.log('SW: Failed -', err);
                     });
                 } else {
                   document.getElementById('sw-status').textContent = 'Not Supported ❌';
                 }
-              };
+              }, 500);
               
-              // Test manifest with timeout
-              const testManifest = () => {
-                const timeout = setTimeout(() => {
-                  document.getElementById('manifest-status').textContent = 'Timeout ⏰';
-                }, 5000);
-                
+              // Test 2: Manifest (immediate)  
+              setTimeout(() => {
+                document.getElementById('manifest-status').textContent = 'Fetching...';
                 fetch('/manifest.json')
                   .then(response => {
-                    clearTimeout(timeout);
                     if (response.ok) {
-                      document.getElementById('manifest-status').textContent = 'Available ✅ (' + response.status + ')';
-                      console.log('Manifest: SUCCESS');
+                      document.getElementById('manifest-status').textContent = 'SUCCESS ✅ (HTTP ' + response.status + ')';
+                      console.log('Manifest: Loaded successfully');
                     } else {
-                      document.getElementById('manifest-status').textContent = 'HTTP ' + response.status + ' ❌';
-                      console.log('Manifest: HTTP ERROR', response.status);
+                      document.getElementById('manifest-status').textContent = 'HTTP ERROR ❌ (' + response.status + ')';
+                      console.log('Manifest: HTTP error', response.status);
                     }
                   })
-                  .catch(error => {
-                    clearTimeout(timeout);
-                    document.getElementById('manifest-status').textContent = 'Network Error ❌';
-                    console.log('Manifest: NETWORK ERROR', error);
+                  .catch(err => {
+                    document.getElementById('manifest-status').textContent = 'NETWORK ERROR ❌';
+                    console.log('Manifest: Network error', err);
                   });
-              };
+              }, 1000);
               
-              // Run tests
-              testServiceWorker();
-              testManifest();
-              
-              // Log basic info
-              console.log('iOS:', /iPad|iPhone|iPod/.test(navigator.userAgent));
-              console.log('Standalone:', navigator.standalone);
-              console.log('URL:', window.location.href);
+              // Status update every 2 seconds
+              let checkCount = 0;
+              const statusInterval = setInterval(() => {
+                checkCount++;
+                console.log('Status check #' + checkCount + ':', {
+                  sw: document.getElementById('sw-status').textContent,
+                  manifest: document.getElementById('manifest-status').textContent
+                });
+                
+                if (checkCount >= 10) clearInterval(statusInterval);
+              }, 2000);
             `
           }} />
         </div>
