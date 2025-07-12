@@ -69,6 +69,8 @@ export default function AffiliateLogin() {
 
     setLoading(true)
     try {
+      console.log('🔐 LOGIN: Starting login process for', email.toLowerCase().trim())
+      
       const response = await fetch('/api/affiliate/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,34 +78,55 @@ export default function AffiliateLogin() {
       })
 
       const result = await response.json()
+      console.log('🌐 LOGIN: Login API response status:', response.status)
 
       if (result.success) {
+        console.log('✅ LOGIN: Login successful for', result.affiliate.name)
+        console.log('   - Session token received:', result.sessionToken ? `${result.sessionToken.substring(0, 8)}...` : 'NO TOKEN')
+        
         success('Login Successful!', `Welcome ${result.affiliate.name}`)
         
         // Store session backup in localStorage for persistence across restarts
         if (result.sessionToken) {
+          console.log('💾 LOGIN: Storing session backup in localStorage...')
           localStorage.setItem('affiliate-session-backup', result.sessionToken)
           localStorage.setItem('affiliate-email', result.affiliate.email)
           localStorage.setItem('affiliate-name', result.affiliate.name)
-          console.log('💾 Session backup stored in localStorage')
+          console.log('💾 LOGIN: Session backup stored successfully')
+          console.log('   - Token:', `${result.sessionToken.substring(0, 8)}...${result.sessionToken.substring(result.sessionToken.length - 8)}`)
+          console.log('   - Email:', result.affiliate.email)
+          console.log('   - Name:', result.affiliate.name)
+          
+          // Verify storage worked
+          const storedToken = localStorage.getItem('affiliate-session-backup')
+          const storedEmail = localStorage.getItem('affiliate-email')
+          console.log('🔍 LOGIN: Verification - Token stored:', storedToken ? `${storedToken.substring(0, 8)}...` : 'FAILED')
+          console.log('🔍 LOGIN: Verification - Email stored:', storedEmail || 'FAILED')
+        } else {
+          console.log('⚠️ LOGIN: WARNING - No session token received from server!')
         }
         
         // For PWA compatibility, check if we're in standalone mode
-        const isStandalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
+        const isStandalone = (navigator as any).standalone || 
+                           (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches)
+        console.log('📱 LOGIN: PWA Mode detected:', isStandalone ? 'YES' : 'NO')
         
         if (isStandalone) {
           // If in standalone mode, redirect within the PWA to avoid breaking out to Safari
+          console.log('🔄 LOGIN: Redirecting within PWA to /affiliate')
           window.location.replace('/affiliate')
         } else {
           // If in browser mode, use regular redirect
+          console.log('🔄 LOGIN: Redirecting in browser to /affiliate')
           window.location.href = '/affiliate'
         }
       } else {
+        console.log('❌ LOGIN: Login failed:', result.error)
         error('Login Failed', result.error || 'Authentication failed')
       }
 
     } catch (err) {
-      console.error('Login error:', err)
+      console.error('💥 LOGIN: Login error:', err)
       error('Login Failed', 'Unable to connect to server')
     } finally {
       setLoading(false)
@@ -305,7 +328,7 @@ export default function AffiliateLogin() {
             <div className="text-sm space-y-1">
               <p><strong>User Agent Check:</strong> {navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('CriOS') ? '🟡 Safari' : '🔵 Other Browser'}</p>
               <p><strong>Standalone Mode:</strong> {(navigator as any).standalone ? '✅ Yes' : '❌ No'}</p>
-              <p><strong>Display Mode:</strong> {window.matchMedia('(display-mode: standalone)').matches ? '✅ Standalone' : '❌ Browser'}</p>
+              <p><strong>Display Mode:</strong> {window && window.matchMedia && window.matchMedia('(display-mode: standalone)').matches ? '✅ Standalone' : '❌ Browser'}</p>
               <p><strong>Referrer Check:</strong> {document.referrer ? `🔍 ${document.referrer.substring(0, 50)}...` : '✅ None (good for PWA)'}</p>
               <p><strong>URL Parameters:</strong> {window.location.search || '(none)'}</p>
               

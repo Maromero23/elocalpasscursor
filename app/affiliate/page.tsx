@@ -188,21 +188,22 @@ export default function AffiliateDashboard() {
 
   const checkAuth = async () => {
     try {
+      console.log('🔐 CHECKAUTH: Starting authentication check...')
       const response = await fetch('/api/affiliate/profile')
       if (response.ok) {
         const data = await response.json()
         setAffiliate(data.affiliate)
         setRecentVisits(data.recentVisits || [])
         setStats(data.stats || { today: 0, total: 0 })
-        console.log('✅ Normal authentication successful')
+        console.log('✅ CHECKAUTH: Normal authentication successful for', data.affiliate.name)
       } else {
-        console.log('❌ Normal authentication failed, attempting session recovery...')
+        console.log('❌ CHECKAUTH: Normal authentication failed (status:', response.status, '), attempting session recovery...')
         // Attempt session recovery from localStorage
         await attemptSessionRecovery()
       }
     } catch (err) {
-      console.error('Auth check failed:', err)
-      console.log('🔄 Attempting session recovery from localStorage...')
+      console.error('💥 CHECKAUTH: Auth check failed with error:', err)
+      console.log('🔄 CHECKAUTH: Attempting session recovery from localStorage...')
       // Attempt session recovery from localStorage
       await attemptSessionRecovery()
     } finally {
@@ -213,16 +214,26 @@ export default function AffiliateDashboard() {
   const attemptSessionRecovery = async () => {
     try {
       setSessionRecovering(true)
+      console.log('🔄 SESSION RECOVERY: Starting recovery process...')
+      
       const backupToken = localStorage.getItem('affiliate-session-backup')
       const backupEmail = localStorage.getItem('affiliate-email')
+      const backupName = localStorage.getItem('affiliate-name')
+      
+      console.log('💾 SESSION RECOVERY: Checking localStorage backup...')
+      console.log('   - Backup Token:', backupToken ? `${backupToken.substring(0, 8)}...` : 'NOT FOUND')
+      console.log('   - Backup Email:', backupEmail || 'NOT FOUND')
+      console.log('   - Backup Name:', backupName || 'NOT FOUND')
       
       if (!backupToken || !backupEmail) {
-        console.log('❌ No session backup found, redirecting to login')
+        console.log('❌ SESSION RECOVERY: No session backup found, redirecting to login')
+        console.log('   - localStorage keys available:', Object.keys(localStorage))
         redirectToLogin()
         return
       }
       
-      console.log('🔄 Attempting session recovery for:', backupEmail)
+      console.log('🔄 SESSION RECOVERY: Attempting recovery for:', backupEmail)
+      console.log('   - Using token:', `${backupToken.substring(0, 8)}...${backupToken.substring(backupToken.length - 8)}`)
       
       // Try to validate the backup session
       const response = await fetch('/api/affiliate/session/recover', {
@@ -231,22 +242,42 @@ export default function AffiliateDashboard() {
         body: JSON.stringify({ sessionToken: backupToken })
       })
       
+      console.log('🌐 SESSION RECOVERY: Recovery API response status:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ Session recovery successful!')
+        console.log('✅ SESSION RECOVERY: Session recovery successful for', data.affiliate.name)
+        console.log('   - Affiliate ID:', data.affiliate.id)
+        console.log('   - Recent visits:', data.recentVisits?.length || 0)
+        console.log('   - Stats:', data.stats)
+        
         setAffiliate(data.affiliate)
         setRecentVisits(data.recentVisits || [])
         setStats(data.stats || { today: 0, total: 0 })
+        
+        // Update localStorage with latest session data
+        localStorage.setItem('affiliate-session-backup', backupToken)
+        localStorage.setItem('affiliate-email', data.affiliate.email)
+        localStorage.setItem('affiliate-name', data.affiliate.name)
+        console.log('💾 SESSION RECOVERY: Updated localStorage with latest data')
+        
       } else {
-        console.log('❌ Session recovery failed, clearing backup and redirecting to login')
+        const errorData = await response.text()
+        console.log('❌ SESSION RECOVERY: Recovery failed with status', response.status)
+        console.log('   - Error response:', errorData)
+        console.log('   - Clearing invalid backup data...')
+        
         // Clear invalid backup data
         localStorage.removeItem('affiliate-session-backup')
         localStorage.removeItem('affiliate-email')
         localStorage.removeItem('affiliate-name')
+        console.log('🗑️ SESSION RECOVERY: Cleared invalid localStorage data')
+        
         redirectToLogin()
       }
     } catch (error) {
-      console.error('Session recovery error:', error)
+      console.error('💥 SESSION RECOVERY: Recovery failed with error:', error)
+      console.log('🔄 SESSION RECOVERY: Will redirect to login due to error')
       redirectToLogin()
     } finally {
       setSessionRecovering(false)
