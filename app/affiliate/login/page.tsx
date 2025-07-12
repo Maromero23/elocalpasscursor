@@ -158,6 +158,94 @@ export default function AffiliateLogin() {
         </div>
       </div>
       
+      {/* PWA Debug Info - Show current app mode */}
+      {typeof window !== 'undefined' && (
+        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4">
+            <p className="text-lg font-bold text-yellow-800 mb-2">🔧 PWA DEBUG INFO</p>
+            <div className="text-sm space-y-1">
+              <p><strong>Is iOS:</strong> {/iPad|iPhone|iPod/.test(navigator.userAgent) ? 'Yes' : 'No'}</p>
+              <p><strong>Standalone Mode:</strong> {(navigator as any).standalone ? 'Yes' : 'No'}</p>
+              <p><strong>Display Mode:</strong> {window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
+              <p><strong>Window Navigator Standalone:</strong> {String((navigator as any).standalone)}</p>
+              <p><strong>Display Mode Query:</strong> {String(window.matchMedia('(display-mode: standalone)').matches)}</p>
+              <p><strong>Window Location:</strong> {window.location.href}</p>
+              <p><strong>Referrer:</strong> {document.referrer || 'None'}</p>
+              <p><strong>User Agent:</strong> {navigator.userAgent.substring(0, 80)}...</p>
+              <p className="text-red-600 font-medium">
+                {((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) 
+                  ? '✅ PWA MODE ACTIVE - Camera permissions should persist!'
+                  : '❌ BROWSER MODE - Camera permissions will reset on refresh'}
+              </p>
+              {!((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) && (
+                <div className="bg-red-100 border border-red-300 rounded p-2 mt-2">
+                  <p className="text-xs text-red-700 font-bold">TROUBLESHOOTING:</p>
+                  <p className="text-xs text-red-700">
+                    • Are you opening from HOME SCREEN icon (not Safari browser)?<br/>
+                    • Did you install from Safari (not Chrome)?<br/>
+                    • Try: Delete app → Open Safari → Go to this page → Add to Home Screen
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PWA Installation Guide - Show only if not in standalone mode */}
+      {typeof window !== 'undefined' && !((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) && (
+        <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+            <h3 className="text-lg font-bold text-blue-800 mb-3">📱 PWA Installation Guide</h3>
+            <div className="text-sm text-blue-700 space-y-2">
+              <p className="font-medium">To fix camera permission issues, install as PWA:</p>
+              
+              <div className="bg-red-100 border border-red-300 rounded p-2 mb-3">
+                <p className="text-xs font-bold text-red-700">⚠️ COMMON MISTAKE:</p>
+                <p className="text-xs text-red-700">
+                  If delete shows "bookmark" (not "app") or opens in Safari → it's NOT a PWA!
+                </p>
+              </div>
+
+              <ol className="list-decimal list-inside space-y-1 ml-2">
+                <li><strong>Make sure Safari is your DEFAULT browser temporarily</strong>
+                  <div className="text-xs ml-4 mt-1 text-blue-600">
+                    Settings → Safari → Default Browser App → Safari
+                  </div>
+                </li>
+                <li><strong>Close ALL browser apps</strong> (Safari, Chrome, etc.)</li>
+                <li><strong>Open Safari fresh</strong></li>
+                <li><strong>Type in address bar:</strong> elocalpasscursor.vercel.app/affiliate/login</li>
+                <li><strong>Wait for page to fully load</strong></li>
+                <li><strong>Tap Share button</strong> (box with arrow up)</li>
+                <li><strong>Look for "Add to Home Screen"</strong> (not "Add Bookmark"!)</li>
+                <li><strong>Name it "ELocalPass Scanner"</strong> and tap "Add"</li>
+                <li><strong>Test: Delete should say "Delete App" (not bookmark)</strong></li>
+                <li><strong>Open from HOME SCREEN - should have NO browser bars</strong></li>
+              </ol>
+              
+              <div className="bg-blue-100 border border-blue-200 rounded p-2 mt-3">
+                <p className="text-xs font-bold text-blue-800">✅ Success Check:</p>
+                <p className="text-xs text-blue-700">
+                  • Delete shows "Delete App" (not "Delete Bookmark")<br/>
+                  • Opens with NO Safari address bar/buttons<br/>
+                  • Debug shows "PWA MODE ACTIVE"
+                </p>
+              </div>
+
+              <div className="bg-yellow-100 border border-yellow-300 rounded p-2 mt-2">
+                <p className="text-xs font-bold text-yellow-700">🔧 If still not working:</p>
+                <p className="text-xs text-yellow-700">
+                  1. Change iPhone default browser to Safari in Settings<br/>
+                  2. Restart iPhone<br/>
+                  3. Try installation steps again
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <ToastNotifications notifications={notifications} onRemove={removeToast} />
     </div>
   )

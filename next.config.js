@@ -1,53 +1,55 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
-    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
   },
   async headers() {
     return [
       {
-        // Prevent caching of landing pages to ensure fresh content after edits
-        source: '/landing-enhanced/:path*',
+        source: '/manifest.json',
         headers: [
           {
+            key: 'Content-Type',
+            value: 'application/manifest+json',
+          },
+          {
             key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-          {
-            key: 'Pragma',
-            value: 'no-cache',
-          },
-          {
-            key: 'Expires',
-            value: '0',
+            value: 'public, max-age=3600',
           },
         ],
       },
       {
-        // Also prevent caching of the custom landing pages
-        source: '/landing/custom/:path*',
+        source: '/sw.js',
         headers: [
           {
+            key: 'Content-Type',
+            value: 'application/javascript',
+          },
+          {
             key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-          {
-            key: 'Pragma',
-            value: 'no-cache',
-          },
-          {
-            key: 'Expires',
-            value: '0',
+            value: 'public, max-age=0, must-revalidate',
           },
         ],
       },
-    ]
+      {
+        source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+        ],
+      },
+    ];
   },
 }
 
