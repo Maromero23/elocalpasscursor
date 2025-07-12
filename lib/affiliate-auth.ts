@@ -33,11 +33,29 @@ export async function validateAffiliateSession(request: NextRequest): Promise<Af
       return null
     }
     
-    // Update last used time
-    await (prisma as any).affiliateSession.update({
-      where: { id: session.id },
-      data: { lastUsedAt: new Date() }
-    })
+    // Check if session needs extension (less than 30 days remaining)
+    const now = new Date()
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    const shouldExtend = session.expiresAt < thirtyDaysFromNow
+    
+    if (shouldExtend) {
+      // Extend session to 90 days from now
+      const newExpiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
+      await (prisma as any).affiliateSession.update({
+        where: { id: session.id },
+        data: { 
+          lastUsedAt: now,
+          expiresAt: newExpiresAt
+        }
+      })
+      console.log(`🔄 AFFILIATE SESSION: Extended session for ${session.affiliate.name} to ${newExpiresAt}`)
+    } else {
+      // Just update last used time
+      await (prisma as any).affiliateSession.update({
+        where: { id: session.id },
+        data: { lastUsedAt: now }
+      })
+    }
     
     return {
       id: session.affiliate.id,

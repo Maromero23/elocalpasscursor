@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Account is inactive' }, { status: 403 })
     }
     
-    // Generate session token (30 days)
+    // Generate session token (90 days for PWA persistence)
     const sessionToken = crypto.randomBytes(32).toString('hex')
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days
     
     // Get device/browser info
     const userAgent = request.headers.get('user-agent') || 'Unknown'
@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
       }
     })
     
-    console.log(`✅ AFFILIATE LOGIN: Created session for ${affiliate.name} (${email})`)
+    console.log(`✅ AFFILIATE LOGIN: Created 90-day session for ${affiliate.name} (${email})`)
     
-    // Set cookie with long expiration
+    // Set cookie with PWA-optimized settings
     const response = NextResponse.json({
       success: true,
       affiliate: {
@@ -64,8 +64,9 @@ export async function POST(request: NextRequest) {
     response.cookies.set('affiliate-session', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 // 30 days in seconds
+      sameSite: 'lax', // Changed from 'strict' to 'lax' for better PWA compatibility
+      maxAge: 90 * 24 * 60 * 60, // 90 days in seconds
+      path: '/' // Explicitly set path for better persistence
     })
     
     return response

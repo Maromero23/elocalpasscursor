@@ -82,6 +82,46 @@ export default function AffiliateDashboard() {
     checkAuth()
   }, [])
 
+  // Periodic session refresh to maintain login state
+  useEffect(() => {
+    // Refresh session every 24 hours when app is active
+    const refreshSession = async () => {
+      try {
+        const response = await fetch('/api/affiliate/session/refresh', { method: 'POST' })
+        if (response.ok) {
+          console.log('✅ Session refreshed automatically')
+        } else {
+          console.log('⚠️ Session refresh failed - may need to re-login')
+        }
+      } catch (error) {
+        console.error('Session refresh error:', error)
+      }
+    }
+
+    // Refresh session when app becomes visible (user reopens PWA)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('📱 PWA became visible - refreshing session')
+        refreshSession()
+      }
+    }
+
+    // Add visibility change listener
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    // Initial refresh after 1 hour
+    const initialRefresh = setTimeout(refreshSession, 60 * 60 * 1000) // 1 hour
+    
+    // Then refresh every 24 hours
+    const intervalRefresh = setInterval(refreshSession, 24 * 60 * 60 * 1000) // 24 hours
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      clearTimeout(initialRefresh)
+      clearInterval(intervalRefresh)
+    }
+  }, [])
+
   // Check camera permission on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -606,38 +646,6 @@ export default function AffiliateDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Debug Info - Show current app mode */}
-        {typeof window !== 'undefined' && (
-          <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4 mb-6">
-            <p className="text-lg font-bold text-yellow-800 mb-2">🔧 DEBUG INFO</p>
-            <div className="text-sm space-y-1">
-              <p><strong>Is iOS:</strong> {/iPad|iPhone|iPod/.test(navigator.userAgent) ? 'Yes' : 'No'}</p>
-              <p><strong>Standalone Mode:</strong> {(navigator as any).standalone ? 'Yes' : 'No'}</p>
-              <p><strong>Display Mode:</strong> {window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
-              <p><strong>Window Navigator Standalone:</strong> {String((navigator as any).standalone)}</p>
-              <p><strong>Display Mode Query:</strong> {String(window.matchMedia('(display-mode: standalone)').matches)}</p>
-              <p><strong>Window Location:</strong> {window.location.href}</p>
-              <p><strong>Referrer:</strong> {document.referrer || 'None'}</p>
-              <p><strong>User Agent:</strong> {navigator.userAgent.substring(0, 80)}...</p>
-              <p className="text-red-600 font-medium">
-                {((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) 
-                  ? '✅ PWA MODE ACTIVE - Camera permissions should persist!'
-                  : '❌ BROWSER MODE - Camera permissions will reset on refresh'}
-              </p>
-              {!((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) && (
-                <div className="bg-red-100 border border-red-300 rounded p-2 mt-2">
-                  <p className="text-xs text-red-700 font-bold">TROUBLESHOOTING:</p>
-                  <p className="text-xs text-red-700">
-                    • Are you opening from HOME SCREEN icon (not Safari browser)?<br/>
-                    • Did you install from Safari (not Chrome)?<br/>
-                    • Try: Delete app → Open Safari → Go to /affiliate/login → Add to Home Screen
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* iOS Camera Permission Warning - Only show if NOT in standalone mode */}
         {typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(navigator as any).standalone && !window.matchMedia('(display-mode: standalone)').matches && (
           <div className="bg-red-50 border-2 border-red-400 rounded-lg p-4 mb-6">
