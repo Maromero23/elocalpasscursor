@@ -10,8 +10,31 @@ export default function AffiliateLogin() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [installPrompt, setInstallPrompt] = useState<any>(null)
+  const [pwaInstallStatus, setPwaInstallStatus] = useState<'checking' | 'browser' | 'pwa'>('checking')
 
   useEffect(() => {
+    // Enhanced PWA detection
+    const checkPWAStatus = () => {
+      if (typeof window === 'undefined') return
+      
+      const isStandalone = Boolean((navigator as any).standalone) || 
+                          (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches)
+      const hasNoReferrer = !document.referrer || !document.referrer.includes('safari')
+      const isPWA = isStandalone && hasNoReferrer
+      
+      if (isPWA) {
+        setPwaInstallStatus('pwa')
+        console.log('✅ PWA MODE DETECTED - Camera permissions should persist!')
+      } else {
+        setPwaInstallStatus('browser')
+        console.log('❌ BROWSER MODE DETECTED - Camera permissions will reset!')
+      }
+    }
+
+    // Check immediately and after a delay
+    checkPWAStatus()
+    setTimeout(checkPWAStatus, 1000)
+
     // Listen for PWA install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
@@ -217,156 +240,148 @@ export default function AffiliateLogin() {
         </div>
       )}
       
-      {/* PWA Debug Info - Show current app mode */}
+      {/* CRITICAL PWA STATUS WARNING - Show at top */}
+      {pwaInstallStatus === 'browser' && (
+        <div className="mb-6 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-red-50 border-4 border-red-500 rounded-lg p-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center">
+                  <AlertCircle className="w-8 h-8 text-white" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-xl font-bold text-red-800 mb-2">
+                  🚨 USING SAFARI BROWSER
+                </h2>
+                <p className="text-sm text-red-700 font-medium mb-2">
+                  This will cause camera permissions to reset constantly! You need to install as PWA.
+                </p>
+                <div className="bg-white border border-red-300 rounded p-3">
+                  <p className="text-xs font-bold text-red-800 mb-2">🔧 IMMEDIATE FIX REQUIRED:</p>
+                  <ol className="text-xs text-red-700 space-y-1 list-decimal list-inside">
+                    <li><strong>Tap Share button</strong> (⬆️ at bottom of Safari)</li>
+                    <li><strong>Scroll down</strong> and tap <strong>"Add to Home Screen"</strong></li>
+                    <li><strong>Change name to "ELocalPass"</strong> and tap <strong>"Add"</strong></li>
+                    <li><strong>IMPORTANT:</strong> Delete current app icon first if it exists</li>
+                    <li><strong>Only open from home screen</strong> (never Safari!)</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pwaInstallStatus === 'pwa' && (
+        <div className="mb-6 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-green-50 border-2 border-green-400 rounded-lg p-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-green-800">
+                  ✅ PWA MODE ACTIVE
+                </h3>
+                <p className="text-sm text-green-700">
+                  Camera permissions should persist! You're ready to scan.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced PWA Debug Info */}
       {typeof window !== 'undefined' && (
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4">
-            <p className="text-lg font-bold text-yellow-800 mb-2">🔧 PWA DEBUG INFO</p>
+          <div className={`${pwaInstallStatus === 'pwa' ? 'bg-green-100 border-green-400' : 'bg-red-100 border-red-400'} border-2 rounded-lg p-4`}>
+            <p className="text-lg font-bold mb-2">
+              {pwaInstallStatus === 'pwa' ? '✅ PWA STATUS: ACTIVE' : '❌ PWA STATUS: NOT INSTALLED'}
+            </p>
             <div className="text-sm space-y-1">
-              <p><strong>Is iOS:</strong> {/iPad|iPhone|iPod/.test(navigator.userAgent) ? 'Yes' : 'No'}</p>
-              <p><strong>Standalone Mode:</strong> {(navigator as any).standalone ? 'Yes' : 'No'}</p>
-              <p><strong>Display Mode:</strong> {window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
-              <p><strong>Service Worker:</strong> {'serviceWorker' in navigator ? 'Supported' : 'Not Supported'}</p>
-              <p><strong>SW Registration:</strong> <span id="sw-status">Checking...</span></p>
-              <p><strong>Manifest Available:</strong> <span id="manifest-status">Checking...</span></p>
-              <p><strong>Install Prompt Available:</strong> {installPrompt ? 'Yes ✅' : 'No (iOS doesn\'t support auto-install)'}</p>
-              <p><strong>Current URL:</strong> {window.location.href}</p>
-              <p><strong>Referrer:</strong> {document.referrer || 'None'}</p>
+              <p><strong>User Agent Check:</strong> {navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('CriOS') ? '🟡 Safari' : '🔵 Other Browser'}</p>
+              <p><strong>Standalone Mode:</strong> {(navigator as any).standalone ? '✅ Yes' : '❌ No'}</p>
+              <p><strong>Display Mode:</strong> {window.matchMedia('(display-mode: standalone)').matches ? '✅ Standalone' : '❌ Browser'}</p>
+              <p><strong>Referrer Check:</strong> {document.referrer ? `🔍 ${document.referrer.substring(0, 50)}...` : '✅ None (good for PWA)'}</p>
+              <p><strong>URL Parameters:</strong> {window.location.search || '(none)'}</p>
               
-              {/* Manual test button */}
-              <div className="mt-3">
-                <button 
-                  onClick={() => {
-                    console.log('Manual PWA test triggered');
-                    
-                    // Test Service Worker
-                    const swElement = document.getElementById('sw-status');
-                    if (swElement) swElement.textContent = 'Testing...';
-                    
-                    if ('serviceWorker' in navigator) {
-                      navigator.serviceWorker.register('/sw.js')
-                        .then(() => {
-                          if (swElement) swElement.textContent = 'SUCCESS ✅';
-                        })
-                        .catch((error) => {
-                          if (swElement) swElement.textContent = 'FAILED ❌';
-                          console.error('SW failed:', error);
-                        });
-                    } else {
-                      if (swElement) swElement.textContent = 'Not Supported ❌';
-                    }
-                    
-                    // Test Manifest
-                    const manifestElement = document.getElementById('manifest-status');
-                    if (manifestElement) manifestElement.textContent = 'Testing...';
-                    
-                    fetch('/manifest.json')
-                      .then(response => {
-                        if (response.ok) {
-                          if (manifestElement) manifestElement.textContent = 'SUCCESS ✅';
+              <div className="mt-3 p-2 bg-white rounded border">
+                <p className="text-xs font-bold mb-1">🔧 INSTALLATION TEST:</p>
+                <div className="space-y-1">
+                  <div id="pwa-test-results" className="text-xs">
+                    <button 
+                      onClick={() => {
+                        const resultsDiv = document.getElementById('pwa-test-results')
+                        if (!resultsDiv) return
+                        
+                        // Test all PWA components
+                        let results = []
+                        
+                        // 1. Service Worker Test
+                        if ('serviceWorker' in navigator) {
+                          navigator.serviceWorker.register('/sw.js')
+                            .then(() => results.push('✅ Service Worker: OK'))
+                            .catch(() => results.push('❌ Service Worker: Failed'))
                         } else {
-                          if (manifestElement) manifestElement.textContent = 'HTTP ' + response.status + ' ❌';
+                          results.push('❌ Service Worker: Not Supported')
                         }
-                      })
-                      .catch(error => {
-                        if (manifestElement) manifestElement.textContent = 'NETWORK ERROR ❌';
-                        console.error('Manifest failed:', error);
-                      });
-                  }}
-                  className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                >
-                  🔧 Manual Test
-                </button>
+                        
+                        // 2. Manifest Test
+                        fetch('/manifest.json')
+                          .then(response => {
+                            if (response.ok) {
+                              results.push('✅ Manifest: Available')
+                            } else {
+                              results.push('❌ Manifest: HTTP ' + response.status)
+                            }
+                          })
+                          .catch(() => results.push('❌ Manifest: Network Error'))
+                        
+                        // 3. PWA Detection
+                        const standalone = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches
+                        results.push(standalone ? '✅ PWA Mode: Active' : '❌ PWA Mode: Browser Only')
+                        
+                        // 4. Camera API Test
+                        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                          results.push('✅ Camera API: Available')
+                        } else {
+                          results.push('❌ Camera API: Not Available')
+                        }
+                        
+                        // Update results after a delay to allow async operations
+                        setTimeout(() => {
+                          resultsDiv.innerHTML = `
+                            <div class="text-xs space-y-1">
+                              ${results.map(r => `<div>${r}</div>`).join('')}
+                            </div>
+                          `
+                        }, 1000)
+                        
+                        resultsDiv.innerHTML = '<div class="text-xs">🔄 Testing...</div>'
+                      }}
+                      className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                    >
+                      🧪 Run PWA Test
+                    </button>
+                    <div className="text-xs mt-1">Click to test PWA components</div>
+                  </div>
+                </div>
               </div>
-              <p className="text-red-600 font-medium">
-                {((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) 
-                  ? '✅ PWA MODE ACTIVE - Camera permissions should persist!'
-                  : '❌ BROWSER MODE - Camera permissions will reset on refresh'}
-              </p>
-              {!((navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) && (
-                <div className="bg-red-100 border border-red-300 rounded p-2 mt-2">
-                  <p className="text-xs text-red-700 font-bold">⚠️ CRITICAL ISSUE DETECTED:</p>
-                  <p className="text-xs text-red-700 font-bold">
-                    You're in BROWSER MODE but should be in PWA MODE for camera permissions!
-                  </p>
-                  <p className="text-xs text-red-700 mt-1">
-                    <strong>Solution:</strong> Use Safari's Share → "Add to Home Screen" manually
+              
+              {pwaInstallStatus === 'browser' && (
+                <div className="mt-3 p-2 bg-red-50 border border-red-300 rounded">
+                  <p className="text-xs font-bold text-red-700 mb-1">⚠️ CAMERA PERMISSION PROBLEM:</p>
+                  <p className="text-xs text-red-700">
+                    Safari resets camera permissions on every page reload. Install as PWA to fix this permanently.
                   </p>
                 </div>
               )}
             </div>
           </div>
-          
-          <script dangerouslySetInnerHTML={{
-            __html: `
-              // Robust PWA debug script for iOS Safari
-              (function() {
-                console.log('PWA Debug: Starting robust checks...');
-                
-                function updateStatus(id, text) {
-                  const element = document.getElementById(id);
-                  if (element) {
-                    element.textContent = text;
-                    console.log('Updated ' + id + ': ' + text);
-                  } else {
-                    console.log('Element not found: ' + id);
-                  }
-                }
-                
-                // Wait for DOM to be ready
-                function startChecks() {
-                  console.log('DOM ready, starting PWA checks...');
-                  
-                  // Immediate updates
-                  updateStatus('sw-status', 'Starting...');
-                  updateStatus('manifest-status', 'Starting...');
-                  
-                  // Test Service Worker
-                  console.log('Testing Service Worker...');
-                  if ('serviceWorker' in navigator) {
-                    updateStatus('sw-status', 'Registering...');
-                    navigator.serviceWorker.register('/sw.js')
-                      .then(function(registration) {
-                        updateStatus('sw-status', 'SUCCESS ✅');
-                        console.log('Service Worker: Registration successful');
-                      })
-                      .catch(function(error) {
-                        updateStatus('sw-status', 'FAILED ❌');
-                        console.error('Service Worker: Registration failed', error);
-                      });
-                  } else {
-                    updateStatus('sw-status', 'Not Supported ❌');
-                  }
-                  
-                  // Test Manifest
-                  console.log('Testing Manifest...');
-                  updateStatus('manifest-status', 'Fetching...');
-                  fetch('/manifest.json')
-                    .then(function(response) {
-                      if (response.ok) {
-                        updateStatus('manifest-status', 'SUCCESS ✅');
-                        console.log('Manifest: Fetch successful');
-                      } else {
-                        updateStatus('manifest-status', 'HTTP ' + response.status + ' ❌');
-                        console.error('Manifest: HTTP error', response.status);
-                      }
-                    })
-                    .catch(function(error) {
-                      updateStatus('manifest-status', 'NETWORK ERROR ❌');
-                      console.error('Manifest: Network error', error);
-                    });
-                }
-                
-                // Start checks when DOM is ready
-                if (document.readyState === 'loading') {
-                  document.addEventListener('DOMContentLoaded', startChecks);
-                } else {
-                  // DOM is already ready
-                  setTimeout(startChecks, 100);
-                }
-              })();
-            `
-          }} />
         </div>
       )}
 
