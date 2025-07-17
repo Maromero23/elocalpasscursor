@@ -21,6 +21,33 @@ const cityMap = {
   'tulum': { name: 'Tulum', displayName: 'Tulum' }
 }
 
+// Function to normalize type names for grouping
+const normalizeType = (type: string): string => {
+  const normalized = type.toLowerCase().trim()
+  // Remove plural 's' and normalize common variations
+  if (normalized.endsWith('s')) {
+    const singular = normalized.slice(0, -1)
+    // Handle common cases
+    if (singular === 'store' || singular === 'restaurant' || singular === 'service') {
+      return singular.charAt(0).toUpperCase() + singular.slice(1)
+    }
+  }
+  return type
+}
+
+// Function to get display type from normalized type
+const getDisplayType = (normalizedType: string): string => {
+  const typeMap: { [key: string]: string } = {
+    'store': 'Store',
+    'stores': 'Store',
+    'restaurant': 'Restaurant', 
+    'restaurants': 'Restaurant',
+    'service': 'Service',
+    'services': 'Service'
+  }
+  return typeMap[normalizedType.toLowerCase()] || normalizedType
+}
+
 export default function CityPage() {
   const params = useParams()
   const { t, language } = useTranslation()
@@ -82,7 +109,12 @@ export default function CityPage() {
       affiliate.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       affiliate.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       affiliate.type?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = !typeFilter || affiliate.type === typeFilter
+    
+    // Use normalized type for filtering
+    const affiliateNormalizedType = affiliate.type ? normalizeType(affiliate.type) : ''
+    const filterNormalizedType = typeFilter ? normalizeType(typeFilter) : ''
+    const matchesType = !typeFilter || affiliateNormalizedType === filterNormalizedType
+    
     const matchesCategory = !categoryFilter || affiliate.category === categoryFilter
     const matchesRating = !ratingFilter || (affiliate.rating && affiliate.rating >= parseFloat(ratingFilter))
     const matchesRecommended = !recommendedFilter || affiliate.recommended
@@ -91,7 +123,14 @@ export default function CityPage() {
   })
 
   const categories = Array.from(new Set(affiliates.map(a => a.category).filter((cat): cat is string => Boolean(cat))))
-  const types = Array.from(new Set(affiliates.map(a => a.type).filter((type): type is string => Boolean(type))))
+  
+  // Create normalized types for the dropdown
+  const normalizedTypes = Array.from(new Set(
+    affiliates
+      .map(a => a.type)
+      .filter((type): type is string => Boolean(type))
+      .map(type => normalizeType(type))
+  )).sort()
 
   if (!cityInfo) {
     return (
@@ -157,8 +196,8 @@ export default function CityPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
-                  {types.map(type => (
-                    <option key={type} value={type}>{type}</option>
+                  {normalizedTypes.map(type => (
+                    <option key={type} value={type}>{getDisplayType(type)}</option>
                   ))}
                 </select>
               </div>
@@ -222,8 +261,8 @@ export default function CityPage() {
             </div>
           ) : (
             <div className="flex gap-8">
-              {/* Left Side - Affiliate Grid (Airbnb Style) */}
-              <div className="w-1/2">
+              {/* Left Side - Affiliate Grid (3 Column Layout) */}
+              <div className="w-[70%]">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
@@ -244,8 +283,8 @@ export default function CityPage() {
                   )}
                 </div>
 
-                {/* Affiliate Grid - Airbnb Style Cards */}
-                <div className="space-y-6 max-h-[600px] overflow-y-auto">
+                {/* Affiliate Grid - 3 Column Layout */}
+                <div className="grid grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
                   {filteredAffiliates.map((affiliate) => (
                     <div 
                       key={affiliate.id} 
@@ -259,108 +298,99 @@ export default function CityPage() {
                       }}
                     >
                       <div className="p-4">
-                        <div className="flex items-start space-x-4">
-                          {/* Logo/Image - Airbnb Style */}
-                          <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            {affiliate.logo ? (
-                              <img 
-                                src={affiliate.logo} 
-                                alt={affiliate.name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  target.nextElementSibling?.classList.remove('hidden');
-                                }}
-                              />
-                            ) : null}
-                            <MapPin className={`w-8 h-8 text-gray-400 ${affiliate.logo ? 'hidden' : ''}`} />
+                        {/* Logo/Image - Square Format */}
+                        <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center mb-3 overflow-hidden">
+                          {affiliate.logo ? (
+                            <img 
+                              src={affiliate.logo} 
+                              alt={affiliate.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <MapPin className={`w-8 h-8 text-gray-400 ${affiliate.logo ? 'hidden' : ''}`} />
+                        </div>
+
+                        {/* Content - Compact Format */}
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between">
+                            <h3 className="text-sm font-semibold text-gray-900 truncate flex-1">{affiliate.name}</h3>
+                            {affiliate.recommended && (
+                              <span className="bg-green-100 text-green-800 text-xs px-1 py-0.5 rounded-full ml-1">
+                                {language === 'es' ? 'Rec' : 'Rec'}
+                              </span>
+                            )}
                           </div>
 
-                          {/* Content - Airbnb Style */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between mb-2">
-                              <h3 className="text-lg font-semibold text-gray-900 truncate">{affiliate.name}</h3>
-                              <div className="flex items-center space-x-2 ml-2">
-                                {affiliate.recommended && (
-                                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                                    {language === 'es' ? 'Recomendado' : 'Recommended'}
-                                  </span>
-                                )}
-                                <button className="text-gray-400 hover:text-red-500 transition-colors">
-                                  <Heart className="w-4 h-4" />
-                                </button>
-                              </div>
+                          {affiliate.rating && (
+                            <div className="flex items-center">
+                              <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                              <span className="text-xs text-gray-600 ml-1">{affiliate.rating}</span>
                             </div>
+                          )}
 
-                            {affiliate.rating && (
-                              <div className="flex items-center mb-1">
-                                <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                                <span className="text-sm text-gray-600 ml-1">{affiliate.rating}</span>
-                              </div>
-                            )}
+                          {affiliate.category && (
+                            <p className="text-xs text-gray-600">{affiliate.category}</p>
+                          )}
 
-                            {affiliate.category && (
-                              <p className="text-sm text-gray-600 mb-1">{affiliate.category}</p>
-                            )}
+                          {affiliate.description && (
+                            <p className="text-xs text-gray-600 line-clamp-2">
+                              {affiliate.description}
+                            </p>
+                          )}
 
-                            {affiliate.description && (
-                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                                {affiliate.description}
+                          {affiliate.discount && (
+                            <div className="bg-blue-50 border border-blue-200 rounded p-1">
+                              <p className="text-xs font-medium text-blue-900">
+                                {affiliate.discount}
                               </p>
-                            )}
+                            </div>
+                          )}
 
-                            {affiliate.discount && (
-                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2">
-                                <p className="text-sm font-medium text-blue-900">
-                                  {language === 'es' ? 'Descuento:' : 'Discount:'} {affiliate.discount}
-                                </p>
+                          {/* Contact Info - Compact */}
+                          <div className="space-y-1">
+                            {affiliate.workPhone && (
+                              <div className="flex items-center text-xs text-gray-600">
+                                <Phone className="w-3 h-3 mr-1" />
+                                <span className="truncate">{affiliate.workPhone}</span>
                               </div>
                             )}
-
-                            {/* Contact Info */}
-                            <div className="space-y-1">
-                              {affiliate.workPhone && (
-                                <div className="flex items-center text-sm text-gray-600">
-                                  <Phone className="w-4 h-4 mr-2" />
-                                  <span>{affiliate.workPhone}</span>
-                                </div>
-                              )}
-                              {affiliate.web && (
-                                <div className="flex items-center text-sm text-gray-600">
-                                  <Globe className="w-4 h-4 mr-2" />
-                                  <a href={affiliate.web} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                    {language === 'es' ? 'Visitar sitio web' : 'Visit website'}
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex space-x-2 mt-3">
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setModalAffiliate(affiliate)
-                                  setIsModalOpen(true)
-                                }}
-                                className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center"
-                              >
-                                <Eye className="w-4 h-4 mr-1" />
-                                {language === 'es' ? 'Ver detalles' : 'View details'}
-                              </button>
-                              {affiliate.maps && (
-                                <a
-                                  href={affiliate.maps}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="bg-gray-100 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center"
-                                >
-                                  <MapPin className="w-4 h-4 mr-1" />
-                                  {language === 'es' ? 'Mapa' : 'Map'}
+                            {affiliate.web && (
+                              <div className="flex items-center text-xs text-gray-600">
+                                <Globe className="w-3 h-3 mr-1" />
+                                <a href={affiliate.web} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
+                                  {language === 'es' ? 'Sitio web' : 'Website'}
                                 </a>
-                              )}
-                            </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Buttons - Compact */}
+                          <div className="flex space-x-1 mt-2">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setModalAffiliate(affiliate)
+                                setIsModalOpen(true)
+                              }}
+                              className="flex-1 bg-blue-600 text-white py-1 px-2 rounded text-xs hover:bg-blue-700 transition-colors"
+                            >
+                              {language === 'es' ? 'Ver' : 'View'}
+                            </button>
+                            {affiliate.maps && (
+                              <a
+                                href={affiliate.maps}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-gray-100 text-gray-700 py-1 px-2 rounded text-xs hover:bg-gray-200 transition-colors"
+                              >
+                                {language === 'es' ? 'Mapa' : 'Map'}
+                              </a>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -385,7 +415,7 @@ export default function CityPage() {
               </div>
 
               {/* Right Side - Map (Airbnb Style) */}
-              <div className="w-1/2">
+              <div className="w-[30%]">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-[600px]">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     {language === 'es' ? 'Mapa de ubicaciones' : 'Location Map'}
