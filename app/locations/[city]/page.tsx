@@ -154,21 +154,22 @@ export default function CityPage() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       <div className="pt-20">
-        <div className="w-full py-8">
+        <div className="w-full">
           {/* Header */}
-          <div className="mb-8 px-4 sm:px-6 lg:px-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {cityInfo?.displayName || cityId}
+          <div className="px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {cityInfo?.displayName || cityId} {filteredAffiliates.length} {language === 'es' ? 'Negocios encontrados' : 'Businesses found'}
+              {(() => {
+                const restaurants = filteredAffiliates.filter(a => normalizeType(a.type || '') === 'Restaurant').length
+                const stores = filteredAffiliates.filter(a => normalizeType(a.type || '') === 'Store').length
+                const services = filteredAffiliates.filter(a => normalizeType(a.type || '') === 'Service').length
+                return ` (${restaurants} ${language === 'es' ? 'Restaurantes' : 'Restaurants'}, ${stores} ${language === 'es' ? 'Tiendas' : 'Stores'}, ${services} ${language === 'es' ? 'Servicios' : 'Services'})`
+              })()}
             </h1>
-            <p className="text-gray-600">
-              {language === 'es'
-                ? `Negocios afiliados en ${cityInfo?.displayName || cityId}`
-                : `Affiliate businesses in ${cityInfo?.displayName || cityId}`}
-            </p>
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 mx-4 sm:mx-6 lg:mx-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-4 mx-4 sm:mx-6 lg:mx-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
               {/* City Filter */}
               <div>
@@ -263,18 +264,7 @@ export default function CityPage() {
             <div className="flex gap-0">
               {/* Left Side - Affiliate Grid (3 Column Layout) */}
               <div className="w-[70%] px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {language === 'es' 
-                        ? `${filteredAffiliates.length} negocios encontrados`
-                        : `${filteredAffiliates.length} businesses found`
-                      }
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {language === 'es' ? 'Los precios incluyen todas las tarifas' : 'Prices include all fees'}
-                    </p>
-                  </div>
+                <div className="flex justify-between items-center mb-4">
                   {userLocation && (
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin className="w-4 h-4 mr-1" />
@@ -284,7 +274,7 @@ export default function CityPage() {
                 </div>
 
                 {/* Affiliate Grid - 3 Column Layout */}
-                <div className="grid grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
+                <div className="grid grid-cols-3 gap-4 h-[calc(100vh-200px)] overflow-y-auto">
                   {filteredAffiliates.map((affiliate) => (
                     <div 
                       key={affiliate.id} 
@@ -415,7 +405,7 @@ export default function CityPage() {
               </div>
 
               {/* Right Side - Map (Airbnb Style) */}
-              <div className="w-[30%] h-[600px]">
+              <div className="w-[30%] h-[calc(100vh-200px)]">
                 <GoogleMap
                   affiliates={filteredAffiliates}
                   userLocation={userLocation}
