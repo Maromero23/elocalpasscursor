@@ -42,7 +42,13 @@ export async function GET(request: NextRequest) {
       const typeCounts: Record<string, number> = {}
       cityAffiliates.forEach((affiliate: any) => {
         if (affiliate.type) {
-          const normalizedType = affiliate.type.toLowerCase()
+          let normalizedType = affiliate.type.toLowerCase()
+          
+          // Normalize type variations
+          if (normalizedType === 'restaurants') normalizedType = 'restaurant'
+          if (normalizedType === 'stores') normalizedType = 'store'
+          if (normalizedType === 'services') normalizedType = 'service'
+          
           typeCounts[normalizedType] = (typeCounts[normalizedType] || 0) + 1
         } else {
           // Count affiliates without type as "uncategorized"
@@ -61,7 +67,13 @@ export async function GET(request: NextRequest) {
       total: allAffiliates.length,
       types: allAffiliates.reduce((acc: Record<string, number>, affiliate: any) => {
         if (affiliate.type) {
-          const normalizedType = affiliate.type.toLowerCase()
+          let normalizedType = affiliate.type.toLowerCase()
+          
+          // Normalize type variations
+          if (normalizedType === 'restaurants') normalizedType = 'restaurant'
+          if (normalizedType === 'stores') normalizedType = 'store'
+          if (normalizedType === 'services') normalizedType = 'service'
+          
           acc[normalizedType] = (acc[normalizedType] || 0) + 1
         } else {
           // Count affiliates without type as "uncategorized"
