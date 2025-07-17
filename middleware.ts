@@ -23,7 +23,7 @@ export default withAuth(
       pathname === "/manifest.json" ||
       pathname === "/sw.js" ||
       pathname.startsWith("/icon-") ||
-      pathname === "/locations" ||
+      pathname.startsWith("/locations") ||
       pathname === "/passes" ||
       pathname === "/faq" ||
       pathname === "/contact"
@@ -83,7 +83,7 @@ export default withAuth(
           pathname === "/manifest.json" ||
           pathname === "/sw.js" ||
           pathname.startsWith("/icon-") ||
-          pathname === "/locations" ||
+          pathname.startsWith("/locations") ||
           pathname === "/passes" ||
           pathname === "/faq" ||
           pathname === "/contact"
