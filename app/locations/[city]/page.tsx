@@ -157,15 +157,34 @@ export default function CityPage() {
         <div className="w-full">
           {/* Header */}
           <div className="px-4 sm:px-6 lg:px-8 pt-4 pb-2">
-            <h1 className="text-3xl font-bold text-gray-900">
-              {cityInfo?.displayName || cityId} {filteredAffiliates.length} {language === 'es' ? 'Negocios encontrados' : 'Businesses found'}
-              {(() => {
-                const restaurants = filteredAffiliates.filter(a => normalizeType(a.type || '') === 'Restaurant').length
-                const stores = filteredAffiliates.filter(a => normalizeType(a.type || '') === 'Store').length
-                const services = filteredAffiliates.filter(a => normalizeType(a.type || '') === 'Service').length
-                return ` (${restaurants} ${language === 'es' ? 'Restaurantes' : 'Restaurants'}, ${stores} ${language === 'es' ? 'Tiendas' : 'Stores'}, ${services} ${language === 'es' ? 'Servicios' : 'Services'})`
-              })()}
-            </h1>
+            <div className="flex items-center space-x-6">
+              <h1 className="text-3xl font-bold text-gray-900">
+                {cityInfo?.displayName || cityId} {filteredAffiliates.length} {language === 'es' ? 'Negocios encontrados' : 'Businesses found'}
+              </h1>
+              <div className="flex items-center space-x-4 text-sm">
+                {(() => {
+                  const restaurants = filteredAffiliates.filter(a => normalizeType(a.type || '') === 'Restaurant').length
+                  const stores = filteredAffiliates.filter(a => normalizeType(a.type || '') === 'Store').length
+                  const services = filteredAffiliates.filter(a => normalizeType(a.type || '') === 'Service').length
+                  return (
+                    <>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <span className="text-gray-600">{restaurants} {language === 'es' ? 'Restaurantes' : 'Restaurants'}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-gray-600">{stores} {language === 'es' ? 'Tiendas' : 'Stores'}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-gray-600">{services} {language === 'es' ? 'Servicios' : 'Services'}</span>
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+            </div>
           </div>
 
           {/* Filters */}
@@ -261,7 +280,7 @@ export default function CityPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <div className="flex gap-0">
+            <div className="flex">
               {/* Left Side - Affiliate Grid (3 Column Layout) */}
               <div className="w-[70%] px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center mb-4">
