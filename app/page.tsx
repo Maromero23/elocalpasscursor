@@ -17,12 +17,12 @@ export default function HomePage() {
         <div className="relative flex flex-col lg:flex-row justify-center items-center w-full pt-8 px-4">
           {/* Left side - Phone mockup with floating collage */}
           <div className="w-full lg:w-1/2 relative">
-            <div className="relative w-full h-96 lg:h-[500px] flex justify-center items-center bg-white">
+            <div className="relative w-full h-96 lg:h-[500px] flex justify-center items-center">
               {/* Home page image */}
               <img 
                 src="/images/homepage-image.png" 
                 alt="eLocalPass Experiences" 
-                className="w-full h-full object-cover rounded-lg shadow-lg"
+                className="w-full h-full object-contain"
               />
             </div>
           </div>
