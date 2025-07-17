@@ -23,7 +23,7 @@ export default function HomePage() {
                 <img 
                   src="/images/phone_mockup.png" 
                   alt="eLocalPass App"
-                  className="w-64 lg:w-80 h-auto"
+                  className="w-64 lg:w-80 h-auto opacity-80"
                 />
               </div>
               
@@ -35,7 +35,7 @@ export default function HomePage() {
                     <img 
                       src="/images/Home page image .png" 
                       alt="eLocalPass Experiences" 
-                      className="w-full h-full object-cover rounded-lg shadow-2xl opacity-90"
+                      className="w-full h-full object-cover rounded-lg shadow-2xl opacity-100"
                     />
                   </div>
                 </div>
