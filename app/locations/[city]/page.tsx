@@ -429,7 +429,7 @@ export default function CityPage() {
                         className={`px-3 py-2 text-sm rounded-lg ${
                           currentPage === page
                             ? 'bg-blue-600 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
+                            : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
                         }`}
                       >
                         {page}
@@ -450,19 +450,19 @@ export default function CityPage() {
           )}
         </div>
 
-                 {/* Right Side - Map */}
-         <div className="w-full lg:w-[30%] order-1 lg:order-2">
-           <GoogleMap
-             affiliates={filteredAffiliates}
-             userLocation={userLocation}
-             selectedAffiliate={selectedAffiliate}
-             onAffiliateClick={(affiliate) => {
-               setSelectedAffiliate(affiliate)
-               setModalAffiliate(affiliate)
-               setIsModalOpen(true)
-             }}
-           />
-         </div>
+                         {/* Right Side - Map */}
+        <div className="w-full lg:w-[30%] order-1 lg:order-2 h-[50vh] lg:h-full">
+          <GoogleMap
+            affiliates={filteredAffiliates}
+            userLocation={userLocation}
+            selectedAffiliate={selectedAffiliate}
+            onAffiliateClick={(affiliate) => {
+              setSelectedAffiliate(affiliate)
+              setModalAffiliate(affiliate)
+              setIsModalOpen(true)
+            }}
+          />
+        </div>
       </div>
 
       {/* Modal */}
