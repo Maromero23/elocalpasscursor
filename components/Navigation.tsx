@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '../contexts/LanguageContext'
 import { ChevronDown } from 'lucide-react'
 
@@ -9,6 +9,8 @@ export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [locationsDropdownOpen, setLocationsDropdownOpen] = useState(false)
   const { t, language, setLanguage } = useTranslation()
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const cities = [
     { name: 'Bacalar', slug: 'bacalar' },
@@ -21,6 +23,27 @@ export default function Navigation() {
     { name: 'Puerto Morelos', slug: 'puerto-morelos' },
     { name: 'Tulum', slug: 'tulum' }
   ]
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    setLocationsDropdownOpen(true)
+  }
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setLocationsDropdownOpen(false)
+    }, 300) // 300ms delay before closing
+  }
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
 
   return (
     <nav className="bg-slate-100 text-blue-700 z-50 fixed w-full shadow-md p-3 transition-opacity duration-300">
@@ -66,10 +89,13 @@ export default function Navigation() {
                 >
                   {t.navigation.home}
                 </Link>
-                <div className="relative">
+                <div 
+                  className="relative"
+                  ref={dropdownRef}
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                >
                   <button
-                    onMouseEnter={() => setLocationsDropdownOpen(true)}
-                    onMouseLeave={() => setLocationsDropdownOpen(false)}
                     className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium flex items-center"
                   >
                     {t.navigation.locations}
@@ -79,8 +105,6 @@ export default function Navigation() {
                   {locationsDropdownOpen && (
                     <div 
                       className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50"
-                      onMouseEnter={() => setLocationsDropdownOpen(true)}
-                      onMouseLeave={() => setLocationsDropdownOpen(false)}
                     >
                       <div className="py-1">
                         {cities.map((city) => (

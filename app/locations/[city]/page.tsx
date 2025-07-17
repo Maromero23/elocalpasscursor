@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { MapPin, Search, Filter, Star, Phone, Mail, Globe, Map, Heart } from 'lucide-react'
+import { MapPin, Search, Filter, Star, Phone, Mail, Globe, Map, Heart, Eye } from 'lucide-react'
 import { useTranslation } from '../../../contexts/LanguageContext'
 import GoogleMap from '../../../components/GoogleMap'
 import AffiliateModal from '../../../components/AffiliateModal'
@@ -31,7 +31,6 @@ export default function CityPage() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [ratingFilter, setRatingFilter] = useState('')
   const [recommendedFilter, setRecommendedFilter] = useState(false)
-  const [showMap, setShowMap] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null)
   const [modalAffiliate, setModalAffiliate] = useState<Affiliate | null>(null)
@@ -223,8 +222,8 @@ export default function CityPage() {
             </div>
           ) : (
             <div className="flex gap-8">
-              {/* Left Side - Affiliate List */}
-              <div className={`${showMap ? 'w-1/2' : 'w-full'}`}>
+              {/* Left Side - Affiliate Grid */}
+              <div className="w-1/2">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">
                     {language === 'es' 
@@ -240,8 +239,8 @@ export default function CityPage() {
                   )}
                 </div>
 
-                {/* Affiliate List */}
-                <div className="space-y-4">
+                {/* Affiliate Grid */}
+                <div className="grid grid-cols-1 gap-4 max-h-[600px] overflow-y-auto">
                   {filteredAffiliates.map((affiliate) => (
                     <div 
                       key={affiliate.id} 
@@ -254,12 +253,30 @@ export default function CityPage() {
                         setIsModalOpen(true)
                       }}
                     >
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-lg font-semibold text-gray-900">{affiliate.name}</h3>
-                              <div className="flex items-center space-x-2">
+                      <div className="p-4">
+                        <div className="flex items-start space-x-4">
+                          {/* Logo/Image */}
+                          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {affiliate.logo ? (
+                              <img 
+                                src={affiliate.logo} 
+                                alt={affiliate.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <MapPin className={`w-8 h-8 text-gray-400 ${affiliate.logo ? 'hidden' : ''}`} />
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900 truncate">{affiliate.name}</h3>
+                              <div className="flex items-center space-x-2 ml-2">
                                 {affiliate.recommended && (
                                   <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
                                     {language === 'es' ? 'Recomendado' : 'Recommended'}
@@ -272,24 +289,24 @@ export default function CityPage() {
                             </div>
 
                             {affiliate.rating && (
-                              <div className="flex items-center mb-2">
+                              <div className="flex items-center mb-1">
                                 <Star className="w-4 h-4 text-yellow-400 fill-current" />
                                 <span className="text-sm text-gray-600 ml-1">{affiliate.rating}</span>
                               </div>
                             )}
 
                             {affiliate.category && (
-                              <p className="text-sm text-gray-600 mb-2">{affiliate.category}</p>
+                              <p className="text-sm text-gray-600 mb-1">{affiliate.category}</p>
                             )}
 
                             {affiliate.description && (
-                              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                                 {affiliate.description}
                               </p>
                             )}
 
                             {affiliate.discount && (
-                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2">
                                 <p className="text-sm font-medium text-blue-900">
                                   {language === 'es' ? 'Descuento:' : 'Discount:'} {affiliate.discount}
                                 </p>
@@ -313,45 +330,33 @@ export default function CityPage() {
                                 </div>
                               )}
                             </div>
-                          </div>
 
-                          {/* Logo/Image */}
-                          <div className="ml-4 w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            {affiliate.logo ? (
-                              <img 
-                                src={affiliate.logo} 
-                                alt={affiliate.name}
-                                className="w-full h-full object-cover rounded-lg"
-                              />
-                            ) : (
-                              <MapPin className="w-8 h-8 text-gray-400" />
-                            )}
+                            {/* Action Buttons */}
+                            <div className="flex space-x-2 mt-3">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setModalAffiliate(affiliate)
+                                  setIsModalOpen(true)
+                                }}
+                                className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center"
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                {language === 'es' ? 'Ver detalles' : 'View details'}
+                              </button>
+                              {affiliate.maps && (
+                                <a
+                                  href={affiliate.maps}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-gray-100 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center"
+                                >
+                                  <MapPin className="w-4 h-4 mr-1" />
+                                  {language === 'es' ? 'Mapa' : 'Map'}
+                                </a>
+                              )}
+                            </div>
                           </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex space-x-2">
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setModalAffiliate(affiliate)
-                              setIsModalOpen(true)
-                            }}
-                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                          >
-                            {language === 'es' ? 'Ver detalles' : 'View details'}
-                          </button>
-                          {affiliate.maps && (
-                            <a
-                              href={affiliate.maps}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center"
-                            >
-                              <MapPin className="w-4 h-4 mr-1" />
-                              {language === 'es' ? 'Mapa' : 'Map'}
-                            </a>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -375,27 +380,25 @@ export default function CityPage() {
               </div>
 
               {/* Right Side - Map */}
-              {showMap && (
-                <div className="w-1/2">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      {language === 'es' ? 'Mapa de ubicaciones' : 'Location Map'}
-                    </h3>
-                    <div className="h-96 rounded-lg overflow-hidden">
-                      <GoogleMap
-                        affiliates={filteredAffiliates}
-                        userLocation={userLocation}
-                        onAffiliateClick={(affiliate) => {
-                          setSelectedAffiliate(affiliate)
-                          setModalAffiliate(affiliate)
-                          setIsModalOpen(true)
-                        }}
-                        selectedAffiliate={selectedAffiliate}
-                      />
-                    </div>
+              <div className="w-1/2">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-[600px]">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {language === 'es' ? 'Mapa de ubicaciones' : 'Location Map'}
+                  </h3>
+                  <div className="h-full rounded-lg overflow-hidden">
+                    <GoogleMap
+                      affiliates={filteredAffiliates}
+                      userLocation={userLocation}
+                      onAffiliateClick={(affiliate) => {
+                        setSelectedAffiliate(affiliate)
+                        setModalAffiliate(affiliate)
+                        setIsModalOpen(true)
+                      }}
+                      selectedAffiliate={selectedAffiliate}
+                    />
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
