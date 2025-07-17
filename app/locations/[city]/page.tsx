@@ -222,15 +222,20 @@ export default function CityPage() {
             </div>
           ) : (
             <div className="flex gap-8">
-              {/* Left Side - Affiliate Grid */}
+              {/* Left Side - Affiliate Grid (Airbnb Style) */}
               <div className="w-1/2">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {language === 'es' 
-                      ? `${filteredAffiliates.length} negocios encontrados`
-                      : `${filteredAffiliates.length} businesses found`
-                    }
-                  </h3>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {language === 'es' 
+                        ? `${filteredAffiliates.length} negocios encontrados`
+                        : `${filteredAffiliates.length} businesses found`
+                      }
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {language === 'es' ? 'Los precios incluyen todas las tarifas' : 'Prices include all fees'}
+                    </p>
+                  </div>
                   {userLocation && (
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin className="w-4 h-4 mr-1" />
@@ -239,8 +244,8 @@ export default function CityPage() {
                   )}
                 </div>
 
-                {/* Affiliate Grid */}
-                <div className="grid grid-cols-1 gap-4 max-h-[600px] overflow-y-auto">
+                {/* Affiliate Grid - Airbnb Style Cards */}
+                <div className="space-y-6 max-h-[600px] overflow-y-auto">
                   {filteredAffiliates.map((affiliate) => (
                     <div 
                       key={affiliate.id} 
@@ -255,8 +260,8 @@ export default function CityPage() {
                     >
                       <div className="p-4">
                         <div className="flex items-start space-x-4">
-                          {/* Logo/Image */}
-                          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {/* Logo/Image - Airbnb Style */}
+                          <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {affiliate.logo ? (
                               <img 
                                 src={affiliate.logo} 
@@ -272,7 +277,7 @@ export default function CityPage() {
                             <MapPin className={`w-8 h-8 text-gray-400 ${affiliate.logo ? 'hidden' : ''}`} />
                           </div>
 
-                          {/* Content */}
+                          {/* Content - Airbnb Style */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between mb-2">
                               <h3 className="text-lg font-semibold text-gray-900 truncate">{affiliate.name}</h3>
@@ -379,7 +384,7 @@ export default function CityPage() {
                 )}
               </div>
 
-              {/* Right Side - Map */}
+              {/* Right Side - Map (Airbnb Style) */}
               <div className="w-1/2">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-[600px]">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">

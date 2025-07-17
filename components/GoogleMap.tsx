@@ -227,21 +227,28 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
   
   if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
     return (
-      <div className="h-full w-full bg-gray-100 rounded-lg flex items-center justify-center">
-        <div className="text-center">
-          <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">
+      <div className="h-full w-full bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+        <div className="text-center p-8">
+          <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {language === 'es' ? 'Mapa interactivo' : 'Interactive Map'}
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">
             {language === 'es' 
-              ? 'Mapa interactivo próximamente'
-              : 'Interactive map coming soon'
+              ? 'Visualiza la ubicación de todos los negocios afiliados'
+              : 'View the location of all affiliate businesses'
             }
           </p>
-          <p className="text-sm text-gray-500 mt-2">
-            {language === 'es' 
-              ? 'Configure la API key de Google Maps para ver el mapa'
-              : 'Configure Google Maps API key to view map'
-            }
-          </p>
+          <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
+              <span>{language === 'es' ? 'Recomendados' : 'Recommended'}</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-orange-500 rounded-full mr-1"></div>
+              <span>{language === 'es' ? 'Otros' : 'Others'}</span>
+            </div>
+          </div>
         </div>
       </div>
     )
