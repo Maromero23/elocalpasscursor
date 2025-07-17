@@ -1,6 +1,6 @@
 {
   "name": "elocalpass",
-  "version": "3.35.45",
+  "version": "3.36.10",
   "private": true,
   "scripts": {
     "dev": "next dev",
