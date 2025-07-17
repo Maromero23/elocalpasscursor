@@ -66,7 +66,7 @@ export default function CityPage() {
   const [stats, setStats] = useState<any>(null)
 
   const cityId = params.city as string
-  const cityInfo = cityMap[cityId as keyof typeof cityMap]
+  const cityInfo = cityId === 'all-cities' ? { name: 'all-cities', displayName: 'All Cities' } : cityMap[cityId as keyof typeof cityMap]
 
   // Utility function to convert Google Drive URLs to direct image URLs
   const convertGoogleDriveUrl = (url: string): string => {
@@ -138,13 +138,31 @@ export default function CityPage() {
 
   const fetchAffiliates = async () => {
     try {
-      const response = await fetch(`/api/locations/affiliates?city=${cityInfo.name}`)
+      const url = cityInfo.name === 'all-cities' 
+        ? '/api/locations/affiliates'
+        : `/api/locations/affiliates?city=${cityInfo.name}`
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
         setAffiliates(data.affiliates || [])
       }
     } catch (error) {
       console.error('Error fetching affiliates:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchAllAffiliates = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/locations/affiliates')
+      if (response.ok) {
+        const data = await response.json()
+        setAffiliates(data.affiliates || [])
+      }
+    } catch (error) {
+      console.error('Error fetching all affiliates:', error)
     } finally {
       setLoading(false)
     }
@@ -272,7 +290,14 @@ export default function CityPage() {
             {/* City Filter */}
             <select
               value={cityId || ''}
-              onChange={e => window.location.href = `/locations/${e.target.value}`}
+              onChange={e => {
+                if (e.target.value === 'all-cities') {
+                  // For all cities, we need to fetch all affiliates
+                  fetchAllAffiliates()
+                } else {
+                  window.location.href = `/locations/${e.target.value}`
+                }
+              }}
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="all-cities">
@@ -296,7 +321,10 @@ export default function CityPage() {
               <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
               {normalizedTypes.map(type => {
                 const displayType = getDisplayType(type)
-                const currentCityStats = stats?.cityStats?.[cityId]
+                // Use total stats if we're on "all cities", otherwise use city stats
+                const currentCityStats = cityId === 'all-cities' 
+                  ? stats?.totalStats 
+                  : stats?.cityStats?.[cityId]
                 const typeCount = currentCityStats?.types?.[type.toLowerCase()] || 0
                 return (
                   <option key={type} value={type}>

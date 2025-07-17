@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       isActive: true // Only show active affiliates
     }
     
-    if (city) {
+    if (city && city !== 'all-cities') {
       // Handle city name variations
       const cityVariations = {
         'Bacalar': ['Bacalar'],
