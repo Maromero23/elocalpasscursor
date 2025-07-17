@@ -27,32 +27,39 @@ export default function HomePage() {
                 />
               </div>
               
-              {/* Floating collage images around phone */}
+              {/* Floating collage images from composite around phone */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="relative w-full h-full">
-                  {/* Top left */}
+                  {/* Top left - Ancient sculpture */}
                   <div className="absolute top-8 left-8 w-24 h-20 rounded-lg overflow-hidden transform -rotate-12 shadow-lg">
-                    <img src="/images/carrousel1.jpg" alt="Beach" className="w-full h-full object-cover" />
+                    <img src="/images/Home page image .png" alt="Ancient sculpture" className="w-full h-full object-cover object-top" style={{objectPosition: '10% 15%'}} />
                   </div>
-                  {/* Top right */}
+                  {/* Top right - Shopping women */}
                   <div className="absolute top-16 right-8 w-28 h-24 rounded-lg overflow-hidden transform rotate-12 shadow-lg">
-                    <img src="/images/food_1.png" alt="Food" className="w-full h-full object-cover" />
+                    <img src="/images/Home page image .png" alt="Shopping experience" className="w-full h-full object-cover" style={{objectPosition: '70% 25%'}} />
                   </div>
-                  {/* Bottom left */}
+                  {/* Bottom left - Beach archway */}
                   <div className="absolute bottom-16 left-4 w-32 h-24 rounded-lg overflow-hidden transform -rotate-6 shadow-lg">
-                    <img src="/images/carrousel2.jpg" alt="Activities" className="w-full h-full object-cover" />
+                    <img src="/images/Home page image .png" alt="Beach archway" className="w-full h-full object-cover" style={{objectPosition: '20% 60%'}} />
                   </div>
-                  {/* Bottom right */}
+                  {/* Bottom right - Kitesurfing */}
                   <div className="absolute bottom-8 right-12 w-24 h-28 rounded-lg overflow-hidden transform rotate-6 shadow-lg">
-                    <img src="/images/restaurantes_current.webp" alt="Restaurants" className="w-full h-full object-cover" />
+                    <img src="/images/Home page image .png" alt="Kitesurfing" className="w-full h-full object-cover" style={{objectPosition: '80% 70%'}} />
                   </div>
-                  {/* Middle right */}
+                  {/* Middle right - Beach women */}
                   <div className="absolute top-1/2 right-4 w-20 h-20 rounded-full overflow-hidden transform rotate-3 shadow-lg">
-                    <img src="/images/tiendas_current.webp" alt="Shops" className="w-full h-full object-cover" />
+                    <img src="/images/Home page image .png" alt="Beach women" className="w-full h-full object-cover" style={{objectPosition: '75% 45%'}} />
                   </div>
-                  {/* Middle left */}
+                  {/* Middle left - Family beach */}
                   <div className="absolute top-1/3 left-2 w-24 h-20 rounded-lg overflow-hidden transform -rotate-3 shadow-lg">
-                    <img src="/images/services_current.png" alt="Services" className="w-full h-full object-cover" />
+                    <img src="/images/Home page image .png" alt="Family beach" className="w-full h-full object-cover" style={{objectPosition: '15% 75%'}} />
+                  </div>
+                  {/* Additional floating images for more coverage */}
+                  <div className="absolute top-1/4 right-16 w-20 h-16 rounded-lg overflow-hidden transform rotate-6 shadow-lg">
+                    <img src="/images/Home page image .png" alt="Cenote" className="w-full h-full object-cover" style={{objectPosition: '90% 10%'}} />
+                  </div>
+                  <div className="absolute bottom-1/3 left-12 w-18 h-16 rounded-lg overflow-hidden transform -rotate-8 shadow-lg">
+                    <img src="/images/Home page image .png" alt="Dining couple" className="w-full h-full object-cover" style={{objectPosition: '60% 85%'}} />
                   </div>
                 </div>
               </div>
