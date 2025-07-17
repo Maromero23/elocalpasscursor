@@ -1,82 +1,88 @@
 "use client"
 
-import Link from "next/link"
-import { useSession, signOut } from "next-auth/react"
+import Navigation from '@/components/Navigation'
+import Footer from '@/components/Footer'
+import Link from 'next/link'
 
-export default function Home() {
-  const { data: session } = useSession()
-
+export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <div className="text-center w-full">
-          <h1 className="text-4xl font-bold mb-6">
-            Welcome to Elocalpass
+    <div className="min-h-screen bg-white">
+      <Navigation />
+      
+      {/* Hero Section */}
+      <main className="pt-20">
+        {/* Hero Banner */}
+        <div className="bg-gradient-to-r from-oranges-100 to-oranges-200 text-white text-center py-20">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4">
+            eLocalPass
           </h1>
-          <p className="text-lg mb-8">
-            Discount QR codes for travelers
+          <p className="text-xl md:text-2xl mb-8">
+            Pay like a local
           </p>
+          <p className="text-lg md:text-xl max-w-4xl mx-auto px-4">
+            Elite application for travelers in México
+          </p>
+        </div>
+
+        {/* Features Section */}
+        <div className="py-16 px-4 max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-blues-100 mb-12">
+            Discover Local Experiences
+          </h2>
           
-          {session ? (
-            <div className="space-y-4">
-              <p className="text-green-600 font-semibold">
-                ✅ Logged in as: {session.user.name} ({session.user.role})
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center p-6 rounded-lg border border-gray-200">
+              <div className="text-4xl mb-4">🏪</div>
+              <h3 className="text-xl font-semibold text-blues-100 mb-2">
+                Local Businesses
+              </h3>
+              <p className="text-gray-600">
+                Access exclusive discounts at restaurants, stores, and services
               </p>
-              <div className="space-x-4">
-                {session.user.role === "ADMIN" && (
-                  <Link
-                    href="/admin"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium"
-                  >
-                    Go to Admin Dashboard
-                  </Link>
-                )}
-                {session.user.role === "SELLER" && (
-                  <Link
-                    href="/seller"
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md font-medium"
-                  >
-                    Go to Seller Dashboard
-                  </Link>
-                )}
-                <button
-                  onClick={() => signOut()}
-                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md font-medium"
-                >
-                  Sign Out
-                </button>
-              </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-gray-600 mb-6">
-                🔐 Authentication system ready for testing
+            
+            <div className="text-center p-6 rounded-lg border border-gray-200">
+              <div className="text-4xl mb-4">💰</div>
+              <h3 className="text-xl font-semibold text-blues-100 mb-2">
+                Special Pricing
+              </h3>
+              <p className="text-gray-600">
+                Get the best deals with our tourist discount passes
               </p>
-              <div className="space-x-4">
-                <Link
-                  href="/auth/login"
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-md font-medium"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md font-medium"
-                >
-                  Register
-                </Link>
-              </div>
             </div>
-          )}
-          
-          <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-sm">
-            <p className="text-yellow-800 font-semibold">🚨 Day 2 Testing Required</p>
-            <p className="text-yellow-700 mt-1">
-              Test login/logout functionality for both Admin and Seller roles before proceeding to Day 3.
-            </p>
+            
+            <div className="text-center p-6 rounded-lg border border-gray-200">
+              <div className="text-4xl mb-4">📱</div>
+              <h3 className="text-xl font-semibold text-blues-100 mb-2">
+                Easy to Use
+              </h3>
+              <p className="text-gray-600">
+                Simply show your QR code to enjoy instant discounts
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+
+        {/* CTA Section */}
+        <div className="bg-slate-100 py-16 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-blues-100 mb-8">
+              Ready to Experience Mexico Like a Local?
+            </h2>
+            <p className="text-lg text-gray-600 mb-8">
+              Choose your perfect eLocalPass and start saving today!
+            </p>
+            <Link 
+              href="/passes"
+              className="bg-green-600 hover:bg-emerald-600 text-white px-8 py-3 rounded-lg font-bold text-lg transition-colors"
+            >
+              View Our Passes
+            </Link>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
   )
 }
