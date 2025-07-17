@@ -91,8 +91,8 @@ export default function CityPage() {
     return matchesSearch && matchesType && matchesCategory && matchesRating && matchesRecommended
   })
 
-  const categories = Array.from(new Set(affiliates.map(a => a.category).filter(Boolean)))
-  const types = Array.from(new Set(affiliates.map(a => a.type).filter(Boolean)))
+  const categories = Array.from(new Set(affiliates.map(a => a.category).filter((cat): cat is string => Boolean(cat))))
+  const types = Array.from(new Set(affiliates.map(a => a.type).filter((type): type is string => Boolean(type))))
 
   if (!cityInfo) {
     return (
@@ -176,7 +176,7 @@ export default function CityPage() {
                 >
                   <option value="">{language === 'es' ? 'Todas las categorías' : 'All categories'}</option>
                   {categories.map((category) => (
-                    <option key={category} value={category || ''}>{category}</option>
+                    <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
               </div>
@@ -248,11 +248,11 @@ export default function CityPage() {
                       className={`bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer ${
                         selectedAffiliate?.id === affiliate.id ? 'ring-2 ring-blue-500' : ''
                       }`}
-                                         onClick={() => {
-                       setSelectedAffiliate(affiliate)
-                       setModalAffiliate(affiliate)
-                       setIsModalOpen(true)
-                     }}
+                      onClick={() => {
+                        setSelectedAffiliate(affiliate)
+                        setModalAffiliate(affiliate)
+                        setIsModalOpen(true)
+                      }}
                     >
                       <div className="p-6">
                         <div className="flex items-start justify-between mb-3">
@@ -329,86 +329,87 @@ export default function CityPage() {
                           </div>
                         </div>
 
-                                           {/* Action Buttons */}
-                     <div className="flex space-x-2">
-                       <button 
-                         onClick={(e) => {
-                           e.stopPropagation()
-                           setModalAffiliate(affiliate)
-                           setIsModalOpen(true)
-                         }}
-                         className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                       >
-                         {language === 'es' ? 'Ver detalles' : 'View details'}
-                       </button>
-                       {affiliate.maps && (
-                         <a
-                           href={affiliate.maps}
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center"
-                         >
-                           <MapPin className="w-4 h-4 mr-1" />
-                           {language === 'es' ? 'Mapa' : 'Map'}
-                         </a>
-                       )}
-                     </div>
+                        {/* Action Buttons */}
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setModalAffiliate(affiliate)
+                              setIsModalOpen(true)
+                            }}
+                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                          >
+                            {language === 'es' ? 'Ver detalles' : 'View details'}
+                          </button>
+                          {affiliate.maps && (
+                            <a
+                              href={affiliate.maps}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center"
+                            >
+                              <MapPin className="w-4 h-4 mr-1" />
+                              {language === 'es' ? 'Mapa' : 'Map'}
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     </div>
+                  ))}
+                </div>
+
+                {filteredAffiliates.length === 0 && (
+                  <div className="text-center py-16">
+                    <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {language === 'es' ? 'No se encontraron negocios' : 'No businesses found'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {language === 'es' 
+                        ? 'Intenta ajustar tus filtros de búsqueda'
+                        : 'Try adjusting your search filters'
+                      }
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
 
-              {filteredAffiliates.length === 0 && (
-                <div className="text-center py-16">
-                  <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {language === 'es' ? 'No se encontraron negocios' : 'No businesses found'}
-                  </h3>
-                  <p className="text-gray-600">
-                    {language === 'es' 
-                      ? 'Intenta ajustar tus filtros de búsqueda'
-                      : 'Try adjusting your search filters'
-                    }
-                  </p>
+              {/* Right Side - Map */}
+              {showMap && (
+                <div className="w-1/2">
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      {language === 'es' ? 'Mapa de ubicaciones' : 'Location Map'}
+                    </h3>
+                    <div className="h-96 rounded-lg overflow-hidden">
+                      <GoogleMap
+                        affiliates={filteredAffiliates}
+                        userLocation={userLocation}
+                        onAffiliateClick={(affiliate) => {
+                          setSelectedAffiliate(affiliate)
+                          setModalAffiliate(affiliate)
+                          setIsModalOpen(true)
+                        }}
+                        selectedAffiliate={selectedAffiliate}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
+          )}
+        </div>
 
-                         {/* Right Side - Map */}
-             {showMap && (
-               <div className="w-1/2">
-                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                     {language === 'es' ? 'Mapa de ubicaciones' : 'Location Map'}
-                   </h3>
-                   <div className="h-96 rounded-lg overflow-hidden">
-                     <GoogleMap
-                       affiliates={filteredAffiliates}
-                       userLocation={userLocation}
-                       onAffiliateClick={(affiliate) => {
-                         setSelectedAffiliate(affiliate)
-                         setModalAffiliate(affiliate)
-                         setIsModalOpen(true)
-                       }}
-                       selectedAffiliate={selectedAffiliate}
-                     />
-                   </div>
-                 </div>
-               </div>
-             )}
-           </div>
-         )}
-       </div>
-
-       {/* Modal */}
-       <AffiliateModal
-         affiliate={modalAffiliate}
-         isOpen={isModalOpen}
-         onClose={() => {
-           setIsModalOpen(false)
-           setModalAffiliate(null)
-         }}
-       />
-     </div>
-   )
+        {/* Modal */}
+        <AffiliateModal
+          affiliate={modalAffiliate}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false)
+            setModalAffiliate(null)
+          }}
+        />
+      </div>
+    </div>
+  )
 } 
