@@ -18,7 +18,12 @@ export default function HomePage() {
           {/* Left side - Phone mockup with floating collage */}
           <div className="w-full lg:w-1/2 relative">
             <div className="relative w-full h-96 lg:h-[500px] flex justify-center items-center bg-white">
-              {/* Clean white background - no phone or images */}
+              {/* Home page image */}
+              <img 
+                src="/images/Home page image .png" 
+                alt="eLocalPass Experiences" 
+                className="w-full h-full object-cover rounded-lg shadow-lg"
+              />
             </div>
           </div>
           
