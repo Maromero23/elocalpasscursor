@@ -22,7 +22,11 @@ export default withAuth(
       pathname.startsWith("/images") ||
       pathname === "/manifest.json" ||
       pathname === "/sw.js" ||
-      pathname.startsWith("/icon-")
+      pathname.startsWith("/icon-") ||
+      pathname === "/locations" ||
+      pathname === "/passes" ||
+      pathname === "/faq" ||
+      pathname === "/contact"
     ) {
       return NextResponse.next()
     }
@@ -78,7 +82,11 @@ export default withAuth(
           pathname.startsWith("/images") ||
           pathname === "/manifest.json" ||
           pathname === "/sw.js" ||
-          pathname.startsWith("/icon-")
+          pathname.startsWith("/icon-") ||
+          pathname === "/locations" ||
+          pathname === "/passes" ||
+          pathname === "/faq" ||
+          pathname === "/contact"
         ) {
           return true
         }

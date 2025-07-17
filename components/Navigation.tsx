@@ -52,9 +52,12 @@ export default function Navigation() {
                 >
                   {t.navigation.home}
                 </Link>
-                <button className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium">
+                <Link 
+                  href="/locations"
+                  className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium"
+                >
                   {t.navigation.locations}
-                </button>
+                </Link>
                 <Link 
                   href="/passes"
                   className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium"
@@ -116,9 +119,12 @@ export default function Navigation() {
             >
               {t.navigation.home}
             </Link>
-            <button className="block px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500">
+            <Link 
+              href="/locations"
+              className="block px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500"
+            >
               {t.navigation.locations}
-            </button>
+            </Link>
             <Link 
               href="/passes"
               className="block px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500"
