@@ -17,52 +17,8 @@ export default function HomePage() {
         <div className="relative flex flex-col lg:flex-row justify-center items-center w-full pt-8 px-4">
           {/* Left side - Phone mockup with floating collage */}
           <div className="w-full lg:w-1/2 relative">
-            <div className="relative w-full h-96 lg:h-[500px] flex justify-center items-center">
-              {/* Phone mockup */}
-              <div className="relative z-10">
-                <img 
-                  src="/images/phone_mockup.png" 
-                  alt="eLocalPass App"
-                  className="w-64 lg:w-80 h-auto"
-                />
-              </div>
-              
-              {/* Individual floating images from composite around phone */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative w-full h-full">
-                  {/* Top left - Ancient sculpture */}
-                  <div className="absolute top-8 left-8 w-24 h-20 rounded-lg overflow-hidden transform -rotate-12 shadow-lg">
-                    <img src="/images/Home page image .png" alt="Ancient sculpture" className="w-full h-full object-cover" style={{objectPosition: '10% 15%'}} />
-                  </div>
-                  {/* Top right - Shopping women */}
-                  <div className="absolute top-16 right-8 w-28 h-24 rounded-lg overflow-hidden transform rotate-12 shadow-lg">
-                    <img src="/images/Home page image .png" alt="Shopping experience" className="w-full h-full object-cover" style={{objectPosition: '70% 25%'}} />
-                  </div>
-                  {/* Bottom left - Beach archway */}
-                  <div className="absolute bottom-16 left-4 w-32 h-24 rounded-lg overflow-hidden transform -rotate-6 shadow-lg">
-                    <img src="/images/Home page image .png" alt="Beach archway" className="w-full h-full object-cover" style={{objectPosition: '20% 60%'}} />
-                  </div>
-                  {/* Bottom right - Kitesurfing */}
-                  <div className="absolute bottom-8 right-12 w-24 h-28 rounded-lg overflow-hidden transform rotate-6 shadow-lg">
-                    <img src="/images/Home page image .png" alt="Kitesurfing" className="w-full h-full object-cover" style={{objectPosition: '80% 70%'}} />
-                  </div>
-                  {/* Middle right - Beach women */}
-                  <div className="absolute top-1/2 right-4 w-20 h-20 rounded-full overflow-hidden transform rotate-3 shadow-lg">
-                    <img src="/images/Home page image .png" alt="Beach women" className="w-full h-full object-cover" style={{objectPosition: '75% 45%'}} />
-                  </div>
-                  {/* Middle left - Family beach */}
-                  <div className="absolute top-1/3 left-2 w-24 h-20 rounded-lg overflow-hidden transform -rotate-3 shadow-lg">
-                    <img src="/images/Home page image .png" alt="Family beach" className="w-full h-full object-cover" style={{objectPosition: '15% 75%'}} />
-                  </div>
-                  {/* Additional floating images for more coverage */}
-                  <div className="absolute top-1/4 right-16 w-20 h-16 rounded-lg overflow-hidden transform rotate-6 shadow-lg">
-                    <img src="/images/Home page image .png" alt="Cenote" className="w-full h-full object-cover" style={{objectPosition: '90% 10%'}} />
-                  </div>
-                  <div className="absolute bottom-1/3 left-12 w-18 h-16 rounded-lg overflow-hidden transform -rotate-8 shadow-lg">
-                    <img src="/images/Home page image .png" alt="Dining couple" className="w-full h-full object-cover" style={{objectPosition: '60% 85%'}} />
-                  </div>
-                </div>
-              </div>
+            <div className="relative w-full h-96 lg:h-[500px] flex justify-center items-center bg-white">
+              {/* Clean white background - no phone or images */}
             </div>
           </div>
           
