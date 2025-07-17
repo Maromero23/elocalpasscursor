@@ -350,9 +350,9 @@ export default function CityPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : (
-          <div className="flex">
-            {/* Left Side - Affiliate Grid (3 Column Layout) */}
-            <div className="w-[70%] pl-4 sm:pl-6 lg:pl-8">
+          <div className="flex flex-col lg:flex-row">
+            {/* Left Side - Affiliate Grid (Responsive Layout) */}
+            <div className="w-full lg:w-[70%] pl-4 sm:pl-6 lg:pl-8 order-2 lg:order-1">
               <div className="flex justify-between items-center mb-4">
                 {userLocation && (
                   <div className="flex items-center text-sm text-gray-600">
@@ -362,8 +362,8 @@ export default function CityPage() {
                 )}
               </div>
 
-              {/* Affiliate Grid - 3 Column Layout */}
-              <div className="grid grid-cols-3 gap-4 h-[calc(100vh-120px)] overflow-y-auto">
+              {/* Affiliate Grid - Responsive Column Layout */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 h-[calc(50vh-120px)] lg:h-[calc(100vh-120px)] overflow-y-auto">
                 {filteredAffiliates.map((affiliate) => (
                   <div 
                     key={affiliate.id} 
@@ -493,8 +493,8 @@ export default function CityPage() {
               )}
             </div>
 
-            {/* Right Side - Map (Airbnb Style) */}
-            <div className="w-[30%] h-[calc(100vh-120px)]">
+            {/* Right Side - Map (Responsive Layout) */}
+            <div className="w-full lg:w-[30%] h-[calc(50vh-120px)] lg:h-[calc(100vh-120px)] order-1 lg:order-2">
               <GoogleMap
                 affiliates={filteredAffiliates}
                 userLocation={userLocation}
