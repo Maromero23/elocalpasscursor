@@ -14,17 +14,17 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // City variations mapping
+    // City variations mapping - using the same slugs as frontend
     const cityVariations = {
-      'Bacalar': ['Bacalar'],
-      'Cancun': ['Cancún', 'Cancun'],
-      'Cozumel': ['Cozumel'],
-      'Holbox': ['Holbox'],
-      'Isla Mujeres': ['Isla Mujeres', 'Isla mujeres'],
-      'Playa del Carmen': ['Playa del Carmen', 'Playa del carmen'],
-      'Puerto Aventuras': ['Puerto Aventuras'],
-      'Puerto Morelos': ['Puerto Morelos', 'Puerto morelos'],
-      'Tulum': ['Tulum', 'tulum']
+      'bacalar': ['Bacalar'],
+      'cancun': ['Cancún', 'Cancun'],
+      'cozumel': ['Cozumel'],
+      'holbox': ['Holbox'],
+      'isla-mujeres': ['Isla Mujeres', 'Isla mujeres'],
+      'playa-del-carmen': ['Playa del Carmen', 'Playa del carmen'],
+      'puerto-aventuras': ['Puerto Aventuras'],
+      'puerto-morelos': ['Puerto Morelos', 'Puerto morelos'],
+      'tulum': ['Tulum', 'tulum']
     }
 
     // Calculate stats for each city

@@ -292,7 +292,8 @@ export default function CityPage() {
               value={cityId || ''}
               onChange={e => {
                 if (e.target.value === 'all-cities') {
-                  // For all cities, we need to fetch all affiliates
+                  // For all cities, update URL and fetch all affiliates
+                  window.history.pushState({}, '', '/locations/all-cities')
                   fetchAllAffiliates()
                 } else {
                   window.location.href = `/locations/${e.target.value}`
@@ -483,19 +484,67 @@ export default function CityPage() {
                   </button>
                   
                   <div className="flex items-center space-x-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-2 text-sm rounded-lg ${
-                          currentPage === page
-                            ? 'bg-blue-600 text-white'
-                            : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
+                    {(() => {
+                      const pages = []
+                      const maxVisiblePages = 5
+                      const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2))
+                      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+                      
+                      // Add first page if not in range
+                      if (startPage > 1) {
+                        pages.push(
+                          <button
+                            key={1}
+                            onClick={() => setCurrentPage(1)}
+                            className="px-3 py-2 text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg"
+                          >
+                            1
+                          </button>
+                        )
+                        if (startPage > 2) {
+                          pages.push(
+                            <span key="ellipsis1" className="px-2 text-gray-500">...</span>
+                          )
+                        }
+                      }
+                      
+                      // Add visible pages
+                      for (let i = startPage; i <= endPage; i++) {
+                        pages.push(
+                          <button
+                            key={i}
+                            onClick={() => setCurrentPage(i)}
+                            className={`px-3 py-2 text-sm rounded-lg ${
+                              currentPage === i
+                                ? 'bg-blue-600 text-white'
+                                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {i}
+                          </button>
+                        )
+                      }
+                      
+                      // Add last page if not in range
+                      if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) {
+                          pages.push(
+                            <span key="ellipsis2" className="px-2 text-gray-500">...</span>
+                          )
+                        }
+                        pages.push(
+                          <button
+                            key={totalPages}
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="px-3 py-2 text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg"
+                          >
+                            {totalPages}
+                          </button>
+                        )
+                      }
+                      
+                      return pages
+                    })()}
                   </div>
                   
                   <button
