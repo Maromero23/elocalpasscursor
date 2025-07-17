@@ -20,7 +20,7 @@ export default function HomePage() {
             <div className="relative w-full h-96 lg:h-[500px] flex justify-center items-center bg-white">
               {/* Home page image */}
               <img 
-                src="/images/Home page image .png" 
+                src="/images/homepage-image.png" 
                 alt="eLocalPass Experiences" 
                 className="w-full h-full object-cover rounded-lg shadow-lg"
               />
