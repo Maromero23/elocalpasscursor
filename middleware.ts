@@ -19,6 +19,7 @@ export default withAuth(
       pathname.startsWith("/api/affiliate") ||
       pathname.startsWith("/_next") ||
       pathname.startsWith("/favicon") ||
+      pathname.startsWith("/images") ||
       pathname === "/manifest.json" ||
       pathname === "/sw.js" ||
       pathname.startsWith("/icon-")
@@ -74,6 +75,7 @@ export default withAuth(
           pathname.startsWith("/api/affiliate") ||
           pathname.startsWith("/_next") ||
           pathname.startsWith("/favicon") ||
+          pathname.startsWith("/images") ||
           pathname === "/manifest.json" ||
           pathname === "/sw.js" ||
           pathname.startsWith("/icon-")
@@ -99,7 +101,8 @@ export const config = {
      * - manifest.json (PWA manifest)
      * - sw.js (service worker)
      * - icon- (PWA icons)
+     * - images (static images)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|icon-).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|icon-|images).*)",
   ],
 }
