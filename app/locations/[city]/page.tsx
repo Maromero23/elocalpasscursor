@@ -213,11 +213,11 @@ export default function CityPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Compact Top Bar with Home and Filters */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-center">
           {/* Back Arrow with Home Text */}
           <a 
             href="/" 
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            className="absolute left-4 flex items-center text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             <span className="font-medium">Home</span>
@@ -237,6 +237,17 @@ export default function CityPage() {
               />
             </div>
 
+            {/* City Filter */}
+            <select
+              value={cityId || ''}
+              onChange={e => window.location.href = `/locations/${e.target.value}`}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            >
+              {Object.entries(cityMap).map(([slug, info]) => (
+                <option key={slug} value={slug}>{info.displayName}</option>
+              ))}
+            </select>
+
             {/* Type Filter - Restored Original Options */}
             <select
               value={typeFilter}
@@ -249,14 +260,14 @@ export default function CityPage() {
               ))}
             </select>
 
-            {/* Category Filter - Restored Original Options */}
+            {/* Category Filter - Restored Original Options with Alphabetical Order */}
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="">{language === 'es' ? 'Todas las categorías' : 'All categories'}</option>
-              {categories.map((category) => (
+              {categories.sort().map((category) => (
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
@@ -330,7 +341,7 @@ export default function CityPage() {
                       <img
                         src={convertGoogleDriveUrl(affiliate.logo)}
                         alt={affiliate.name}
-                        className="w-32 h-32 object-contain"
+                        className="w-40 h-40 object-contain"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
                           target.style.display = 'none'
