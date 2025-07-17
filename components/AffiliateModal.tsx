@@ -13,6 +13,66 @@ interface AffiliateModalProps {
 export default function AffiliateModal({ affiliate, isOpen, onClose }: AffiliateModalProps) {
   const { t, language } = useTranslation()
 
+  // Utility function to convert Google Drive URLs to direct image URLs
+  const convertGoogleDriveUrl = (url: string): string => {
+    if (!url) return url
+    
+    // If it's not a Google Drive URL, return as-is
+    if (!url.includes('drive.google.com')) {
+      return url
+    }
+    
+    // If it's a search URL or folder URL, it's not a file URL
+    if (url.includes('/search?') || url.includes('/drive/folders/') || url.includes('/drive/search?')) {
+      console.warn('❌ Cannot convert Google Drive search/folder URL to direct image URL:', url)
+      return url // Return original URL, will be handled as invalid by isActualUrl check
+    }
+    
+    // Check if it's already a thumbnail URL (preferred format)
+    if (url.includes('drive.google.com/thumbnail?')) {
+      return url
+    }
+    
+    // Check if it's already a direct Google Drive URL
+    if (url.includes('drive.google.com/uc?')) {
+      // Extract file ID and convert to thumbnail format
+      const fileIdMatch = url.match(/[?&]id=([a-zA-Z0-9-_]+)/)
+      if (fileIdMatch) {
+        const fileId = fileIdMatch[1]
+        const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w200-h200`
+        console.log('🔄 Converting Google Drive URL to thumbnail format:', { original: url, converted: thumbnailUrl })
+        return thumbnailUrl
+      }
+    }
+    
+    // Convert sharing URL to thumbnail URL (PREFERRED FORMAT - WORKS FOR EMBEDDING!)
+    let fileId = ''
+    
+    // Try to extract file ID from different URL formats
+    const patterns = [
+      /\/d\/([a-zA-Z0-9-_]+)/,  // /d/ID format
+      /[?&]id=([a-zA-Z0-9-_]+)/, // ?id=ID format
+    ]
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match) {
+        fileId = match[1]
+        break
+      }
+    }
+    
+    if (fileId) {
+      // Use thumbnail format instead of standard format (thumbnail format works for embedding!)
+      const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w200-h200`
+      console.log('🔄 Converting Google Drive URL to thumbnail format:', { original: url, converted: thumbnailUrl })
+      return thumbnailUrl
+    } else {
+      console.warn('❌ Could not extract file ID from Google Drive URL:', url)
+      return url // Return original URL, will be handled as invalid by isActualUrl check
+    }
+  }
+
   if (!isOpen || !affiliate) return null
 
   return (
@@ -35,9 +95,12 @@ export default function AffiliateModal({ affiliate, isOpen, onClose }: Affiliate
           {affiliate.logo && (
             <div className="mb-4">
               <img
-                src={affiliate.logo}
+                src={convertGoogleDriveUrl(affiliate.logo)}
                 alt={affiliate.name}
                 className="w-full h-48 object-cover rounded-lg"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
               />
             </div>
           )}
