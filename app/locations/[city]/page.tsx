@@ -61,6 +61,8 @@ export default function CityPage() {
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null)
   const [modalAffiliate, setModalAffiliate] = useState<Affiliate | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const affiliatesPerPage = 12
 
   const cityId = params.city as string
   const cityInfo = cityMap[cityId as keyof typeof cityMap]
@@ -181,6 +183,17 @@ export default function CityPage() {
     return matchesSearch && matchesType && matchesCategory && matchesRating && matchesRecommended
   })
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredAffiliates.length / affiliatesPerPage)
+  const startIndex = (currentPage - 1) * affiliatesPerPage
+  const endIndex = startIndex + affiliatesPerPage
+  const currentAffiliates = filteredAffiliates.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, typeFilter, categoryFilter, ratingFilter, recommendedFilter])
+
   const categories = Array.from(new Set(affiliates.map(a => a.category).filter((cat): cat is string => Boolean(cat))))
   
   // Create normalized types for the dropdown
@@ -289,9 +302,9 @@ export default function CityPage() {
       </div>
 
       {/* Main Content - Shifted Up */}
-      <div className="flex flex-col lg:flex-row" style={{ height: 'calc(100vh - 80px)' }}>
+      <div className="flex flex-col lg:flex-row min-h-screen bg-gray-50">
         {/* Left Side - Affiliate Grid (Responsive Layout) */}
-        <div className="w-full lg:w-[70%] pl-4 sm:pl-6 lg:pl-8 order-2 lg:order-1">
+        <div className="w-full lg:w-[70%] pl-4 sm:pl-6 lg:pl-8 order-2 lg:order-1 bg-gray-50">
           <div className="flex justify-between items-center mb-4">
             {userLocation && (
               <div className="flex items-center text-sm text-gray-600">
@@ -324,77 +337,116 @@ export default function CityPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredAffiliates.map((affiliate) => (
-                <div
-                  key={affiliate.id}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => {
-                    setSelectedAffiliate(affiliate)
-                    setModalAffiliate(affiliate)
-                    setIsModalOpen(true)
-                  }}
-                >
-                  {/* Square Logo Container */}
-                  <div className="relative h-48 bg-gray-100 flex items-center justify-center">
-                    {affiliate.logo ? (
-                      <img
-                        src={convertGoogleDriveUrl(affiliate.logo)}
-                        alt={affiliate.name}
-                        className="w-40 h-40 object-contain"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
-                          target.nextElementSibling?.classList.remove('hidden')
-                        }}
-                      />
-                    ) : null}
-                    <div className={`absolute inset-0 flex items-center justify-center text-gray-400 ${affiliate.logo ? 'hidden' : ''}`}>
-                      <MapPin className="w-12 h-12" />
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">
-                        {affiliate.name}
-                      </h3>
-                      <div className="flex items-center ml-2">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm text-gray-600 ml-1">
-                          {affiliate.rating || 'N/A'}
-                        </span>
+            <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {currentAffiliates.map((affiliate) => (
+                  <div
+                    key={affiliate.id}
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => {
+                      setSelectedAffiliate(affiliate)
+                      setModalAffiliate(affiliate)
+                      setIsModalOpen(true)
+                    }}
+                  >
+                    {/* Square Logo Container */}
+                    <div className="relative h-48 bg-gray-100 flex items-center justify-center">
+                      {affiliate.logo ? (
+                        <img
+                          src={convertGoogleDriveUrl(affiliate.logo)}
+                          alt={affiliate.name}
+                          className="w-40 h-40 object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                            target.nextElementSibling?.classList.remove('hidden')
+                          }}
+                        />
+                      ) : null}
+                      <div className={`absolute inset-0 flex items-center justify-center text-gray-400 ${affiliate.logo ? 'hidden' : ''}`}>
+                        <MapPin className="w-12 h-12" />
                       </div>
                     </div>
 
-                    <div className="flex items-center text-sm text-gray-500 mb-2">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      <span className="truncate">{affiliate.address}</span>
-                    </div>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">
+                          {affiliate.name}
+                        </h3>
+                        <div className="flex items-center ml-2">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                          <span className="text-sm text-gray-600 ml-1">
+                            {affiliate.rating || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
 
-                                         <div className="flex items-center justify-between">
-                       <div className="flex items-center space-x-2">
-                         {affiliate.workPhone && (
-                           <Phone className="w-4 h-4 text-gray-400" />
-                         )}
-                         {affiliate.email && (
-                           <Mail className="w-4 h-4 text-gray-400" />
-                         )}
-                         {affiliate.web && (
-                           <Globe className="w-4 h-4 text-gray-400" />
-                         )}
-                       </div>
-                       <div className="flex items-center space-x-1">
-                         <Eye className="w-4 h-4 text-gray-400" />
-                         <span className="text-xs text-gray-500">
-                           {affiliate.totalVisits || 0}
-                         </span>
-                       </div>
-                     </div>
+                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        <span className="truncate">{affiliate.address}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {affiliate.workPhone && (
+                            <Phone className="w-4 h-4 text-gray-400" />
+                          )}
+                          {affiliate.email && (
+                            <Mail className="w-4 h-4 text-gray-400" />
+                          )}
+                          {affiliate.web && (
+                            <Globe className="w-4 h-4 text-gray-400" />
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Eye className="w-4 h-4 text-gray-400" />
+                          <span className="text-xs text-gray-500">
+                            {affiliate.totalVisits || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center space-x-2 mt-8 mb-4">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    {language === 'es' ? 'Anterior' : 'Previous'}
+                  </button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-2 text-sm rounded-lg ${
+                          currentPage === page
+                            ? 'bg-blue-600 text-white'
+                            : 'border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    {language === 'es' ? 'Siguiente' : 'Next'}
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
 
