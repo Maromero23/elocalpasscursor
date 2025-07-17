@@ -223,7 +223,7 @@ export default function CityPage() {
             <span className="font-medium">Home</span>
           </a>
 
-          {/* Compact Filter Menu */}
+          {/* Centered Filter Menu */}
           <div className="flex items-center space-x-2">
             {/* Search Filter */}
             <div className="relative">
@@ -237,42 +237,41 @@ export default function CityPage() {
               />
             </div>
 
-            {/* Type Filter */}
+            {/* Type Filter - Restored Original Options */}
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
-              <option value="">{language === 'es' ? 'Tipo' : 'Type'}</option>
-              <option value="restaurant">{language === 'es' ? 'Restaurante' : 'Restaurant'}</option>
-              <option value="hotel">{language === 'es' ? 'Hotel' : 'Hotel'}</option>
-              <option value="activity">{language === 'es' ? 'Actividad' : 'Activity'}</option>
-              <option value="shop">{language === 'es' ? 'Tienda' : 'Shop'}</option>
+              <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
+              {normalizedTypes.map(type => (
+                <option key={type} value={type}>{getDisplayType(type)}</option>
+              ))}
             </select>
 
-            {/* Category Filter */}
+            {/* Category Filter - Restored Original Options */}
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
-              <option value="">{language === 'es' ? 'Categoría' : 'Category'}</option>
-              <option value="luxury">{language === 'es' ? 'Lujo' : 'Luxury'}</option>
-              <option value="budget">{language === 'es' ? 'Económico' : 'Budget'}</option>
-              <option value="family">{language === 'es' ? 'Familiar' : 'Family'}</option>
-              <option value="romantic">{language === 'es' ? 'Romántico' : 'Romantic'}</option>
+              <option value="">{language === 'es' ? 'Todas las categorías' : 'All categories'}</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
             </select>
 
-            {/* Rating Filter */}
+            {/* Rating Filter - Restored Original Options */}
             <select
               value={ratingFilter}
               onChange={(e) => setRatingFilter(e.target.value)}
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
-              <option value="">{language === 'es' ? 'Rating' : 'Rating'}</option>
-              <option value="4">4+ {language === 'es' ? 'estrellas' : 'stars'}</option>
-              <option value="3">3+ {language === 'es' ? 'estrellas' : 'stars'}</option>
-              <option value="2">2+ {language === 'es' ? 'estrellas' : 'stars'}</option>
+              <option value="">{language === 'es' ? 'Cualquier calificación' : 'Any rating'}</option>
+              <option value="4.5">4.5+ ⭐</option>
+              <option value="4.0">4.0+ ⭐</option>
+              <option value="3.5">3.5+ ⭐</option>
+              <option value="3.0">3.0+ ⭐</option>
             </select>
           </div>
         </div>
@@ -326,12 +325,12 @@ export default function CityPage() {
                   }}
                 >
                   {/* Square Logo Container */}
-                  <div className="relative h-48 bg-gray-100">
+                  <div className="relative h-48 bg-gray-100 flex items-center justify-center">
                     {affiliate.logo ? (
                       <img
                         src={convertGoogleDriveUrl(affiliate.logo)}
                         alt={affiliate.name}
-                        className="w-full h-full object-cover"
+                        className="w-32 h-32 object-contain"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
                           target.style.display = 'none'
