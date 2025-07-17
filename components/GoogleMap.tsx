@@ -227,7 +227,7 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
   
   if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
     return (
-      <div className="h-full w-full bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+      <div className="h-full w-full bg-gray-50 flex items-center justify-center">
         <div className="text-center p-8">
           <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -256,7 +256,7 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
 
   return (
     <div className="h-full w-full">
-      <div ref={mapRef} className="h-full w-full rounded-lg" />
+      <div ref={mapRef} className="h-full w-full" />
     </div>
   )
 } 

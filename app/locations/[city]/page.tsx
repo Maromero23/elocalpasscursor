@@ -169,7 +169,7 @@ export default function CityPage() {
                   return (
                     <>
                       <div className="flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                         <span className="text-gray-600">{restaurants} {language === 'es' ? 'Restaurantes' : 'Restaurants'}</span>
                       </div>
                       <div className="flex items-center space-x-1">
@@ -282,7 +282,7 @@ export default function CityPage() {
           ) : (
             <div className="flex">
               {/* Left Side - Affiliate Grid (3 Column Layout) */}
-              <div className="w-[70%] px-4 sm:px-6 lg:px-8">
+              <div className="w-[70%] pl-4 sm:pl-6 lg:pl-8">
                 <div className="flex justify-between items-center mb-4">
                   {userLocation && (
                     <div className="flex items-center text-sm text-gray-600">
