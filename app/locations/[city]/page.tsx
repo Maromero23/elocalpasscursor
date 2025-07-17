@@ -63,6 +63,7 @@ export default function CityPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const affiliatesPerPage = 12
+  const [stats, setStats] = useState<any>(null)
 
   const cityId = params.city as string
   const cityInfo = cityMap[cityId as keyof typeof cityMap]
@@ -130,6 +131,7 @@ export default function CityPage() {
   useEffect(() => {
     if (cityInfo) {
       fetchAffiliates()
+      fetchStats()
       getUserLocation()
     }
   }, [cityInfo])
@@ -145,6 +147,18 @@ export default function CityPage() {
       console.error('Error fetching affiliates:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/locations/stats')
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error)
     }
   }
 
@@ -194,7 +208,12 @@ export default function CityPage() {
     setCurrentPage(1)
   }, [searchTerm, typeFilter, categoryFilter, ratingFilter, recommendedFilter])
 
-  const categories = Array.from(new Set(affiliates.map(a => a.category).filter((cat): cat is string => Boolean(cat))))
+  const categories = Array.from(new Set(
+    affiliates
+      .map(a => a.category)
+      .filter((cat): cat is string => Boolean(cat))
+      .map(cat => cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase())
+  )).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
   
   // Create normalized types for the dropdown
   const normalizedTypes = Array.from(new Set(
@@ -202,7 +221,7 @@ export default function CityPage() {
       .map(a => a.type)
       .filter((type): type is string => Boolean(type))
       .map(type => normalizeType(type))
-  )).sort()
+  )).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
 
   if (!cityInfo) {
     return (
@@ -256,8 +275,15 @@ export default function CityPage() {
               onChange={e => window.location.href = `/locations/${e.target.value}`}
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
+              <option value="all-cities">
+                {language === 'es' ? 'Todas las ciudades' : 'All cities'} 
+                {stats?.totalStats ? ` (${stats.totalStats.total})` : ''}
+              </option>
               {Object.entries(cityMap).map(([slug, info]) => (
-                <option key={slug} value={slug}>{info.displayName}</option>
+                <option key={slug} value={slug}>
+                  {info.displayName}
+                  {stats?.cityStats?.[slug] ? ` (${stats.cityStats[slug].total})` : ''}
+                </option>
               ))}
             </select>
 
@@ -268,9 +294,16 @@ export default function CityPage() {
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
-              {normalizedTypes.map(type => (
-                <option key={type} value={type}>{getDisplayType(type)}</option>
-              ))}
+              {normalizedTypes.map(type => {
+                const displayType = getDisplayType(type)
+                const currentCityStats = stats?.cityStats?.[cityId]
+                const typeCount = currentCityStats?.types?.[type.toLowerCase()] || 0
+                return (
+                  <option key={type} value={type}>
+                    {displayType} ({typeCount})
+                  </option>
+                )
+              })}
             </select>
 
             {/* Category Filter - Restored Original Options with Alphabetical Order */}
@@ -416,7 +449,7 @@ export default function CityPage() {
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700"
                   >
                     {language === 'es' ? 'Anterior' : 'Previous'}
                   </button>
@@ -440,7 +473,7 @@ export default function CityPage() {
                   <button
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700"
                   >
                     {language === 'es' ? 'Siguiente' : 'Next'}
                   </button>
