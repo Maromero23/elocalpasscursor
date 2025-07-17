@@ -1,6 +1,10 @@
+'use client'
+
 import Link from 'next/link'
+import { useTranslation } from '../contexts/LanguageContext'
 
 export default function Footer() {
+  const { t } = useTranslation()
   return (
     <div className="pt-16 px-4 lg:px-40 bg-primary-500">
       <div className="grid gap-16 row-gap-10 mb-8 lg:grid-cols-6">
@@ -10,66 +14,66 @@ export default function Footer() {
           </Link>
           <div className="mt-4 lg:max-w-sm">
             <p className="text-sm text-gray-200">
-              eLocalPass, Inc. is a licensed and regulated digital business authorized to operate by the relevant authorities.
+              {t.footer.companyDescription}
             </p>
           </div>
         </div>
         
         <div className="grid grid-cols-2 gap-5 row-gap-8 lg:col-span-4 md:grid-cols-4">
           <div>
-            <p className="font-semibold tracking-wide text-gray-200">About Us</p>
+            <p className="font-semibold tracking-wide text-gray-200">{t.footer.aboutUs}</p>
             <ul className="mt-2 space-y-2">
               <li>
                 <Link href="/" className="text-gray-300 transition-colors duration-300 hover:text-white">
-                  Our Story
+                  {t.footer.ourStory}
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="text-gray-300 transition-colors duration-300 hover:text-white">
+                  {t.footer.frequentlyAskedQuestions}
                 </Link>
               </li>
               <li>
                 <Link href="/" className="text-gray-300 transition-colors duration-300 hover:text-white">
-                  Frequently Asked Questions
-                </Link>
-              </li>
-              <li>
-                <Link href="/" className="text-gray-300 transition-colors duration-300 hover:text-white">
-                  Our partners
+                  {t.footer.ourPartners}
                 </Link>
               </li>
             </ul>
           </div>
           
           <div>
-            <p className="font-semibold tracking-wide text-gray-200">Want to be part?</p>
+            <p className="font-semibold tracking-wide text-gray-200">{t.footer.wantToBePart}</p>
             <ul className="mt-2 space-y-2">
               <li>
                 <Link href="/" className="text-gray-300 transition-colors duration-300 hover:text-white">
-                  How It Works
+                  {t.footer.howItWorks}
                 </Link>
               </li>
             </ul>
           </div>
           
           <div>
-            <p className="font-semibold tracking-wide text-gray-200">Are You an Affiliate?</p>
+            <p className="font-semibold tracking-wide text-gray-200">{t.footer.areYouAffiliate}</p>
             <ul className="mt-2 space-y-2">
               <li>
                 <Link href="/" className="text-gray-300 transition-colors duration-300 hover:text-white">
-                  Affiliate Benefits
+                  {t.footer.affiliateBenefits}
                 </Link>
               </li>
             </ul>
           </div>
           
           <div>
-            <p className="font-semibold tracking-wide text-gray-200">Legal</p>
+            <p className="font-semibold tracking-wide text-gray-200">{t.footer.legal}</p>
             <ul className="mt-2 space-y-2">
               <li>
                 <Link href="/" className="text-gray-300 transition-colors duration-300 hover:text-white">
-                  Terms and Conditions
+                  {t.footer.termsAndConditions}
                 </Link>
               </li>
               <li>
                 <Link href="/" className="text-gray-300 transition-colors duration-300 hover:text-white">
-                  Privacy Policy
+                  {t.footer.privacyPolicy}
                 </Link>
               </li>
             </ul>
@@ -79,7 +83,7 @@ export default function Footer() {
       
       <div className="flex flex-col justify-between pt-5 pb-10 border-t sm:flex-row">
         <p className="text-sm text-gray-300">
-          eLocalPass, Inc. © 2024 All rights reserved.
+          {t.footer.copyright}
         </p>
         <div className="flex items-center mt-4 space-x-4 sm:mt-0">
           <Link href="/" className="text-gray-100 transition-colors duration-300 hover:text-white">

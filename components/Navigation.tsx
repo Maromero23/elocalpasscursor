@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { useTranslation } from '../contexts/LanguageContext'
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { t, language, setLanguage } = useTranslation()
 
   return (
     <nav className="bg-slate-100 text-blue-700 z-50 fixed w-full shadow-md p-3 transition-opacity duration-300">
@@ -48,28 +50,28 @@ export default function Navigation() {
                   href="/"
                   className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium"
                 >
-                  Home
+                  {t.navigation.home}
                 </Link>
                 <button className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium">
-                  Locations
+                  {t.navigation.locations}
                 </button>
                 <Link 
                   href="/passes"
                   className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium"
                 >
-                  Passes
+                  {t.navigation.passes}
                 </Link>
                 <Link 
                   href="/faq"
                   className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium"
                 >
-                  FAQ
+                  {t.navigation.faq}
                 </Link>
                 <Link 
                   href="/contact"
                   className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium"
                 >
-                  Contact
+                  {t.navigation.contact}
                 </Link>
               </div>
             </div>
@@ -81,10 +83,22 @@ export default function Navigation() {
               href="/login"
               className="relative flex bg-oranges-200 cursor-pointer hover:bg-oranges-500 border-2 border-orange-400 text-white px-4 py-1 rounded-md text-sm mx-2"
             >
-              Login
+              {t.navigation.login}
             </Link>
-            <p className="text-xl">🇺🇸</p>
-            <p className="text-xl">🇲🇽</p>
+            <button 
+              onClick={() => setLanguage('en')} 
+              className={`text-xl hover:scale-110 transition-transform ${language === 'en' ? 'ring-2 ring-orange-400 rounded' : ''}`}
+              title="English"
+            >
+              🇺🇸
+            </button>
+            <button 
+              onClick={() => setLanguage('es')} 
+              className={`text-xl hover:scale-110 transition-transform ${language === 'es' ? 'ring-2 ring-orange-400 rounded' : ''}`}
+              title="Español"
+            >
+              🇲🇽
+            </button>
             <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
@@ -100,34 +114,34 @@ export default function Navigation() {
               href="/"
               className="block px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500"
             >
-              Home
+              {t.navigation.home}
             </Link>
             <button className="block px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500">
-              Locations
+              {t.navigation.locations}
             </button>
             <Link 
               href="/passes"
               className="block px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500"
             >
-              Passes
+              {t.navigation.passes}
             </Link>
             <Link 
               href="/faq"
               className="block px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500"
             >
-              FAQ
+              {t.navigation.faq}
             </Link>
             <Link 
               href="/contact"
               className="block px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500"
             >
-              Contact
+              {t.navigation.contact}
             </Link>
             <Link 
               href="/login"
               className="block px-3 py-2 text-base font-medium bg-oranges-200 text-white rounded-md"
             >
-              Login
+              {t.navigation.login}
             </Link>
           </div>
         </div>

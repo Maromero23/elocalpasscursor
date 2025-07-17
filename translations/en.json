@@ -1,0 +1,131 @@
+{
+  "navigation": {
+    "home": "Home",
+    "locations": "Locations", 
+    "passes": "Passes",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "login": "Login"
+  },
+  "home": {
+    "heroTitle": "Pay like a local",
+    "heroSubtitle": "Elite application for travelers in México",
+    "asEasyAsTitle": "As Easy As",
+    "asEasyAsSteps": [
+      "Choose your destination",
+      "Select your pass",
+      "Start saving money"
+    ],
+    "citiesTitle": "Explore Amazing Destinations",
+    "cities": {
+      "cancun": "Cancún",
+      "tulum": "Tulum", 
+      "cozumel": "Cozumel",
+      "playaDelCarmen": "Playa del Carmen",
+      "islaMujeres": "Isla Mujeres",
+      "puertoMorelos": "Puerto Morelos",
+      "bacalar": "Bacalar",
+      "holbox": "Holbox",
+      "puertoAventuras": "Puerto Aventuras"
+    }
+  },
+  "passes": {
+    "title": "CHOOSE THE BEST OPTION FOR YOU",
+    "subtitle": "ENJOY OUR DISCOUNTS!",
+    "byDayPass": {
+      "title": "BY DAY PASS",
+      "price": "$15.00",
+      "description": "Perfect for short visits and day trips. Get access to exclusive discounts at participating locations.",
+      "buttonText": "Get it"
+    },
+    "fullWeekPass": {
+      "title": "FULL WEEK PASS", 
+      "price": "$79.90",
+      "popular": "POPULAR",
+      "description": "Best value for extended stays. Unlock maximum savings across all our partner locations.",
+      "buttonText": "Get it"
+    },
+    "customPass": {
+      "title": "CUSTOM PASS",
+      "price": "Custom",
+      "description": "Tailored for your specific needs. Contact us to create a personalized discount package.",
+      "buttonText": "Get it"
+    },
+    "testimonial": {
+      "text": "Amazing discounts and great service! Saved so much money during my vacation in Mexico.",
+      "author": "Happy Customer"
+    }
+  },
+  "faq": {
+    "title": "FAQs",
+    "subtitle": "Welcome to our Frequently Asked Questions section! Here, you'll find clear answers to common queries about eLocalPass. From how to get it to where to use it, we're here to help you make the most of your experience. Dive in and discover all that eLocalPass has to offer!",
+    "questions": [
+      {
+        "question": "Where can I purchase eLocalPass?",
+        "answer": "You can get it online at www.elocalpass.com"
+      },
+      {
+        "question": "How much does my eLocalPass cost?",
+        "answer": "The cost will be proportional to the number of days and people who wish to enjoy this benefit"
+      },
+      {
+        "question": "Where can I validate my eLocalPass?",
+        "answer": "On our website, you can consult the list of restaurants, stores, and services where you can enjoy our multiple benefits"
+      },
+      {
+        "question": "Is it only for locals?",
+        "answer": "No, eLocalPass is for tourists who are looking for the experience and benefits of a local"
+      },
+      {
+        "question": "Can I use eLocalPass for more people than the registered?",
+        "answer": "For each visit, an eLocalPass holder is registered, and this benefit is extended only to the people selected"
+      },
+      {
+        "question": "Can I transfer the benefits to someone else?",
+        "answer": "It is valid for a group of registered persons; however, one cardholder must be present each time"
+      },
+      {
+        "question": "Do I get discounts at all restaurants in Quintana Roo with my eLocalPass?",
+        "answer": "No, you can enjoy varied discounts in a wide list of places"
+      },
+      {
+        "question": "Do i only need to show QR code to validate my discount?",
+        "answer": "In most establishments only the QR code will be neccesary, however, we recommed that you carry your ID at all time"
+      }
+    ]
+  },
+  "contact": {
+    "title": "Contact Us!",
+    "gettingHere": "Getting here:",
+    "address": "Quinta Avenida #25 Suite 23 Playa del Carmen, CP 77710",
+    "contactUs": "Contact us:",
+    "phone": "Tel: +52 984 211 0483",
+    "email": "Email:",
+    "emailAddress": "info@elocalpass.com",
+    "mapError": "Oops! Something went wrong.",
+    "mapErrorDetails": "This page didn't load Google Maps correctly. See the JavaScript console for technical details.",
+    "form": {
+      "nameLabel": "Your Name",
+      "emailLabel": "Your Email", 
+      "messageLabel": "Your Message",
+      "sendButton": "Send"
+    }
+  },
+  "footer": {
+    "aboutUs": "About Us",
+    "ourStory": "Our Story",
+    "frequentlyAskedQuestions": "Frequently Asked Questions",
+    "ourPartners": "Our partners",
+    "wantToBePart": "Want to be part?",
+    "howItWorks": "How It Works",
+    "areYouAffiliate": "Are You an Affiliate?",
+    "affiliateBenefits": "Affiliate Benefits",
+    "legal": "Legal",
+    "termsAndConditions": "Terms and Conditions",
+    "privacyPolicy": "Privacy Policy",
+    "contactUs": "Contact Us",
+    "copyright": "eLocalPass, Inc. © 2024 All rights reserved.",
+    "companyDescription": "eLocalPass, Inc. is a licensed and regulated digital business authorized to operate by the relevant authorities.",
+    "adminLogin": "Admin Login"
+  }
+} 

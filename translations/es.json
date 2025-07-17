@@ -1,0 +1,131 @@
+{
+  "navigation": {
+    "home": "Inicio",
+    "locations": "Ubicaciones", 
+    "passes": "Pases",
+    "faq": "FAQ",
+    "contact": "Contacto",
+    "login": "Iniciar Sesión"
+  },
+  "home": {
+    "heroTitle": "Paga como un local",
+    "heroSubtitle": "Aplicación elite para viajeros en México",
+    "asEasyAsTitle": "Tan Fácil Como",
+    "asEasyAsSteps": [
+      "Elige tu destino",
+      "Selecciona tu pase", 
+      "Comienza a ahorrar dinero"
+    ],
+    "citiesTitle": "Explora Destinos Increíbles",
+    "cities": {
+      "cancun": "Cancún",
+      "tulum": "Tulum",
+      "cozumel": "Cozumel", 
+      "playaDelCarmen": "Playa del Carmen",
+      "islaMujeres": "Isla Mujeres",
+      "puertoMorelos": "Puerto Morelos",
+      "bacalar": "Bacalar",
+      "holbox": "Holbox",
+      "puertoAventuras": "Puerto Aventuras"
+    }
+  },
+  "passes": {
+    "title": "ELIGE LA MEJOR OPCIÓN PARA TI",
+    "subtitle": "¡DISFRUTA NUESTROS DESCUENTOS!",
+    "byDayPass": {
+      "title": "PASE POR DÍA",
+      "price": "$15.00",
+      "description": "Perfecto para visitas cortas y excursiones de un día. Obtén acceso a descuentos exclusivos en ubicaciones participantes.",
+      "buttonText": "Obtenerlo"
+    },
+    "fullWeekPass": {
+      "title": "PASE SEMANA COMPLETA",
+      "price": "$79.90", 
+      "popular": "POPULAR",
+      "description": "La mejor opción para estadías prolongadas. Desbloquea el máximo ahorro en todas nuestras ubicaciones asociadas.",
+      "buttonText": "Obtenerlo"
+    },
+    "customPass": {
+      "title": "PASE PERSONALIZADO",
+      "price": "Personalizado",
+      "description": "Adaptado a tus necesidades específicas. Contáctanos para crear un paquete de descuentos personalizado.",
+      "buttonText": "Obtenerlo"
+    },
+    "testimonial": {
+      "text": "¡Descuentos increíbles y gran servicio! Ahorré mucho dinero durante mis vacaciones en México.",
+      "author": "Cliente Feliz"
+    }
+  },
+  "faq": {
+    "title": "Preguntas Frecuentes",
+    "subtitle": "¡Bienvenido a nuestra sección de Preguntas Frecuentes! Aquí encontrarás respuestas claras a consultas comunes sobre eLocalPass. Desde cómo obtenerlo hasta dónde usarlo, estamos aquí para ayudarte a aprovechar al máximo tu experiencia. ¡Sumérgete y descubre todo lo que eLocalPass tiene para ofrecer!",
+    "questions": [
+      {
+        "question": "¿Dónde puedo comprar eLocalPass?",
+        "answer": "Puedes obtenerlo en línea en www.elocalpass.com"
+      },
+      {
+        "question": "¿Cuánto cuesta mi eLocalPass?",
+        "answer": "El costo será proporcional al número de días y personas que deseen disfrutar de este beneficio"
+      },
+      {
+        "question": "¿Dónde puedo validar mi eLocalPass?",
+        "answer": "En nuestro sitio web, puedes consultar la lista de restaurantes, tiendas y servicios donde puedes disfrutar de nuestros múltiples beneficios"
+      },
+      {
+        "question": "¿Es solo para locales?",
+        "answer": "No, eLocalPass es para turistas que buscan la experiencia y beneficios de un local"
+      },
+      {
+        "question": "¿Puedo usar eLocalPass para más personas de las registradas?",
+        "answer": "Para cada visita, se registra un portador de eLocalPass, y este beneficio se extiende solo a las personas seleccionadas"
+      },
+      {
+        "question": "¿Puedo transferir los beneficios a otra persona?",
+        "answer": "Es válido para un grupo de personas registradas; sin embargo, un portador de la tarjeta debe estar presente cada vez"
+      },
+      {
+        "question": "¿Obtengo descuentos en todos los restaurantes de Quintana Roo con mi eLocalPass?",
+        "answer": "No, puedes disfrutar descuentos variados en una amplia lista de lugares"
+      },
+      {
+        "question": "¿Solo necesito mostrar el código QR para validar mi descuento?",
+        "answer": "En la mayoría de establecimientos solo será necesario el código QR, sin embargo, recomendamos que lleves tu identificación en todo momento"
+      }
+    ]
+  },
+  "contact": {
+    "title": "¡Contáctanos!",
+    "gettingHere": "Cómo llegar:",
+    "address": "Quinta Avenida #25 Suite 23 Playa del Carmen, CP 77710",
+    "contactUs": "Contáctanos:",
+    "phone": "Tel: +52 984 211 0483",
+    "email": "Correo:",
+    "emailAddress": "info@elocalpass.com",
+    "mapError": "¡Ups! Algo salió mal.",
+    "mapErrorDetails": "Esta página no cargó Google Maps correctamente. Consulta la consola JavaScript para detalles técnicos.",
+    "form": {
+      "nameLabel": "Tu Nombre",
+      "emailLabel": "Tu Correo",
+      "messageLabel": "Tu Mensaje", 
+      "sendButton": "Enviar"
+    }
+  },
+  "footer": {
+    "aboutUs": "Acerca de Nosotros",
+    "ourStory": "Nuestra Historia",
+    "frequentlyAskedQuestions": "Preguntas Frecuentes",
+    "ourPartners": "Nuestros socios",
+    "wantToBePart": "¿Quieres ser parte?",
+    "howItWorks": "Cómo Funciona",
+    "areYouAffiliate": "¿Eres un Afiliado?",
+    "affiliateBenefits": "Beneficios de Afiliado",
+    "legal": "Legal",
+    "termsAndConditions": "Términos y Condiciones",
+    "privacyPolicy": "Política de Privacidad",
+    "contactUs": "Contáctanos",
+    "copyright": "eLocalPass, Inc. © 2024 Todos los derechos reservados.",
+    "companyDescription": "eLocalPass, Inc. es un negocio digital licenciado y regulado autorizado para operar por las autoridades relevantes.",
+    "adminLogin": "Inicio de Sesión Admin"
+  }
+} 

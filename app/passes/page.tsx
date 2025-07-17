@@ -1,7 +1,11 @@
+'use client'
+
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
+import { useTranslation } from '@/contexts/LanguageContext'
 
 export default function PassesPage() {
+  const { t } = useTranslation()
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
@@ -9,7 +13,7 @@ export default function PassesPage() {
       <div className="pt-20">
         {/* Header */}
         <div className="bg-orange-400 text-center text-white font-bold text-2xl sm:text-4xl py-8">
-          CHOOSE THE BEST OPTION FOR YOU
+          {t.passes.title}
         </div>
         
         {/* Cards Section */}
@@ -18,8 +22,8 @@ export default function PassesPage() {
             
             {/* BY DAY PASS */}
             <div className="bg-white rounded-2xl shadow-lg p-8 flex-1 text-center">
-              <h3 className="text-xl font-bold text-gray-800 mb-2">BY DAY PASS</h3>
-              <p className="text-sm text-gray-600 mb-6">PERFECT FOR A SHORT VISIT</p>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">{t.passes.byDayPass.title}</h3>
+              <p className="text-sm text-gray-600 mb-6">{t.passes.byDayPass.description}</p>
               
               <div className="mb-6">
                 <span className="text-4xl font-bold text-gray-800">$ 15</span>
@@ -43,14 +47,14 @@ export default function PassesPage() {
               </div>
               
               <button className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-8 rounded-lg w-full transition-colors">
-                Get it
+                {t.passes.byDayPass.buttonText}
               </button>
             </div>
 
             {/* FULL WEEK PASS - Featured */}
             <div className="bg-blue-900 rounded-2xl shadow-xl p-8 flex-1 text-center text-white transform md:scale-105">
-              <h3 className="text-xl font-bold mb-2">FULL WEEK PASS</h3>
-              <p className="text-sm text-blue-200 mb-6">BETTER PRICE FOR A FULL WEEK VISIT</p>
+              <h3 className="text-xl font-bold mb-2">{t.passes.fullWeekPass.title}</h3>
+              <p className="text-sm text-blue-200 mb-6">{t.passes.fullWeekPass.description}</p>
               
               <div className="mb-6">
                 <span className="text-4xl font-bold">$ 79</span>
@@ -74,14 +78,14 @@ export default function PassesPage() {
               </div>
               
               <button className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-8 rounded-lg w-full transition-colors">
-                Get it
+                {t.passes.fullWeekPass.buttonText}
               </button>
             </div>
 
             {/* CUSTOM PASS */}
             <div className="bg-white rounded-2xl shadow-lg p-8 flex-1 text-center">
-              <h3 className="text-xl font-bold text-gray-800 mb-2">CUSTOM PASS</h3>
-              <p className="text-sm text-gray-600 mb-6">IDEAL FOR LONGER VISITS</p>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">{t.passes.customPass.title}</h3>
+              <p className="text-sm text-gray-600 mb-6">{t.passes.customPass.description}</p>
               
               <div className="mb-6">
                 <span className="text-4xl font-bold text-gray-800">Custom</span>
@@ -103,7 +107,7 @@ export default function PassesPage() {
               </div>
               
               <button className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-8 rounded-lg w-full transition-colors">
-                Get it
+                {t.passes.customPass.buttonText}
               </button>
             </div>
           </div>

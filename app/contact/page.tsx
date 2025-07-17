@@ -3,6 +3,7 @@
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
 import { useState } from 'react'
+import { useTranslation } from '@/contexts/LanguageContext'
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ export default function ContactPage() {
     email: '',
     message: ''
   })
+  const { t } = useTranslation()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -36,26 +38,26 @@ export default function ContactPage() {
             {/* Left side - Contact Information */}
             <div className="lg:col-span-1 space-y-6">
               <div>
-                <h3 className="text-orange-500 font-bold text-lg mb-3">Getting here:</h3>
+                <h3 className="text-orange-500 font-bold text-lg mb-3">{t.contact.gettingHere}</h3>
                 <p className="text-gray-700">
-                  Quinta Avenida #25 Suite 23 Playa del Carmen, CP 77710
+                  {t.contact.address}
                 </p>
               </div>
               
               <div>
-                <h3 className="text-orange-500 font-bold text-lg mb-3">Contact us:</h3>
+                <h3 className="text-orange-500 font-bold text-lg mb-3">{t.contact.contactUs}</h3>
                 <p className="text-gray-700">
-                  Tel: +52 984 211 0483
+                  {t.contact.phone}
                 </p>
               </div>
               
               <div>
-                <h3 className="text-orange-500 font-bold text-lg mb-3">Email:</h3>
+                <h3 className="text-orange-500 font-bold text-lg mb-3">{t.contact.email}</h3>
                 <a 
                   href="mailto:info@elocalpass.com" 
                   className="text-blue-500 hover:text-blue-600 underline"
                 >
-                  info@elocalpass.com
+                  {t.contact.emailAddress}
                 </a>
               </div>
             </div>
@@ -69,10 +71,10 @@ export default function ContactPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   <p className="text-sm">
-                    Oops! Something went wrong.
+                    {t.contact.mapError}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    This page didn't load Google Maps correctly. See the JavaScript console for technical details.
+                    {t.contact.mapErrorDetails}
                   </p>
                 </div>
               </div>
@@ -81,7 +83,7 @@ export default function ContactPage() {
             {/* Right side - Contact Form */}
             <div className="lg:col-span-1">
               <div className="text-right mb-6">
-                <h1 className="text-orange-500 text-2xl font-bold mb-4">Contact Us!</h1>
+                <h1 className="text-orange-500 text-2xl font-bold mb-4">{t.contact.title}</h1>
                 
                 <div className="flex justify-end space-x-3 text-blue-600">
                   {/* WhatsApp */}
@@ -110,7 +112,7 @@ export default function ContactPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Name
+                    {t.contact.form.nameLabel}
                   </label>
                   <input
                     type="text"
@@ -125,7 +127,7 @@ export default function ContactPage() {
 
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Email
+                    {t.contact.form.emailLabel}
                   </label>
                   <input
                     type="email"
@@ -140,7 +142,7 @@ export default function ContactPage() {
 
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Message
+                    {t.contact.form.messageLabel}
                   </label>
                   <textarea
                     id="message"
@@ -156,7 +158,7 @@ export default function ContactPage() {
                   type="submit"
                   className="bg-gray-300 hover:bg-blue-500 text-gray-700 hover:text-white font-medium py-2 px-6 rounded-md transition-colors duration-200"
                 >
-                  Send
+                  {t.contact.form.sendButton}
                 </button>
               </form>
             </div>

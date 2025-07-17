@@ -41,3 +41,10 @@ seed.js
 prisma/migrations/migration_lock.toml
 node_modules
 .vercel
+
+# Large files excluded from git
+old-website:/images.zip
+old-website:/assets/lv_0_20250213101230-CW5KRSWy.mp4
+old-website:/wpBack/error_log
+old-website:/aplicacion.zip
+old-website:/
