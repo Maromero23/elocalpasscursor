@@ -65,6 +65,8 @@ export default function CityPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const affiliatesPerPage = 12
   const [stats, setStats] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
   const cityId = params.city as string
   const cityInfo = cityId === 'all-cities' ? { name: 'all-cities', displayName: 'All Cities' } : cityMap[cityId as keyof typeof cityMap]
@@ -131,24 +133,63 @@ export default function CityPage() {
 
   useEffect(() => {
     if (cityInfo) {
-      fetchAffiliates()
-      fetchStats()
-      getUserLocation()
+      setLoading(true)
+      setAffiliates([]) // Clear previous data immediately
+      setCurrentPage(1) // Reset pagination
+      
+      // Use a timeout to prevent rapid successive calls
+      const timeoutId = setTimeout(() => {
+        fetchAffiliates()
+        fetchStats()
+        getUserLocation()
+      }, 100)
+      
+      return () => clearTimeout(timeoutId)
     }
-  }, [cityInfo])
+  }, [cityId]) // Use cityId instead of cityInfo for more stable dependency
 
   const fetchAffiliates = async () => {
     try {
+      setLoading(true)
+      setError(null)
       const url = cityInfo.name === 'all-cities' 
         ? '/api/locations/affiliates'
         : `/api/locations/affiliates?city=${cityInfo.name}`
-      const response = await fetch(url)
+      
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      
+      const response = await fetch(url, {
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+      
       if (response.ok) {
         const data = await response.json()
         setAffiliates(data.affiliates || [])
+        setRetryCount(0) // Reset retry count on success
+      } else {
+        console.error('❌ LOCATIONS: Error fetching affiliates:', response.status, response.statusText)
+        setError(`Failed to load affiliates (${response.status})`)
       }
-    } catch (error) {
-      console.error('Error fetching affiliates:', error)
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('❌ LOCATIONS: Request timeout')
+        setError('Request timeout - please try again')
+      } else {
+        console.error('❌ LOCATIONS: Error fetching affiliates:', error)
+        setError('Failed to load affiliates - please try again')
+      }
+      
+      // Auto-retry logic (max 3 retries)
+      if (retryCount < 3) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1)
+          fetchAffiliates()
+        }, 2000) // Wait 2 seconds before retry
+      }
     } finally {
       setLoading(false)
     }
@@ -292,6 +333,8 @@ export default function CityPage() {
             <select
               value={cityId || ''}
               onChange={e => {
+                if (loading) return // Prevent switching while loading
+                
                 if (e.target.value === 'all-cities') {
                   // For all cities, update URL and fetch all affiliates
                   window.history.pushState({}, '', '/locations/all-cities')
@@ -301,7 +344,8 @@ export default function CityPage() {
                   window.location.href = `/locations/${e.target.value}`
                 }
               }}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              disabled={loading}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="all-cities">
                 {language === 'es' ? 'Todas las ciudades' : 'All cities'} 
@@ -398,7 +442,41 @@ export default function CityPage() {
           {/* Results */}
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">
+                  {language === 'es' ? 'Cargando afiliados...' : 'Loading affiliates...'}
+                </p>
+                {retryCount > 0 && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    {language === 'es' ? `Reintento ${retryCount}/3` : `Retry ${retryCount}/3`}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <div className="text-red-500 mb-4">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <p className="text-gray-900 font-medium mb-2">
+                  {language === 'es' ? 'Error al cargar' : 'Loading Error'}
+                </p>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <button
+                  onClick={() => {
+                    setError(null)
+                    setRetryCount(0)
+                    fetchAffiliates()
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {language === 'es' ? 'Reintentar' : 'Retry'}
+                </button>
+              </div>
             </div>
           ) : (
             <>
