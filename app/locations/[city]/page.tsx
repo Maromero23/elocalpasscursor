@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { MapPin, Search, Filter, Star, Phone, Mail, Globe, Map, Navigation, Heart } from 'lucide-react'
+import { MapPin, Search, Filter, Star, Phone, Mail, Globe, Map, Heart } from 'lucide-react'
 import { useTranslation } from '../../../contexts/LanguageContext'
 import GoogleMap from '../../../components/GoogleMap'
 import AffiliateModal from '../../../components/AffiliateModal'
 import { Affiliate } from '../../../types/affiliate'
+import Navigation from '../../../components/Navigation'
 
 const cityMap = {
   'bacalar': { name: 'Bacalar', displayName: 'Bacalar' },
@@ -112,246 +113,221 @@ export default function CityPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <div className="pt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {cityInfo?.displayName || cityId}
+            </h1>
+            <p className="text-gray-600">
+              {language === 'es'
+                ? `Negocios afiliados en ${cityInfo?.displayName || cityId}`
+                : `Affiliate businesses in ${cityInfo?.displayName || cityId}`}
+            </p>
+          </div>
+
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+              {/* City Filter */}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {cityInfo.displayName}
-                </h1>
-                <p className="text-gray-600">
-                  {language === 'es' 
-                    ? `${affiliates.length} negocios locales con descuentos exclusivos`
-                    : `${affiliates.length} local businesses with exclusive discounts`
-                  }
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setShowMap(!showMap)}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    showMap 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {language === 'es' ? 'Ciudad' : 'City'}
+                </label>
+                <select
+                  value={cityId || ''}
+                  onChange={e => window.location.href = `/locations/${e.target.value}`}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <Map className="w-4 h-4 inline mr-2" />
-                  {showMap 
-                    ? (language === 'es' ? 'Ver lista' : 'View list')
-                    : (language === 'es' ? 'Ver mapa' : 'View map')
-                  }
-                </button>
+                  {Object.entries(cityMap).map(([slug, info]) => (
+                    <option key={slug} value={slug}>{info.displayName}</option>
+                  ))}
+                </select>
+              </div>
+              {/* Type Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {language === 'es' ? 'Tipo' : 'Type'}
+                </label>
+                <select
+                  value={typeFilter}
+                  onChange={e => setTypeFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
+                  {types.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {language === 'es' ? 'Categoría' : 'Category'}
+                </label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">{language === 'es' ? 'Todas las categorías' : 'All categories'}</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category || ''}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Rating Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {language === 'es' ? 'Calificación mínima' : 'Min. Rating'}
+                </label>
+                <select
+                  value={ratingFilter}
+                  onChange={(e) => setRatingFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">{language === 'es' ? 'Cualquier calificación' : 'Any rating'}</option>
+                  <option value="4.5">4.5+ ⭐</option>
+                  <option value="4.0">4.0+ ⭐</option>
+                  <option value="3.5">3.5+ ⭐</option>
+                  <option value="3.0">3.0+ ⭐</option>
+                </select>
+              </div>
+
+              {/* Recommended Filter */}
+              <div className="flex items-end">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={recommendedFilter}
+                    onChange={(e) => setRecommendedFilter(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    {language === 'es' ? 'Solo recomendados' : 'Recommended only'}
+                  </span>
+                </label>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Search */}
-            <div className="lg:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'es' ? 'Buscar' : 'Search'}
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder={language === 'es' ? 'Buscar negocios...' : 'Search businesses...'}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+          {/* Results */}
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
+          ) : (
+            <div className="flex gap-8">
+              {/* Left Side - Affiliate List */}
+              <div className={`${showMap ? 'w-1/2' : 'w-full'}`}>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {language === 'es' 
+                      ? `${filteredAffiliates.length} negocios encontrados`
+                      : `${filteredAffiliates.length} businesses found`
+                    }
+                  </h3>
+                  {userLocation && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      {language === 'es' ? 'Tu ubicación' : 'Your location'}
+                    </div>
+                  )}
+                </div>
 
-            {/* Type Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'es' ? 'Tipo' : 'Type'}
-              </label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
-                {types.map((type) => (
-                  <option key={type} value={type || ''}>{type}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Category Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'es' ? 'Categoría' : 'Category'}
-              </label>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">{language === 'es' ? 'Todas las categorías' : 'All categories'}</option>
-                {categories.map((category) => (
-                  <option key={category} value={category || ''}>{category}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Rating Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'es' ? 'Calificación mínima' : 'Min. Rating'}
-              </label>
-              <select
-                value={ratingFilter}
-                onChange={(e) => setRatingFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">{language === 'es' ? 'Cualquier calificación' : 'Any rating'}</option>
-                <option value="4.5">4.5+ ⭐</option>
-                <option value="4.0">4.0+ ⭐</option>
-                <option value="3.5">3.5+ ⭐</option>
-                <option value="3.0">3.0+ ⭐</option>
-              </select>
-            </div>
-
-            {/* Recommended Filter */}
-            <div className="flex items-end">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={recommendedFilter}
-                  onChange={(e) => setRecommendedFilter(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">
-                  {language === 'es' ? 'Solo recomendados' : 'Recommended only'}
-                </span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Results */}
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <div className="flex gap-8">
-            {/* Left Side - Affiliate List */}
-            <div className={`${showMap ? 'w-1/2' : 'w-full'}`}>
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {language === 'es' 
-                    ? `${filteredAffiliates.length} negocios encontrados`
-                    : `${filteredAffiliates.length} businesses found`
-                  }
-                </h3>
-                {userLocation && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Navigation className="w-4 h-4 mr-1" />
-                    {language === 'es' ? 'Tu ubicación' : 'Your location'}
-                  </div>
-                )}
-              </div>
-
-              {/* Affiliate List */}
-              <div className="space-y-4">
-                {filteredAffiliates.map((affiliate) => (
-                  <div 
-                    key={affiliate.id} 
-                    className={`bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer ${
-                      selectedAffiliate?.id === affiliate.id ? 'ring-2 ring-blue-500' : ''
-                    }`}
+                {/* Affiliate List */}
+                <div className="space-y-4">
+                  {filteredAffiliates.map((affiliate) => (
+                    <div 
+                      key={affiliate.id} 
+                      className={`bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer ${
+                        selectedAffiliate?.id === affiliate.id ? 'ring-2 ring-blue-500' : ''
+                      }`}
                                          onClick={() => {
                        setSelectedAffiliate(affiliate)
                        setModalAffiliate(affiliate)
                        setIsModalOpen(true)
                      }}
-                  >
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">{affiliate.name}</h3>
-                            <div className="flex items-center space-x-2">
-                              {affiliate.recommended && (
-                                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                                  {language === 'es' ? 'Recomendado' : 'Recommended'}
-                                </span>
-                              )}
-                              <button className="text-gray-400 hover:text-red-500 transition-colors">
-                                <Heart className="w-4 h-4" />
-                              </button>
+                    >
+                      <div className="p-6">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900">{affiliate.name}</h3>
+                              <div className="flex items-center space-x-2">
+                                {affiliate.recommended && (
+                                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                                    {language === 'es' ? 'Recomendado' : 'Recommended'}
+                                  </span>
+                                )}
+                                <button className="text-gray-400 hover:text-red-500 transition-colors">
+                                  <Heart className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
 
-                          {affiliate.rating && (
-                            <div className="flex items-center mb-2">
-                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                              <span className="text-sm text-gray-600 ml-1">{affiliate.rating}</span>
-                            </div>
-                          )}
+                            {affiliate.rating && (
+                              <div className="flex items-center mb-2">
+                                <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                                <span className="text-sm text-gray-600 ml-1">{affiliate.rating}</span>
+                              </div>
+                            )}
 
-                          {affiliate.category && (
-                            <p className="text-sm text-gray-600 mb-2">{affiliate.category}</p>
-                          )}
+                            {affiliate.category && (
+                              <p className="text-sm text-gray-600 mb-2">{affiliate.category}</p>
+                            )}
 
-                          {affiliate.description && (
-                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                              {affiliate.description}
-                            </p>
-                          )}
-
-                          {affiliate.discount && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                              <p className="text-sm font-medium text-blue-900">
-                                {language === 'es' ? 'Descuento:' : 'Discount:'} {affiliate.discount}
+                            {affiliate.description && (
+                              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                {affiliate.description}
                               </p>
-                            </div>
-                          )}
+                            )}
 
-                          {/* Contact Info */}
-                          <div className="space-y-1">
-                            {affiliate.workPhone && (
-                              <div className="flex items-center text-sm text-gray-600">
-                                <Phone className="w-4 h-4 mr-2" />
-                                <span>{affiliate.workPhone}</span>
+                            {affiliate.discount && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                                <p className="text-sm font-medium text-blue-900">
+                                  {language === 'es' ? 'Descuento:' : 'Discount:'} {affiliate.discount}
+                                </p>
                               </div>
                             )}
-                            {affiliate.web && (
-                              <div className="flex items-center text-sm text-gray-600">
-                                <Globe className="w-4 h-4 mr-2" />
-                                <a href={affiliate.web} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                  {language === 'es' ? 'Visitar sitio web' : 'Visit website'}
-                                </a>
-                              </div>
+
+                            {/* Contact Info */}
+                            <div className="space-y-1">
+                              {affiliate.workPhone && (
+                                <div className="flex items-center text-sm text-gray-600">
+                                  <Phone className="w-4 h-4 mr-2" />
+                                  <span>{affiliate.workPhone}</span>
+                                </div>
+                              )}
+                              {affiliate.web && (
+                                <div className="flex items-center text-sm text-gray-600">
+                                  <Globe className="w-4 h-4 mr-2" />
+                                  <a href={affiliate.web} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                    {language === 'es' ? 'Visitar sitio web' : 'Visit website'}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Logo/Image */}
+                          <div className="ml-4 w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            {affiliate.logo ? (
+                              <img 
+                                src={affiliate.logo} 
+                                alt={affiliate.name}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            ) : (
+                              <MapPin className="w-8 h-8 text-gray-400" />
                             )}
                           </div>
                         </div>
-
-                        {/* Logo/Image */}
-                        <div className="ml-4 w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          {affiliate.logo ? (
-                            <img 
-                              src={affiliate.logo} 
-                              alt={affiliate.name}
-                              className="w-full h-full object-cover rounded-lg"
-                            />
-                          ) : (
-                            <MapPin className="w-8 h-8 text-gray-400" />
-                          )}
-                        </div>
-                      </div>
 
                                            {/* Action Buttons */}
                      <div className="flex space-x-2">

@@ -3,10 +3,24 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { useTranslation } from '../contexts/LanguageContext'
+import { ChevronDown } from 'lucide-react'
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [locationsDropdownOpen, setLocationsDropdownOpen] = useState(false)
   const { t, language, setLanguage } = useTranslation()
+
+  const cities = [
+    { name: 'Bacalar', slug: 'bacalar' },
+    { name: 'Cancún', slug: 'cancun' },
+    { name: 'Cozumel', slug: 'cozumel' },
+    { name: 'Holbox', slug: 'holbox' },
+    { name: 'Isla Mujeres', slug: 'isla-mujeres' },
+    { name: 'Playa del Carmen', slug: 'playa-del-carmen' },
+    { name: 'Puerto Aventuras', slug: 'puerto-aventuras' },
+    { name: 'Puerto Morelos', slug: 'puerto-morelos' },
+    { name: 'Tulum', slug: 'tulum' }
+  ]
 
   return (
     <nav className="bg-slate-100 text-blue-700 z-50 fixed w-full shadow-md p-3 transition-opacity duration-300">
@@ -52,12 +66,37 @@ export default function Navigation() {
                 >
                   {t.navigation.home}
                 </Link>
-                <Link 
-                  href="/locations"
-                  className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium"
-                >
-                  {t.navigation.locations}
-                </Link>
+                <div className="relative">
+                  <button
+                    onMouseEnter={() => setLocationsDropdownOpen(true)}
+                    onMouseLeave={() => setLocationsDropdownOpen(false)}
+                    className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium flex items-center"
+                  >
+                    {t.navigation.locations}
+                    <ChevronDown className="ml-1 h-4 w-4" />
+                  </button>
+                  
+                  {locationsDropdownOpen && (
+                    <div 
+                      className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50"
+                      onMouseEnter={() => setLocationsDropdownOpen(true)}
+                      onMouseLeave={() => setLocationsDropdownOpen(false)}
+                    >
+                      <div className="py-1">
+                        {cities.map((city) => (
+                          <Link
+                            key={city.slug}
+                            href={`/locations/${city.slug}`}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-orange-500"
+                            onClick={() => setLocationsDropdownOpen(false)}
+                          >
+                            {city.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <Link 
                   href="/passes"
                   className="text-blue-600 hover:text-orange-500 hover:font-semibold px-3 py-2 text-sm font-medium"
