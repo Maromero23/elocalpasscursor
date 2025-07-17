@@ -73,18 +73,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     isSpanish: language === 'es'
   }
 
-  // Don't render until language is detected to prevent flash
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
+  // Render immediately to prevent blocking images and content
   return (
     <LanguageContext.Provider value={value}>
       {children}

@@ -3,8 +3,11 @@
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
 import Link from 'next/link'
+import { useTranslation } from '@/contexts/LanguageContext'
 
 export default function HomePage() {
+  const { t } = useTranslation()
+
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
@@ -59,24 +62,25 @@ export default function HomePage() {
           {/* Right side - Text content */}
           <div className="w-full lg:w-1/2 px-4 lg:px-8 text-center lg:text-left mt-8 lg:mt-0">
             <h1 className="text-3xl lg:text-5xl font-bold text-blue-700 mb-6 leading-tight">
-              Enjoy the experience of paying like a local while visiting Mexico
+              {t.home.hero_title}
             </h1>
             <div className="space-y-4 mb-8">
               <p className="text-xl text-gray-700">
-                With <span className="text-blue-600 font-semibold">eLocalPass</span> you get incredible discounts while you travel!
+                {t.home.hero_description_1}
               </p>
               <p className="text-lg text-orange-500 font-semibold">
-                Up to <span className="text-2xl">50%</span> discounts in hundreds of restaurants, shops, services, and many more
+                {t.home.hero_description_2}
               </p>
               <p className="text-lg text-orange-600 font-bold">
-                Located in the state of Quintana Roo
+                {t.home.hero_description_3}
               </p>
             </div>
+            
             <Link 
-              href="/passes" 
+              href="/passes"
               className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors duration-300"
             >
-              Get Your eLocalPass!
+              {t.home.get_your_pass}
             </Link>
           </div>
         </div>
@@ -94,9 +98,9 @@ export default function HomePage() {
                     </svg>
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold">RESTAURANTS</h3>
+                <h3 className="text-2xl font-bold">{t.home.restaurants_title}</h3>
                 <p className="text-lg font-semibold">
-                  PAY LIKE A LOCAL AND ENJOY BETTER SERVICE IN HUNDREDS OF RESTAURANTS OF ALL STYLES.
+                  {t.home.restaurants_description}
                 </p>
               </div>
               
@@ -109,9 +113,9 @@ export default function HomePage() {
                     </svg>
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold">SHOPS</h3>
+                <h3 className="text-2xl font-bold">{t.home.shops_title}</h3>
                 <p className="text-lg font-semibold">
-                  SMART BUY! ENJOY THE BEST OFFERS AND EXCLUSIVE DISCOUNTS ON YOUR VACATION, SOUVENIRS, CLOTHES, CRAFTS, AND MUCH MORE!
+                  {t.home.shops_description}
                 </p>
               </div>
               
@@ -124,9 +128,9 @@ export default function HomePage() {
                     </svg>
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold">SERVICES</h3>
+                <h3 className="text-2xl font-bold">{t.home.services_title}</h3>
                 <p className="text-lg font-semibold">
-                  PAY LIKE A LOCAL ON A WIDE RANGE OF MEDICAL, DENTAL, RECREATIONAL ACTIVITIES, TRANSPORTATION, TO NAME A FEW.
+                  {t.home.services_description}
                 </p>
               </div>
             </div>
@@ -139,21 +143,27 @@ export default function HomePage() {
             <div className="flex flex-col lg:flex-row items-center">
               {/* Left side - Text content */}
               <div className="lg:w-1/2 lg:pr-12 mb-12 lg:mb-0">
-                <h2 className="text-4xl lg:text-5xl font-bold text-blue-700 mb-8">As Easy As</h2>
+                <h2 className="text-4xl lg:text-5xl font-bold text-blue-700 mb-8">
+                  {t('as_easy_as_title')}
+                </h2>
                 <div className="space-y-6">
                   <div className="flex items-center">
                     <span className="text-orange-500 text-2xl font-bold mr-4">+</span>
                     <span className="text-xl lg:text-2xl text-gray-700">
-                      Get your <span className="text-blue-600 font-semibold">eLocalPass</span>.
+                      {t('as_easy_as_step_1')}
                     </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-orange-500 text-2xl font-bold mr-4">+</span>
-                    <span className="text-xl lg:text-2xl text-gray-700">See all affiliated businesses.</span>
+                    <span className="text-xl lg:text-2xl text-gray-700">
+                      {t('as_easy_as_step_2')}
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-orange-500 text-2xl font-bold mr-4">+</span>
-                    <span className="text-xl lg:text-2xl text-gray-700">Enjoy and pay like a local.</span>
+                    <span className="text-xl lg:text-2xl text-gray-700">
+                      {t('as_easy_as_step_3')}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -196,7 +206,7 @@ export default function HomePage() {
         <div className="py-16 bg-blue-600">
           <div className="container mx-auto px-4">
             <h2 className="text-4xl lg:text-5xl font-bold text-white text-center mb-12">
-              Cities where you can<br />pay like a Local
+              {t('cities_title')}
             </h2>
             
             {/* 3x3 Grid of Cities */}
@@ -293,9 +303,11 @@ export default function HomePage() {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm uppercase tracking-wide">
-                TESTIMONIALS
+                {t('testimonials_title')}
               </span>
-              <h2 className="text-4xl font-bold text-orange-500 mt-6">What they say about us?</h2>
+              <h2 className="text-4xl font-bold text-orange-500 mt-6">
+                {t('testimonials_subtitle')}
+              </h2>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -308,9 +320,11 @@ export default function HomePage() {
                     className="w-16 h-16 rounded-full object-cover"
                   />
                   <div>
-                    <h4 className="font-bold text-gray-800 mb-2">Memorable Experiences</h4>
+                    <h4 className="font-bold text-gray-800 mb-2">
+                      {t('testimonial_1_title')}
+                    </h4>
                     <p className="text-gray-600 text-sm">
-                      Thanks to this platform, I had unforgettable experiences in Cancún, Playa del Carmen, and Tulum. Whether it was exploring ancient ruins or relaxing on pristine beaches, it was truly amazing.
+                      {t('testimonial_1_description')}
                     </p>
                   </div>
                 </div>
@@ -325,9 +339,11 @@ export default function HomePage() {
                     className="w-16 h-16 rounded-full object-cover"
                   />
                   <div>
-                    <h4 className="font-bold text-gray-800 mb-2">Unforgettable Vacation</h4>
+                    <h4 className="font-bold text-gray-800 mb-2">
+                      {t('testimonial_2_title')}
+                    </h4>
                     <p className="text-gray-600 text-sm">
-                      I had an unforgettable vacation using this platform. It provided me with amazing discounts and made my trip to Cancún, Playa del Carmen, and Tulum truly memorable.
+                      {t('testimonial_2_description')}
                     </p>
                   </div>
                 </div>
