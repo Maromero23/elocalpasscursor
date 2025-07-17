@@ -44,6 +44,9 @@ export async function GET(request: NextRequest) {
         if (affiliate.type) {
           const normalizedType = affiliate.type.toLowerCase()
           typeCounts[normalizedType] = (typeCounts[normalizedType] || 0) + 1
+        } else {
+          // Count affiliates without type as "uncategorized"
+          typeCounts['uncategorized'] = (typeCounts['uncategorized'] || 0) + 1
         }
       })
       
@@ -60,6 +63,9 @@ export async function GET(request: NextRequest) {
         if (affiliate.type) {
           const normalizedType = affiliate.type.toLowerCase()
           acc[normalizedType] = (acc[normalizedType] || 0) + 1
+        } else {
+          // Count affiliates without type as "uncategorized"
+          acc['uncategorized'] = (acc['uncategorized'] || 0) + 1
         }
         return acc
       }, {})

@@ -42,7 +42,8 @@ const getDisplayType = (normalizedType: string): string => {
     'restaurant': 'Restaurant', 
     'restaurants': 'Restaurant',
     'service': 'Service',
-    'services': 'Service'
+    'services': 'Service',
+    'uncategorized': 'Uncategorized'
   }
   return typeMap[normalizedType.toLowerCase()] || normalizedType
 }
@@ -294,7 +295,8 @@ export default function CityPage() {
                 if (e.target.value === 'all-cities') {
                   // For all cities, update URL and fetch all affiliates
                   window.history.pushState({}, '', '/locations/all-cities')
-                  fetchAllAffiliates()
+                  // Force a page reload to update the component state
+                  window.location.reload()
                 } else {
                   window.location.href = `/locations/${e.target.value}`
                 }
