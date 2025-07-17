@@ -144,25 +144,25 @@ export default function HomePage() {
               {/* Left side - Text content */}
               <div className="lg:w-1/2 lg:pr-12 mb-12 lg:mb-0">
                 <h2 className="text-4xl lg:text-5xl font-bold text-blue-700 mb-8">
-                  {t('as_easy_as_title')}
+                  {t.home.as_easy_as_title}
                 </h2>
                 <div className="space-y-6">
                   <div className="flex items-center">
                     <span className="text-orange-500 text-2xl font-bold mr-4">+</span>
                     <span className="text-xl lg:text-2xl text-gray-700">
-                      {t('as_easy_as_step_1')}
+                      {t.home.as_easy_as_step_1}
                     </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-orange-500 text-2xl font-bold mr-4">+</span>
                     <span className="text-xl lg:text-2xl text-gray-700">
-                      {t('as_easy_as_step_2')}
+                      {t.home.as_easy_as_step_2}
                     </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-orange-500 text-2xl font-bold mr-4">+</span>
                     <span className="text-xl lg:text-2xl text-gray-700">
-                      {t('as_easy_as_step_3')}
+                      {t.home.as_easy_as_step_3}
                     </span>
                   </div>
                 </div>
@@ -206,7 +206,7 @@ export default function HomePage() {
         <div className="py-16 bg-blue-600">
           <div className="container mx-auto px-4">
             <h2 className="text-4xl lg:text-5xl font-bold text-white text-center mb-12">
-              {t('cities_title')}
+              <span dangerouslySetInnerHTML={{ __html: t.home.cities_title }} />
             </h2>
             
             {/* 3x3 Grid of Cities */}
@@ -303,10 +303,10 @@ export default function HomePage() {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm uppercase tracking-wide">
-                {t('testimonials_title')}
+                {t.home.testimonials_title}
               </span>
               <h2 className="text-4xl font-bold text-orange-500 mt-6">
-                {t('testimonials_subtitle')}
+                {t.home.testimonials_subtitle}
               </h2>
             </div>
 
@@ -321,10 +321,10 @@ export default function HomePage() {
                   />
                   <div>
                     <h4 className="font-bold text-gray-800 mb-2">
-                      {t('testimonial_1_title')}
+                      {t.home.testimonial_1_title}
                     </h4>
                     <p className="text-gray-600 text-sm">
-                      {t('testimonial_1_description')}
+                      {t.home.testimonial_1_description}
                     </p>
                   </div>
                 </div>
@@ -340,10 +340,10 @@ export default function HomePage() {
                   />
                   <div>
                     <h4 className="font-bold text-gray-800 mb-2">
-                      {t('testimonial_2_title')}
+                      {t.home.testimonial_2_title}
                     </h4>
                     <p className="text-gray-600 text-sm">
-                      {t('testimonial_2_description')}
+                      {t.home.testimonial_2_description}
                     </p>
                   </div>
                 </div>
