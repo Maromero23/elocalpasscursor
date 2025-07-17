@@ -154,9 +154,9 @@ export default function CityPage() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       <div className="pt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full py-8">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-8 px-4 sm:px-6 lg:px-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {cityInfo?.displayName || cityId}
             </h1>
@@ -168,7 +168,7 @@ export default function CityPage() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 mx-4 sm:mx-6 lg:mx-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
               {/* City Filter */}
               <div>
@@ -260,9 +260,9 @@ export default function CityPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <div className="flex gap-8">
+            <div className="flex gap-0">
               {/* Left Side - Affiliate Grid (3 Column Layout) */}
-              <div className="w-[70%]">
+              <div className="w-[70%] px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
@@ -415,24 +415,17 @@ export default function CityPage() {
               </div>
 
               {/* Right Side - Map (Airbnb Style) */}
-              <div className="w-[30%]">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-[600px]">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'es' ? 'Mapa de ubicaciones' : 'Location Map'}
-                  </h3>
-                  <div className="h-full rounded-lg overflow-hidden">
-                    <GoogleMap
-                      affiliates={filteredAffiliates}
-                      userLocation={userLocation}
-                      onAffiliateClick={(affiliate) => {
-                        setSelectedAffiliate(affiliate)
-                        setModalAffiliate(affiliate)
-                        setIsModalOpen(true)
-                      }}
-                      selectedAffiliate={selectedAffiliate}
-                    />
-                  </div>
-                </div>
+              <div className="w-[30%] h-[600px]">
+                <GoogleMap
+                  affiliates={filteredAffiliates}
+                  userLocation={userLocation}
+                  onAffiliateClick={(affiliate) => {
+                    setSelectedAffiliate(affiliate)
+                    setModalAffiliate(affiliate)
+                    setIsModalOpen(true)
+                  }}
+                  selectedAffiliate={selectedAffiliate}
+                />
               </div>
             </div>
           )}
