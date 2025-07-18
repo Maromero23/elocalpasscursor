@@ -20,6 +20,54 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
   const [markers, setMarkers] = useState<google.maps.Marker[]>([])
   const [userMarker, setUserMarker] = useState<google.maps.Marker | null>(null)
   const [infoWindow, setInfoWindow] = useState<google.maps.InfoWindow | null>(null)
+  const [hoveredAffiliate, setHoveredAffiliate] = useState<string | null>(null)
+  const [pulseIntervals, setPulseIntervals] = useState<{ [key: string]: NodeJS.Timeout }>({})
+
+  // Debug user location
+  useEffect(() => {
+    console.log('🗺️ GoogleMap received userLocation:', userLocation)
+  }, [userLocation])
+
+  // Function to start pulsing animation for a marker
+  const startPulsing = (marker: google.maps.Marker, affiliateName: string) => {
+    // Clear existing interval for this affiliate
+    if (pulseIntervals[affiliateName]) {
+      clearInterval(pulseIntervals[affiliateName])
+    }
+    
+    let pulseCount = 0
+    const interval = setInterval(() => {
+      // Create pulsing effect by changing size
+      const size = 32 + (pulseCount % 2 === 0 ? 8 : 0)
+      marker.setIcon({
+        url: '/images/logo.png',
+        scaledSize: new google.maps.Size(size, size),
+        anchor: new google.maps.Point(size/2, size/2)
+      })
+      pulseCount++
+    }, 200) // Pulse every 200ms
+    
+    setPulseIntervals(prev => ({ ...prev, [affiliateName]: interval }))
+  }
+
+  // Function to stop pulsing animation for a marker
+  const stopPulsing = (marker: google.maps.Marker, affiliateName: string) => {
+    if (pulseIntervals[affiliateName]) {
+      clearInterval(pulseIntervals[affiliateName])
+      setPulseIntervals(prev => {
+        const newIntervals = { ...prev }
+        delete newIntervals[affiliateName]
+        return newIntervals
+      })
+    }
+    
+    // Reset to normal size
+    marker.setIcon({
+      url: '/images/logo.png',
+      scaledSize: new google.maps.Size(32, 32),
+      anchor: new google.maps.Point(16, 16)
+    })
+  }
 
   useEffect(() => {
     const initMap = async () => {
@@ -65,6 +113,7 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
 
         // Add user location marker if available
         if (userLocation) {
+          console.log('📍 Creating user location marker at:', userLocation)
           const userMarkerInstance = new google.maps.Marker({
             position: userLocation,
             map: mapInstance,
@@ -79,6 +128,9 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
             title: 'Your location'
           })
           setUserMarker(userMarkerInstance)
+          console.log('✅ User location marker created')
+        } else {
+          console.log('❌ No user location available')
         }
 
         // Add affiliate markers
@@ -110,10 +162,23 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
                 </div>
               `
 
+              // Add hover events
+              marker.addListener('mouseover', () => {
+                setHoveredAffiliate(affiliate.name)
+                startPulsing(marker, affiliate.name)
+              })
+
+              marker.addListener('mouseout', () => {
+                setHoveredAffiliate(null)
+                stopPulsing(marker, affiliate.name)
+              })
+
               marker.addListener('click', () => {
                 infoWindowInstance.setContent(content)
                 infoWindowInstance.open(mapInstance, marker)
                 onAffiliateClick(affiliate)
+                // Keep pulsing when clicked
+                startPulsing(marker, affiliate.name)
               })
 
               affiliateMarkers.push(marker)
@@ -177,10 +242,23 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
             </div>
           `
 
+          // Add hover events
+          marker.addListener('mouseover', () => {
+            setHoveredAffiliate(affiliate.name)
+            startPulsing(marker, affiliate.name)
+          })
+
+          marker.addListener('mouseout', () => {
+            setHoveredAffiliate(null)
+            stopPulsing(marker, affiliate.name)
+          })
+
           marker.addListener('click', () => {
             infoWindow.setContent(content)
             infoWindow.open(map, marker)
             onAffiliateClick(affiliate)
+            // Keep pulsing when clicked
+            startPulsing(marker, affiliate.name)
           })
 
           newMarkers.push(marker)
@@ -203,7 +281,7 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
     }
   }, [affiliates, map, infoWindow, userLocation, onAffiliateClick])
 
-  // Highlight selected affiliate with pulsing animation
+  // Highlight selected affiliate with continuous pulsing animation
   useEffect(() => {
     if (!map || !selectedAffiliate) return
 
@@ -215,34 +293,13 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
       map.panTo(selectedMarker.getPosition()!)
       map.setZoom(15)
       
-      // Add pulsing animation to selected marker
-      let pulseCount = 0
-      const maxPulses = 6
-      const pulseInterval = setInterval(() => {
-        if (pulseCount >= maxPulses) {
-          clearInterval(pulseInterval)
-          // Reset to normal size
-          selectedMarker.setIcon({
-            url: '/images/logo.png',
-            scaledSize: new google.maps.Size(32, 32),
-            anchor: new google.maps.Point(16, 16)
-          })
-          return
-        }
-        
-        // Create pulsing effect by changing size
-        const size = 32 + (pulseCount % 2 === 0 ? 8 : 0)
-        selectedMarker.setIcon({
-          url: '/images/logo.png',
-          scaledSize: new google.maps.Size(size, size),
-          anchor: new google.maps.Point(size/2, size/2)
-        })
-        
-        pulseCount++
-      }, 200) // Pulse every 200ms
+      // Start continuous pulsing for selected marker
+      startPulsing(selectedMarker, selectedAffiliate.name)
       
-      // Cleanup interval when component unmounts or selectedAffiliate changes
-      return () => clearInterval(pulseInterval)
+      // Cleanup when selectedAffiliate changes
+      return () => {
+        stopPulsing(selectedMarker, selectedAffiliate.name)
+      }
     }
   }, [selectedAffiliate, markers, map])
 

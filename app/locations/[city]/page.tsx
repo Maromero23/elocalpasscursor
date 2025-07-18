@@ -484,7 +484,11 @@ export default function CityPage() {
                 {currentAffiliates.map((affiliate) => (
                   <div
                     key={affiliate.id}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                    className={`bg-white rounded-lg shadow-sm border overflow-hidden transition-all cursor-pointer ${
+                      selectedAffiliate?.id === affiliate.id
+                        ? 'border-orange-500 shadow-lg'
+                        : 'border-gray-200 hover:border-orange-400 hover:shadow-md'
+                    }`}
                     onClick={() => {
                       setSelectedAffiliate(affiliate)
                       setModalAffiliate(affiliate)
