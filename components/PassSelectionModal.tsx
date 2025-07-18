@@ -65,14 +65,17 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       // By Day Pass: $15 base + $15 per additional guest
       totalPrice = 15 + (guests - 1) * 15
     } else if (passType === 'week') {
-      // Full Week Pass: $79.90 base + $15 per additional guest
-      totalPrice = 79.90 + (guests - 1) * 15
+      // Full Week Pass: $79.90 base + $79.90 per additional guest
+      totalPrice = 79.90 + (guests - 1) * 79.90
     } else if (passType === 'custom') {
       // Custom Pass: $15 base + $15 per additional guest + $15 per additional day
       totalPrice = 15 + (guests - 1) * 15 + (days - 1) * 15
     }
 
+    setOriginalPrice(totalPrice)
     setCalculatedPrice(totalPrice)
+    // Reset discount when price changes
+    setDiscountAmount(0)
   }, [guests, days, passType])
 
   // Auto-detect discount code and seller tracking from URL parameters (for rebuy emails)
@@ -146,6 +149,13 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
           // Store seller info for commission tracking
           localStorage.setItem('elocalpass-seller-tracking', result.sellerId)
           console.log(`✅ PASS MODAL: Valid discount code ${code} for seller ${result.sellerId}`)
+          
+          // Calculate discount amount
+          const discountPercent = result.discountValue || 0
+          const discountAmount = (originalPrice * discountPercent) / 100
+          setDiscountAmount(discountAmount)
+          setCalculatedPrice(originalPrice - discountAmount)
+          
           return true
         }
       }
@@ -157,6 +167,8 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
 
   const [discountError, setDiscountError] = useState<string | null>(null)
   const [discountValid, setDiscountValid] = useState<boolean | null>(null)
+  const [originalPrice, setOriginalPrice] = useState<number>(0)
+  const [discountAmount, setDiscountAmount] = useState<number>(0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -295,7 +307,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
                   onChange={(e) => setDeliveryType(e.target.value as 'now' | 'future')}
                   className="mr-2"
                 />
-                <span>Send immediately</span>
+                <span>Immediate delivery</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -369,9 +381,25 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="flex justify-between items-center">
               <span className="text-lg font-medium text-gray-900">Total Price:</span>
-              <span className="text-2xl font-bold text-orange-600">
-                ${calculatedPrice.toFixed(2)} USD
-              </span>
+              <div className="text-right">
+                {discountAmount > 0 ? (
+                  <>
+                    <div className="text-lg text-gray-500 line-through">
+                      ${originalPrice.toFixed(2)} USD
+                    </div>
+                    <span className="text-2xl font-bold text-orange-600">
+                      ${calculatedPrice.toFixed(2)} USD
+                    </span>
+                    <div className="text-sm text-green-600">
+                      -${discountAmount.toFixed(2)} discount applied
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-2xl font-bold text-orange-600">
+                    ${calculatedPrice.toFixed(2)} USD
+                  </span>
+                )}
+              </div>
             </div>
             <div className="text-sm text-gray-600 mt-1">
               {guests} {guests === 1 ? 'guest' : 'guests'} × {days} {days === 1 ? 'day' : 'days'}

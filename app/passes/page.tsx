@@ -81,7 +81,7 @@ export default function PassesPage() {
               </div>
               
               <div className="text-sm text-blue-200 mb-6">
-                <p className="mb-1">+ $15 per additional person</p>
+                <p className="mb-1">+ $79.90 per additional person</p>
               </div>
               
               <div className="space-y-2 mb-8 text-sm">
@@ -109,9 +109,7 @@ export default function PassesPage() {
               <p className="text-sm text-gray-600 mb-6">{t.passes.customPass.description}</p>
               
               <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-800">$ 15</span>
-                <span className="text-lg text-gray-600">.00</span>
-                <span className="text-lg text-gray-600 ml-1">USD</span>
+                <span className="text-4xl font-bold text-gray-800">CUSTOM</span>
               </div>
               
               <div className="text-sm text-gray-600 mb-6">
