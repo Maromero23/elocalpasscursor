@@ -84,7 +84,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     setCalculatedPrice(totalPrice)
     // Reset discount when price changes
     setDiscountAmount(0)
-  }, [guests, days, passType])
+  }, [guests, days, passType, isOpen]) // Added isOpen dependency
 
   // Auto-detect discount code and seller tracking from URL parameters (for rebuy emails)
   useEffect(() => {
@@ -208,6 +208,31 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
   const [customerName, setCustomerName] = useState<string>('')
   const [customerEmail, setCustomerEmail] = useState<string>('')
   const [confirmEmail, setConfirmEmail] = useState<string>('')
+
+  // Initialize price on component mount
+  useEffect(() => {
+    if (isOpen) {
+      let initialPrice = 0
+      
+      if (passType === 'day') {
+        initialPrice = 15 + (guests - 1) * 15
+      } else if (passType === 'week') {
+        initialPrice = 79.90 + (guests - 1) * 79.90
+      } else if (passType === 'custom') {
+        initialPrice = 15 + (guests - 1) * 15 + (days - 1) * 15
+      }
+      
+      console.log('🚀 INITIAL PRICE SET:', {
+        passType,
+        guests,
+        days,
+        initialPrice
+      })
+      
+      setOriginalPrice(initialPrice)
+      setCalculatedPrice(initialPrice)
+    }
+  }, [isOpen, passType, guests, days])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
