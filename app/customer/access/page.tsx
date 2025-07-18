@@ -298,7 +298,7 @@ function CustomerAccessPageContent() {
                         
                         {/* Get Another ELocalPass Button */}
                         <a
-                          href={`/passes?seller_id=${qrCode.sellerId}&discount=${qrCode.seller?.discountCode || ''}&customer_email=${qrCode.customerEmail || ''}`}
+                          href={`/passes?seller_id=${qrCode.sellerId}&discount=${qrCode.seller?.discountCode || ''}&customer_email=${qrCode.customerEmail || ''}&customer_name=${encodeURIComponent(qrCode.customerName || '')}`}
                           className="block w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-center"
                         >
                           🎫 Get Another ELocalPass
