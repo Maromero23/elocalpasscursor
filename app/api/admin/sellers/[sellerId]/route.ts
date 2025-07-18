@@ -37,7 +37,7 @@ export async function PUT(
 
     const sellerId = params.sellerId
     const body = await request.json()
-    const { name, email, password, telephone, whatsapp, notes, defaultDiscountType, defaultDiscountValue } = body
+    const { name, email, password, telephone, whatsapp, notes, defaultDiscountType, defaultDiscountValue, discountCode } = body
 
     // Validate required fields
     if (!name || !email) {
@@ -46,23 +46,30 @@ export async function PUT(
       }, { status: 400 })
     }
 
-    // Auto-generate unique discount code if discount is set
+    // Handle discount code logic
     let finalDiscountCode = null
     if (defaultDiscountValue && defaultDiscountValue > 0) {
-      // Check if seller already has a discount code
-      const existingSeller = await prisma.user.findUnique({
-        where: { id: sellerId },
-        select: { discountCode: true }
-      })
-      
-      if (existingSeller?.discountCode) {
-        // Keep existing code
-        finalDiscountCode = existingSeller.discountCode
-        console.log(`🔒 Keeping existing discount code: ${finalDiscountCode} for seller ${name}`)
+      // Check if a preview code was generated (from frontend)
+      if (discountCode && discountCode.length === 5) {
+        // Use the preview code that was generated
+        finalDiscountCode = discountCode
+        console.log(`✅ Using preview discount code: ${finalDiscountCode} for seller ${name}`)
       } else {
-        // Generate new code
-        finalDiscountCode = await generateUniqueDiscountCode()
-        console.log(`🎲 Auto-generated new discount code: ${finalDiscountCode} for seller ${name}`)
+        // Check if seller already has a discount code
+        const existingSeller = await prisma.user.findUnique({
+          where: { id: sellerId },
+          select: { discountCode: true }
+        })
+        
+        if (existingSeller?.discountCode) {
+          // Keep existing code
+          finalDiscountCode = existingSeller.discountCode
+          console.log(`🔒 Keeping existing discount code: ${finalDiscountCode} for seller ${name}`)
+        } else {
+          // Generate new code
+          finalDiscountCode = await generateUniqueDiscountCode()
+          console.log(`🎲 Auto-generated new discount code: ${finalDiscountCode} for seller ${name}`)
+        }
       }
     } else {
       // No discount value set, clear any existing code

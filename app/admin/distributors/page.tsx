@@ -507,6 +507,15 @@ export default function DistributorsPage() {
     })
   }
 
+  const handleResetDiscount = () => {
+    setSellerEditFormData(prev => ({
+      ...prev,
+      defaultDiscountValue: 0,
+      discountCode: ""
+    }))
+    setError("🔄 Discount reset - you can now set a new discount value and generate a new code")
+  }
+
   const handleGenerateDiscountCode = async () => {
     if (!editingSeller || !sellerEditFormData.defaultDiscountValue || sellerEditFormData.defaultDiscountValue <= 0) {
       setError("Please set a discount value greater than 0 first")
@@ -553,8 +562,18 @@ export default function DistributorsPage() {
 
     setIsUpdating(true)
     try {
-      // Remove discountCode from request since it's now read-only and auto-generated
-      const { discountCode, ...requestData } = sellerEditFormData
+      // Include the preview discount code if it was generated
+      const requestData = {
+        name: sellerEditFormData.name,
+        email: sellerEditFormData.email,
+        password: sellerEditFormData.password,
+        telephone: sellerEditFormData.telephone,
+        whatsapp: sellerEditFormData.whatsapp,
+        notes: sellerEditFormData.notes,
+        defaultDiscountType: sellerEditFormData.defaultDiscountType,
+        defaultDiscountValue: sellerEditFormData.defaultDiscountValue,
+        discountCode: sellerEditFormData.discountCode !== "Not set" ? sellerEditFormData.discountCode : null
+      }
       
       const response = await fetch(`/api/admin/sellers/${editingSeller}`, {
         method: "PUT",
@@ -1920,6 +1939,20 @@ export default function DistributorsPage() {
                                                                                     </span>
                                                                                   )}
                                                                                 </p>
+                                                                                
+                                                                                {/* Reset Button */}
+                                                                                {(sellerEditFormData.defaultDiscountValue > 0 || sellerEditFormData.discountCode) && (
+                                                                                  <div className="mt-3 pt-3 border-t border-blue-200">
+                                                                                    <button
+                                                                                      type="button"
+                                                                                      onClick={handleResetDiscount}
+                                                                                      className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors"
+                                                                                      title="Reset discount and code to start fresh"
+                                                                                    >
+                                                                                      🔄 Reset Discount
+                                                                                    </button>
+                                                                                  </div>
+                                                                                )}
                                                                               </div>
 
                                                                               <div className="pt-4 border-t">
