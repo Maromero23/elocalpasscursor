@@ -393,10 +393,10 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
               <div className="text-right">
                 {discountAmount > 0 ? (
                   <>
-                    <div className="text-lg text-red-500 line-through font-semibold">
+                    <div className="text-lg text-gray-500 line-through font-semibold" style={{textDecorationColor: 'red'}}>
                       ${originalPrice.toFixed(2)} USD
                     </div>
-                    <span className="text-2xl font-bold text-orange-600">
+                    <span className="text-2xl font-bold text-green-600">
                       ${calculatedPrice.toFixed(2)} USD
                     </span>
                     <div className="text-sm text-green-600 font-semibold">
