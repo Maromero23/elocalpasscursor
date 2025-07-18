@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Generate customer portal URL for renewal
-    const customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCode.customerEmail}`
+    let customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCode.customerEmail}`
 
     // Calculate hours left until expiration
     const now = new Date()
@@ -104,6 +104,27 @@ export async function POST(request: NextRequest) {
     console.log(`📧 REBUY EMAIL: Checking email templates for QR ${qrCode.code}`)
     console.log(`  - Has emailTemplates: ${!!emailTemplates}`)
     console.log(`  - Has rebuyEmail: ${!!emailTemplates?.rebuyEmail}`)
+    
+    // Add seller tracking to customer portal URL if enabled
+    if (emailTemplates?.rebuyEmail?.rebuyConfig?.enableSellerTracking) {
+      const rebuyConfig = emailTemplates.rebuyEmail.rebuyConfig
+      const trackingMethod = rebuyConfig.trackingMethod || 'url_param'
+      
+      if (trackingMethod === 'url_param' || trackingMethod === 'both') {
+        // Add seller_id parameter to track which seller the customer came from
+        customerPortalUrl += `&seller_id=${qrCode.sellerId}`
+        console.log(`🔗 SINGLE REBUY EMAIL: Added seller tracking to URL: seller_id=${qrCode.sellerId}`)
+      }
+      
+      if (trackingMethod === 'discount_code' || trackingMethod === 'both') {
+        // Add discount code parameter if discount is enabled
+        if (rebuyConfig.enableDiscountCode) {
+          const discountCode = `${rebuyConfig.codePrefix || 'REBUY'}${rebuyConfig.discountValue || 15}`
+          customerPortalUrl += `&discount=${discountCode}`
+          console.log(`🎫 SINGLE REBUY EMAIL: Added discount code to URL: discount=${discountCode}`)
+        }
+      }
+    }
 
     // Professional Rebuy Email Translation System
     const translateSubject = async (subject: string, targetLanguage: SupportedLanguage): Promise<string> => {

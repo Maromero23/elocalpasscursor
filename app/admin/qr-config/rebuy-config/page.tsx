@@ -672,9 +672,32 @@ function RebuyEmailConfigPageContent() {
             </script>
             ` : ''}
             
-            <!-- Urgency Notice -->
+            <!-- Urgency Notice with Dynamic Countdown -->
             <div class="highlight-box">
-                <p>${config.urgencyMessage ? config.urgencyMessage.replace('{hours_left}', '{hoursLeft}') : '⏰ Your ELocalPass expires in {hoursLeft} hours - Don\'t miss out on amazing local experiences!'}</p>
+                <p>⏰ Your ELocalPass expires in <span id="countdown" style="font-weight: bold; color: #dc2626;"></span> - Don't miss out on amazing local experiences!</p>
+                <script>
+                    // Dynamic countdown timer
+                    function updateCountdown() {
+                        const now = new Date();
+                        const expirationTime = new Date('{qrExpirationTimestamp}');
+                        const timeLeft = expirationTime - now;
+                        
+                        if (timeLeft > 0) {
+                            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                            
+                            document.getElementById('countdown').innerHTML = 
+                                hours + 'h ' + minutes + 'm ' + seconds + 's';
+                        } else {
+                            document.getElementById('countdown').innerHTML = 'EXPIRED';
+                        }
+                    }
+                    
+                    // Update countdown every second
+                    updateCountdown();
+                    setInterval(updateCountdown, 1000);
+                </script>
             </div>
             
             <!-- Current Pass Details -->

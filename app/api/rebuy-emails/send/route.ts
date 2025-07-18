@@ -185,8 +185,29 @@ export async function POST(request: NextRequest) {
           customerLanguage = 'en'
         }
         
-        // Generate customer portal URL for renewal
-        const customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCode.customerEmail}`
+        // Generate customer portal URL for renewal with seller tracking
+        let customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCode.customerEmail}`
+        
+        // Add seller tracking if enabled in rebuy configuration
+        if (emailTemplates?.rebuyEmail?.rebuyConfig?.enableSellerTracking) {
+          const rebuyConfig = emailTemplates.rebuyEmail.rebuyConfig
+          const trackingMethod = rebuyConfig.trackingMethod || 'url_param'
+          
+          if (trackingMethod === 'url_param' || trackingMethod === 'both') {
+            // Add seller_id parameter to track which seller the customer came from
+            customerPortalUrl += `&seller_id=${qrCode.sellerId}`
+            console.log(`🔗 REBUY EMAIL: Added seller tracking to URL: seller_id=${qrCode.sellerId}`)
+          }
+          
+          if (trackingMethod === 'discount_code' || trackingMethod === 'both') {
+            // Add discount code parameter if discount is enabled
+            if (rebuyConfig.enableDiscountCode) {
+              const discountCode = `${rebuyConfig.codePrefix || 'REBUY'}${rebuyConfig.discountValue || 15}`
+              customerPortalUrl += `&discount=${discountCode}`
+              console.log(`🎫 REBUY EMAIL: Added discount code to URL: discount=${discountCode}`)
+            }
+          }
+        }
 
         // Calculate hours left until expiration for email content
         const hoursLeft = Math.ceil((qrCode.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60))
@@ -395,6 +416,7 @@ export async function POST(request: NextRequest) {
                     .replace(/\{guests\}/g, qrCode.guests.toString())
                     .replace(/\{days\}/g, qrCode.days.toString())
                     .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                    .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
                     .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
                     .replace(/\{rebuyUrl\}/g, customerPortalUrl)
                   
@@ -418,6 +440,7 @@ export async function POST(request: NextRequest) {
                     .replace(/\{guests\}/g, qrCode.guests.toString())
                     .replace(/\{days\}/g, qrCode.days.toString())
                     .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                    .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
                     .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
                     .replace(/\{rebuyUrl\}/g, customerPortalUrl)
                   

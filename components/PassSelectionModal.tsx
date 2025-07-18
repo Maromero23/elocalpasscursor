@@ -80,12 +80,21 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     setCalculatedPrice(totalPrice)
   }, [guests, days, pricingConfig])
 
-  // Auto-detect discount code from URL parameters (for rebuy emails)
+  // Auto-detect discount code and seller tracking from URL parameters (for rebuy emails)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const autoDiscount = urlParams.get('discount')
+    const sellerId = urlParams.get('seller_id')
+    
     if (autoDiscount) {
       setDiscountCode(autoDiscount)
+      console.log(`🎫 PASS MODAL: Auto-detected discount code: ${autoDiscount}`)
+    }
+    
+    if (sellerId) {
+      console.log(`🔗 PASS MODAL: Customer came from seller: ${sellerId}`)
+      // Store seller ID for commission tracking
+      localStorage.setItem('elocalpass-seller-tracking', sellerId)
     }
   }, [])
 
@@ -94,6 +103,9 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     setIsLoading(true)
 
     try {
+      // Get seller tracking from localStorage if available
+      const sellerTracking = localStorage.getItem('elocalpass-seller-tracking')
+      
       // Create the pass order
       const orderData = {
         passType,
@@ -104,6 +116,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         deliveryTime: deliveryType === 'future' ? deliveryTime : null,
         discountCode: discountCode || null,
         calculatedPrice,
+        sellerId: sellerTracking || null, // Track which seller referred this customer
         customerEmail: '', // Will be collected in PayPal flow
         customerName: '' // Will be collected in PayPal flow
       }
