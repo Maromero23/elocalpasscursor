@@ -1803,8 +1803,12 @@ export default function DistributorsPage() {
                                                                                       min="0"
                                                                                       max={sellerEditFormData.defaultDiscountType === 'percentage' ? 100 : undefined}
                                                                                       step={sellerEditFormData.defaultDiscountType === 'percentage' ? 1 : 0.01}
-                                                                                      value={sellerEditFormData.defaultDiscountValue}
-                                                                                      onChange={(e) => setSellerEditFormData(prev => ({ ...prev, defaultDiscountValue: parseFloat(e.target.value) || 0 }))}
+                                                                                      value={sellerEditFormData.defaultDiscountValue || ""}
+                                                                                      onChange={(e) => {
+                                                                                        const value = e.target.value
+                                                                                        const numValue = value === "" ? 0 : parseFloat(value)
+                                                                                        setSellerEditFormData(prev => ({ ...prev, defaultDiscountValue: numValue }))
+                                                                                      }}
                                                                                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                                                                       placeholder={sellerEditFormData.defaultDiscountType === 'percentage' ? '10' : '5.00'}
                                                                                     />
