@@ -37,7 +37,7 @@ export async function PUT(
 
     const sellerId = params.sellerId
     const body = await request.json()
-    const { name, email, password, telephone, whatsapp, notes, defaultDiscountType, defaultDiscountValue, discountCode } = body
+    const { name, email, password, telephone, whatsapp, notes, defaultDiscountType, defaultDiscountValue } = body
 
     // Validate required fields
     if (!name || !email) {
@@ -46,18 +46,28 @@ export async function PUT(
       }, { status: 400 })
     }
 
-    // Validate discount code format if provided
-    if (discountCode && (discountCode.length !== 5 || !/^\d{5}$/.test(discountCode))) {
-      return NextResponse.json({ 
-        error: "Discount code must be exactly 5 digits" 
-      }, { status: 400 })
-    }
-
-    // Auto-generate unique discount code if not provided and discount is set
-    let finalDiscountCode = discountCode
-    if (!discountCode && defaultDiscountValue && defaultDiscountValue > 0) {
-      finalDiscountCode = await generateUniqueDiscountCode()
-      console.log(`🎲 Auto-generated discount code: ${finalDiscountCode} for seller ${name}`)
+    // Auto-generate unique discount code if discount is set
+    let finalDiscountCode = null
+    if (defaultDiscountValue && defaultDiscountValue > 0) {
+      // Check if seller already has a discount code
+      const existingSeller = await prisma.user.findUnique({
+        where: { id: sellerId },
+        select: { discountCode: true }
+      })
+      
+      if (existingSeller?.discountCode) {
+        // Keep existing code
+        finalDiscountCode = existingSeller.discountCode
+        console.log(`🔒 Keeping existing discount code: ${finalDiscountCode} for seller ${name}`)
+      } else {
+        // Generate new code
+        finalDiscountCode = await generateUniqueDiscountCode()
+        console.log(`🎲 Auto-generated new discount code: ${finalDiscountCode} for seller ${name}`)
+      }
+    } else {
+      // No discount value set, clear any existing code
+      finalDiscountCode = null
+      console.log(`🗑️ Clearing discount code for seller ${name} (no discount value set)`)
     }
 
     // Check if seller exists
@@ -105,10 +115,11 @@ export async function PUT(
         }
       })
     } catch (error: any) {
-      // Handle duplicate discount code error
+      // Handle duplicate discount code error (shouldn't happen with auto-generation, but just in case)
       if (error.code === 'P2002' && error.meta?.target?.includes('discountCode')) {
+        console.error(`Duplicate discount code error: ${finalDiscountCode}`)
         return NextResponse.json({ 
-          error: `Discount code "${finalDiscountCode}" is already in use by another seller. Please choose a different code.` 
+          error: `System error: Generated discount code "${finalDiscountCode}" conflicts with existing code. Please try again.` 
         }, { status: 409 })
       }
       throw error
