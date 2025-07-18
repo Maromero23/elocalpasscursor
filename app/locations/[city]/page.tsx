@@ -67,6 +67,7 @@ export default function CityPage() {
   const [stats, setStats] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const [hoveredAffiliate, setHoveredAffiliate] = useState<string | null>(null)
 
   const cityId = params.city as string
   const cityInfo = cityId === 'all-cities' ? { name: 'all-cities', displayName: 'All Cities' } : cityMap[cityId as keyof typeof cityMap]
@@ -224,17 +225,22 @@ export default function CityPage() {
 
   const getUserLocation = () => {
     if (navigator.geolocation) {
+      console.log('🔍 Requesting user location...')
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
+          const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude
-          })
+          }
+          console.log('✅ User location obtained:', location)
+          setUserLocation(location)
         },
         (error) => {
-          console.log('Error getting location:', error)
+          console.log('❌ Error getting location:', error)
         }
       )
+    } else {
+      console.log('❌ Geolocation not supported')
     }
   }
 
@@ -489,6 +495,8 @@ export default function CityPage() {
                         ? 'border-orange-500 shadow-lg'
                         : 'border-gray-200 hover:border-orange-400 hover:shadow-md'
                     }`}
+                    onMouseEnter={() => setHoveredAffiliate(affiliate.name)}
+                    onMouseLeave={() => setHoveredAffiliate(null)}
                     onClick={() => {
                       setSelectedAffiliate(affiliate)
                       setModalAffiliate(affiliate)
@@ -650,6 +658,7 @@ export default function CityPage() {
             affiliates={filteredAffiliates}
             userLocation={userLocation}
             selectedAffiliate={selectedAffiliate}
+            hoveredAffiliate={hoveredAffiliate}
             onAffiliateClick={(affiliate) => {
               setSelectedAffiliate(affiliate)
               setModalAffiliate(affiliate)

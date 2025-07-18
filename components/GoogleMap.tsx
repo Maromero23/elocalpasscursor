@@ -11,21 +11,26 @@ interface GoogleMapProps {
   userLocation: { lat: number; lng: number } | null
   onAffiliateClick: (affiliate: Affiliate) => void
   selectedAffiliate: Affiliate | null
+  hoveredAffiliate: string | null
 }
 
-export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, selectedAffiliate }: GoogleMapProps) {
+export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, selectedAffiliate, hoveredAffiliate }: GoogleMapProps) {
   const { language } = useTranslation()
   const mapRef = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<google.maps.Map | null>(null)
   const [markers, setMarkers] = useState<google.maps.Marker[]>([])
   const [userMarker, setUserMarker] = useState<google.maps.Marker | null>(null)
   const [infoWindow, setInfoWindow] = useState<google.maps.InfoWindow | null>(null)
-  const [hoveredAffiliate, setHoveredAffiliate] = useState<string | null>(null)
   const [pulseIntervals, setPulseIntervals] = useState<{ [key: string]: NodeJS.Timeout }>({})
 
   // Debug user location
   useEffect(() => {
     console.log('🗺️ GoogleMap received userLocation:', userLocation)
+    if (userLocation) {
+      console.log('📍 User location coordinates:', userLocation.lat, userLocation.lng)
+    } else {
+      console.log('❌ No user location available')
+    }
   }, [userLocation])
 
   // Function to start pulsing animation for a marker
@@ -162,23 +167,10 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
                 </div>
               `
 
-              // Add hover events
-              marker.addListener('mouseover', () => {
-                setHoveredAffiliate(affiliate.name)
-                startPulsing(marker, affiliate.name)
-              })
-
-              marker.addListener('mouseout', () => {
-                setHoveredAffiliate(null)
-                stopPulsing(marker, affiliate.name)
-              })
-
               marker.addListener('click', () => {
                 infoWindowInstance.setContent(content)
                 infoWindowInstance.open(mapInstance, marker)
                 onAffiliateClick(affiliate)
-                // Keep pulsing when clicked
-                startPulsing(marker, affiliate.name)
               })
 
               affiliateMarkers.push(marker)
@@ -242,23 +234,10 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
             </div>
           `
 
-          // Add hover events
-          marker.addListener('mouseover', () => {
-            setHoveredAffiliate(affiliate.name)
-            startPulsing(marker, affiliate.name)
-          })
-
-          marker.addListener('mouseout', () => {
-            setHoveredAffiliate(null)
-            stopPulsing(marker, affiliate.name)
-          })
-
           marker.addListener('click', () => {
             infoWindow.setContent(content)
             infoWindow.open(map, marker)
             onAffiliateClick(affiliate)
-            // Keep pulsing when clicked
-            startPulsing(marker, affiliate.name)
           })
 
           newMarkers.push(marker)
@@ -281,27 +260,34 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
     }
   }, [affiliates, map, infoWindow, userLocation, onAffiliateClick])
 
-  // Highlight selected affiliate with continuous pulsing animation
+  // Handle pulsing based on hovered and selected affiliates
   useEffect(() => {
-    if (!map || !selectedAffiliate) return
+    if (!map) return
 
-    const selectedMarker = markers.find(marker => 
-      marker.getTitle() === selectedAffiliate.name
-    )
+    // Clear all existing pulse intervals
+    Object.values(pulseIntervals).forEach(interval => clearInterval(interval))
+    setPulseIntervals({})
 
-    if (selectedMarker) {
-      map.panTo(selectedMarker.getPosition()!)
-      map.setZoom(15)
-      
-      // Start continuous pulsing for selected marker
-      startPulsing(selectedMarker, selectedAffiliate.name)
-      
-      // Cleanup when selectedAffiliate changes
-      return () => {
-        stopPulsing(selectedMarker, selectedAffiliate.name)
+    // Determine which affiliate should be pulsing
+    const affiliateToPulse = hoveredAffiliate || (selectedAffiliate ? selectedAffiliate.name : null)
+    
+    if (affiliateToPulse) {
+      const markerToPulse = markers.find(marker => 
+        marker.getTitle() === affiliateToPulse
+      )
+
+      if (markerToPulse) {
+        // Pan to marker if it's selected
+        if (selectedAffiliate && selectedAffiliate.name === affiliateToPulse) {
+          map.panTo(markerToPulse.getPosition()!)
+          map.setZoom(15)
+        }
+        
+        // Start pulsing
+        startPulsing(markerToPulse, affiliateToPulse)
       }
     }
-  }, [selectedAffiliate, markers, map])
+  }, [hoveredAffiliate, selectedAffiliate, markers, map])
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   
