@@ -185,8 +185,8 @@ export async function POST(request: NextRequest) {
           customerLanguage = 'en'
         }
         
-        // Generate customer portal URL for renewal with seller tracking
-        let customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCode.customerEmail}`
+        // Generate passes page URL for renewal with seller tracking
+        let customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/passes`
         
         // Add seller tracking if enabled in rebuy configuration
         if (emailTemplates?.rebuyEmail?.rebuyConfig?.enableSellerTracking) {

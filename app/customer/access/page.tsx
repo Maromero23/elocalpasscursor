@@ -40,6 +40,14 @@ interface QRCode {
   createdAt: string;
   customerName?: string;
   customerEmail?: string;
+  sellerId: string;
+  seller?: {
+    id: string;
+    name: string;
+    defaultDiscountType?: string;
+    defaultDiscountValue?: number;
+    discountCode?: string;
+  };
   usage?: QRCodeUsage[];
   activations?: QRCodeActivation[];
   canReactivate?: boolean;
@@ -287,6 +295,14 @@ function CustomerAccessPageContent() {
                             View Details
                           </a>
                         )}
+                        
+                        {/* Get Another ELocalPass Button */}
+                        <a
+                          href={`/passes?seller_id=${qrCode.sellerId}&discount=${qrCode.seller?.discountCode || ''}&customer_email=${qrCode.customerEmail || ''}`}
+                          className="block w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-center"
+                        >
+                          🎫 Get Another ELocalPass
+                        </a>
                       </div>
                     </div>
                   </div>

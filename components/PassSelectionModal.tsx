@@ -85,6 +85,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     const urlParams = new URLSearchParams(window.location.search)
     const autoDiscount = urlParams.get('discount')
     const sellerId = urlParams.get('seller_id')
+    const customerEmail = urlParams.get('customer_email')
     
     if (autoDiscount) {
       setDiscountCode(autoDiscount)
@@ -95,6 +96,12 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       console.log(`🔗 PASS MODAL: Customer came from seller: ${sellerId}`)
       // Store seller ID for commission tracking
       localStorage.setItem('elocalpass-seller-tracking', sellerId)
+    }
+    
+    if (customerEmail) {
+      console.log(`📧 PASS MODAL: Customer email detected: ${customerEmail}`)
+      // Store customer email for order processing
+      localStorage.setItem('elocalpass-customer-email', customerEmail)
     }
   }, [])
 
@@ -124,8 +131,9 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     setIsLoading(true)
 
     try {
-      // Get seller tracking from localStorage if available
+      // Get seller tracking and customer email from localStorage if available
       const sellerTracking = localStorage.getItem('elocalpass-seller-tracking')
+      const customerEmail = localStorage.getItem('elocalpass-customer-email')
       
       // Create the pass order
       const orderData = {
@@ -138,7 +146,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         discountCode: discountCode || null,
         calculatedPrice,
         sellerId: sellerTracking || null, // Track which seller referred this customer
-        customerEmail: '', // Will be collected in PayPal flow
+        customerEmail: customerEmail || '', // Use detected customer email
         customerName: '' // Will be collected in PayPal flow
       }
 

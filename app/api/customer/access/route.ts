@@ -63,6 +63,16 @@ export async function GET(request: NextRequest) {
         // Include usage history for this specific QR code
         usage: {
           orderBy: { usedAt: 'desc' }
+        },
+        // Include seller information for discount tracking
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            defaultDiscountType: true,
+            defaultDiscountValue: true,
+            discountCode: true
+          }
         }
       }
     });
