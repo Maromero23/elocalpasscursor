@@ -99,6 +99,12 @@ function CustomerAccessPageContent() {
       }
 
       const data = await response.json();
+      console.log('🔍 CUSTOMER DASHBOARD: Received data:', {
+        name: data.name,
+        email: data.email,
+        qrCodesCount: data.qrCodes?.length,
+        firstQRCode: data.qrCodes?.[0]
+      });
       setCustomerData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -297,12 +303,24 @@ function CustomerAccessPageContent() {
                         )}
                         
                         {/* Get Another ELocalPass Button */}
-                        <a
-                          href={`/passes?seller_id=${qrCode.sellerId}&discount=${qrCode.seller?.discountCode || ''}&customer_email=${customerData?.email || ''}&customer_name=${encodeURIComponent(customerData?.name || '')}`}
-                          className="block w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-center"
-                        >
-                          🎫 Get Another ELocalPass
-                        </a>
+                        {(() => {
+                          const buttonUrl = `/passes?seller_id=${qrCode.sellerId}&discount=${qrCode.seller?.discountCode || ''}&customer_email=${customerData?.email || ''}&customer_name=${encodeURIComponent(customerData?.name || '')}`;
+                          console.log('🔍 CUSTOMER DASHBOARD: Button URL generated:', {
+                            sellerId: qrCode.sellerId,
+                            discount: qrCode.seller?.discountCode || '',
+                            customerEmail: customerData?.email || '',
+                            customerName: customerData?.name || '',
+                            fullUrl: buttonUrl
+                          });
+                          return (
+                            <a
+                              href={buttonUrl}
+                              className="block w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-center"
+                            >
+                              🎫 Get Another ELocalPass
+                            </a>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
