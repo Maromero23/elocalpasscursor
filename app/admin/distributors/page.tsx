@@ -69,6 +69,7 @@ interface DistributorDetails {
       notes: string | null
       defaultDiscountType: string | null
       defaultDiscountValue: number | null
+      discountCode: string | null
       isActive: boolean
       role: string
       createdAt: string
@@ -142,7 +143,8 @@ export default function DistributorsPage() {
     whatsapp: "",
     notes: "",
     defaultDiscountType: "percentage",
-    defaultDiscountValue: 0
+    defaultDiscountValue: 0,
+    discountCode: ""
   })
   const [isUpdating, setIsUpdating] = useState(false)
 
@@ -485,7 +487,8 @@ export default function DistributorsPage() {
       whatsapp: seller.whatsapp || "",
       notes: seller.notes || "",
       defaultDiscountType: seller.defaultDiscountType || "percentage",
-      defaultDiscountValue: seller.defaultDiscountValue || 0
+      defaultDiscountValue: seller.defaultDiscountValue || 0,
+      discountCode: seller.discountCode || ""
     })
   }
 
@@ -499,7 +502,8 @@ export default function DistributorsPage() {
       whatsapp: "",
       notes: "",
       defaultDiscountType: "percentage",
-      defaultDiscountValue: 0
+      defaultDiscountValue: 0,
+      discountCode: ""
     })
   }
 
@@ -1789,14 +1793,39 @@ export default function DistributorsPage() {
                                                                                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                                                                       placeholder={sellerEditFormData.defaultDiscountType === 'percentage' ? '10' : '5.00'}
                                                                                     />
-                                                                                  </div>
+                                                                                                                                                                      </div>
                                                                                 </div>
+                                                                                
+                                                                                {/* Discount Code Field */}
+                                                                                <div className="mt-4">
+                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    Discount Code (5 digits)
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="text"
+                                                                                    maxLength={5}
+                                                                                    pattern="[0-9]{5}"
+                                                                                    value={sellerEditFormData.discountCode}
+                                                                                    onChange={(e) => {
+                                                                                      // Only allow numbers and limit to 5 digits
+                                                                                      const value = e.target.value.replace(/\D/g, '').slice(0, 5)
+                                                                                      setSellerEditFormData(prev => ({ ...prev, discountCode: value }))
+                                                                                    }}
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono text-center"
+                                                                                    placeholder="12345"
+                                                                                  />
+                                                                                  <p className="text-xs text-gray-500 mt-1">
+                                                                                    Customers can enter this code to get the discount above. Leave empty to auto-generate.
+                                                                                  </p>
+                                                                                </div>
+                                                                                
                                                                                 <p className="text-xs text-blue-600 mt-2">
                                                                                   This discount will be applied to rebuy emails when customers purchase again from this seller.
                                                                                   {sellerEditFormData.defaultDiscountValue > 0 && (
                                                                                     <span className="font-medium">
                                                                                       {' '}Preview: {sellerEditFormData.defaultDiscountValue}
                                                                                       {sellerEditFormData.defaultDiscountType === 'percentage' ? '% off' : '$ off'}
+                                                                                      {sellerEditFormData.discountCode && ` (Code: ${sellerEditFormData.discountCode})`}
                                                                                     </span>
                                                                                   )}
                                                                                 </p>

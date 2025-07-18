@@ -26,6 +26,7 @@ model User {
   savedConfigId      String?
   defaultDiscountType String?               @default("percentage") // 'percentage' or 'fixed'
   defaultDiscountValue Float?               @default(0) // discount value (10 for 10% or $10)
+  discountCode String?                      @unique // unique 5-digit code for this seller's discount
   distributorProfile Distributor?           @relation("DistributorUser")
   locationProfile    Location?              @relation("LocationUser")
   sellerConfigs      QRConfig?              @relation("SellerConfig")

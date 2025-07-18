@@ -98,6 +98,27 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     }
   }, [])
 
+  // Validate discount code function
+  const validateDiscountCode = async (code: string) => {
+    if (!code || code.length !== 5) return false
+    
+    try {
+      const response = await fetch(`/api/validate-discount-code?code=${code}`)
+      if (response.ok) {
+        const result = await response.json()
+        if (result.valid) {
+          // Store seller info for commission tracking
+          localStorage.setItem('elocalpass-seller-tracking', result.sellerId)
+          console.log(`✅ PASS MODAL: Valid discount code ${code} for seller ${result.sellerId}`)
+          return true
+        }
+      }
+    } catch (error) {
+      console.error('Error validating discount code:', error)
+    }
+    return false
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)

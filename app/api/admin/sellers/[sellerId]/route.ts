@@ -18,7 +18,7 @@ export async function PUT(
 
     const sellerId = params.sellerId
     const body = await request.json()
-    const { name, email, password, telephone, whatsapp, notes, defaultDiscountType, defaultDiscountValue } = body
+    const { name, email, password, telephone, whatsapp, notes, defaultDiscountType, defaultDiscountValue, discountCode } = body
 
     // Validate required fields
     if (!name || !email) {
@@ -47,7 +47,8 @@ export async function PUT(
       whatsapp: whatsapp || null,
       notes: notes || null,
       defaultDiscountType: defaultDiscountType || null,
-      defaultDiscountValue: defaultDiscountValue || null
+      defaultDiscountValue: defaultDiscountValue || null,
+      discountCode: discountCode || null
     }
 
     // Only update password if provided
