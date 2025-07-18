@@ -207,6 +207,17 @@ export async function POST(request: NextRequest) {
               console.log(`🎫 REBUY EMAIL: Added discount code to URL: discount=${discountCode}`)
             }
           }
+        } else {
+          // No rebuy config, check if seller has default discount
+          if (qrCode.seller.defaultDiscountType && qrCode.seller.defaultDiscountValue > 0) {
+            const discountCode = `SELLER${qrCode.seller.defaultDiscountValue}${qrCode.seller.defaultDiscountType === 'percentage' ? 'PCT' : 'USD'}`
+            customerPortalUrl += `&seller_id=${qrCode.sellerId}&discount=${discountCode}`
+            console.log(`🎫 REBUY EMAIL: Added seller default discount to URL: seller_id=${qrCode.sellerId}, discount=${discountCode}`)
+          } else {
+            // Just add seller tracking without discount
+            customerPortalUrl += `&seller_id=${qrCode.sellerId}`
+            console.log(`🔗 REBUY EMAIL: Added seller tracking to URL: seller_id=${qrCode.sellerId}`)
+          }
         }
 
         // Calculate hours left until expiration for email content
