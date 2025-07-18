@@ -295,9 +295,9 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       }
 
       // Redirect to PayPal with order data
-      const paypalUrl = new URL('https://www.paypal.com/cgi-bin/webscr')
+      const paypalUrl = new URL('https://www.sandbox.paypal.com/cgi-bin/webscr')
       paypalUrl.searchParams.set('cmd', '_xclick')
-      paypalUrl.searchParams.set('business', process.env.NEXT_PUBLIC_PAYPAL_EMAIL || 'your-paypal@email.com')
+      paypalUrl.searchParams.set('business', 'sb-wtnhb38075507@business.example.com') // Your sandbox business email
       paypalUrl.searchParams.set('item_name', `ELocalPass ${passType.toUpperCase()} - ${guests} guests, ${days} days`)
       paypalUrl.searchParams.set('amount', calculatedPrice.toFixed(2))
       paypalUrl.searchParams.set('currency_code', 'USD')
