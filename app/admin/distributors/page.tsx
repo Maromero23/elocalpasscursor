@@ -513,6 +513,9 @@ export default function DistributorsPage() {
       return
     }
 
+    const isRegenerating = sellerEditFormData.discountCode && sellerEditFormData.discountCode !== "Not set"
+    const actionText = isRegenerating ? "Regenerating" : "Generating"
+
     try {
       const response = await fetch(`/api/admin/sellers/${editingSeller}/generate-code`, {
         method: "POST",
@@ -529,7 +532,11 @@ export default function DistributorsPage() {
         const result = await response.json()
         if (result.generatedCode) {
           setSellerEditFormData(prev => ({ ...prev, discountCode: result.generatedCode }))
-          setError(`🎲 Generated discount code: ${result.generatedCode}`)
+          if (isRegenerating) {
+            setError(`🔄 Regenerated discount code: ${result.generatedCode}`)
+          } else {
+            setError(`🎲 Generated discount code: ${result.generatedCode}`)
+          }
         }
       } else {
         const errorData = await response.json()
@@ -1865,19 +1872,31 @@ export default function DistributorsPage() {
                                                                                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono text-center text-gray-600"
                                                                                         placeholder="Will be auto-generated"
                                                                                       />
-                                                                                      <button
-                                                                                        type="button"
-                                                                                        onClick={handleGenerateDiscountCode}
-                                                                                        disabled={!sellerEditFormData.defaultDiscountValue || sellerEditFormData.defaultDiscountValue <= 0}
-                                                                                        className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-md transition-colors"
-                                                                                        title="Generate a new discount code"
-                                                                                      >
-                                                                                        🎲 Generate
-                                                                                      </button>
+                                                                                      {sellerEditFormData.discountCode && sellerEditFormData.discountCode !== "Not set" ? (
+                                                                                        <button
+                                                                                          type="button"
+                                                                                          onClick={handleGenerateDiscountCode}
+                                                                                          disabled={!sellerEditFormData.defaultDiscountValue || sellerEditFormData.defaultDiscountValue <= 0}
+                                                                                          className="px-3 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-md transition-colors"
+                                                                                          title="Generate a new discount code (replaces existing)"
+                                                                                        >
+                                                                                          🔄 Regenerate
+                                                                                        </button>
+                                                                                      ) : (
+                                                                                        <button
+                                                                                          type="button"
+                                                                                          onClick={handleGenerateDiscountCode}
+                                                                                          disabled={!sellerEditFormData.defaultDiscountValue || sellerEditFormData.defaultDiscountValue <= 0}
+                                                                                          className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-md transition-colors"
+                                                                                          title="Generate a new discount code"
+                                                                                        >
+                                                                                          🎲 Generate
+                                                                                        </button>
+                                                                                      )}
                                                                                     </div>
                                                                                                                                                                       <p className="text-xs text-gray-500 mt-1">
                                                                                       Customers can enter this code to get the discount above. 
-                                                                                      <span className="font-medium text-blue-600"> Code is auto-generated and cannot be changed.</span>
+                                                                                      <span className="font-medium text-blue-600"> Code is auto-generated and can be regenerated if needed.</span>
                                                                                     </p>
                                                                                     {!sellerEditFormData.discountCode && sellerEditFormData.defaultDiscountValue > 0 && (
                                                                                       <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
