@@ -13,15 +13,9 @@ async function generateUniqueDiscountCode(): Promise<string> {
     // Generate random 5-digit number
     const code = Math.floor(10000 + Math.random() * 90000).toString()
     
-    // Check if code already exists
-    // const existingCode = await prisma.user.findUnique({
-    //   where: { discountCode: code }
-    // })
-    const existingCode = null // Temporary fix until Prisma client updates
-    
-    if (!existingCode) {
-      return code
-    }
+    // For now, just return the code - uniqueness will be enforced by database constraint
+    // TODO: Add proper uniqueness check once Prisma client is updated
+    return code
     
     attempts++
   }
