@@ -57,28 +57,23 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     }
   }, [isOpen])
 
-  // Calculate price based on current configuration
+  // Calculate price based on pass type and fixed pricing
   useEffect(() => {
-    if (!pricingConfig) return
+    let totalPrice = 0
 
-    let basePrice = pricingConfig.button2VariableBasePrice
-    let guestPrice = (guests - 1) * pricingConfig.button2VariableGuestIncrease
-    let dayPrice = (days - 1) * pricingConfig.button2VariableDayIncrease
-    
-    let totalPrice = basePrice + guestPrice + dayPrice
-
-    // Add commission if configured
-    if (pricingConfig.button2VariableCommission > 0) {
-      totalPrice += (totalPrice * pricingConfig.button2VariableCommission / 100)
-    }
-
-    // Add tax if configured
-    if (pricingConfig.button2IncludeTax && pricingConfig.button2TaxPercentage > 0) {
-      totalPrice += (totalPrice * pricingConfig.button2TaxPercentage / 100)
+    if (passType === 'day') {
+      // By Day Pass: $15 base + $15 per additional guest
+      totalPrice = 15 + (guests - 1) * 15
+    } else if (passType === 'week') {
+      // Full Week Pass: $79.90 base + $15 per additional guest
+      totalPrice = 79.90 + (guests - 1) * 15
+    } else if (passType === 'custom') {
+      // Custom Pass: $15 base + $15 per additional guest + $15 per additional day
+      totalPrice = 15 + (guests - 1) * 15 + (days - 1) * 15
     }
 
     setCalculatedPrice(totalPrice)
-  }, [guests, days, pricingConfig])
+  }, [guests, days, passType])
 
   // Auto-detect discount code and seller tracking from URL parameters (for rebuy emails)
   useEffect(() => {
@@ -300,7 +295,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
                   onChange={(e) => setDeliveryType(e.target.value as 'now' | 'future')}
                   className="mr-2"
                 />
-                <span>Deliver now</span>
+                <span>Send immediately</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -310,7 +305,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
                   onChange={(e) => setDeliveryType(e.target.value as 'now' | 'future')}
                   className="mr-2"
                 />
-                <span>Schedule for later</span>
+                <span>Schedule delivery</span>
               </label>
             </div>
 
