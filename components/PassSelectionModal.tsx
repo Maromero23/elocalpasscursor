@@ -122,6 +122,9 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         } else {
           setDiscountValid(false)
           setDiscountError('Invalid discount code')
+          // Clear discount when code becomes invalid
+          setDiscountAmount(0)
+          setCalculatedPrice(originalPrice)
         }
       }
       
@@ -131,9 +134,15 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     } else if (discountCode && discountCode.length > 0) {
       setDiscountValid(false)
       setDiscountError('Discount code must be 5 digits')
+      // Clear discount when code format is wrong
+      setDiscountAmount(0)
+      setCalculatedPrice(originalPrice)
     } else {
       setDiscountValid(null)
       setDiscountError(null)
+      // Clear discount when code is empty
+      setDiscountAmount(0)
+      setCalculatedPrice(originalPrice)
     }
   }, [discountCode])
 
@@ -299,7 +308,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
               Delivery
             </label>
             <div className="space-y-2">
-              <label className="flex items-center">
+              <label className="flex items-center text-gray-900">
                 <input
                   type="radio"
                   value="now"
@@ -307,9 +316,9 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
                   onChange={(e) => setDeliveryType(e.target.value as 'now' | 'future')}
                   className="mr-2"
                 />
-                <span>Immediate delivery</span>
+                <span className="text-gray-900 font-medium">Immediate delivery</span>
               </label>
-              <label className="flex items-center">
+              <label className="flex items-center text-gray-900">
                 <input
                   type="radio"
                   value="future"
@@ -317,7 +326,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
                   onChange={(e) => setDeliveryType(e.target.value as 'now' | 'future')}
                   className="mr-2"
                 />
-                <span>Schedule delivery</span>
+                <span className="text-gray-900 font-medium">Schedule delivery</span>
               </label>
             </div>
 
@@ -384,13 +393,13 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
               <div className="text-right">
                 {discountAmount > 0 ? (
                   <>
-                    <div className="text-lg text-gray-500 line-through">
+                    <div className="text-lg text-red-500 line-through font-semibold">
                       ${originalPrice.toFixed(2)} USD
                     </div>
                     <span className="text-2xl font-bold text-orange-600">
                       ${calculatedPrice.toFixed(2)} USD
                     </span>
-                    <div className="text-sm text-green-600">
+                    <div className="text-sm text-green-600 font-semibold">
                       -${discountAmount.toFixed(2)} discount applied
                     </div>
                   </>
