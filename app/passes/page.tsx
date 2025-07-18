@@ -1,11 +1,26 @@
 'use client'
 
+import { useState } from 'react'
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
 import { useTranslation } from '@/contexts/LanguageContext'
+import PassSelectionModal from '@/components/PassSelectionModal'
 
 export default function PassesPage() {
   const { t } = useTranslation()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedPassType, setSelectedPassType] = useState<'day' | 'week' | 'custom' | null>(null)
+
+  const handlePassSelection = (passType: 'day' | 'week' | 'custom') => {
+    setSelectedPassType(passType)
+    setIsModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setSelectedPassType(null)
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
@@ -46,7 +61,10 @@ export default function PassesPage() {
                 </div>
               </div>
               
-              <button className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-8 rounded-lg w-full transition-colors">
+              <button 
+                onClick={() => handlePassSelection('day')}
+                className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-8 rounded-lg w-full transition-colors"
+              >
                 {t.passes.byDayPass.buttonText}
               </button>
             </div>
@@ -77,7 +95,10 @@ export default function PassesPage() {
                 </div>
               </div>
               
-              <button className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-8 rounded-lg w-full transition-colors">
+              <button 
+                onClick={() => handlePassSelection('week')}
+                className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-8 rounded-lg w-full transition-colors"
+              >
                 {t.passes.fullWeekPass.buttonText}
               </button>
             </div>
@@ -106,7 +127,10 @@ export default function PassesPage() {
                 </div>
               </div>
               
-              <button className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-8 rounded-lg w-full transition-colors">
+              <button 
+                onClick={() => handlePassSelection('custom')}
+                className="bg-orange-400 hover:bg-orange-500 text-white font-semibold py-3 px-8 rounded-lg w-full transition-colors"
+              >
                 {t.passes.customPass.buttonText}
               </button>
             </div>
@@ -140,6 +164,15 @@ export default function PassesPage() {
           </div>
         </div>
       </div>
+
+      {/* Pass Selection Modal */}
+      {isModalOpen && selectedPassType && (
+        <PassSelectionModal
+          passType={selectedPassType}
+          isOpen={isModalOpen}
+          onClose={closeModal}
+        />
+      )}
 
       <Footer />
     </div>

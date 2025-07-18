@@ -4,83 +4,36 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '../../../../lib/prisma'
 
 // GET: Fetch global QR configuration
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 Starting GET /api/admin/qr-global-config')
-    
-    const session = await getServerSession(authOptions)
-    console.log('✅ Session retrieved:', session?.user?.email, session?.user?.role)
-    
-    if (!session || session.user.role !== 'ADMIN') {
-      console.log('❌ Authorization failed:', { hasSession: !!session, role: session?.user?.role })
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    console.log('🔍 Querying database for global config...')
-    // Try to get existing global config (should only be one)
-    const globalConfig = await prisma.qrGlobalConfig.findFirst()
-    console.log('📋 Global config found:', !!globalConfig)
+    // Get the global QR configuration
+    const globalConfig = await prisma.qrGlobalConfig.findFirst({
+      orderBy: { updatedAt: 'desc' }
+    })
 
     if (!globalConfig) {
-      console.log('🆕 No global config found, returning default')
-      // Return default config if none exists
-      const defaultConfig = {
-        id: null,
-        // OLD Button 1 fields (backward compatibility)
-        button1AllowCustomGuestsDays: false,
-        button1DefaultGuests: 2,
-        button1DefaultDays: 3,
-        button1MaxGuests: 10,
-        button1MaxDays: 30,
-        // NEW Button 1 fields
-        button1GuestsLocked: false,
-        button1GuestsDefault: 2,
-        button1GuestsRangeMax: 10,
-        button1DaysLocked: false,
-        button1DaysDefault: 3,
-        button1DaysRangeMax: 30,
-        // Button 2 fields
-        button2PricingType: 'FIXED',
-        button2FixedPrice: 0,
-        button2VariableBasePrice: 10,
-        button2VariableGuestIncrease: 5,
-        button2VariableDayIncrease: 3,
-        button2VariableCommission: 0,
-        button2IncludeTax: false,
-        button2TaxPercentage: 0,
-        // Button 3-6 fields
-        button3DeliveryMethod: 'DIRECT',
-        button4LandingPageRequired: true,
-        button5SendRebuyEmail: false,
-        button6AllowFutureQR: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-      console.log('✅ Returning default config')
-      return NextResponse.json(defaultConfig)
+      return NextResponse.json({
+        error: 'No global QR configuration found'
+      }, { status: 404 })
     }
 
-    console.log('✅ Returning existing config:', globalConfig.id)
-    return NextResponse.json(globalConfig)
+    return NextResponse.json({
+      success: true,
+      config: {
+        button2VariableBasePrice: globalConfig.button2VariableBasePrice,
+        button2VariableGuestIncrease: globalConfig.button2VariableGuestIncrease,
+        button2VariableDayIncrease: globalConfig.button2VariableDayIncrease,
+        button2VariableCommission: globalConfig.button2VariableCommission,
+        button2IncludeTax: globalConfig.button2IncludeTax,
+        button2TaxPercentage: globalConfig.button2TaxPercentage
+      }
+    })
+
   } catch (error) {
-    console.error('💥 ERROR in GET /api/admin/qr-global-config:')
-    console.error('Error type:', typeof error)
-    console.error('Error constructor:', error?.constructor?.name)
-    console.error('Error message:', error instanceof Error ? error.message : String(error))
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-    console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2))
-    
-    return NextResponse.json(
-      { 
-        error: 'Internal server error', 
-        details: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    )
+    console.error('Error fetching global QR config:', error)
+    return NextResponse.json({
+      error: 'Failed to fetch global QR configuration'
+    }, { status: 500 })
   }
 }
 
