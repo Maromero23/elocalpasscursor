@@ -182,12 +182,36 @@ export default function Navigation() {
             >
               {t.navigation.home}
             </Link>
-            <Link 
-              href="/locations"
-              className="block px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500"
-            >
-              {t.navigation.locations}
-            </Link>
+            
+            {/* Mobile Locations Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setLocationsDropdownOpen(!locationsDropdownOpen)}
+                className="flex items-center justify-between w-full px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500"
+              >
+                {t.navigation.locations}
+                <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${locationsDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {locationsDropdownOpen && (
+                <div className="pl-4 space-y-1">
+                  {cities.map((city) => (
+                    <Link
+                      key={city.slug}
+                      href={`/locations/${city.slug}`}
+                      className="block px-3 py-2 text-sm text-gray-700 hover:text-orange-500"
+                      onClick={() => {
+                        setLocationsDropdownOpen(false)
+                        setMobileMenuOpen(false)
+                      }}
+                    >
+                      {city.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+            
             <Link 
               href="/passes"
               className="block px-3 py-2 text-base font-medium text-blue-600 hover:text-orange-500"
