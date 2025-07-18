@@ -18,8 +18,8 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
   const { language } = useTranslation()
   const mapRef = useRef<HTMLDivElement>(null)
   const [map, setMap] = useState<google.maps.Map | null>(null)
-  const [markers, setMarkers] = useState<google.maps.marker.AdvancedMarkerElement[]>([])
-  const [userMarker, setUserMarker] = useState<google.maps.marker.AdvancedMarkerElement | null>(null)
+  const [markers, setMarkers] = useState<google.maps.Marker[]>([])
+  const [userMarker, setUserMarker] = useState<google.maps.Marker | null>(null)
   const [infoWindow, setInfoWindow] = useState<google.maps.InfoWindow | null>(null)
   const [pulseIntervals, setPulseIntervals] = useState<{ [key: string]: NodeJS.Timeout }>({})
 
@@ -34,7 +34,7 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
   }, [userLocation])
 
   // Function to start pulsing animation for a marker
-  const startPulsing = (marker: google.maps.marker.AdvancedMarkerElement, affiliateName: string) => {
+  const startPulsing = (marker: google.maps.Marker, affiliateName: string) => {
     // Clear existing interval for this affiliate
     if (pulseIntervals[affiliateName]) {
       clearInterval(pulseIntervals[affiliateName])
@@ -44,11 +44,11 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
     const interval = setInterval(() => {
       // Create pulsing effect by changing size
       const size = 32 + (pulseCount % 2 === 0 ? 8 : 0)
-      const logoElement = marker.content as HTMLImageElement
-      if (logoElement) {
-        logoElement.style.width = `${size}px`
-        logoElement.style.height = `${size}px`
-      }
+      marker.setIcon({
+        url: '/images/logo.png',
+        scaledSize: new google.maps.Size(size, size),
+        anchor: new google.maps.Point(size/2, size/2)
+      })
       pulseCount++
     }, 200) // Pulse every 200ms
     
@@ -56,7 +56,7 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
   }
 
   // Function to stop pulsing animation for a marker
-  const stopPulsing = (marker: google.maps.marker.AdvancedMarkerElement, affiliateName: string) => {
+  const stopPulsing = (marker: google.maps.Marker, affiliateName: string) => {
     if (pulseIntervals[affiliateName]) {
       clearInterval(pulseIntervals[affiliateName])
       setPulseIntervals(prev => {
@@ -67,11 +67,11 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
     }
     
     // Reset to normal size
-    const logoElement = marker.content as HTMLImageElement
-    if (logoElement) {
-      logoElement.style.width = '32px'
-      logoElement.style.height = '32px'
-    }
+    marker.setIcon({
+      url: '/images/logo.png',
+      scaledSize: new google.maps.Size(32, 32),
+      anchor: new google.maps.Point(16, 16)
+    })
   }
 
   useEffect(() => {
@@ -120,47 +120,48 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
         if (userLocation) {
           console.log('📍 Creating user location marker at:', userLocation)
           
-          // Create blue dot for user location using AdvancedMarkerElement
-          const userLocationElement = document.createElement('div')
-          userLocationElement.style.width = '16px'
-          userLocationElement.style.height = '16px'
-          userLocationElement.style.borderRadius = '50%'
-          userLocationElement.style.backgroundColor = '#4285F4'
-          userLocationElement.style.border = '2px solid #FFFFFF'
-          userLocationElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)'
+          // Create custom SVG for blue dot
+          const svgIcon = {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="10" cy="10" r="8" fill="#4285F4" stroke="#FFFFFF" stroke-width="2"/>
+                <circle cx="10" cy="10" r="3" fill="#FFFFFF"/>
+              </svg>
+            `),
+            scaledSize: new google.maps.Size(20, 20),
+            anchor: new google.maps.Point(10, 10)
+          }
           
-          const userMarkerInstance = new google.maps.marker.AdvancedMarkerElement({
+          const userMarkerInstance = new google.maps.Marker({
             position: userLocation,
             map: mapInstance,
-            content: userLocationElement,
-            title: 'Your location'
+            icon: svgIcon,
+            title: 'Your location',
+            zIndex: 1000 // Ensure it's on top
           })
           setUserMarker(userMarkerInstance)
-          console.log('✅ User location marker created with AdvancedMarkerElement')
+          console.log('✅ User location marker created with custom SVG')
         } else {
           console.log('❌ No user location available')
         }
 
         // Add affiliate markers
-        const affiliateMarkers: google.maps.marker.AdvancedMarkerElement[] = []
+        const affiliateMarkers: google.maps.Marker[] = []
         
         affiliates.forEach((affiliate) => {
           if (affiliate.location) {
             const [lat, lng] = affiliate.location.split(',').map(coord => parseFloat(coord.trim()))
             
             if (!isNaN(lat) && !isNaN(lng)) {
-              // Create logo element for affiliate marker
-              const logoElement = document.createElement('img')
-              logoElement.src = '/images/logo.png'
-              logoElement.style.width = '32px'
-              logoElement.style.height = '32px'
-              logoElement.style.objectFit = 'contain'
-              
-              const marker = new google.maps.marker.AdvancedMarkerElement({
+              const marker = new google.maps.Marker({
                 position: { lat, lng },
                 map: mapInstance,
                 title: affiliate.name,
-                content: logoElement
+                icon: {
+                  url: '/images/logo.png',
+                  scaledSize: new google.maps.Size(32, 32),
+                  anchor: new google.maps.Point(16, 16)
+                }
               })
 
               // Create info window content
@@ -190,7 +191,7 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
         if (affiliateMarkers.length > 0) {
           const bounds = new google.maps.LatLngBounds()
           affiliateMarkers.forEach(marker => {
-            bounds.extend(marker.position!)
+            bounds.extend(marker.getPosition()!)
           })
           if (userLocation) {
             bounds.extend(userLocation)
@@ -211,28 +212,25 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
     if (!map || !infoWindow) return
 
     // Clear existing markers
-    markers.forEach(marker => marker.map = null)
+    markers.forEach(marker => marker.setMap(null))
 
-    const newMarkers: google.maps.marker.AdvancedMarkerElement[] = []
+    const newMarkers: google.maps.Marker[] = []
     
     affiliates.forEach((affiliate) => {
       if (affiliate.location) {
         const [lat, lng] = affiliate.location.split(',').map(coord => parseFloat(coord.trim()))
         
-        if (!isNaN(lat) && !isNaN(lng)) {
-          // Create logo element for affiliate marker
-          const logoElement = document.createElement('img')
-          logoElement.src = '/images/logo.png'
-          logoElement.style.width = '32px'
-          logoElement.style.height = '32px'
-          logoElement.style.objectFit = 'contain'
-          
-          const marker = new google.maps.marker.AdvancedMarkerElement({
-            position: { lat, lng },
-            map: map,
-            title: affiliate.name,
-            content: logoElement
-          })
+                  if (!isNaN(lat) && !isNaN(lng)) {
+            const marker = new google.maps.Marker({
+              position: { lat, lng },
+              map: map,
+              title: affiliate.name,
+              icon: {
+                url: '/images/logo.png',
+                scaledSize: new google.maps.Size(32, 32),
+                anchor: new google.maps.Point(16, 16)
+              }
+            })
 
           const content = `
             <div style="padding: 8px; max-width: 200px;">
@@ -260,7 +258,7 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
         if (newMarkers.length > 0) {
           const bounds = new google.maps.LatLngBounds()
           newMarkers.forEach(marker => {
-            bounds.extend(marker.position!)
+            bounds.extend(marker.getPosition()!)
           })
           if (userLocation) {
             bounds.extend(userLocation)
@@ -282,13 +280,13 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
     
     if (affiliateToPulse) {
       const markerToPulse = markers.find(marker => 
-        marker.title === affiliateToPulse
+        marker.getTitle() === affiliateToPulse
       )
 
       if (markerToPulse) {
         // Pan to marker if it's selected
         if (selectedAffiliate && selectedAffiliate.name === affiliateToPulse) {
-          map.panTo(markerToPulse.position!)
+          map.panTo(markerToPulse.getPosition()!)
           map.setZoom(15)
         }
         
