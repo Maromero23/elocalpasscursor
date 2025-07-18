@@ -90,6 +90,14 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     if (autoDiscount) {
       setDiscountCode(autoDiscount)
       console.log(`🎫 PASS MODAL: Auto-detected discount code: ${autoDiscount}`)
+      // Validate the auto-detected code
+      validateDiscountCode(autoDiscount).then(isValid => {
+        if (isValid) {
+          setDiscountValid(true)
+        } else {
+          setDiscountError('Invalid discount code from email link')
+        }
+      })
     }
     
     if (sellerId) {
@@ -104,6 +112,32 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       localStorage.setItem('elocalpass-customer-email', customerEmail)
     }
   }, [])
+
+  // Real-time discount code validation
+  useEffect(() => {
+    if (discountCode && discountCode.length === 5) {
+      const validateCode = async () => {
+        const isValid = await validateDiscountCode(discountCode)
+        if (isValid) {
+          setDiscountValid(true)
+          setDiscountError(null)
+        } else {
+          setDiscountValid(false)
+          setDiscountError('Invalid discount code')
+        }
+      }
+      
+      // Debounce validation to avoid too many API calls
+      const timeoutId = setTimeout(validateCode, 500)
+      return () => clearTimeout(timeoutId)
+    } else if (discountCode && discountCode.length > 0) {
+      setDiscountValid(false)
+      setDiscountError('Discount code must be 5 digits')
+    } else {
+      setDiscountValid(null)
+      setDiscountError(null)
+    }
+  }, [discountCode])
 
   // Validate discount code function
   const validateDiscountCode = async (code: string) => {
@@ -126,11 +160,26 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     return false
   }
 
+  const [discountError, setDiscountError] = useState<string | null>(null)
+  const [discountValid, setDiscountValid] = useState<boolean | null>(null)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setDiscountError(null)
 
     try {
+      // Validate discount code if provided
+      if (discountCode && discountCode.trim()) {
+        const isValid = await validateDiscountCode(discountCode)
+        if (!isValid) {
+          setDiscountError('Invalid discount code. Please check and try again.')
+          setIsLoading(false)
+          return
+        }
+        setDiscountValid(true)
+      }
+
       // Get seller tracking and customer email from localStorage if available
       const sellerTracking = localStorage.getItem('elocalpass-seller-tracking')
       const customerEmail = localStorage.getItem('elocalpass-customer-email')
@@ -293,10 +342,32 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
             <input
               type="text"
               value={discountCode}
-              onChange={(e) => setDiscountCode(e.target.value)}
+              onChange={(e) => {
+                setDiscountCode(e.target.value)
+                setDiscountError(null) // Clear error when user types
+                setDiscountValid(null)
+              }}
               placeholder="Enter discount code"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                discountError ? 'border-red-500' : discountValid ? 'border-green-500' : 'border-gray-300'
+              }`}
             />
+            {discountError && (
+              <p className="text-red-500 text-sm mt-1 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {discountError}
+              </p>
+            )}
+            {discountValid && (
+              <p className="text-green-500 text-sm mt-1 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Valid discount code applied
+              </p>
+            )}
           </div>
 
           {/* Price Display */}
