@@ -24,6 +24,7 @@ export default withAuth(
       pathname === "/sw.js" ||
       pathname.startsWith("/icon-") ||
       pathname.startsWith("/locations") ||
+      pathname.startsWith("/api/locations") ||
       pathname === "/passes" ||
       pathname === "/faq" ||
       pathname === "/contact"
@@ -84,6 +85,7 @@ export default withAuth(
           pathname === "/sw.js" ||
           pathname.startsWith("/icon-") ||
           pathname.startsWith("/locations") ||
+          pathname.startsWith("/api/locations") ||
           pathname === "/passes" ||
           pathname === "/faq" ||
           pathname === "/contact"
