@@ -120,27 +120,23 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
         if (userLocation) {
           console.log('📍 Creating user location marker at:', userLocation)
           
-          // Create custom SVG for blue dot
-          const svgIcon = {
-            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-              <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="10" cy="10" r="8" fill="#4285F4" stroke="#FFFFFF" stroke-width="2"/>
-                <circle cx="10" cy="10" r="3" fill="#FFFFFF"/>
-              </svg>
-            `),
-            scaledSize: new google.maps.Size(20, 20),
-            anchor: new google.maps.Point(10, 10)
-          }
-          
+          // Use a simple circle marker for better compatibility
           const userMarkerInstance = new google.maps.Marker({
             position: userLocation,
             map: mapInstance,
-            icon: svgIcon,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 12,
+              fillColor: '#4285F4',
+              fillOpacity: 1,
+              strokeColor: '#FFFFFF',
+              strokeWeight: 3
+            },
             title: 'Your location',
             zIndex: 1000 // Ensure it's on top
           })
           setUserMarker(userMarkerInstance)
-          console.log('✅ User location marker created with custom SVG')
+          console.log('✅ User location marker created with circle symbol')
         } else {
           console.log('❌ No user location available')
         }
@@ -265,7 +261,39 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
           }
           map.fitBounds(bounds)
         }
-  }, [affiliates, map, infoWindow, userLocation, onAffiliateClick])
+  }, [affiliates, map, infoWindow, onAffiliateClick])
+
+  // Handle user location updates
+  useEffect(() => {
+    if (!map || !userLocation) return
+
+    console.log('🔄 Updating user location marker:', userLocation)
+    
+    // Remove existing user marker
+    if (userMarker) {
+      userMarker.setMap(null)
+    }
+    
+    // Create new user marker
+    const newUserMarker = new google.maps.Marker({
+      position: userLocation,
+      map: map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 12,
+        fillColor: '#4285F4',
+        fillOpacity: 1,
+        strokeColor: '#FFFFFF',
+        strokeWeight: 3
+      },
+      title: 'Your location',
+      zIndex: 1000
+    })
+    
+    setUserMarker(newUserMarker)
+    console.log('✅ User location marker updated')
+    
+  }, [userLocation, map])
 
   // Handle pulsing based on hovered and selected affiliates
   useEffect(() => {
