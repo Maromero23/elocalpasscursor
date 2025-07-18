@@ -72,6 +72,14 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       totalPrice = 15 + (guests - 1) * 15 + (days - 1) * 15
     }
 
+    console.log('💰 PRICE CALCULATION:', {
+      passType,
+      guests,
+      days,
+      totalPrice,
+      originalPrice: totalPrice
+    })
+
     setOriginalPrice(totalPrice)
     setCalculatedPrice(totalPrice)
     // Reset discount when price changes
@@ -207,6 +215,13 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     setDiscountError(null)
 
     try {
+      // Validate that price is greater than 0
+      if (calculatedPrice <= 0) {
+        setDiscountError('Invalid price. Please check your selection and try again.')
+        setIsLoading(false)
+        return
+      }
+
       // Validate email confirmation
       if (customerEmail !== confirmEmail) {
         setDiscountError('Email addresses do not match. Please check and try again.')
@@ -228,6 +243,17 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       // Get seller tracking from localStorage if available
       const sellerTracking = localStorage.getItem('elocalpass-seller-tracking')
       
+      console.log('💳 PAYMENT SUBMIT:', {
+        calculatedPrice,
+        originalPrice,
+        discountAmount,
+        passType,
+        guests,
+        days,
+        customerEmail,
+        customerName
+      })
+
       // Create the pass order
       const orderData = {
         passType,
