@@ -507,6 +507,39 @@ export default function DistributorsPage() {
     })
   }
 
+  const handleGenerateDiscountCode = async () => {
+    if (!editingSeller || !sellerEditFormData.defaultDiscountValue || sellerEditFormData.defaultDiscountValue <= 0) {
+      setError("Please set a discount value greater than 0 first")
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/sellers/${editingSeller}/generate-code`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          defaultDiscountType: sellerEditFormData.defaultDiscountType,
+          defaultDiscountValue: sellerEditFormData.defaultDiscountValue
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.generatedCode) {
+          setSellerEditFormData(prev => ({ ...prev, discountCode: result.generatedCode }))
+          setError(`🎲 Generated discount code: ${result.generatedCode}`)
+        }
+      } else {
+        const errorData = await response.json()
+        setError(`Failed to generate code: ${errorData.error}`)
+      }
+    } catch (error) {
+      setError("Error generating discount code")
+    }
+  }
+
   const handleSaveSellerEdit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingSeller) return
@@ -530,6 +563,10 @@ export default function DistributorsPage() {
         // Show success message with generated code if applicable
         if (result.generatedDiscountCode) {
           setError(`✅ Seller updated successfully! Auto-generated discount code: ${result.generatedDiscountCode}`)
+        } else if (sellerEditFormData.defaultDiscountValue > 0) {
+          setError(`✅ Seller updated successfully! Discount code will be auto-generated when needed.`)
+        } else {
+          setError(`✅ Seller updated successfully!`)
         }
         
         // Refresh the distributors list and details
@@ -1820,18 +1857,24 @@ export default function DistributorsPage() {
                                                                                   <label className="block text-sm font-medium text-gray-700 mb-1">
                                                                                     Discount Code (5 digits)
                                                                                   </label>
-                                                                                  <div className="flex items-center gap-2">
-                                                                                    <input
-                                                                                      type="text"
-                                                                                      value={sellerEditFormData.discountCode || "Not set"}
-                                                                                      readOnly
-                                                                                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono text-center text-gray-600"
-                                                                                      placeholder="Will be auto-generated"
-                                                                                    />
-                                                                                    <div className="text-xs text-gray-500">
-                                                                                      🔒 Auto-generated
+                                                                                                                                                                      <div className="flex items-center gap-2">
+                                                                                      <input
+                                                                                        type="text"
+                                                                                        value={sellerEditFormData.discountCode || "Not set"}
+                                                                                        readOnly
+                                                                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono text-center text-gray-600"
+                                                                                        placeholder="Will be auto-generated"
+                                                                                      />
+                                                                                      <button
+                                                                                        type="button"
+                                                                                        onClick={handleGenerateDiscountCode}
+                                                                                        disabled={!sellerEditFormData.defaultDiscountValue || sellerEditFormData.defaultDiscountValue <= 0}
+                                                                                        className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-md transition-colors"
+                                                                                        title="Generate a new discount code"
+                                                                                      >
+                                                                                        🎲 Generate
+                                                                                      </button>
                                                                                     </div>
-                                                                                  </div>
                                                                                                                                                                       <p className="text-xs text-gray-500 mt-1">
                                                                                       Customers can enter this code to get the discount above. 
                                                                                       <span className="font-medium text-blue-600"> Code is auto-generated and cannot be changed.</span>
