@@ -412,7 +412,7 @@ export default function CityPage() {
       {/* Main Content - Shifted Up */}
       <div className="flex flex-col lg:flex-row h-screen bg-gray-50">
         {/* Left Side - Affiliate Grid (Responsive Layout) */}
-        <div className="w-full lg:w-[70%] pl-4 sm:pl-6 lg:pl-8 order-2 lg:order-1 bg-gray-50 overflow-y-auto">
+        <div className="w-full lg:w-[65%] pl-4 sm:pl-6 lg:pl-8 order-2 lg:order-1 bg-gray-50 overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             {userLocation && (
               <div className="flex items-center text-sm text-gray-600">
@@ -641,7 +641,7 @@ export default function CityPage() {
         </div>
 
                          {/* Right Side - Map */}
-        <div className="w-full lg:w-[30%] order-1 lg:order-2 h-[50vh] lg:h-screen">
+        <div className="w-full lg:w-[35%] order-1 lg:order-2 h-[50vh] lg:h-screen">
           <GoogleMap
             affiliates={filteredAffiliates}
             userLocation={userLocation}

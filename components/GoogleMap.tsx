@@ -94,12 +94,9 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
                 map: mapInstance,
                 title: affiliate.name,
                 icon: {
-                  path: google.maps.SymbolPath.CIRCLE,
-                  scale: 10,
-                  fillColor: affiliate.recommended ? '#34A853' : '#FF6B35',
-                  fillOpacity: 1,
-                  strokeColor: '#FFFFFF',
-                  strokeWeight: 2
+                  url: '/images/logo.png',
+                  scaledSize: new google.maps.Size(32, 32),
+                  anchor: new google.maps.Point(16, 16)
                 }
               })
 
@@ -165,12 +162,9 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
             map: map,
             title: affiliate.name,
             icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: affiliate.recommended ? '#34A853' : '#FF6B35',
-              fillOpacity: 1,
-              strokeColor: '#FFFFFF',
-              strokeWeight: 2
+              url: '/images/logo.png',
+              scaledSize: new google.maps.Size(32, 32),
+              anchor: new google.maps.Point(16, 16)
             }
           })
 
@@ -209,7 +203,7 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
     }
   }, [affiliates, map, infoWindow, userLocation, onAffiliateClick])
 
-  // Highlight selected affiliate
+  // Highlight selected affiliate with pulsing animation
   useEffect(() => {
     if (!map || !selectedAffiliate) return
 
@@ -220,6 +214,35 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
     if (selectedMarker) {
       map.panTo(selectedMarker.getPosition()!)
       map.setZoom(15)
+      
+      // Add pulsing animation to selected marker
+      let pulseCount = 0
+      const maxPulses = 6
+      const pulseInterval = setInterval(() => {
+        if (pulseCount >= maxPulses) {
+          clearInterval(pulseInterval)
+          // Reset to normal size
+          selectedMarker.setIcon({
+            url: '/images/logo.png',
+            scaledSize: new google.maps.Size(32, 32),
+            anchor: new google.maps.Point(16, 16)
+          })
+          return
+        }
+        
+        // Create pulsing effect by changing size
+        const size = 32 + (pulseCount % 2 === 0 ? 8 : 0)
+        selectedMarker.setIcon({
+          url: '/images/logo.png',
+          scaledSize: new google.maps.Size(size, size),
+          anchor: new google.maps.Point(size/2, size/2)
+        })
+        
+        pulseCount++
+      }, 200) // Pulse every 200ms
+      
+      // Cleanup interval when component unmounts or selectedAffiliate changes
+      return () => clearInterval(pulseInterval)
     }
   }, [selectedAffiliate, markers, map])
 
@@ -241,12 +264,8 @@ export default function GoogleMap({ affiliates, userLocation, onAffiliateClick, 
           </p>
           <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
             <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
-              <span>{language === 'es' ? 'Recomendados' : 'Recommended'}</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-orange-500 rounded-full mr-1"></div>
-              <span>{language === 'es' ? 'Otros' : 'Others'}</span>
+              <img src="/images/logo.png" alt="ELocalPass" className="w-4 h-4 mr-1" />
+              <span>{language === 'es' ? 'Negocios afiliados' : 'Affiliate businesses'}</span>
             </div>
           </div>
         </div>
