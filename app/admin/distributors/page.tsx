@@ -64,6 +64,11 @@ interface DistributorDetails {
       id: string
       name: string | null
       email: string | null
+      telephone: string | null
+      whatsapp: string | null
+      notes: string | null
+      defaultDiscountType: string | null
+      defaultDiscountValue: number | null
       isActive: boolean
       role: string
       createdAt: string
@@ -135,7 +140,9 @@ export default function DistributorsPage() {
     password: "",
     telephone: "",
     whatsapp: "",
-    notes: ""
+    notes: "",
+    defaultDiscountType: "percentage",
+    defaultDiscountValue: 0
   })
   const [isUpdating, setIsUpdating] = useState(false)
 
@@ -476,7 +483,9 @@ export default function DistributorsPage() {
       password: "",
       telephone: seller.telephone || "",
       whatsapp: seller.whatsapp || "",
-      notes: seller.notes || ""
+      notes: seller.notes || "",
+      defaultDiscountType: seller.defaultDiscountType || "percentage",
+      defaultDiscountValue: seller.defaultDiscountValue || 0
     })
   }
 
@@ -488,7 +497,9 @@ export default function DistributorsPage() {
       password: "",
       telephone: "",
       whatsapp: "",
-      notes: ""
+      notes: "",
+      defaultDiscountType: "percentage",
+      defaultDiscountValue: 0
     })
   }
 
@@ -1745,6 +1756,50 @@ export default function DistributorsPage() {
                                                                                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                                                                                   placeholder="Additional notes..."
                                                                                 />
+                                                                              </div>
+
+                                                                              {/* Discount Configuration */}
+                                                                              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                                                                <h4 className="text-sm font-medium text-blue-900 mb-3">Default Rebuy Discount</h4>
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                  <div>
+                                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                      Discount Type
+                                                                                    </label>
+                                                                                    <select
+                                                                                      value={sellerEditFormData.defaultDiscountType}
+                                                                                      onChange={(e) => setSellerEditFormData(prev => ({ ...prev, defaultDiscountType: e.target.value }))}
+                                                                                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                                                    >
+                                                                                      <option value="percentage">Percentage (%)</option>
+                                                                                      <option value="fixed">Fixed Amount ($)</option>
+                                                                                    </select>
+                                                                                  </div>
+                                                                                  <div>
+                                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                      Discount Value
+                                                                                    </label>
+                                                                                    <input
+                                                                                      type="number"
+                                                                                      min="0"
+                                                                                      max={sellerEditFormData.defaultDiscountType === 'percentage' ? 100 : undefined}
+                                                                                      step={sellerEditFormData.defaultDiscountType === 'percentage' ? 1 : 0.01}
+                                                                                      value={sellerEditFormData.defaultDiscountValue}
+                                                                                      onChange={(e) => setSellerEditFormData(prev => ({ ...prev, defaultDiscountValue: parseFloat(e.target.value) || 0 }))}
+                                                                                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                                                      placeholder={sellerEditFormData.defaultDiscountType === 'percentage' ? '10' : '5.00'}
+                                                                                    />
+                                                                                  </div>
+                                                                                </div>
+                                                                                <p className="text-xs text-blue-600 mt-2">
+                                                                                  This discount will be applied to rebuy emails when customers purchase again from this seller.
+                                                                                  {sellerEditFormData.defaultDiscountValue > 0 && (
+                                                                                    <span className="font-medium">
+                                                                                      {' '}Preview: {sellerEditFormData.defaultDiscountValue}
+                                                                                      {sellerEditFormData.defaultDiscountType === 'percentage' ? '% off' : '$ off'}
+                                                                                    </span>
+                                                                                  )}
+                                                                                </p>
                                                                               </div>
 
                                                                               <div className="pt-4 border-t">
