@@ -570,3 +570,25 @@ model AffiliateFieldAnnotation {
   @@unique([affiliateId, fieldName])
   @@map("affiliate_field_annotations")
 }
+
+model Order {
+  id            String   @id @default(cuid())
+  paymentId     String   @unique // PayPal payment ID
+  amount        Float
+  currency      String   @default("USD")
+  customerEmail String
+  customerName  String
+  passType      String   // 'day', 'week', 'custom'
+  guests        Int
+  days          Int
+  deliveryType  String   // 'now', 'future'
+  deliveryDate  DateTime?
+  deliveryTime  String?
+  discountCode  String?
+  sellerId      String?
+  status        String   @default("PENDING") // PENDING, PAID, CANCELLED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("orders")
+}
