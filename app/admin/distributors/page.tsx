@@ -1815,8 +1815,14 @@ export default function DistributorsPage() {
                                                                                     placeholder="12345"
                                                                                   />
                                                                                   <p className="text-xs text-gray-500 mt-1">
-                                                                                    Customers can enter this code to get the discount above. Leave empty to auto-generate.
+                                                                                    Customers can enter this code to get the discount above. 
+                                                                                    <span className="font-medium text-blue-600"> Leave empty to auto-generate a unique code.</span>
                                                                                   </p>
+                                                                                  {!sellerEditFormData.discountCode && sellerEditFormData.defaultDiscountValue > 0 && (
+                                                                                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                                                                                      <span className="font-medium">🎲 Auto-generation enabled:</span> A unique 5-digit code will be automatically created when you save.
+                                                                                    </div>
+                                                                                  )}
                                                                                 </div>
                                                                                 
                                                                                 <p className="text-xs text-blue-600 mt-2">

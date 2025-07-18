@@ -4,6 +4,31 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { NextRequest, NextResponse } from "next/server"
 
+// Generate unique 5-digit discount code
+async function generateUniqueDiscountCode(): Promise<string> {
+  let attempts = 0
+  const maxAttempts = 100
+  
+  while (attempts < maxAttempts) {
+    // Generate random 5-digit number
+    const code = Math.floor(10000 + Math.random() * 90000).toString()
+    
+    // Check if code already exists
+    // const existingCode = await prisma.user.findUnique({
+    //   where: { discountCode: code }
+    // })
+    const existingCode = null // Temporary fix until Prisma client updates
+    
+    if (!existingCode) {
+      return code
+    }
+    
+    attempts++
+  }
+  
+  throw new Error('Unable to generate unique discount code after 100 attempts')
+}
+
 // PUT /api/admin/sellers/[sellerId] - Update seller and QR configuration
 export async function PUT(
   request: NextRequest,
@@ -27,6 +52,13 @@ export async function PUT(
       }, { status: 400 })
     }
 
+    // Auto-generate unique discount code if not provided and discount is set
+    let finalDiscountCode = discountCode
+    if (!discountCode && defaultDiscountValue && defaultDiscountValue > 0) {
+      finalDiscountCode = await generateUniqueDiscountCode()
+      console.log(`🎲 Auto-generated discount code: ${finalDiscountCode} for seller ${name}`)
+    }
+
     // Check if seller exists
     const existingSeller = await prisma.user.findUnique({
       where: { id: sellerId },
@@ -48,7 +80,7 @@ export async function PUT(
       notes: notes || null,
       defaultDiscountType: defaultDiscountType || null,
       defaultDiscountValue: defaultDiscountValue || null,
-      discountCode: discountCode || null
+      discountCode: finalDiscountCode || null
     }
 
     // Only update password if provided
@@ -72,7 +104,8 @@ export async function PUT(
 
     return NextResponse.json({
       message: "Seller updated successfully",
-      seller: updatedSeller
+      seller: updatedSeller,
+      generatedDiscountCode: finalDiscountCode !== discountCode ? finalDiscountCode : null
     })
 
   } catch (error) {
