@@ -653,7 +653,7 @@ export default function CityPage() {
         </div>
 
                          {/* Right Side - Map */}
-        <div className="w-full lg:w-[35%] order-1 lg:order-2 h-[50vh] lg:h-[50vh]">
+        <div className="w-full lg:w-[35%] order-1 lg:order-2 h-[50vh] lg:h-screen">
           <GoogleMap
             affiliates={filteredAffiliates}
             userLocation={userLocation}
