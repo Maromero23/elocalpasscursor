@@ -522,6 +522,13 @@ export default function DistributorsPage() {
       })
 
       if (response.ok) {
+        const result = await response.json()
+        
+        // Show success message with generated code if applicable
+        if (result.generatedDiscountCode) {
+          setError(`✅ Seller updated successfully! Auto-generated discount code: ${result.generatedDiscountCode}`)
+        }
+        
         // Refresh the distributors list and details
         await fetchDistributors()
         // Refresh the specific distributor details that contains this seller
@@ -536,7 +543,12 @@ export default function DistributorsPage() {
         setEditingSeller(null)
       } else {
         const errorData = await response.json()
-        setError(`Failed to update seller: ${errorData.error}`)
+        if (response.status === 409) {
+          // Duplicate discount code error
+          setError(`❌ ${errorData.error}`)
+        } else {
+          setError(`Failed to update seller: ${errorData.error}`)
+        }
       }
     } catch (error) {
       setError("Error updating seller")
@@ -1801,19 +1813,31 @@ export default function DistributorsPage() {
                                                                                   <label className="block text-sm font-medium text-gray-700 mb-1">
                                                                                     Discount Code (5 digits)
                                                                                   </label>
-                                                                                  <input
-                                                                                    type="text"
-                                                                                    maxLength={5}
-                                                                                    pattern="[0-9]{5}"
-                                                                                    value={sellerEditFormData.discountCode}
-                                                                                    onChange={(e) => {
-                                                                                      // Only allow numbers and limit to 5 digits
-                                                                                      const value = e.target.value.replace(/\D/g, '').slice(0, 5)
-                                                                                      setSellerEditFormData(prev => ({ ...prev, discountCode: value }))
-                                                                                    }}
-                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono text-center"
-                                                                                    placeholder="12345"
-                                                                                  />
+                                                                                  <div className="flex gap-2">
+                                                                                    <input
+                                                                                      type="text"
+                                                                                      maxLength={5}
+                                                                                      pattern="[0-9]{5}"
+                                                                                      value={sellerEditFormData.discountCode}
+                                                                                      onChange={(e) => {
+                                                                                        // Only allow numbers and limit to 5 digits
+                                                                                        const value = e.target.value.replace(/\D/g, '').slice(0, 5)
+                                                                                        setSellerEditFormData(prev => ({ ...prev, discountCode: value }))
+                                                                                      }}
+                                                                                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono text-center"
+                                                                                      placeholder="12345"
+                                                                                    />
+                                                                                    {sellerEditFormData.discountCode && (
+                                                                                      <button
+                                                                                        type="button"
+                                                                                        onClick={() => setSellerEditFormData(prev => ({ ...prev, discountCode: "" }))}
+                                                                                        className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs rounded-md transition-colors"
+                                                                                        title="Clear code to auto-generate"
+                                                                                      >
+                                                                                        🎲 Auto
+                                                                                      </button>
+                                                                                    )}
+                                                                                  </div>
                                                                                   <p className="text-xs text-gray-500 mt-1">
                                                                                     Customers can enter this code to get the discount above. 
                                                                                     <span className="font-medium text-blue-600"> Leave empty to auto-generate a unique code.</span>

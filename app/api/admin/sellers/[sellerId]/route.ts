@@ -46,6 +46,13 @@ export async function PUT(
       }, { status: 400 })
     }
 
+    // Validate discount code format if provided
+    if (discountCode && (discountCode.length !== 5 || !/^\d{5}$/.test(discountCode))) {
+      return NextResponse.json({ 
+        error: "Discount code must be exactly 5 digits" 
+      }, { status: 400 })
+    }
+
     // Auto-generate unique discount code if not provided and discount is set
     let finalDiscountCode = discountCode
     if (!discountCode && defaultDiscountValue && defaultDiscountValue > 0) {
@@ -83,18 +90,29 @@ export async function PUT(
     }
 
     // Update seller basic info only
-    const updatedSeller = await prisma.user.update({
-      where: { id: sellerId },
-      data: updateData,
-      include: {
-        location: {
-          include: {
-            distributor: true
-          }
-        },
-        sellerConfigs: true
+    let updatedSeller
+    try {
+      updatedSeller = await prisma.user.update({
+        where: { id: sellerId },
+        data: updateData,
+        include: {
+          location: {
+            include: {
+              distributor: true
+            }
+          },
+          sellerConfigs: true
+        }
+      })
+    } catch (error: any) {
+      // Handle duplicate discount code error
+      if (error.code === 'P2002' && error.meta?.target?.includes('discountCode')) {
+        return NextResponse.json({ 
+          error: `Discount code "${finalDiscountCode}" is already in use by another seller. Please choose a different code.` 
+        }, { status: 409 })
       }
-    })
+      throw error
+    }
 
     return NextResponse.json({
       message: "Seller updated successfully",
