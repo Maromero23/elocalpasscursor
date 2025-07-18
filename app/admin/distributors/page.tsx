@@ -291,6 +291,7 @@ export default function DistributorsPage() {
       })
       if (response.ok) {
         const data = await response.json()
+        console.log(`📊 Fetched distributor details for ${distributorId}:`, data)
         setDistributorDetails(prev => ({ ...prev, [distributorId]: data }))
       } else {
         setError("Failed to fetch distributor details")
@@ -478,6 +479,14 @@ export default function DistributorsPage() {
     // Load QR configurations for detailed display
     fetchQRConfigurations()
     
+    // Debug: Log the seller data to see what's available
+    console.log("🔍 Editing seller data:", {
+      name: seller.name,
+      defaultDiscountType: seller.defaultDiscountType,
+      defaultDiscountValue: seller.defaultDiscountValue,
+      discountCode: seller.discountCode
+    })
+    
     // Pre-populate form with current seller data
     setSellerEditFormData({
       name: seller.name,
@@ -604,6 +613,7 @@ export default function DistributorsPage() {
           )
         )
         if (distributorId) {
+          console.log(`🔄 Refreshing distributor details for: ${distributorId}`)
           await fetchDistributorDetails(distributorId, true)
         }
         setEditingSeller(null)

@@ -85,6 +85,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
         s."configurationId",
         s."configurationName",
         s."savedConfigId",
+        s."defaultDiscountType",
+        s."defaultDiscountValue",
+        s."discountCode",
         sc.name as "savedConfigName"
       FROM users s
       LEFT JOIN saved_qr_configurations sc ON s."savedConfigId" = sc.id
@@ -120,6 +123,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
         configurationName: seller.configurationName,
         savedConfigId: seller.savedConfigId,
         savedConfigName: seller.savedConfigName,
+        defaultDiscountType: seller.defaultDiscountType,
+        defaultDiscountValue: seller.defaultDiscountValue,
+        discountCode: seller.discountCode,
         sellerConfigs: hasConfiguration ? {
           id: seller.savedConfigId || seller.configurationId,
           name: seller.savedConfigName || seller.configurationName,
