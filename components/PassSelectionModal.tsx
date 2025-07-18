@@ -84,7 +84,15 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     const autoDiscount = urlParams.get('discount')
     const sellerId = urlParams.get('seller_id')
     const customerEmail = urlParams.get('customer_email')
-    const customerName = urlParams.get('customer_name')
+    const customerName = urlParams.get('customer_name') ? decodeURIComponent(urlParams.get('customer_name')!) : null
+    
+    console.log('🔍 PASS MODAL: URL Parameters detected:', {
+      autoDiscount,
+      sellerId,
+      customerEmail,
+      customerName,
+      fullUrl: window.location.search
+    })
     
     if (autoDiscount) {
       setDiscountCode(autoDiscount)
@@ -108,6 +116,9 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     if (customerName) {
       console.log(`👤 PASS MODAL: Customer name detected: ${customerName}`)
       setCustomerName(customerName)
+      console.log(`👤 PASS MODAL: Customer name set to state: ${customerName}`)
+    } else {
+      console.log(`❌ PASS MODAL: No customer name found in URL parameters`)
     }
     
     if (customerEmail) {
