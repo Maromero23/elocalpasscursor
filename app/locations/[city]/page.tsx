@@ -68,6 +68,7 @@ export default function CityPage() {
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const [hoveredAffiliate, setHoveredAffiliate] = useState<string | null>(null)
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
 
   const cityId = params.city as string
   const cityInfo = cityId === 'all-cities' ? { name: 'all-cities', displayName: 'All Cities' } : cityMap[cityId as keyof typeof cityMap]
@@ -309,8 +310,140 @@ export default function CityPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Compact Top Bar with Home and Filters */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
+      {/* Desktop Top Bar - Hidden on Mobile */}
+      <div className="hidden lg:block bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-center">
+          {/* Back Arrow with Home Text */}
+          <a 
+            href="/" 
+            className="absolute left-4 flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            <span className="font-medium">Home</span>
+          </a>
+
+          {/* Centered Filter Menu */}
+          <div className="flex items-center space-x-2">
+            {/* Search Filter */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder={language === 'es' ? 'Buscar...' : 'Search...'}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-32 sm:w-40"
+              />
+            </div>
+
+            {/* City Filter */}
+            <select
+              value={cityId || ''}
+              onChange={e => {
+                if (loading) return // Prevent switching while loading
+                
+                if (e.target.value === 'all-cities') {
+                  // For all cities, update URL and fetch all affiliates
+                  window.history.pushState({}, '', '/locations/all-cities')
+                  // Force a page reload to update the component state
+                  window.location.reload()
+                } else {
+                  window.location.href = `/locations/${e.target.value}`
+                }
+              }}
+              disabled={loading}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="all-cities">
+                {language === 'es' ? 'Todas las ciudades' : 'All cities'} 
+                {stats?.totalStats ? ` (${stats.totalStats.total})` : ''}
+              </option>
+              {Object.entries(cityMap).map(([slug, info]) => (
+                <option key={slug} value={slug}>
+                  {info.displayName}
+                  {stats?.cityStats?.[slug] ? ` (${stats.cityStats[slug].total})` : ''}
+                </option>
+              ))}
+            </select>
+
+            {/* Type Filter - Restored Original Options */}
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            >
+              <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
+              {normalizedTypes.map(type => {
+                const displayType = getDisplayType(type)
+                // Use total stats if we're on "all cities", otherwise use city stats
+                const currentCityStats = cityId === 'all-cities' 
+                  ? stats?.totalStats 
+                  : stats?.cityStats?.[cityId]
+                const typeCount = currentCityStats?.types?.[type.toLowerCase()] || 0
+                return (
+                  <option key={type} value={type}>
+                    {displayType} ({typeCount})
+                  </option>
+                )
+              })}
+            </select>
+
+            {/* Category Filter - Restored Original Options with Alphabetical Order */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            >
+              <option value="">{language === 'es' ? 'Todas las categorías' : 'All categories'}</option>
+              {categories.sort().map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+
+            {/* Rating Filter - Restored Original Options */}
+            <select
+              value={ratingFilter}
+              onChange={(e) => setRatingFilter(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            >
+              <option value="">{language === 'es' ? 'Cualquier calificación' : 'Any rating'}</option>
+              <option value="4.5">4.5+ ⭐</option>
+              <option value="4.0">4.0+ ⭐</option>
+              <option value="3.5">3.5+ ⭐</option>
+              <option value="3.0">3.0+ ⭐</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Top Bar - Simplified */}
+      <div className="block md:hidden bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* Back Arrow with Home Text */}
+          <a 
+            href="/" 
+            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            <span className="font-medium">Home</span>
+          </a>
+
+          {/* Mobile Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder={language === 'es' ? 'Buscar...' : 'Search...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-32"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Tablet/Medium Screen Top Bar - Hidden on Mobile and Desktop */}
+      <div className="hidden md:block lg:hidden bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-center">
           {/* Back Arrow with Home Text */}
           <a 
@@ -416,7 +549,7 @@ export default function CityPage() {
       </div>
 
       {/* Main Content - Shifted Up */}
-      <div className="flex flex-col lg:flex-row h-screen bg-gray-50">
+      <div className="flex flex-col lg:flex-row h-screen bg-gray-50 pb-20 md:pb-0 lg:pb-0">
         {/* Left Side - Affiliate Grid (Responsive Layout) */}
         <div className="w-full lg:w-[65%] pl-4 sm:pl-6 lg:pl-8 order-2 lg:order-1 bg-gray-50 overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
@@ -706,6 +839,195 @@ export default function CityPage() {
           />
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation Bar - Airbnb Style */}
+      <div className="block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div className="flex items-center justify-around px-4 py-2">
+          {/* Explore/Filter Button */}
+          <button className="flex flex-col items-center py-2 px-3 text-red-600">
+            <svg className="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+            <span className="text-xs font-medium">Explore</span>
+          </button>
+
+          {/* Filters Button */}
+          <button 
+            onClick={() => setIsFilterModalOpen(true)}
+            className="flex flex-col items-center py-2 px-3 text-gray-600"
+          >
+            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
+            </svg>
+            <span className="text-xs font-medium">Filters</span>
+          </button>
+
+          {/* Map View Button */}
+          <button className="flex flex-col items-center py-2 px-3 text-gray-600">
+            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+            </svg>
+            <span className="text-xs font-medium">Map</span>
+          </button>
+
+          {/* Saved/Wishlist Button */}
+          <button className="flex flex-col items-center py-2 px-3 text-gray-600">
+            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+            <span className="text-xs font-medium">Saved</span>
+          </button>
+
+          {/* Profile Button */}
+          <button className="flex flex-col items-center py-2 px-3 text-gray-600">
+            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            <span className="text-xs font-medium">Profile</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Modal */}
+      {isFilterModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 block md:hidden">
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {language === 'es' ? 'Filtros' : 'Filters'}
+              </h2>
+              <button
+                onClick={() => setIsFilterModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* City Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {language === 'es' ? 'Ciudad' : 'City'}
+                </label>
+                <select
+                  value={cityId || ''}
+                  onChange={e => {
+                    if (loading) return
+                    if (e.target.value === 'all-cities') {
+                      window.history.pushState({}, '', '/locations/all-cities')
+                      window.location.reload()
+                    } else {
+                      window.location.href = `/locations/${e.target.value}`
+                    }
+                  }}
+                  disabled={loading}
+                  className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:opacity-50"
+                >
+                  <option value="all-cities">
+                    {language === 'es' ? 'Todas las ciudades' : 'All cities'} 
+                    {stats?.totalStats ? ` (${stats.totalStats.total})` : ''}
+                  </option>
+                  {Object.entries(cityMap).map(([slug, info]) => (
+                    <option key={slug} value={slug}>
+                      {info.displayName}
+                      {stats?.cityStats?.[slug] ? ` (${stats.cityStats[slug].total})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Type Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {language === 'es' ? 'Tipo' : 'Type'}
+                </label>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
+                  {normalizedTypes.map(type => {
+                    const displayType = getDisplayType(type)
+                    const currentCityStats = cityId === 'all-cities' 
+                      ? stats?.totalStats 
+                      : stats?.cityStats?.[cityId]
+                    const typeCount = currentCityStats?.types?.[type.toLowerCase()] || 0
+                    return (
+                      <option key={type} value={type}>
+                        {displayType} ({typeCount})
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {language === 'es' ? 'Categoría' : 'Category'}
+                </label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="">{language === 'es' ? 'Todas las categorías' : 'All categories'}</option>
+                  {categories.sort().map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Rating Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {language === 'es' ? 'Calificación' : 'Rating'}
+                </label>
+                <select
+                  value={ratingFilter}
+                  onChange={(e) => setRatingFilter(e.target.value)}
+                  className="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="">{language === 'es' ? 'Cualquier calificación' : 'Any rating'}</option>
+                  <option value="4.5">4.5+ ⭐</option>
+                  <option value="4.0">4.0+ ⭐</option>
+                  <option value="3.5">3.5+ ⭐</option>
+                  <option value="3.0">3.0+ ⭐</option>
+                </select>
+              </div>
+
+              {/* Recommended Filter */}
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={recommendedFilter}
+                    onChange={(e) => setRecommendedFilter(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    {language === 'es' ? 'Solo recomendados' : 'Recommended only'}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Apply Button */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <button
+                onClick={() => setIsFilterModalOpen(false)}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                {language === 'es' ? 'Aplicar filtros' : 'Apply filters'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {modalAffiliate && (
