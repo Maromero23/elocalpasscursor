@@ -457,7 +457,7 @@ export default function WebsiteSalesPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                            <code className="text-sm font-mono font-semibold bg-blue-50 text-blue-900 px-3 py-2 rounded border border-blue-200">
                               {sale.qrCode}
                             </code>
                           </td>
