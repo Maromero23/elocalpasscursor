@@ -3,6 +3,17 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+// Add CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return new Response(null, { status: 200, headers: corsHeaders })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { 
@@ -72,10 +83,13 @@ export async function POST(request: NextRequest) {
       orderId: orderRecord.id,
       qrCodeId: qrCode.id,
       qrCode: qrCode.code
-    })
+    }, { headers: corsHeaders })
     
   } catch (error) {
     console.error('❌ MANUAL ORDER ERROR:', error)
-    return NextResponse.json({ error: 'Failed to create manual order' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create manual order' }, { 
+      status: 500, 
+      headers: corsHeaders 
+    })
   }
 } 
