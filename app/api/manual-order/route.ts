@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       deliveryType 
     } = await request.json()
     
-    console.log('📝 CREATING MANUAL ORDER:', {
+    console.log('📝 CREATING MANUAL ORDER (v2):', {
       paymentId,
       amount,
       customerEmail,
@@ -37,6 +37,8 @@ export async function POST(request: NextRequest) {
       days,
       deliveryType
     })
+    
+    console.log('🔧 Database sync completed, attempting order creation...')
     
     // Create order record manually
     const orderRecord = await prisma.order.create({
