@@ -97,7 +97,7 @@ async function createQRCodeForOrder(orderRecord: any) {
     const crypto = await import('crypto')
     const { formatDate } = await import('@/lib/translations')
     
-    // Generate unique QR code
+    // Generate unique QR code (same as seller dashboard)
     const qrCodeId = `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const expiresAt = new Date(Date.now() + (orderRecord.days * 24 * 60 * 60 * 1000))
     
@@ -179,53 +179,87 @@ async function createQRCodeForOrder(orderRecord: any) {
       }
     })
     
-    // Send welcome email using simple working approach
+    // 🚀 ALWAYS USE DEFAULT EMAIL TEMPLATE FOR PAYPAL ORDERS (no seller config)
     let emailSent = false
+    let emailSubject = 'Your ELocalPass is Ready - Immediate Access'
     try {
+      console.log('📧 PayPal order - using DEFAULT email template from admin panel...')
+      
       // Import email service
       const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
+      const { formatDate } = await import('@/lib/translations')
       
-      const customerLanguage = 'en' // Default language for PayPal orders
+      const customerLanguage = 'en'
       const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
       
-      console.log('📧 Creating welcome email for order...')
-      
-      // Use the simple working email template
-      const emailHtml = createWelcomeEmailHtml({
-        customerName: orderRecord.customerName,
-        qrCode: qrCodeId,
-        guests: orderRecord.guests,
-        days: orderRecord.days,
-        expiresAt: formattedExpirationDate,
-        customerPortalUrl: magicLinkUrl,
-        language: customerLanguage,
-        deliveryMethod: 'DIRECT'
+      // ALWAYS get DEFAULT email template from admin panel for PayPal orders
+      const defaultEmailTemplate = await prisma.welcomeEmailTemplate.findFirst({
+        where: {
+          isDefault: true
+        }
       })
       
-      console.log(`📧 Generated welcome email HTML - Length: ${emailHtml.length} chars`)
-
-      // Send the email
+      console.log('📧 Default template found:', defaultEmailTemplate ? 'YES' : 'NO')
+      
+      let emailHtml
+      
+      if (defaultEmailTemplate && defaultEmailTemplate.customHTML) {
+        console.log('📧 Using DEFAULT branded template from admin panel')
+        
+        // Use default template with variable replacements
+        emailHtml = defaultEmailTemplate.customHTML
+          .replace(/\{customerName\}/g, orderRecord.customerName)
+          .replace(/\{qrCode\}/g, qrCodeId)
+          .replace(/\{guests\}/g, orderRecord.guests.toString())
+          .replace(/\{days\}/g, orderRecord.days.toString())
+          .replace(/\{expirationDate\}/g, formattedExpirationDate)
+          .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
+          .replace(/\{magicLink\}/g, magicLinkUrl)
+        
+        // Use default template subject
+        emailSubject = defaultEmailTemplate.subject
+          .replace(/\{customerName\}/g, orderRecord.customerName)
+          .replace(/\{qrCode\}/g, qrCodeId)
+          
+        console.log('📧 Using default template from admin panel')
+      } else {
+        console.log('📧 No default template found, using fallback template')
+        
+        // Fallback to built-in template
+        emailHtml = createWelcomeEmailHtml({
+          customerName: orderRecord.customerName,
+          qrCode: qrCodeId,
+          guests: orderRecord.guests,
+          days: orderRecord.days,
+          expiresAt: formattedExpirationDate,
+          customerPortalUrl: magicLinkUrl,
+          language: customerLanguage,
+          deliveryMethod: 'DIRECT'
+        })
+      }
+      
+      console.log(`📧 Sending welcome email to: ${orderRecord.customerEmail}`)
+      console.log(`📧 Email subject: ${emailSubject}`)
+      console.log(`📧 Email HTML length: ${emailHtml.length} characters`)
+      
+      // Send email using same function as seller dashboard
       emailSent = await sendEmail({
         to: orderRecord.customerEmail,
-        subject: 'Your ELocalPass is Ready - Immediate Access',
+        subject: emailSubject,
         html: emailHtml
       })
-
-      if (emailSent) {
-        console.log(`✅ Welcome email sent successfully to ${orderRecord.customerEmail}`)
-        
-        // Update analytics record to reflect email was sent
-        await prisma.qRCodeAnalytics.updateMany({
-          where: { qrCodeId: qrCode.id },
-          data: { welcomeEmailSent: true }
-        })
-      } else {
-        console.error(`❌ Failed to send welcome email to ${orderRecord.customerEmail}`)
-      }
+      
+      console.log(`📧 Email sent result: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
+      
     } catch (emailError) {
-      console.error('❌ Error sending welcome email:', emailError)
+      console.error('❌ EMAIL ERROR:', emailError)
       emailSent = false
     }
+    
+         console.log(`📧 EMAIL SUMMARY:
+To: ${orderRecord.customerEmail}
+Subject: ${emailSubject || 'Your ELocalPass is Ready - Immediate Access'}
+Email Sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
     
     console.log('✅ QR CODE AND EMAIL PROCESSED:', qrCode.id)
     
