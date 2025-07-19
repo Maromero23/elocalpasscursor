@@ -8,11 +8,19 @@ export async function POST(request: NextRequest) {
     const body = await request.text()
     const headers = request.headers
     
-    // Verify PayPal webhook signature (you should implement proper verification)
-    // For now, we'll process the webhook directly
+    console.log('🔔 PAYPAL WEBHOOK RECEIVED')
+    console.log('Headers:', Object.fromEntries(headers.entries()))
+    console.log('Body:', body)
     
+    // Check if this is an IPN (Instant Payment Notification) from Website Payments Standard
+    if (body.includes('payment_status=') || body.includes('txn_id=')) {
+      console.log('📨 Processing PayPal IPN (Website Payments Standard)')
+      return await handlePayPalIPN(body)
+    }
+    
+    // Otherwise, try to parse as JSON (newer API)
     const webhookData = JSON.parse(body)
-    console.log('🔔 PAYPAL WEBHOOK:', webhookData.event_type)
+    console.log('🔔 PAYPAL WEBHOOK EVENT:', webhookData.event_type)
     
     // Handle payment completion
     if (webhookData.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
@@ -257,6 +265,78 @@ async function scheduleQRCode(orderRecord: any) {
     
   } catch (error) {
     console.error('❌ QR CODE SCHEDULING ERROR:', error)
+  }
+}
+
+async function handlePayPalIPN(body: string) {
+  try {
+    // Parse URL-encoded IPN data
+    const params = new URLSearchParams(body)
+    const ipnData: Record<string, string> = {}
+    
+    params.forEach((value, key) => {
+      ipnData[key] = value
+    })
+    
+    console.log('📨 PayPal IPN Data:', ipnData)
+    
+    // Check payment status
+    if (ipnData.payment_status === 'Completed') {
+      console.log('💰 PayPal IPN: Payment completed')
+      
+      // Extract custom data
+      let customData = null
+      if (ipnData.custom) {
+        try {
+          customData = JSON.parse(ipnData.custom)
+        } catch (e) {
+          console.error('Error parsing custom data:', e)
+        }
+      }
+      
+      if (customData) {
+        console.log('📋 Custom order data:', customData)
+        
+        // Create order record
+        const orderRecord = await prisma.order.create({
+          data: {
+            paymentId: ipnData.txn_id,
+            amount: parseFloat(ipnData.mc_gross),
+            currency: ipnData.mc_currency,
+            customerEmail: customData.customerEmail,
+            customerName: customData.customerName,
+            passType: customData.passType,
+            guests: customData.guests,
+            days: customData.days,
+            deliveryType: customData.deliveryType,
+            deliveryDate: customData.deliveryDate,
+            deliveryTime: customData.deliveryTime,
+            discountCode: customData.discountCode,
+            sellerId: customData.sellerId,
+            status: 'PAID'
+          }
+        })
+        
+        console.log('📝 ORDER CREATED FROM IPN:', orderRecord.id)
+        
+        // Handle QR code creation
+        if (customData.deliveryType === 'now') {
+          await createQRCode(orderRecord)
+        } else {
+          await scheduleQRCode(orderRecord)
+        }
+        
+        return NextResponse.json({ 
+          success: true, 
+          orderId: orderRecord.id 
+        })
+      }
+    }
+    
+    return NextResponse.json({ success: true, message: 'IPN processed' })
+  } catch (error) {
+    console.error('❌ PayPal IPN processing error:', error)
+    return NextResponse.json({ error: 'IPN processing failed' }, { status: 500 })
   }
 }
 

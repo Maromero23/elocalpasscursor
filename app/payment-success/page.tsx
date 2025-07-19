@@ -31,11 +31,29 @@ function PaymentSuccessContent() {
   useEffect(() => {
     const orderId = searchParams.get('orderId')
     const paymentId = searchParams.get('paymentId')
+    const paypalTxId = searchParams.get('tx') // PayPal transaction ID
+    const paypalStatus = searchParams.get('st') // PayPal status
+    const paypalAmount = searchParams.get('amt') // PayPal amount
+    
+    console.log('Payment Success Page - URL Parameters:', {
+      orderId,
+      paymentId,
+      paypalTxId,
+      paypalStatus,
+      paypalAmount,
+      allParams: Object.fromEntries(searchParams.entries())
+    })
     
     if (orderId) {
       fetchOrderDetails(orderId)
     } else if (paymentId) {
       fetchOrderByPaymentId(paymentId)
+    } else if (paypalTxId) {
+      // Handle PayPal return with transaction ID
+      fetchOrderByPayPalTx(paypalTxId)
+    } else {
+      // No parameters - show generic success message
+      setIsLoading(false)
     }
   }, [searchParams])
 
@@ -67,6 +85,18 @@ function PaymentSuccessContent() {
     } catch (error) {
       console.error('Error fetching order by payment ID:', error)
     } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchOrderByPayPalTx = async (txId: string) => {
+    try {
+      console.log('Fetching order by PayPal transaction ID:', txId)
+      // For now, just show a generic success message
+      // In a real implementation, you might want to verify the transaction with PayPal
+      setIsLoading(false)
+    } catch (error) {
+      console.error('Error fetching order by PayPal TX ID:', error)
       setIsLoading(false)
     }
   }
