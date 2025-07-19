@@ -71,22 +71,71 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Using seller ID:', validSellerId)
 
     // Create QR code immediately (for testing)
+    const qrCodeString = `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const expiresAt = new Date(Date.now() + (parseInt(days) * 24 * 60 * 60 * 1000))
+    
     const qrCode = await prisma.qRCode.create({
       data: {
-        code: `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        code: qrCodeString,
         sellerId: validSellerId,
         customerName: customerName,
         customerEmail: customerEmail,
         guests: parseInt(guests),
         days: parseInt(days),
         cost: parseFloat(amount),
-        expiresAt: new Date(Date.now() + (parseInt(days) * 24 * 60 * 60 * 1000)),
+        expiresAt: expiresAt,
         isActive: true,
         landingUrl: null
       }
     })
     
     console.log('✅ QR CODE CREATED:', qrCode.id)
+
+    // Generate magic link token for customer access
+    const crypto = require('crypto')
+    const accessToken = crypto.randomBytes(32).toString('hex')
+    const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    
+    await prisma.customerAccessToken.create({
+      data: {
+        token: accessToken,
+        qrCodeId: qrCode.id,
+        customerEmail: customerEmail,
+        customerName: customerName,
+        expiresAt: tokenExpiresAt
+      }
+    })
+
+    const magicLinkUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${accessToken}`
+    console.log('🔗 Magic link created:', magicLinkUrl)
+
+    // Send welcome email using the existing system
+    let emailSent = false
+    try {
+      const { sendWelcomeEmailWithTemplates } = await import('@/lib/email-service')
+      
+      emailSent = await sendWelcomeEmailWithTemplates({
+        customerName: customerName,
+        customerEmail: customerEmail,
+        qrCode: qrCodeString,
+        guests: parseInt(guests),
+        days: parseInt(days),
+        expiresAt: expiresAt,
+        magicLinkUrl: magicLinkUrl,
+        customerLanguage: 'en',
+        deliveryMethod: 'DIRECT',
+        savedConfigId: firstSeller?.savedConfigId || undefined
+      })
+      
+      if (emailSent) {
+        console.log('✅ Welcome email sent successfully')
+      } else {
+        console.log('❌ Welcome email failed to send')
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending welcome email:', emailError)
+      emailSent = false
+    }
     
     return NextResponse.json({ 
       success: true, 
