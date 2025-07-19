@@ -302,28 +302,30 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       paypalUrl.searchParams.set('amount', calculatedPrice.toFixed(2))
       paypalUrl.searchParams.set('currency_code', 'USD')
       
+      // FORCE AUTOMATIC REDIRECT - This should make PayPal redirect automatically
+      paypalUrl.searchParams.set('auto_return', '1')
+      paypalUrl.searchParams.set('rm', '2') // Return method: POST with all payment data
+      
       // Create return URL with order data encoded
       const returnUrl = new URL(`${window.location.origin}/api/paypal/success`)
       returnUrl.searchParams.set('orderData', JSON.stringify(orderData))
-      returnUrl.searchParams.set('amount', calculatedPrice.toFixed(2))
-      
       paypalUrl.searchParams.set('return', returnUrl.toString())
-      paypalUrl.searchParams.set('cancel_return', `${window.location.origin}/payment/cancel`)
       
-      // Enable automatic return and PDT (Payment Data Transfer)
-      paypalUrl.searchParams.set('rm', '2') // Return method: POST with payment data
-      paypalUrl.searchParams.set('auto_return', '1') // Enable automatic return
-      paypalUrl.searchParams.set('no_shipping', '1') // No shipping address required
-      paypalUrl.searchParams.set('no_note', '1') // No note from customer
+      // Set cancel URL
+      const cancelUrl = `${window.location.origin}/payment/cancel`
+      paypalUrl.searchParams.set('cancel_return', cancelUrl)
       
-      // Add IPN (Instant Payment Notification) URL for webhook
-      paypalUrl.searchParams.set('notify_url', `${window.location.origin}/api/paypal/webhook`)
-      
+      // Add custom data for tracking
+      paypalUrl.searchParams.set('custom', JSON.stringify({
+        customerEmail: orderData.customerEmail,
+        customerName: orderData.customerName,
+        passType: orderData.passType,
+        guests: orderData.guests,
+        days: orderData.days
+      }))
+
       console.log('🔗 PayPal URL:', paypalUrl.toString())
       
-      // Add custom data for order processing
-      paypalUrl.searchParams.set('custom', JSON.stringify(orderData))
-
       window.location.href = paypalUrl.toString()
     } catch (error) {
       console.error('Error processing order:', error)
