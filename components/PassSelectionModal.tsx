@@ -313,6 +313,8 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       // Add IPN (Instant Payment Notification) URL for webhook
       paypalUrl.searchParams.set('notify_url', `${window.location.origin}/api/paypal/webhook`)
       
+      console.log('🔗 PayPal URL:', paypalUrl.toString())
+      
       // Add custom data for order processing
       paypalUrl.searchParams.set('custom', JSON.stringify(orderData))
 

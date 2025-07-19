@@ -156,18 +156,39 @@ function PaymentSuccessContent() {
   if (!orderDetails) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 mb-4">
-            <FileText className="w-16 h-16 mx-auto" />
+        <div className="max-w-md mx-auto text-center bg-white rounded-lg shadow-md p-8">
+          <div className="text-green-600 mb-4">
+            <CheckCircle className="w-16 h-16 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+            <p className="text-gray-600 mb-6">
+              Your PayPal payment has been completed successfully.
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</h1>
-          <p className="text-gray-600 mb-6">We couldn't find your order details.</p>
-          <Link
-            href="/"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Return to Home
-          </Link>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h2 className="font-semibold text-blue-900 mb-2">What happens next?</h2>
+            <div className="text-sm text-blue-800 space-y-2">
+              <div>✅ Your payment has been processed</div>
+              <div>✅ QR code is being generated</div>
+              <div>✅ Welcome email will be sent shortly</div>
+              <div>✅ Check your email for QR code and details</div>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <Link 
+              href="/passes"
+              className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+            >
+              Make Another Purchase
+            </Link>
+            <Link 
+              href="/"
+              className="block w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+            >
+              Return to Home
+            </Link>
+          </div>
         </div>
       </div>
     )
