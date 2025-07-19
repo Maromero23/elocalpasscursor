@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     console.log('Query params:', { page, limit, search, status, seller, delivery })
 
-    // Get all QR codes first, then filter in JavaScript
+    // Get all QR codes first, then filter for PayPal purchases only
     console.log('📊 Fetching all QR codes...')
     const allQRCodes = await prisma.qRCode.findMany({
       include: {
@@ -49,9 +49,13 @@ export async function GET(request: NextRequest) {
 
     console.log(`📊 Found ${allQRCodes.length} total QR codes`)
 
-    // Filter QR codes that have customerEmail
-    const qrCodes = allQRCodes.filter(qr => qr.customerEmail !== null)
-    console.log(`📊 Found ${qrCodes.length} QR codes with customerEmail`)
+    // Filter QR codes that were purchased through PayPal (have customerEmail AND cost > 0)
+    const qrCodes = allQRCodes.filter(qr => 
+      qr.customerEmail !== null && 
+      qr.customerName !== null && 
+      qr.cost > 0  // Only paid QR codes (PayPal purchases)
+    )
+    console.log(`💰 Found ${qrCodes.length} PayPal-purchased QR codes`)
 
     // Apply additional filters
     let filteredQRCodes = qrCodes
@@ -94,9 +98,9 @@ export async function GET(request: NextRequest) {
     // Pagination
     const paginatedQRCodes = filteredQRCodes.slice(offset, offset + limit)
 
-    console.log(`📊 Final filtered QR codes: ${paginatedQRCodes.length}`)
+    console.log(`📊 Final filtered PayPal QR codes: ${paginatedQRCodes.length}`)
 
-    // Get scheduled QR codes
+    // Get scheduled QR codes from PayPal payments
     console.log('📅 Fetching scheduled QR codes...')
     const allScheduledQRCodes = await prisma.scheduledQRCode.findMany({
       orderBy: { createdAt: 'desc' }
@@ -104,9 +108,13 @@ export async function GET(request: NextRequest) {
 
     console.log(`📅 Found ${allScheduledQRCodes.length} total scheduled QR codes`)
 
-    // Filter scheduled QR codes that have clientEmail
-    const scheduledQRCodes = allScheduledQRCodes.filter(sqr => sqr.clientEmail !== null)
-    console.log(`📅 Found ${scheduledQRCodes.length} scheduled QR codes with clientEmail`)
+    // Filter scheduled QR codes that were from PayPal payments (have clientEmail)
+    const scheduledQRCodes = allScheduledQRCodes.filter(sqr => 
+      sqr.clientEmail !== null && 
+      sqr.clientName !== null
+      // Note: Scheduled QR codes don't have cost until processed, so we can't filter by cost
+    )
+    console.log(`💰 Found ${scheduledQRCodes.length} PayPal-scheduled QR codes`)
 
     // Apply filters to scheduled QR codes
     let filteredScheduledQRCodes = scheduledQRCodes
@@ -138,7 +146,7 @@ export async function GET(request: NextRequest) {
     // Pagination for scheduled
     const paginatedScheduledQRCodes = filteredScheduledQRCodes.slice(offset, offset + limit)
 
-    console.log(`📅 Final filtered scheduled QR codes: ${paginatedScheduledQRCodes.length}`)
+    console.log(`📅 Final filtered PayPal scheduled QR codes: ${paginatedScheduledQRCodes.length}`)
 
     // Get seller information for scheduled QRs
     const sellerIds = Array.from(new Set(paginatedScheduledQRCodes.map(qr => qr.sellerId)))
@@ -215,7 +223,7 @@ export async function GET(request: NextRequest) {
 
     console.log(`💰 Total sales to return: ${sales.length}`)
 
-    // Get summary statistics
+    // Get summary statistics (only PayPal purchases)
     const totalQRCodes = qrCodes.length
     const totalScheduledQRCodes = scheduledQRCodes.length
 

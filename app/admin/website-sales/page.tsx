@@ -258,7 +258,7 @@ export default function WebsiteSalesPage() {
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-gray-900">Website Sales</h2>
               <p className="text-gray-600 mt-2">
-                Track all sales from the website with detailed seller information
+                Track all PayPal purchases from the website with detailed seller information
               </p>
             </div>
 
