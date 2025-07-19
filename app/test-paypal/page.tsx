@@ -14,7 +14,7 @@ export default function TestPayPal() {
     
     // Load PayPal script
     const script = document.createElement('script')
-    script.src = 'https://www.sandbox.paypal.com/sdk/js?client-id=AVhVRUYbs8mzjMm4X6_BwvaA9dT4-9KOImWI5gN3kQCPawuDdTx1IRAOeeyzE3lh81_MJsiHsg8Q2Mn9&currency=USD'
+    script.src = 'https://www.paypal.com/sdk/js?client-id=AVhVRUYbs8mzjMm4X6_BwvaA9dT4-9KOImWI5gN3kQCPawuDdTx1IRAOeeyzE3lh81_MJsiHsg8Q2Mn9&currency=USD&intent=capture'
     script.async = true
     
     script.onload = () => {
