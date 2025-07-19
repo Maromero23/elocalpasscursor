@@ -21,277 +21,117 @@ export async function GET(
       )
     }
     
-    // Check if QR code has been created for this order
-    const existingQR = await prisma.qRCode.findFirst({
-      where: {
-        customerEmail: order.customerEmail,
-        customerName: order.customerName,
-        cost: order.amount,
-        createdAt: {
-          gte: new Date(order.createdAt.getTime() - 5 * 60 * 1000), // Within 5 minutes of order
-          lte: new Date(order.createdAt.getTime() + 5 * 60 * 1000)
-        }
-      }
-    })
-    
-    if (!existingQR) {
-      console.log(`🎫 No QR code found for order ${orderId}, creating one now...`)
-      
-      // Trigger QR code creation for this order
-      try {
-        await createQRCodeForOrder(order)
-        console.log(`✅ QR code created for order ${orderId}`)
-      } catch (error) {
-        console.error(`❌ Failed to create QR code for order ${orderId}:`, error)
-      }
-    } else {
-      console.log(`✅ QR code already exists for order ${orderId}`)
-    }
-    
-    // Calculate discount amount if discount code was used
-    let discountAmount = 0
-    if (order.discountCode) {
-      // This would need to be calculated based on your discount logic
-      // For now, we'll set it to 0
-      discountAmount = 0
-    }
-    
-    const orderDetails = {
-      orderId: order.id,
+    console.log('📋 Order found:', {
+      id: order.id,
       customerName: order.customerName,
-      customerEmail: order.customerEmail,
-      amount: order.amount,
-      currency: order.currency,
-      guests: order.guests,
-      days: order.days,
-      deliveryType: order.deliveryType,
-      deliveryDate: order.deliveryDate,
-      deliveryTime: order.deliveryTime,
-      discountCode: order.discountCode,
-      discountAmount: discountAmount,
-      status: order.status,
-      createdAt: order.createdAt
+      paymentId: order.paymentId,
+      status: order.status
+    })
+    
+    // 🚀 AUTO-SEND WELCOME EMAIL FOR PAYPAL ORDERS
+    // Check if this is a PayPal order that needs welcome email
+    if (order.paymentId && order.paymentId.startsWith('PAYPAL_') && order.status === 'PAID') {
+      console.log('📧 PayPal order detected - checking if welcome email was sent...')
+      
+      // Check if QR code exists and if email was sent
+      const existingQR = await prisma.qRCode.findFirst({
+        where: {
+          customerEmail: order.customerEmail,
+          customerName: order.customerName,
+          cost: order.amount,
+          createdAt: {
+            gte: new Date(order.createdAt.getTime() - 15 * 60 * 1000) // Within 15 minutes of order
+          }
+        },
+        include: {
+          analytics: true
+        }
+      })
+      
+      if (existingQR) {
+        console.log('📋 QR code found:', existingQR.code)
+        
+        // Check if welcome email was already sent
+        const emailAlreadySent = existingQR.analytics?.welcomeEmailSent || false
+        console.log('📧 Email already sent:', emailAlreadySent)
+        
+        if (!emailAlreadySent) {
+          console.log('📧 SENDING WELCOME EMAIL WITH BRANDED TEMPLATE...')
+          
+          try {
+            // Import email service
+            const { sendEmail } = await import('@/lib/email-service')
+            const { formatDate } = await import('@/lib/translations')
+            
+            // Get default template
+            const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
+              where: { isDefault: true }
+            })
+            
+            if (defaultTemplate && defaultTemplate.customHTML) {
+              console.log('📧 Using branded default template')
+              
+              const formattedExpirationDate = formatDate(existingQR.expiresAt, 'en')
+              const magicLinkUrl = `https://elocalpasscursor.vercel.app/customer/access`
+              
+              // Replace variables in template
+              const emailHtml = defaultTemplate.customHTML
+                .replace(/\{customerName\}/g, order.customerName)
+                .replace(/\{qrCode\}/g, existingQR.code)
+                .replace(/\{guests\}/g, order.guests.toString())
+                .replace(/\{days\}/g, order.days.toString())
+                .replace(/\{expirationDate\}/g, formattedExpirationDate)
+                .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
+                .replace(/\{magicLink\}/g, magicLinkUrl)
+              
+              const emailSubject = defaultTemplate.subject
+                .replace(/\{customerName\}/g, order.customerName)
+                .replace(/\{qrCode\}/g, existingQR.code)
+              
+              // Send email
+              const emailSent = await sendEmail({
+                to: order.customerEmail,
+                subject: emailSubject,
+                html: emailHtml
+              })
+              
+              console.log(`📧 Welcome email sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
+              
+              // Update analytics to mark email as sent
+              if (emailSent && existingQR.analytics) {
+                await prisma.qRCodeAnalytics.update({
+                  where: { id: existingQR.analytics.id },
+                  data: { welcomeEmailSent: true }
+                })
+                console.log('📊 Analytics updated - email marked as sent')
+              }
+            } else {
+              console.log('⚠️ No default template found')
+            }
+          } catch (emailError) {
+            console.error('❌ Error sending welcome email:', emailError)
+          }
+        } else {
+          console.log('📧 Welcome email already sent - skipping')
+        }
+      } else {
+        console.log('⚠️ No QR code found for this PayPal order')
+      }
     }
     
-    console.log(`✅ Order details retrieved for: ${orderId}`)
-    
-    return NextResponse.json({
-      success: true,
-      order: orderDetails
-    })
+    return NextResponse.json(
+      { 
+        success: true,
+        order: order
+      },
+      { status: 200 }
+    )
     
   } catch (error) {
-    console.error('❌ Error fetching order details:', error)
+    console.error('❌ Error fetching order:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch order' },
       { status: 500 }
     )
-  }
-}
-
-async function createQRCodeForOrder(orderRecord: any) {
-  try {
-    console.log('🎫 CREATING QR CODE FOR ORDER:', orderRecord.id)
-    
-    // Import necessary modules
-    const crypto = await import('crypto')
-    const { formatDate } = await import('@/lib/translations')
-    
-    // Generate unique QR code (same as seller dashboard)
-    const qrCodeId = `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    const expiresAt = new Date(Date.now() + (orderRecord.days * 24 * 60 * 60 * 1000))
-    
-    // Create QR code record
-    const qrCode = await prisma.qRCode.create({
-      data: {
-        code: qrCodeId,
-        sellerId: 'cmc4ha7l000086a96ef0e06qq', // Use existing seller for PayPal orders
-        customerName: orderRecord.customerName,
-        customerEmail: orderRecord.customerEmail,
-        guests: orderRecord.guests,
-        days: orderRecord.days,
-        cost: orderRecord.amount,
-        expiresAt: expiresAt,
-        isActive: true,
-        landingUrl: null
-      }
-    })
-    
-    console.log('✅ QR CODE CREATED:', qrCode.id)
-    
-    // Generate magic link token
-    const accessToken = crypto.default.randomBytes(32).toString('hex')
-    const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
-    
-    await prisma.customerAccessToken.create({
-      data: {
-        token: accessToken,
-        qrCodeId: qrCode.id,
-        customerEmail: orderRecord.customerEmail,
-        customerName: orderRecord.customerName,
-        expiresAt: tokenExpiresAt
-      }
-    })
-
-    const magicLinkUrl = `${process.env.NEXTAUTH_URL}/customer/access?token=${accessToken}`
-    
-    // Create analytics record
-    await prisma.qRCodeAnalytics.create({
-      data: {
-        qrCodeId: qrCode.id,
-        qrCode: qrCodeId,
-        customerName: orderRecord.customerName,
-        customerEmail: orderRecord.customerEmail,
-        guests: orderRecord.guests,
-        days: orderRecord.days,
-        cost: orderRecord.amount,
-        expiresAt: expiresAt,
-        isActive: true,
-        deliveryMethod: 'DIRECT',
-        language: 'en',
-        sellerId: 'system',
-        sellerName: 'ELocalPass System',
-        sellerEmail: 'system@elocalpass.com',
-        locationId: null,
-        locationName: null,
-        distributorId: null,
-        distributorName: null,
-        configurationId: 'default',
-        configurationName: 'Default PayPal Configuration',
-        pricingType: 'FIXED',
-        fixedPrice: orderRecord.amount,
-        variableBasePrice: null,
-        variableGuestIncrease: null,
-        variableDayIncrease: null,
-        variableCommission: null,
-        includeTax: false,
-        taxPercentage: null,
-        baseAmount: orderRecord.amount,
-        guestAmount: 0,
-        dayAmount: 0,
-        commissionAmount: 0,
-        taxAmount: 0,
-        totalAmount: orderRecord.amount,
-        landingUrl: null,
-        magicLinkUrl: magicLinkUrl,
-        welcomeEmailSent: false,
-        rebuyEmailScheduled: false
-      }
-    })
-    
-    // 🚀 ALWAYS USE DEFAULT EMAIL TEMPLATE FOR PAYPAL ORDERS (no seller config)
-    let emailSent = false
-    let emailSubject = 'Your ELocalPass is Ready - Immediate Access'
-    try {
-      console.log('📧 PayPal order - using DEFAULT email template from admin panel...')
-      
-      // Import email service
-      const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
-      const { formatDate } = await import('@/lib/translations')
-      
-      const customerLanguage = 'en'
-      const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
-      
-      // ALWAYS get DEFAULT email template from admin panel for PayPal orders
-      const defaultEmailTemplate = await prisma.welcomeEmailTemplate.findFirst({
-        where: {
-          isDefault: true
-        }
-      })
-      
-      console.log('📧 Default template found:', defaultEmailTemplate ? 'YES' : 'NO')
-      console.log('📧 Template details:', {
-        id: defaultEmailTemplate?.id,
-        name: defaultEmailTemplate?.name,
-        subject: defaultEmailTemplate?.subject,
-        isDefault: defaultEmailTemplate?.isDefault,
-        hasCustomHTML: !!defaultEmailTemplate?.customHTML,
-        customHTMLLength: defaultEmailTemplate?.customHTML?.length || 0,
-        customHTMLPreview: defaultEmailTemplate?.customHTML?.substring(0, 200) + '...'
-      })
-      
-      let emailHtml
-      
-      if (defaultEmailTemplate && defaultEmailTemplate.customHTML) {
-        console.log('📧 Using DEFAULT branded template from admin panel')
-        console.log('📧 Original template length:', defaultEmailTemplate.customHTML.length)
-        
-        // Use default template with variable replacements
-        emailHtml = defaultEmailTemplate.customHTML
-          .replace(/\{customerName\}/g, orderRecord.customerName)
-          .replace(/\{qrCode\}/g, qrCodeId)
-          .replace(/\{guests\}/g, orderRecord.guests.toString())
-          .replace(/\{days\}/g, orderRecord.days.toString())
-          .replace(/\{expirationDate\}/g, formattedExpirationDate)
-          .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
-          .replace(/\{magicLink\}/g, magicLinkUrl)
-        
-        console.log('📧 After variable replacement length:', emailHtml.length)
-        console.log('📧 Variable replacements made:', {
-          customerName: orderRecord.customerName,
-          qrCode: qrCodeId,
-          guests: orderRecord.guests,
-          days: orderRecord.days,
-          expirationDate: formattedExpirationDate,
-          magicLink: magicLinkUrl
-        })
-        
-        // Use default template subject
-        emailSubject = defaultEmailTemplate.subject
-          .replace(/\{customerName\}/g, orderRecord.customerName)
-          .replace(/\{qrCode\}/g, qrCodeId)
-          
-        console.log('📧 Using default template from admin panel')
-        console.log('📧 Final email subject:', emailSubject)
-      } else {
-        console.log('📧 No default template found OR customHTML is null, using fallback template')
-        console.log('📧 Template debug info:', {
-          templateExists: !!defaultEmailTemplate,
-          customHTMLExists: !!defaultEmailTemplate?.customHTML,
-          customHTMLValue: defaultEmailTemplate?.customHTML
-        })
-        
-        // Fallback to built-in template
-        emailHtml = createWelcomeEmailHtml({
-          customerName: orderRecord.customerName,
-          qrCode: qrCodeId,
-          guests: orderRecord.guests,
-          days: orderRecord.days,
-          expiresAt: formattedExpirationDate,
-          customerPortalUrl: magicLinkUrl,
-          language: customerLanguage,
-          deliveryMethod: 'DIRECT'
-        })
-        
-        console.log('📧 Using fallback built-in template')
-      }
-      
-      console.log(`📧 Sending welcome email to: ${orderRecord.customerEmail}`)
-      console.log(`📧 Email subject: ${emailSubject}`)
-      console.log(`📧 Email HTML length: ${emailHtml.length} characters`)
-      
-      // Send email using same function as seller dashboard
-      emailSent = await sendEmail({
-        to: orderRecord.customerEmail,
-        subject: emailSubject,
-        html: emailHtml
-      })
-      
-      console.log(`📧 Email sent result: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
-      
-    } catch (emailError) {
-      console.error('❌ EMAIL ERROR:', emailError)
-      emailSent = false
-    }
-    
-         console.log(`📧 EMAIL SUMMARY:
-To: ${orderRecord.customerEmail}
-Subject: ${emailSubject || 'Your ELocalPass is Ready - Immediate Access'}
-Email Sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
-    
-    console.log('✅ QR CODE AND EMAIL PROCESSED:', qrCode.id)
-    
-  } catch (error) {
-    console.error('❌ QR CODE CREATION ERROR:', error)
   }
 } 
