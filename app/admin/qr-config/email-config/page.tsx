@@ -298,22 +298,76 @@ function EmailConfigPageContent() {
     }
   }
 
-  const saveAsDefaultTemplate = () => {
-    const defaultTemplate = {
-      id: 'default',
-      name: 'Default Email Template',
-      data: { ...emailConfig },
-      createdAt: new Date(),
-      isDefault: true
+  const saveAsDefaultTemplate = async () => {
+    try {
+      console.log('🔧 ADMIN PANEL: Saving default template to database...')
+      
+      const response = await fetch('/api/admin/default-email-template', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          emailConfig: emailConfig,
+          action: 'saveAsDefault'
+        })
+      })
+      
+      const result = await response.json()
+      
+      if (response.ok && result.success) {
+        console.log('✅ ADMIN PANEL: Default template saved to database successfully')
+        toast.success('Default Template Saved', 'Current email configuration saved as default template in database!')
+        
+        // Also save to localStorage for backward compatibility
+        const defaultTemplate = {
+          id: 'default',
+          name: 'Default Email Template',
+          data: { ...emailConfig },
+          createdAt: new Date(),
+          isDefault: true
+        }
+        localStorage.setItem('elocalpass-default-email-template', JSON.stringify(defaultTemplate))
+      } else {
+        console.error('❌ ADMIN PANEL: Failed to save default template:', result.error)
+        toast.error('Save Failed', result.error || 'Failed to save default template to database')
+      }
+    } catch (error) {
+      console.error('❌ ADMIN PANEL: Error saving default template:', error)
+      toast.error('Save Failed', 'Network error while saving default template')
     }
-    
-    localStorage.setItem('elocalpass-default-email-template', JSON.stringify(defaultTemplate))
-    toast.success('Default Template Saved', 'Current email configuration saved as default template!')
   }
 
-  const clearDefaultTemplate = () => {
-    localStorage.removeItem('elocalpass-default-email-template')
-    toast.success('Default Template Cleared', 'Default email template cleared successfully!')
+  const clearDefaultTemplate = async () => {
+    try {
+      console.log('🔧 ADMIN PANEL: Clearing default template from database...')
+      
+      const response = await fetch('/api/admin/default-email-template', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'clearDefault'
+        })
+      })
+      
+      const result = await response.json()
+      
+      if (response.ok && result.success) {
+        console.log('✅ ADMIN PANEL: Default template cleared from database successfully')
+        toast.success('Default Template Cleared', 'Default email template cleared from database successfully!')
+        
+        // Also clear from localStorage for backward compatibility
+        localStorage.removeItem('elocalpass-default-email-template')
+      } else {
+        console.error('❌ ADMIN PANEL: Failed to clear default template:', result.error)
+        toast.error('Clear Failed', result.error || 'Failed to clear default template from database')
+      }
+    } catch (error) {
+      console.error('❌ ADMIN PANEL: Error clearing default template:', error)
+      toast.error('Clear Failed', 'Network error while clearing default template')
+    }
   }
 
   const getDefaultTemplateStatus = () => {
