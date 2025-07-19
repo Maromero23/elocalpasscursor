@@ -192,7 +192,7 @@ async function createQRCode(orderRecord: any) {
       magicLinkUrl: magicLinkUrl,
       customerLanguage: customerLanguage,
       deliveryMethod: 'DIRECT',
-      savedConfigId: 'default' // This will trigger the default template
+      savedConfigId: '' // This will trigger the default welcome email template
     })
     
     if (emailSent) {

@@ -332,7 +332,7 @@ export async function sendWelcomeEmailWithTemplates(data: WelcomeEmailData): Pro
 
     // Get email templates from saved configuration
     let emailTemplates = null
-    if (data.savedConfigId) {
+    if (data.savedConfigId && data.savedConfigId.trim() !== '') {
       const savedConfig = await prisma.savedQRConfiguration.findUnique({
         where: { id: data.savedConfigId },
         select: { emailTemplates: true }
@@ -573,18 +573,67 @@ export async function sendWelcomeEmailWithTemplates(data: WelcomeEmailData): Pro
         console.log(`📧 Generated error fallback HTML template`)
       }
     } else {
-      // Use generic default HTML template
-      emailHtml = createWelcomeEmailHtml({
-        customerName: data.customerName,
-        qrCode: data.qrCode,
-        guests: data.guests,
-        days: data.days,
-        expiresAt: formattedExpirationDate,
-        customerPortalUrl: data.magicLinkUrl,
-        language: data.customerLanguage,
-        deliveryMethod: data.deliveryMethod
-      })
-      console.log(`📧 Using generic default HTML template`)
+      // No saved config provided - use default template from database
+      console.log(`📧 No saved config provided - Loading default template from database`)
+      
+      try {
+        const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
+          where: { isDefault: true }
+        })
+        
+        if (defaultTemplate && defaultTemplate.customHTML) {
+          console.log(`📧 FOUND DEFAULT TEMPLATE in database - Length: ${defaultTemplate.customHTML.length} chars`)
+          
+          let processedTemplate = defaultTemplate.customHTML
+            .replace(/\{customerName\}/g, data.customerName)
+            .replace(/\{qrCode\}/g, data.qrCode)
+            .replace(/\{guests\}/g, data.guests.toString())
+            .replace(/\{days\}/g, data.days.toString())
+            .replace(/\{expirationDate\}/g, formattedExpirationDate)
+            .replace(/\{magicLink\}/g, data.magicLinkUrl || '')
+            .replace(/\{customerPortalUrl\}/g, data.magicLinkUrl || '')
+          
+          // Apply universal email translation for Spanish customers
+          emailHtml = await translateEmailHTML(processedTemplate, data.customerLanguage)
+          
+          // Use default template subject
+          if (defaultTemplate.subject) {
+            emailSubject = defaultTemplate.subject
+          }
+          
+          console.log(`📧 Using DEFAULT template from database (translated for ${data.customerLanguage})`)
+        } else {
+          console.log(`⚠️ No default template found in database, falling back to generic template`)
+          
+          // Fallback to generic template
+          emailHtml = createWelcomeEmailHtml({
+            customerName: data.customerName,
+            qrCode: data.qrCode,
+            guests: data.guests,
+            days: data.days,
+            expiresAt: formattedExpirationDate,
+            customerPortalUrl: data.magicLinkUrl,
+            language: data.customerLanguage,
+            deliveryMethod: data.deliveryMethod
+          })
+          console.log(`📧 Generated fallback HTML template`)
+        }
+      } catch (error) {
+        console.error('❌ Error loading default template from database:', error)
+        
+        // Fallback to generic template
+        emailHtml = createWelcomeEmailHtml({
+          customerName: data.customerName,
+          qrCode: data.qrCode,
+          guests: data.guests,
+          days: data.days,
+          expiresAt: formattedExpirationDate,
+          customerPortalUrl: data.magicLinkUrl,
+          language: data.customerLanguage,
+          deliveryMethod: data.deliveryMethod
+        })
+        console.log(`📧 Generated error fallback HTML template`)
+      }
     }
 
     // Send the email
