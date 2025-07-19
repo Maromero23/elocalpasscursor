@@ -305,7 +305,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       paypalUrl.searchParams.set('cancel_return', `${window.location.origin}/payment/cancel`)
       
       // Enable automatic return and PDT (Payment Data Transfer)
-      paypalUrl.searchParams.set('rm', '2') // Return method: POST with payment data
+      paypalUrl.searchParams.set('rm', '1') // Return method: GET with payment data
       paypalUrl.searchParams.set('auto_return', '1') // Enable automatic return
       paypalUrl.searchParams.set('no_shipping', '1') // No shipping address required
       paypalUrl.searchParams.set('no_note', '1') // No note from customer
