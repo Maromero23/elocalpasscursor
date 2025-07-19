@@ -30,26 +30,43 @@ export async function GET(request: NextRequest) {
 
     console.log('Query params:', { page, limit, search, status, seller, delivery })
 
-    // Get PayPal-purchased QR codes directly from database (more efficient)
+    // Build base where clause for PayPal purchases
+    let baseWhere: any = {
+      customerEmail: { not: null as any },
+      customerName: { not: null as any },
+      cost: { gt: 0 }  // Only paid QR codes (PayPal purchases)
+    }
+
+    // Add search filter
+    if (search) {
+      baseWhere.OR = [
+        { customerName: { contains: search, mode: 'insensitive' } },
+        { customerEmail: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+
+    // Add status filter
+    if (status === 'active') {
+      baseWhere.isActive = true
+      baseWhere.expiresAt = { gt: new Date() }
+    } else if (status === 'expired') {
+      baseWhere.expiresAt = { lte: new Date() }
+    } else if (status === 'inactive') {
+      baseWhere.isActive = false
+    }
+
+    // Add seller filter
+    if (seller !== 'all') {
+      baseWhere.sellerId = seller
+    }
+
+    console.log('Base where clause:', JSON.stringify(baseWhere, null, 2))
+
+    // Get PayPal-purchased QR codes
     console.log('📊 Fetching PayPal-purchased QR codes...')
-    const qrCodes = await prisma.qRCode.findMany({
-      where: {
-        customerEmail: { not: null as any },
-        customerName: { not: null as any },
-        cost: { gt: 0 },  // Only paid QR codes (PayPal purchases)
-        ...(search ? {
-          OR: [
-            { customerName: { contains: search, mode: 'insensitive' } },
-            { customerEmail: { contains: search, mode: 'insensitive' } },
-            { code: { contains: search, mode: 'insensitive' } }
-          ]
-        } : {}),
-        ...(status === 'active' ? { isActive: true, expiresAt: { gt: new Date() } } : {}),
-        ...(status === 'expired' ? { expiresAt: { lte: new Date() } } : {}),
-        ...(status === 'inactive' ? { isActive: false } : {}),
-        ...(seller !== 'all' ? { sellerId: seller } : {}),
-        ...(delivery === 'scheduled' ? { id: 'impossible-id' } : {}) // Exclude all for scheduled filter
-      },
+    const qrCodes = delivery === 'scheduled' ? [] : await prisma.qRCode.findMany({
+      where: baseWhere,
       include: {
         seller: {
           include: {
@@ -62,31 +79,43 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: { createdAt: 'desc' },
-      skip: delivery === 'immediate' ? offset : 0,
-      take: delivery === 'immediate' ? limit : (delivery === 'all' ? limit : 0)
+      skip: offset,
+      take: limit
     })
 
     console.log(`💰 Found ${qrCodes.length} PayPal-purchased QR codes`)
 
-    // Get PayPal-scheduled QR codes directly from database (more efficient)
+    // Build base where clause for scheduled QR codes
+    let scheduledWhere: any = {
+      clientEmail: { not: null as any },
+      clientName: { not: null as any }
+    }
+
+    // Add search filter for scheduled
+    if (search) {
+      scheduledWhere.OR = [
+        { clientName: { contains: search, mode: 'insensitive' } },
+        { clientEmail: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+
+    // Add seller filter for scheduled
+    if (seller !== 'all') {
+      scheduledWhere.sellerId = seller
+    }
+
+    // For 'all' delivery type, only include unprocessed scheduled QRs
+    if (delivery === 'all') {
+      scheduledWhere.isProcessed = false
+    }
+
+    // Get PayPal-scheduled QR codes
     console.log('📅 Fetching PayPal-scheduled QR codes...')
-    const scheduledQRCodes = await prisma.scheduledQRCode.findMany({
-      where: {
-        clientEmail: { not: null as any },
-        clientName: { not: null as any },
-        ...(search ? {
-          OR: [
-            { clientName: { contains: search, mode: 'insensitive' } },
-            { clientEmail: { contains: search, mode: 'insensitive' } }
-          ]
-        } : {}),
-        ...(seller !== 'all' ? { sellerId: seller } : {}),
-        ...(delivery === 'immediate' ? { id: 'impossible-id' } : {}), // Exclude all for immediate filter
-        ...(delivery === 'all' ? { isProcessed: false } : {}) // For 'all', only include unprocessed
-      },
+    const scheduledQRCodes = delivery === 'immediate' ? [] : await prisma.scheduledQRCode.findMany({
+      where: scheduledWhere,
       orderBy: { createdAt: 'desc' },
-      skip: delivery === 'scheduled' ? offset : 0,
-      take: delivery === 'scheduled' ? limit : (delivery === 'all' ? limit : 0)
+      skip: offset,
+      take: limit
     })
 
     console.log(`💰 Found ${scheduledQRCodes.length} PayPal-scheduled QR codes`)
