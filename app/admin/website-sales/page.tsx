@@ -1,31 +1,44 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useSession, signOut } from 'next-auth/react'
+import { ProtectedRoute } from '../../../components/auth/protected-route'
+import Link from 'next/link'
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table'
-import { 
+  Building2, 
+  Users, 
+  MapPin, 
+  QrCode, 
+  TrendingUp, 
+  Eye, 
+  Clock, 
+  DollarSign,
   CalendarIcon, 
-  DollarSignIcon, 
   UserIcon, 
   BuildingIcon,
-  ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
   FilterIcon,
   SearchIcon,
   DownloadIcon
 } from 'lucide-react'
+
+const getNavItems = (userRole: string) => {
+  if (userRole === "ADMIN") {
+    return [
+      { href: "/admin", label: "Dashboard", icon: Building2 },
+      { href: "/admin/distributors", label: "Distributors", icon: Users },
+      { href: "/admin/locations", label: "Locations", icon: MapPin },
+      { href: "/admin/sellers", label: "Sellers", icon: Users },
+      { href: "/admin/affiliates", label: "Affiliates", icon: Building2 },
+      { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
+      { href: "/admin/scheduled", label: "Scheduled QRs", icon: Clock },
+      { href: "/admin/website-sales", label: "Website Sales", icon: DollarSign },
+      { href: "/admin/analytics", label: "Analytics", icon: TrendingUp },
+    ]
+  }
+  return []
+}
 
 interface WebsiteSale {
   id: string
@@ -64,6 +77,8 @@ interface SalesSummary {
 }
 
 export default function WebsiteSalesPage() {
+  const { data: session } = useSession()
+  const navItems = getNavItems(session?.user?.role || "")
   const [sales, setSales] = useState<WebsiteSale[]>([])
   const [summary, setSummary] = useState<SalesSummary>({
     totalSales: 0,
@@ -151,19 +166,19 @@ export default function WebsiteSalesPage() {
     const isExpired = now > expiresAt
 
     if (!sale.isActive) {
-      return <Badge variant="destructive">Inactive</Badge>
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Inactive</span>
     }
     if (isExpired) {
-      return <Badge variant="secondary">Expired</Badge>
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Expired</span>
     }
-    return <Badge variant="default">Active</Badge>
+    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
   }
 
   const getDeliveryTypeBadge = (sale: WebsiteSale) => {
     if (sale.deliveryType === 'scheduled') {
-      return <Badge variant="outline">Scheduled</Badge>
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Scheduled</span>
     }
-    return <Badge variant="default">Immediate</Badge>
+    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Immediate</span>
   }
 
   const exportSales = async () => {
@@ -186,268 +201,325 @@ export default function WebsiteSalesPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Website Sales</h1>
-          <p className="text-gray-600 mt-2">
-            Track all sales from the website with detailed seller information
-          </p>
-        </div>
-        <Button onClick={exportSales} className="flex items-center gap-2">
-          <DownloadIcon className="h-4 w-4" />
-          Export CSV
-        </Button>
-      </div>
+    <ProtectedRoute allowedRoles={["ADMIN"]}>
+      <div className="min-h-screen bg-gray-100">
+        {/* Navigation */}
+        <nav className="bg-orange-400 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center space-x-8">
+                <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
+                <div className="flex space-x-4">
+                  {navItems.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-orange-100 hover:text-white hover:bg-orange-500"
+                      >
+                        <Icon className="w-4 h-4 mr-2" />
+                        {item.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={exportSales}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2"
+                >
+                  <DownloadIcon className="h-4 w-4" />
+                  Export CSV
+                </button>
+                <button
+                  onClick={() => signOut()}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </nav>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-            <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.totalSales}</div>
-            <p className="text-xs text-muted-foreground">
-              All time website sales
-            </p>
-          </CardContent>
-        </Card>
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="px-4 py-6 sm:px-0">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-gray-900">Website Sales</h2>
+              <p className="text-gray-600 mt-2">
+                Track all sales from the website with detailed seller information
+              </p>
+            </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary.totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground">
-              Total amount collected
-            </p>
-          </CardContent>
-        </Card>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <DollarSign className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        Total Sales
+                      </dt>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {summary.totalSales}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active QR Codes</CardTitle>
-            <CheckCircleIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.activeQRCodes}</div>
-            <p className="text-xs text-muted-foreground">
-              Currently active passes
-            </p>
-          </CardContent>
-        </Card>
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <DollarSign className="h-8 w-8 text-green-600" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        Total Revenue
+                      </dt>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {formatCurrency(summary.totalRevenue)}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Scheduled Deliveries</CardTitle>
-            <ClockIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.scheduledDeliveries}</div>
-            <p className="text-xs text-muted-foreground">
-              Future scheduled QRs
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <CheckCircleIcon className="h-8 w-8 text-green-600" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        Active QR Codes
+                      </dt>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {summary.activeQRCodes}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FilterIcon className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Search</label>
-              <div className="relative">
-                <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Customer, email, QR code..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Clock className="h-8 w-8 text-purple-600" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        Scheduled Deliveries
+                      </dt>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {summary.scheduledDeliveries}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Seller</label>
-              <Select value={sellerFilter} onValueChange={setSellerFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sellers</SelectItem>
-                  {sellers.map((seller) => (
-                    <SelectItem key={seller.id} value={seller.id}>
-                      {seller.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Delivery Type</label>
-              <Select value={deliveryFilter} onValueChange={setDeliveryFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="immediate">Immediate</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Actions</label>
-              <Button 
-                onClick={() => {
-                  setSearchTerm('')
-                  setStatusFilter('all')
-                  setSellerFilter('all')
-                  setDeliveryFilter('all')
-                }}
-                variant="outline"
-                className="w-full"
-              >
-                Clear Filters
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Sales Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Sales Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>QR Code</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Seller</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Delivery</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Expires</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sales.map((sale) => (
-                    <TableRow key={sale.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{sale.customerName}</div>
-                          <div className="text-sm text-gray-500">{sale.customerEmail}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-                          {sale.qrCode}
-                        </code>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{formatCurrency(sale.amount)}</div>
-                        <div className="text-sm text-gray-500">
-                          {sale.guests} guests, {sale.days} days
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{sale.seller.name}</div>
-                          <div className="text-sm text-gray-500">{sale.seller.email}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{sale.seller.location?.name || 'N/A'}</div>
-                          <div className="text-sm text-gray-500">
-                            {sale.seller.location?.distributor?.name || 'N/A'}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getDeliveryTypeBadge(sale)}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(sale)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{formatDate(sale.createdAt)}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{formatDate(sale.expiresAt)}</div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-between items-center mt-4">
-                  <div className="text-sm text-gray-500">
-                    Page {currentPage} of {totalPages}
+            {/* Filters */}
+            <div className="bg-white rounded-lg shadow mb-8">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                  <FilterIcon className="h-5 w-5" />
+                  Filters
+                </h3>
+              </div>
+              <div className="px-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <div className="relative">
+                      <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Customer, email, QR code..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
+                      <option value="all">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="expired">Expired</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Seller</label>
+                    <select
+                      value={sellerFilter}
+                      onChange={(e) => setSellerFilter(e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
-                      Next
-                    </Button>
+                      <option value="all">All Sellers</option>
+                      {sellers.map((seller) => (
+                        <option key={seller.id} value={seller.id}>
+                          {seller.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Type</label>
+                    <select
+                      value={deliveryFilter}
+                      onChange={(e) => setDeliveryFilter(e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="immediate">Immediate</option>
+                      <option value="scheduled">Scheduled</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Actions</label>
+                    <button
+                      onClick={() => {
+                        setSearchTerm('')
+                        setStatusFilter('all')
+                        setSellerFilter('all')
+                        setDeliveryFilter('all')
+                      }}
+                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                    >
+                      Clear Filters
+                    </button>
                   </div>
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              </div>
+            </div>
+
+            {/* Sales Table */}
+            <div className="bg-white rounded-lg shadow">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Sales Details</h3>
+              </div>
+              <div className="overflow-x-auto">
+                {loading ? (
+                  <div className="flex justify-center items-center h-32">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                  </div>
+                ) : (
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QR Code</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seller</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {sales.map((sale) => (
+                        <tr key={sale.id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{sale.customerName}</div>
+                              <div className="text-sm text-gray-500">{sale.customerEmail}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                              {sale.qrCode}
+                            </code>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{formatCurrency(sale.amount)}</div>
+                            <div className="text-sm text-gray-500">
+                              {sale.guests} guests, {sale.days} days
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{sale.seller.name}</div>
+                              <div className="text-sm text-gray-500">{sale.seller.email}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{sale.seller.location?.name || 'N/A'}</div>
+                              <div className="text-sm text-gray-500">
+                                {sale.seller.location?.distributor?.name || 'N/A'}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getDeliveryTypeBadge(sale)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getStatusBadge(sale)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(sale.createdAt)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(sale.expiresAt)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+                    <div className="text-sm text-gray-500">
+                      Page {currentPage} of {totalPages}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ProtectedRoute>
   )
 } 
