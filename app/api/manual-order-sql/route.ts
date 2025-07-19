@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       deliveryType 
     } = await request.json()
     
-    console.log('📝 CREATING MANUAL ORDER (v2):', {
+    console.log('📝 CREATING MANUAL ORDER WITH SQL:', {
       paymentId,
       amount,
       customerEmail,
@@ -38,43 +38,34 @@ export async function POST(request: NextRequest) {
       deliveryType
     })
     
-    console.log('🔧 Database sync completed, attempting order creation...')
+    // Create order record using raw SQL
+    const orderResult = await prisma.$executeRaw`
+      INSERT INTO orders (id, "paymentId", amount, currency, "customerEmail", "customerName", "passType", guests, days, "deliveryType", "sellerId", status, "createdAt", "updatedAt")
+      VALUES (
+        ${`order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`},
+        ${paymentId || `MANUAL_${Date.now()}`},
+        ${parseFloat(amount)},
+        'USD',
+        ${customerEmail},
+        ${customerName},
+        ${passType},
+        ${parseInt(guests)},
+        ${parseInt(days)},
+        ${deliveryType},
+        'manual-test',
+        'PAID',
+        NOW(),
+        NOW()
+      )
+    `
     
-    // Create order record manually
-    const orderRecord = await prisma.order.create({
-      data: {
-        paymentId: paymentId || `MANUAL_${Date.now()}`,
-        amount: parseFloat(amount),
-        currency: 'USD',
-        customerEmail: customerEmail,
-        customerName: customerName,
-        passType: passType,
-        guests: parseInt(guests),
-        days: parseInt(days),
-        deliveryType: deliveryType,
-        deliveryDate: null,
-        deliveryTime: null,
-        discountCode: null,
-        sellerId: 'manual-test',
-        status: 'PAID'
-      }
-    })
+    console.log('✅ ORDER CREATED WITH SQL:', orderResult)
     
-    console.log('✅ ORDER CREATED:', orderRecord.id)
-    
-    // Get the first available seller or use system
-    const firstSeller = await prisma.user.findFirst({
-      where: { role: 'SELLER' }
-    })
-    
-    const validSellerId = firstSeller ? firstSeller.id : 'system'
-    console.log('🔍 Using seller ID:', validSellerId)
-
-    // Create QR code immediately (for testing)
+    // Create QR code using Prisma (this model works)
     const qrCode = await prisma.qRCode.create({
       data: {
         code: `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        sellerId: validSellerId,
+        sellerId: 'manual-test',
         customerName: customerName,
         customerEmail: customerEmail,
         guests: parseInt(guests),
@@ -90,14 +81,18 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ 
       success: true, 
-      orderId: orderRecord.id,
+      orderId: `manual_${Date.now()}`,
       qrCodeId: qrCode.id,
-      qrCode: qrCode.code
+      qrCode: qrCode.code,
+      method: 'raw_sql'
     }, { headers: corsHeaders })
     
   } catch (error) {
-    console.error('❌ MANUAL ORDER ERROR:', error)
-    return NextResponse.json({ error: 'Failed to create manual order' }, { 
+    console.error('❌ MANUAL ORDER SQL ERROR:', error)
+    return NextResponse.json({ 
+      error: 'Failed to create manual order with SQL',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { 
       status: 500, 
       headers: corsHeaders 
     })
