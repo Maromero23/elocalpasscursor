@@ -272,142 +272,43 @@ async function createQRCode(orderRecord: any) {
       }
     })
     
-    // Send welcome email using the same system as seller dashboard
+    // Send welcome email using simple working approach
     let emailSent = false
     try {
-      // Import email service and translations (same as seller dashboard)
+      // Import email service and translations
       const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
-      const { detectLanguage, t, getPlural, formatDate } = await import('@/lib/translations')
+      const { formatDate } = await import('@/lib/translations')
       
       const customerLanguage = 'en' // Default language for PayPal orders
       const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
       
-      // Get the seller's saved configuration for email templates (like seller dashboard does)
-      const seller = await prisma.user.findUnique({
-        where: { id: 'cmc4ha7l000086a96ef0e06qq' },
-        include: {
-          savedConfig: true
-        }
+      console.log('📧 Creating welcome email with working template system...')
+      
+      // Use the simple working email template
+      const emailHtml = createWelcomeEmailHtml({
+        customerName: orderRecord.customerName,
+        qrCode: qrCodeId,
+        guests: orderRecord.guests,
+        days: orderRecord.days,
+        expiresAt: formattedExpirationDate,
+        customerPortalUrl: magicLinkUrl,
+        language: customerLanguage,
+        deliveryMethod: 'DIRECT'
       })
       
-      console.log('📧 Using seller savedConfigId:', seller?.savedConfigId)
-      
-      // Get email templates from saved configuration (same as seller dashboard)
-      let emailTemplates = null
-      if (seller?.savedConfigId) {
-        const savedConfig = await prisma.savedQRConfiguration.findUnique({
-          where: { id: seller.savedConfigId },
-          select: { emailTemplates: true }
-        })
-        
-        // Parse email templates JSON (same as seller dashboard)
-        if (savedConfig?.emailTemplates) {
-          try {
-            emailTemplates = typeof savedConfig.emailTemplates === 'string' 
-              ? JSON.parse(savedConfig.emailTemplates) 
-              : savedConfig.emailTemplates
-          } catch (error) {
-            console.log('Error parsing email templates:', error)
-          }
-        }
-      }
-      
-      const subject = t('email.welcome.subject', customerLanguage)
-      let emailHtml
-      let emailSubject = subject
-      
-      // Use the same email template logic as seller dashboard
-      if (emailTemplates?.welcomeEmail?.customHTML && emailTemplates.welcomeEmail.customHTML !== 'USE_DEFAULT_TEMPLATE') {
-        // Use custom HTML template from QR configuration (same as seller dashboard)
-        const customTemplate = emailTemplates.welcomeEmail.customHTML
-        
-        let processedTemplate = customTemplate
-          .replace(/\{customerName\}/g, orderRecord.customerName)
-          .replace(/\{qrCode\}/g, qrCodeId)
-          .replace(/\{guests\}/g, orderRecord.guests.toString())
-          .replace(/\{days\}/g, orderRecord.days.toString())
-          .replace(/\{expirationDate\}/g, formattedExpirationDate)
-          .replace(/\{magicLink\}/g, magicLinkUrl || '')
-          .replace(/\{customerPortalUrl\}/g, magicLinkUrl || '')
-        
-        emailHtml = processedTemplate
-        
-        // Use custom subject if available
-        if (emailTemplates.welcomeEmail.subject) {
-          emailSubject = emailTemplates.welcomeEmail.subject
-        }
-        
-        console.log(`📧 Using custom HTML template from QR configuration`)
-      } else if (emailTemplates?.welcomeEmail?.customHTML === 'USE_DEFAULT_TEMPLATE') {
-        console.log(`📧 USE_DEFAULT_TEMPLATE detected - Loading actual default template`)
-        
-        // Load the actual default template from database (same as seller dashboard)
-        const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
-          where: { isDefault: true }
-        })
-        
-        if (defaultTemplate && defaultTemplate.customHTML) {
-          console.log(`📧 FOUND DEFAULT TEMPLATE in database - Length: ${defaultTemplate.customHTML.length} chars`)
-          
-          let processedTemplate = defaultTemplate.customHTML
-            .replace(/\{customerName\}/g, orderRecord.customerName)
-            .replace(/\{qrCode\}/g, qrCodeId)
-            .replace(/\{guests\}/g, orderRecord.guests.toString())
-            .replace(/\{days\}/g, orderRecord.days.toString())
-            .replace(/\{expirationDate\}/g, formattedExpirationDate)
-            .replace(/\{magicLink\}/g, magicLinkUrl || '')
-            .replace(/\{customerPortalUrl\}/g, magicLinkUrl || '')
-          
-          emailHtml = processedTemplate
-          
-          // Use default template subject
-          if (defaultTemplate.subject) {
-            emailSubject = defaultTemplate.subject
-          }
-          
-          console.log(`📧 Using DEFAULT template from database`)
-        } else {
-          console.log(`⚠️ No default template found in database, falling back to generic template`)
-          
-          // Fallback to generic template (same as seller dashboard)
-          emailHtml = createWelcomeEmailHtml({
-            customerName: orderRecord.customerName,
-            qrCode: qrCodeId,
-            guests: orderRecord.guests,
-            days: orderRecord.days,
-            expiresAt: formattedExpirationDate,
-            customerPortalUrl: magicLinkUrl,
-            language: customerLanguage,
-            deliveryMethod: 'DIRECT'
-          })
-          console.log(`📧 Generated fallback HTML template`)
-        }
-      } else {
-        // Use generic default HTML template (same as seller dashboard)
-        emailHtml = createWelcomeEmailHtml({
-          customerName: orderRecord.customerName,
-          qrCode: qrCodeId,
-          guests: orderRecord.guests,
-          days: orderRecord.days,
-          expiresAt: formattedExpirationDate,
-          customerPortalUrl: magicLinkUrl,
-          language: customerLanguage,
-          deliveryMethod: 'DIRECT'
-        })
-        console.log(`📧 Using generic default HTML template`)
-      }
+      console.log(`📧 Generated welcome email HTML - Length: ${emailHtml.length} chars`)
 
-      // Send the email (same as seller dashboard)
+      // Send the email
       emailSent = await sendEmail({
         to: orderRecord.customerEmail,
-        subject: emailSubject,
+        subject: 'Your ELocalPass is Ready - Immediate Access',
         html: emailHtml
       })
 
       if (emailSent) {
         console.log(`✅ Welcome email sent successfully to ${orderRecord.customerEmail}`)
         
-        // Update analytics record to reflect email was sent (same as seller dashboard)
+        // Update analytics record to reflect email was sent
         await prisma.qRCodeAnalytics.updateMany({
           where: { qrCodeId: qrCode.id },
           data: { welcomeEmailSent: true }
