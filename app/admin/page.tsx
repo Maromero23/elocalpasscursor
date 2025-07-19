@@ -74,7 +74,7 @@ export default function AdminPage() {
 
               {/* Quick Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-lg shadow p-6 aspect-square flex flex-col justify-center">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
                       <Users className="h-8 w-8 text-blue-600" />
@@ -92,7 +92,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-lg shadow p-6 aspect-square flex flex-col justify-center">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
                       <MapPin className="h-8 w-8 text-orange-600" />
@@ -110,7 +110,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-lg shadow p-6 aspect-square flex flex-col justify-center">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
                       <QrCode className="h-8 w-8 text-green-600" />
@@ -128,7 +128,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-lg shadow p-6 aspect-square flex flex-col justify-center">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
                       <TrendingUp className="h-8 w-8 text-purple-600" />
@@ -148,10 +148,10 @@ export default function AdminPage() {
               </div>
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <Link
                   href="/admin/distributors"
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group aspect-square flex flex-col justify-center"
                 >
                   <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4 group-hover:bg-blue-200 transition-colors">
                     <Users className="w-6 h-6 text-blue-600" />
@@ -164,7 +164,7 @@ export default function AdminPage() {
 
                 <Link
                   href="/admin/locations"
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group aspect-square flex flex-col justify-center"
                 >
                   <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg mb-4 group-hover:bg-gray-200 transition-colors">
                     <MapPin className="w-6 h-6 text-gray-600" />
@@ -177,7 +177,7 @@ export default function AdminPage() {
 
                 <Link
                   href="/admin/sellers"
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group aspect-square flex flex-col justify-center"
                 >
                   <div className="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg mb-4 group-hover:bg-orange-200 transition-colors">
                     <Users className="w-6 h-6 text-orange-600" />
@@ -190,7 +190,7 @@ export default function AdminPage() {
 
                 <Link
                   href="/admin/affiliates"
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group aspect-square flex flex-col justify-center"
                 >
                   <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-lg mb-4 group-hover:bg-indigo-200 transition-colors">
                     <Building2 className="w-6 h-6 text-indigo-600" />
@@ -203,7 +203,7 @@ export default function AdminPage() {
 
                 <Link
                   href="/admin/qr-config"
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group aspect-square flex flex-col justify-center"
                 >
                   <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-4 group-hover:bg-green-200 transition-colors">
                     <QrCode className="w-6 h-6 text-green-600" />
@@ -216,7 +216,7 @@ export default function AdminPage() {
 
                 <Link
                   href="/admin/scheduled"
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group aspect-square flex flex-col justify-center"
                 >
                   <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4 group-hover:bg-blue-200 transition-colors">
                     <Clock className="w-6 h-6 text-blue-600" />
@@ -228,8 +228,21 @@ export default function AdminPage() {
                 </Link>
 
                 <Link
+                  href="/admin/website-sales"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group aspect-square flex flex-col justify-center"
+                >
+                  <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-4 group-hover:bg-green-200 transition-colors">
+                    <DollarSign className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Website Sales</h3>
+                  <p className="text-sm text-gray-600">
+                    Track all website sales with seller attribution and delivery scheduling
+                  </p>
+                </Link>
+
+                <Link
                   href="/admin/analytics"
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group"
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow group aspect-square flex flex-col justify-center"
                 >
                   <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-4 group-hover:bg-purple-200 transition-colors">
                     <Eye className="w-6 h-6 text-purple-600" />
