@@ -200,11 +200,21 @@ async function createQRCodeForOrder(orderRecord: any) {
       })
       
       console.log('📧 Default template found:', defaultEmailTemplate ? 'YES' : 'NO')
+      console.log('📧 Template details:', {
+        id: defaultEmailTemplate?.id,
+        name: defaultEmailTemplate?.name,
+        subject: defaultEmailTemplate?.subject,
+        isDefault: defaultEmailTemplate?.isDefault,
+        hasCustomHTML: !!defaultEmailTemplate?.customHTML,
+        customHTMLLength: defaultEmailTemplate?.customHTML?.length || 0,
+        customHTMLPreview: defaultEmailTemplate?.customHTML?.substring(0, 200) + '...'
+      })
       
       let emailHtml
       
       if (defaultEmailTemplate && defaultEmailTemplate.customHTML) {
         console.log('📧 Using DEFAULT branded template from admin panel')
+        console.log('📧 Original template length:', defaultEmailTemplate.customHTML.length)
         
         // Use default template with variable replacements
         emailHtml = defaultEmailTemplate.customHTML
@@ -216,14 +226,30 @@ async function createQRCodeForOrder(orderRecord: any) {
           .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
           .replace(/\{magicLink\}/g, magicLinkUrl)
         
+        console.log('📧 After variable replacement length:', emailHtml.length)
+        console.log('📧 Variable replacements made:', {
+          customerName: orderRecord.customerName,
+          qrCode: qrCodeId,
+          guests: orderRecord.guests,
+          days: orderRecord.days,
+          expirationDate: formattedExpirationDate,
+          magicLink: magicLinkUrl
+        })
+        
         // Use default template subject
         emailSubject = defaultEmailTemplate.subject
           .replace(/\{customerName\}/g, orderRecord.customerName)
           .replace(/\{qrCode\}/g, qrCodeId)
           
         console.log('📧 Using default template from admin panel')
+        console.log('📧 Final email subject:', emailSubject)
       } else {
-        console.log('📧 No default template found, using fallback template')
+        console.log('📧 No default template found OR customHTML is null, using fallback template')
+        console.log('📧 Template debug info:', {
+          templateExists: !!defaultEmailTemplate,
+          customHTMLExists: !!defaultEmailTemplate?.customHTML,
+          customHTMLValue: defaultEmailTemplate?.customHTML
+        })
         
         // Fallback to built-in template
         emailHtml = createWelcomeEmailHtml({
@@ -236,6 +262,8 @@ async function createQRCodeForOrder(orderRecord: any) {
           language: customerLanguage,
           deliveryMethod: 'DIRECT'
         })
+        
+        console.log('📧 Using fallback built-in template')
       }
       
       console.log(`📧 Sending welcome email to: ${orderRecord.customerEmail}`)
