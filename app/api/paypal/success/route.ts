@@ -4,6 +4,10 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 PAYPAL SUCCESS POST ROUTE CALLED!')
+  console.log('📍 URL:', request.url)
+  console.log('📍 Method:', request.method)
+  
   try {
     // Handle POST request from PayPal and process the payment
     const url = new URL(request.url)
@@ -178,8 +182,25 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  // Handle GET requests the same way
-  return POST(request)
+  console.log('🚀 PAYPAL SUCCESS GET ROUTE CALLED!')
+  console.log('📍 URL:', request.url)
+  console.log('📍 Method:', request.method)
+  
+  try {
+    // Handle GET request (redirect from PayPal)
+    const url = new URL(request.url)
+    const searchParams = url.searchParams
+    
+    console.log('📨 PayPal Success GET Request:', {
+      params: Object.fromEntries(searchParams.entries())
+    })
+
+    // Handle GET requests the same way
+    return POST(request)
+  } catch (error) {
+    console.error('❌ PayPal success GET error:', error)
+    return NextResponse.redirect(new URL('/payment-success', request.url))
+  }
 }
 
 async function createQRCode(orderRecord: any) {
