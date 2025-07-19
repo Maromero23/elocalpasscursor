@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     // Build where clause for QR codes
     let whereClause: any = {
       customerEmail: {
-        not: null as any
+        not: null
       }
     }
 
@@ -63,9 +63,24 @@ export async function GET(request: NextRequest) {
 
     console.log('Where clause:', JSON.stringify(whereClause, null, 2))
 
-    // Get QR codes (immediate deliveries)
+    // Get QR codes (immediate deliveries) - only those with customerEmail
     const qrCodes = await prisma.qRCode.findMany({
-      where: whereClause,
+      where: {
+        customerEmail: {
+          not: null as any
+        },
+        ...(search ? {
+          OR: [
+            { customerName: { contains: search, mode: 'insensitive' } },
+            { customerEmail: { contains: search, mode: 'insensitive' } },
+            { code: { contains: search, mode: 'insensitive' } }
+          ]
+        } : {}),
+        ...(status === 'active' ? { isActive: true, expiresAt: { gt: new Date() } } : {}),
+        ...(status === 'expired' ? { expiresAt: { lte: new Date() } } : {}),
+        ...(status === 'inactive' ? { isActive: false } : {}),
+        ...(seller !== 'all' ? { sellerId: seller } : {})
+      },
       include: {
         seller: {
           include: {
@@ -192,7 +207,7 @@ export async function GET(request: NextRequest) {
 
     const totalRevenue = await prisma.qRCode.aggregate({
       where: { 
-        customerEmail: { not: null },
+        customerEmail: { not: null as any },
         cost: { gt: 0 }
       },
       _sum: { cost: true }
@@ -200,7 +215,7 @@ export async function GET(request: NextRequest) {
 
     const activeQRCodes = await prisma.qRCode.count({
       where: {
-        customerEmail: { not: null },
+        customerEmail: { not: null as any },
         isActive: true,
         expiresAt: { gt: new Date() }
       }
@@ -208,7 +223,7 @@ export async function GET(request: NextRequest) {
 
     const expiredQRCodes = await prisma.qRCode.count({
       where: {
-        customerEmail: { not: null },
+        customerEmail: { not: null as any },
         expiresAt: { lte: new Date() }
       }
     })
