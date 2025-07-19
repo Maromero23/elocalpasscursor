@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     console.log('🔍 VERIFYING PAYMENT:', { paymentId, orderData })
     
     // Verify payment with PayPal API
-    const paypalResponse = await fetch(`https://api-m.sandbox.paypal.com/v2/payments/captures/${paymentId}`, {
+    const paypalResponse = await fetch(`https://api-m.paypal.com/v2/payments/captures/${paymentId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${await getPayPalAccessToken()}`,
@@ -83,7 +83,7 @@ async function getPayPalAccessToken() {
   const clientId = 'AVhVRUYbs8mzjMm4X6_BwvaA9dT4-9KOImWI5gN3kQCPawuDdTx1IRAOeeyzE3lh81_MJsiHsg8Q2Mn9'
   const clientSecret = process.env.PAYPAL_CLIENT_SECRET || 'your-client-secret'
   
-  const response = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
+      const response = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,

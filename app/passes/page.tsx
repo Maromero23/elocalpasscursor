@@ -41,13 +41,13 @@ export default function PassesPage() {
               <p className="text-sm text-gray-600 mb-6">{t.passes.byDayPass.description}</p>
               
               <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-800">$ 15</span>
+                <span className="text-4xl font-bold text-gray-800">$ 1</span>
                 <span className="text-lg text-gray-600">.00</span>
                 <span className="text-lg text-gray-600 ml-1">USD</span>
               </div>
               
               <div className="text-sm text-gray-600 mb-6">
-                <p className="mb-1">+ $15 per additional person</p>
+                <p className="mb-1">+ $1 per additional person</p>
               </div>
               
               <div className="space-y-2 mb-8 text-sm text-gray-700">
@@ -113,7 +113,7 @@ export default function PassesPage() {
               </div>
               
               <div className="text-sm text-gray-600 mb-6">
-                <p className="mb-1">+ $15 per person/day</p>
+                <p className="mb-1">+ $1 per person/day</p>
               </div>
               
               <div className="space-y-2 mb-8 text-sm text-gray-700">

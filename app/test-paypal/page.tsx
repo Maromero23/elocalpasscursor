@@ -23,9 +23,9 @@ export default function TestPayPalPage() {
     console.log('🔧 Redirecting to PayPal...')
     
     // Create PayPal redirect URL (same as working implementation)
-    const paypalUrl = new URL('https://www.sandbox.paypal.com/cgi-bin/webscr')
+    const paypalUrl = new URL('https://www.paypal.com/cgi-bin/webscr')
     paypalUrl.searchParams.set('cmd', '_xclick')
-    paypalUrl.searchParams.set('business', 'sb-wtnhb38075507@business.example.com') // Sandbox business email
+              paypalUrl.searchParams.set('business', 'maromas23@hotmail.com') // Your real PayPal business email
     paypalUrl.searchParams.set('item_name', `ELocalPass Test - $1 USD`)
     paypalUrl.searchParams.set('amount', '1.00')
     paypalUrl.searchParams.set('currency_code', 'USD')

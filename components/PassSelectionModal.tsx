@@ -62,14 +62,14 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
     let totalPrice = 0
 
     if (passType === 'day') {
-      // By Day Pass: $15 base + $15 per additional guest
-      totalPrice = 15 + (guests - 1) * 15
+      // By Day Pass: $1 base + $1 per additional guest
+      totalPrice = 1 + (guests - 1) * 1
     } else if (passType === 'week') {
       // Full Week Pass: $79.90 base + $79.90 per additional guest
       totalPrice = 79.90 + (guests - 1) * 79.90
     } else if (passType === 'custom') {
-      // Custom Pass: $15 base + $15 per additional guest + $15 per additional day
-      totalPrice = 15 + (guests - 1) * 15 + (days - 1) * 15
+      // Custom Pass: $1 base + $1 per additional guest + $1 per additional day
+      totalPrice = 1 + (guests - 1) * 1 + (days - 1) * 1
     }
 
     console.log('💰 PRICE CALCULATION:', {
@@ -215,11 +215,11 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       let initialPrice = 0
       
       if (passType === 'day') {
-        initialPrice = 15 + (guests - 1) * 15
+        initialPrice = 1 + (guests - 1) * 1
       } else if (passType === 'week') {
         initialPrice = 79.90 + (guests - 1) * 79.90
       } else if (passType === 'custom') {
-        initialPrice = 15 + (guests - 1) * 15 + (days - 1) * 15
+        initialPrice = 1 + (guests - 1) * 1 + (days - 1) * 1
       }
       
       console.log('🚀 INITIAL PRICE SET:', {
@@ -295,9 +295,9 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       }
 
       // Redirect to PayPal with order data
-      const paypalUrl = new URL('https://www.sandbox.paypal.com/cgi-bin/webscr')
+      const paypalUrl = new URL('https://www.paypal.com/cgi-bin/webscr')
       paypalUrl.searchParams.set('cmd', '_xclick')
-      paypalUrl.searchParams.set('business', 'sb-wtnhb38075507@business.example.com') // Your sandbox business email
+      paypalUrl.searchParams.set('business', 'maromas23@hotmail.com') // Your real PayPal business email
       paypalUrl.searchParams.set('item_name', `ELocalPass ${passType.toUpperCase()} - ${guests} guests, ${days} days`)
       paypalUrl.searchParams.set('amount', calculatedPrice.toFixed(2))
       paypalUrl.searchParams.set('currency_code', 'USD')

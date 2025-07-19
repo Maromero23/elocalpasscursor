@@ -6,7 +6,7 @@ export default function TestWorkflow() {
   const [step, setStep] = useState(1)
   const [paymentData, setPaymentData] = useState({
     paymentId: '',
-    amount: '15.00',
+            amount: '1.00',
     customerEmail: 'test@example.com',
     customerName: 'Test Customer',
     passType: 'day',
@@ -227,7 +227,7 @@ export default function TestWorkflow() {
                 setResult(null)
                 setPaymentData({
                   paymentId: '',
-                  amount: '15.00',
+                  amount: '1.00',
                   customerEmail: 'test@example.com',
                   customerName: 'Test Customer',
                   passType: 'day',
