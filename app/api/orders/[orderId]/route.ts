@@ -63,9 +63,10 @@ export async function GET(
             const { sendEmail } = await import('@/lib/email-service')
             const { formatDate } = await import('@/lib/translations')
             
-            // Get default template
+            // Get default template (NEWEST one if multiple exist)
             const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
-              where: { isDefault: true }
+              where: { isDefault: true },
+              orderBy: { createdAt: 'desc' } // Get the newest default template
             })
             
             if (defaultTemplate && defaultTemplate.customHTML) {
