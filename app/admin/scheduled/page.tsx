@@ -93,6 +93,33 @@ export default function ScheduledQRsAdminPage() {
     fetchScheduledQRs(currentPage, statusFilter)
   }
 
+  const handleRetryOverdue = async () => {
+    if (summary.overdue === 0) return
+    
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/scheduled-qr/retry-overdue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log(`✅ Retried ${result.retried} overdue QRs, ${result.failed} failed`)
+        // Refresh the data to show updated status
+        fetchScheduledQRs(currentPage, statusFilter)
+      } else {
+        console.error('❌ Failed to retry overdue QRs:', result.error)
+      }
+    } catch (error) {
+      console.error('❌ Error retrying overdue QRs:', error)
+    }
+    setIsLoading(false)
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
@@ -158,14 +185,24 @@ export default function ScheduledQRsAdminPage() {
                   <p className="text-sm text-gray-600">Monitor and manage scheduled QR code creation</p>
                 </div>
               </div>
-              <button
-                onClick={handleRefresh}
-                disabled={isLoading}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+                <button
+                  onClick={handleRetryOverdue}
+                  disabled={isLoading || summary.overdue === 0}
+                  className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+                >
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                  Retry Overdue ({summary.overdue})
+                </button>
+              </div>
             </div>
           </div>
         </div>

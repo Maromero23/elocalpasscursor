@@ -13,13 +13,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { scheduledQRId } = await request.json()
+    const { scheduledQRId, isRetry = false } = await request.json()
     
     if (!scheduledQRId) {
       return NextResponse.json({ error: 'Missing scheduledQRId' }, { status: 400 })
     }
 
-    console.log(`🎯 SINGLE QR PROCESSOR: Processing specific scheduled QR: ${scheduledQRId}`)
+    console.log(`🎯 SINGLE QR PROCESSOR: Processing specific scheduled QR: ${scheduledQRId}${isRetry ? ' (RETRY)' : ''}`)
     
     // Get the specific scheduled QR
     const scheduledQR = await prisma.scheduledQRCode.findUnique({
@@ -37,6 +37,22 @@ export async function POST(request: NextRequest) {
         success: true, 
         message: 'QR already processed',
         alreadyProcessed: true 
+      })
+    }
+
+    // Check if this is overdue and track retry attempts
+    const now = new Date()
+    const isOverdue = scheduledQR.scheduledFor < now
+    const retryCount = scheduledQR.retryCount || 0
+    const maxRetries = 2
+
+    if (isOverdue && retryCount >= maxRetries) {
+      console.log(`🚨 QR ${scheduledQRId} has failed ${maxRetries} retry attempts - sending warning email`)
+      await sendWarningEmail(scheduledQR)
+      return NextResponse.json({ 
+        success: false, 
+        message: 'QR failed after max retries',
+        failedAfterRetries: true 
       })
     }
 
@@ -245,22 +261,52 @@ export async function POST(request: NextRequest) {
       data: {
         isProcessed: true,
         processedAt: new Date(),
-        createdQRCodeId: qrCodeId
+        createdQRCodeId: qrCodeId,
+        retryCount: retryCount + 1
       }
     })
     
-    console.log(`✅ SINGLE QR PROCESSOR: Successfully processed QR ${qrCodeId} for ${scheduledQR.clientEmail}`)
+    console.log(`✅ SINGLE QR PROCESSOR: Successfully processed QR ${qrCodeId} for ${scheduledQR.clientEmail}${isRetry ? ' (RETRY SUCCESS)' : ''}`)
     
     return NextResponse.json({
       success: true,
       message: `Successfully processed scheduled QR`,
       qrCode: qrCodeId,
       emailSent: emailSent,
-      scheduledQRId: scheduledQR.id
+      scheduledQRId: scheduledQR.id,
+      wasRetry: isRetry
     })
     
   } catch (error) {
     console.error('❌ SINGLE QR PROCESSOR: Error:', error)
+    
+    // If this was a retry attempt, increment retry count
+    const { scheduledQRId, isRetry = false } = await request.json()
+    if (isRetry && scheduledQRId) {
+      try {
+        const scheduledQR = await prisma.scheduledQRCode.findUnique({
+          where: { id: scheduledQRId }
+        })
+        
+        if (scheduledQR && !scheduledQR.isProcessed) {
+          const retryCount = (scheduledQR.retryCount || 0) + 1
+          const maxRetries = 2
+          
+          await prisma.scheduledQRCode.update({
+            where: { id: scheduledQRId },
+            data: { retryCount }
+          })
+          
+          // If we've reached max retries, send warning email
+          if (retryCount >= maxRetries) {
+            await sendWarningEmail(scheduledQR)
+          }
+        }
+      } catch (updateError) {
+        console.error('❌ Failed to update retry count:', updateError)
+      }
+    }
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',
@@ -268,6 +314,58 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     )
+  }
+}
+
+// Function to send warning email for failed QRs
+async function sendWarningEmail(scheduledQR: any) {
+  try {
+    console.log(`🚨 SENDING WARNING EMAIL for failed QR: ${scheduledQR.id}`)
+    
+    const nodemailer = await import('nodemailer')
+    
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    })
+    
+    const warningEmailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #dc2626;">🚨 QR Code Processing Failed</h2>
+        
+        <p><strong>QR ID:</strong> ${scheduledQR.id}</p>
+        <p><strong>Customer:</strong> ${scheduledQR.clientName} (${scheduledQR.clientEmail})</p>
+        <p><strong>Scheduled For:</strong> ${scheduledQR.scheduledFor.toLocaleString()}</p>
+        <p><strong>Guests:</strong> ${scheduledQR.guests}</p>
+        <p><strong>Days:</strong> ${scheduledQR.days}</p>
+        <p><strong>Seller ID:</strong> ${scheduledQR.sellerId}</p>
+        <p><strong>Retry Count:</strong> ${scheduledQR.retryCount || 0}/2</p>
+        
+        <div style="background-color: #fef2f2; border: 1px solid #fecaca; padding: 15px; margin: 20px 0; border-radius: 5px;">
+          <h3 style="color: #dc2626; margin-top: 0;">⚠️ Manual Action Required</h3>
+          <p>This QR code has failed to process after multiple retry attempts. Please investigate and manually process if needed.</p>
+        </div>
+        
+        <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+      </div>
+    `
+    
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@elocalpass.com',
+      to: 'info@elocalpass.com',
+      subject: `🚨 QR Code Processing Failed - ${scheduledQR.id}`,
+      html: warningEmailHtml
+    })
+    
+    console.log(`✅ Warning email sent for QR ${scheduledQR.id}`)
+    
+  } catch (emailError) {
+    console.error('❌ Failed to send warning email:', emailError)
   }
 }
 

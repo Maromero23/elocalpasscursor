@@ -301,7 +301,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       paypalUrl.searchParams.set('item_name', `ELocalPass ${passType.toUpperCase()} - ${guests} guests, ${days} days`)
       paypalUrl.searchParams.set('amount', calculatedPrice.toFixed(2))
       paypalUrl.searchParams.set('currency_code', 'USD')
-      paypalUrl.searchParams.set('return', `${window.location.origin}/payment/success`)
+      paypalUrl.searchParams.set('return', `${window.location.origin}/payment-success`)
       paypalUrl.searchParams.set('cancel_return', `${window.location.origin}/payment/cancel`)
       
       // Add custom data for order processing
