@@ -5,11 +5,18 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 Website Sales API called')
+    
     const session = await getServerSession(authOptions)
+    console.log('Session:', session ? 'Found' : 'Not found')
+    console.log('User role:', session?.user?.role)
     
     if (!session || session.user.role !== 'ADMIN') {
+      console.log('❌ Unauthorized - returning 401')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    console.log('✅ Authorized - proceeding with query')
 
     // Get query parameters
     const { searchParams } = new URL(request.url)
@@ -20,6 +27,8 @@ export async function GET(request: NextRequest) {
     const seller = searchParams.get('seller') || 'all'
     const delivery = searchParams.get('delivery') || 'all'
     const offset = (page - 1) * limit
+
+    console.log('Query params:', { page, limit, search, status, seller, delivery })
 
     // Build where clause for QR codes
     let whereClause: any = {
@@ -52,6 +61,8 @@ export async function GET(request: NextRequest) {
       whereClause.sellerId = seller
     }
 
+    console.log('Where clause:', JSON.stringify(whereClause, null, 2))
+
     // Get QR codes (immediate deliveries)
     const qrCodes = await prisma.qRCode.findMany({
       where: whereClause,
@@ -70,6 +81,8 @@ export async function GET(request: NextRequest) {
       skip: offset,
       take: limit
     })
+
+    console.log(`📊 Found ${qrCodes.length} QR codes`)
 
     // Get scheduled QR codes (future deliveries)
     const scheduledQRCodes = await prisma.scheduledQRCode.findMany({
@@ -90,6 +103,8 @@ export async function GET(request: NextRequest) {
       skip: offset,
       take: limit
     })
+
+    console.log(`📅 Found ${scheduledQRCodes.length} scheduled QR codes`)
 
     // Get seller information for scheduled QRs
     const sellerIds = Array.from(new Set(scheduledQRCodes.map(qr => qr.sellerId)))
@@ -164,6 +179,8 @@ export async function GET(request: NextRequest) {
     // Sort by creation date
     sales.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
+    console.log(`💰 Total sales to return: ${sales.length}`)
+
     // Get summary statistics
     const totalQRCodes = await prisma.qRCode.count({
       where: { customerEmail: { not: null as any } }
@@ -205,20 +222,25 @@ export async function GET(request: NextRequest) {
       expiredQRCodes
     }
 
+    console.log('📈 Summary:', summary)
+
     // Calculate total pages
     const totalItems = totalQRCodes + totalScheduledQRCodes
     const totalPages = Math.ceil(totalItems / limit)
 
-    return NextResponse.json({
+    const response = {
       sales,
       summary,
       totalPages,
       currentPage: page,
       totalItems
-    })
+    }
+
+    console.log('✅ Returning response with', sales.length, 'sales')
+    return NextResponse.json(response)
 
   } catch (error) {
-    console.error('Error fetching website sales:', error)
+    console.error('❌ Error fetching website sales:', error)
     return NextResponse.json(
       { error: 'Failed to fetch website sales' },
       { status: 500 }

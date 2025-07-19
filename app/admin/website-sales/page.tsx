@@ -99,6 +99,7 @@ export default function WebsiteSalesPage() {
 
   const fetchSales = async () => {
     try {
+      console.log('🔄 Fetching sales...')
       setLoading(true)
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -109,15 +110,22 @@ export default function WebsiteSalesPage() {
         delivery: deliveryFilter
       })
 
+      console.log('📡 API URL:', `/api/admin/website-sales?${params}`)
       const response = await fetch(`/api/admin/website-sales?${params}`)
+      console.log('📊 Response status:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ API Response:', data)
         setSales(data.sales)
         setSummary(data.summary)
         setTotalPages(data.totalPages)
+      } else {
+        const errorData = await response.json()
+        console.error('❌ API Error:', errorData)
       }
     } catch (error) {
-      console.error('Error fetching sales:', error)
+      console.error('❌ Error fetching sales:', error)
     } finally {
       setLoading(false)
     }
