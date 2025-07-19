@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../components/auth/protected-route"
 import Link from "next/link"
-import { Building2, Users, MapPin, QrCode, TrendingUp, Eye, Clock } from "lucide-react"
+import { Building2, Users, MapPin, QrCode, TrendingUp, Eye, Clock, DollarSign } from "lucide-react"
 
 const getNavItems = (userRole: string) => {
   if (userRole === "ADMIN") {
@@ -15,6 +15,7 @@ const getNavItems = (userRole: string) => {
       { href: "/admin/affiliates", label: "Affiliates", icon: Building2 },
       { href: "/admin/qr-config", label: "QR Config", icon: QrCode },
       { href: "/admin/scheduled", label: "Scheduled QRs", icon: Clock },
+      { href: "/admin/website-sales", label: "Website Sales", icon: DollarSign },
       { href: "/admin/analytics", label: "Analytics", icon: TrendingUp },
     ]
   }
