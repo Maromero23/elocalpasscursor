@@ -139,12 +139,6 @@ export default function Navigation() {
                 >
                   {t.navigation.contact}
                 </Link>
-                <Link 
-                  href="/test-paypal"
-                  className="text-red-600 hover:text-red-700 hover:font-semibold px-3 py-2 text-sm font-medium"
-                >
-                  🧪 Test PayPal
-                </Link>
               </div>
             </div>
           </div>

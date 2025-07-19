@@ -1,15 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
-declare global {
-  interface Window {
-    paypal: any
-  }
-}
+
 
 export default function TestPayPalPage() {
-  const [paymentStatus, setPaymentStatus] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
 
   const testOrderData = {
@@ -23,106 +18,26 @@ export default function TestPayPalPage() {
     amount: 1.00
   }
 
-  useEffect(() => {
-    console.log('🔧 Loading PayPal script...')
+  const handlePayPalPayment = () => {
+    setIsLoading(true)
+    console.log('🔧 Redirecting to PayPal...')
     
-    // Load PayPal script
-    const script = document.createElement('script')
-    script.src = 'https://www.paypal.com/sdk/js?client-id=AVhVRUYbs8mzjMm4X6_BwvaA9dT4-9KOImWI5gN3kQCPawuDdTx1IRAOeeyzE3lh81_MJsiHsg8Q2Mn9&currency=USD&intent=capture'
-    script.async = true
+    // Create PayPal redirect URL (same as working implementation)
+    const paypalUrl = new URL('https://www.sandbox.paypal.com/cgi-bin/webscr')
+    paypalUrl.searchParams.set('cmd', '_xclick')
+    paypalUrl.searchParams.set('business', 'sb-wtnhb38075507@business.example.com') // Sandbox business email
+    paypalUrl.searchParams.set('item_name', `ELocalPass Test - $1 USD`)
+    paypalUrl.searchParams.set('amount', '1.00')
+    paypalUrl.searchParams.set('currency_code', 'USD')
+    paypalUrl.searchParams.set('return', `${window.location.origin}/payment-success`)
+    paypalUrl.searchParams.set('cancel_return', `${window.location.origin}/payment/cancel`)
     
-    script.onload = () => {
-      console.log('✅ PayPal script loaded')
-      
-      if (window.paypal) {
-        console.log('🎯 Creating PayPal buttons...')
-        window.paypal.Buttons({
-          createOrder: function(data: any, actions: any) {
-            console.log('📝 Creating order...')
-            setIsLoading(true)
-            return actions.order.create({
-              purchase_units: [{
-                amount: {
-                  value: '1.00'
-                },
-                description: 'ELocalPass Test Purchase - $1 USD',
-                custom_id: JSON.stringify(testOrderData)
-              }]
-            })
-          },
-          onApprove: function(data: any, actions: any) {
-            console.log('✅ Payment approved, capturing...')
-            setIsLoading(true)
-            return actions.order.capture().then(async function(details: any) {
-              console.log('💰 Payment completed:', details)
-              
-              try {
-                const response = await fetch('/api/verify-payment', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    paymentId: details.id,
-                    orderData: testOrderData
-                  }),
-                })
-
-                const result = await response.json()
-                
-                if (result.success) {
-                  setPaymentStatus('Payment successful! Redirecting...')
-                  // Redirect to success page
-                  if (result.redirectUrl) {
-                    setTimeout(() => {
-                      window.location.href = result.redirectUrl
-                    }, 2000)
-                  }
-                } else {
-                  setPaymentStatus('Payment verification failed')
-                }
-              } catch (error) {
-                console.error('Error verifying payment:', error)
-                setPaymentStatus('Error verifying payment')
-              } finally {
-                setIsLoading(false)
-              }
-            })
-          },
-          onError: function(err: any) {
-            console.error('❌ PayPal error:', err)
-            setPaymentStatus('PayPal error: ' + err.message)
-            setIsLoading(false)
-          },
-          onCancel: function() {
-            setPaymentStatus('Payment cancelled')
-            setIsLoading(false)
-          }
-        }).render('#paypal-button-container').then(() => {
-          console.log('✅ PayPal button rendered successfully')
-        }).catch((err: any) => {
-          console.error('❌ PayPal button render error:', err)
-        })
-      } else {
-        console.error('❌ window.paypal is not available')
-      }
-    }
+    // Add order data as custom field
+    paypalUrl.searchParams.set('custom', JSON.stringify(testOrderData))
     
-    script.onerror = () => {
-      console.error('❌ Failed to load PayPal script')
-      setPaymentStatus('Failed to load PayPal')
-    }
-    
-    document.body.appendChild(script)
-
-    return () => {
-      try {
-        document.body.removeChild(script)
-      } catch (e) {
-        console.log('Script already removed')
-      }
-    }
-  }, [])
+    // Redirect to PayPal
+    window.location.href = paypalUrl.toString()
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -148,24 +63,29 @@ export default function TestPayPalPage() {
           </div>
         </div>
 
-        {paymentStatus && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            paymentStatus.includes('successful') 
-              ? 'bg-green-50 border border-green-200 text-green-800' 
-              : 'bg-red-50 border border-red-200 text-red-800'
-          }`}>
-            <div className="font-semibold">Status:</div>
-            <div>{paymentStatus}</div>
-          </div>
-        )}
+
 
         <div className="space-y-4">
-          <div id="paypal-button-container"></div>
+          <button
+            onClick={handlePayPalPayment}
+            disabled={isLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors duration-300 flex items-center justify-center"
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                Redirecting to PayPal...
+              </>
+            ) : (
+              <>
+                💳 Pay $1.00 with PayPal
+              </>
+            )}
+          </button>
 
           {isLoading && (
-            <div className="text-center py-4">
-              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              <div className="mt-2 text-sm text-gray-600">Processing...</div>
+            <div className="text-center py-2">
+              <p className="text-sm text-gray-600">You will be redirected to PayPal to complete the payment</p>
             </div>
           )}
         </div>
