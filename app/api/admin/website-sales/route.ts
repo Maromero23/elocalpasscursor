@@ -30,43 +30,9 @@ export async function GET(request: NextRequest) {
 
     console.log('Query params:', { page, limit, search, status, seller, delivery })
 
-    // Build base where clause for PayPal purchases
-    let baseWhere: any = {
-      customerEmail: { not: null as any },
-      customerName: { not: null as any },
-      cost: { gt: 0 }  // Only paid QR codes (PayPal purchases)
-    }
-
-    // Add search filter
-    if (search) {
-      baseWhere.OR = [
-        { customerName: { contains: search, mode: 'insensitive' } },
-        { customerEmail: { contains: search, mode: 'insensitive' } },
-        { code: { contains: search, mode: 'insensitive' } }
-      ]
-    }
-
-    // Add status filter
-    if (status === 'active') {
-      baseWhere.isActive = true
-      baseWhere.expiresAt = { gt: new Date() }
-    } else if (status === 'expired') {
-      baseWhere.expiresAt = { lte: new Date() }
-    } else if (status === 'inactive') {
-      baseWhere.isActive = false
-    }
-
-    // Add seller filter
-    if (seller !== 'all') {
-      baseWhere.sellerId = seller
-    }
-
-    console.log('Base where clause:', JSON.stringify(baseWhere, null, 2))
-
-    // Get PayPal-purchased QR codes
-    console.log('📊 Fetching PayPal-purchased QR codes...')
-    const qrCodes = delivery === 'scheduled' ? [] : await prisma.qRCode.findMany({
-      where: baseWhere,
+    // Get all QR codes first, then filter in JavaScript (avoiding Prisma issues)
+    console.log('📊 Fetching all QR codes...')
+    const allQRCodes = await prisma.qRCode.findMany({
       include: {
         seller: {
           include: {
@@ -78,47 +44,87 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: { createdAt: 'desc' },
-      skip: offset,
-      take: limit
+      orderBy: { createdAt: 'desc' }
     })
 
-    console.log(`💰 Found ${qrCodes.length} PayPal-purchased QR codes`)
+    console.log(`📊 Found ${allQRCodes.length} total QR codes`)
 
-    // Build base where clause for scheduled QR codes
-    let scheduledWhere: any = {
-      clientEmail: { not: null as any },
-      clientName: { not: null as any }
-    }
+    // Filter for PayPal purchases only (customerEmail, customerName, and cost > 0)
+    let paypalQRCodes = allQRCodes.filter(qr => 
+      qr.customerEmail && 
+      qr.customerName && 
+      qr.cost > 0
+    )
 
-    // Add search filter for scheduled
+    console.log(`💰 Found ${paypalQRCodes.length} PayPal-purchased QR codes`)
+
+    // Apply additional filters
     if (search) {
-      scheduledWhere.OR = [
-        { clientName: { contains: search, mode: 'insensitive' } },
-        { clientEmail: { contains: search, mode: 'insensitive' } }
-      ]
+      paypalQRCodes = paypalQRCodes.filter(qr => 
+        qr.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+        qr.customerEmail?.toLowerCase().includes(search.toLowerCase()) ||
+        qr.code.toLowerCase().includes(search.toLowerCase())
+      )
     }
 
-    // Add seller filter for scheduled
+    if (status === 'active') {
+      paypalQRCodes = paypalQRCodes.filter(qr => 
+        qr.isActive && qr.expiresAt > new Date()
+      )
+    } else if (status === 'expired') {
+      paypalQRCodes = paypalQRCodes.filter(qr => 
+        qr.expiresAt <= new Date()
+      )
+    } else if (status === 'inactive') {
+      paypalQRCodes = paypalQRCodes.filter(qr => !qr.isActive)
+    }
+
     if (seller !== 'all') {
-      scheduledWhere.sellerId = seller
+      paypalQRCodes = paypalQRCodes.filter(qr => qr.sellerId === seller)
+    }
+
+    // Handle delivery filter
+    const qrCodes = delivery === 'scheduled' ? [] : paypalQRCodes.slice(offset, offset + limit)
+
+    console.log(`📊 Final PayPal QR codes for page: ${qrCodes.length}`)
+
+    // Get all scheduled QR codes
+    console.log('📅 Fetching all scheduled QR codes...')
+    const allScheduledQRCodes = await prisma.scheduledQRCode.findMany({
+      orderBy: { createdAt: 'desc' }
+    })
+
+    console.log(`📅 Found ${allScheduledQRCodes.length} total scheduled QR codes`)
+
+    // Filter for PayPal scheduled purchases only (clientEmail and clientName)
+    let paypalScheduledQRCodes = allScheduledQRCodes.filter(sqr => 
+      sqr.clientEmail && 
+      sqr.clientName
+    )
+
+    console.log(`💰 Found ${paypalScheduledQRCodes.length} PayPal-scheduled QR codes`)
+
+    // Apply additional filters to scheduled
+    if (search) {
+      paypalScheduledQRCodes = paypalScheduledQRCodes.filter(sqr => 
+        sqr.clientName?.toLowerCase().includes(search.toLowerCase()) ||
+        sqr.clientEmail?.toLowerCase().includes(search.toLowerCase())
+      )
+    }
+
+    if (seller !== 'all') {
+      paypalScheduledQRCodes = paypalScheduledQRCodes.filter(sqr => sqr.sellerId === seller)
     }
 
     // For 'all' delivery type, only include unprocessed scheduled QRs
     if (delivery === 'all') {
-      scheduledWhere.isProcessed = false
+      paypalScheduledQRCodes = paypalScheduledQRCodes.filter(sqr => !sqr.isProcessed)
     }
 
-    // Get PayPal-scheduled QR codes
-    console.log('📅 Fetching PayPal-scheduled QR codes...')
-    const scheduledQRCodes = delivery === 'immediate' ? [] : await prisma.scheduledQRCode.findMany({
-      where: scheduledWhere,
-      orderBy: { createdAt: 'desc' },
-      skip: offset,
-      take: limit
-    })
+    // Handle delivery filter and pagination
+    const scheduledQRCodes = delivery === 'immediate' ? [] : paypalScheduledQRCodes.slice(offset, offset + limit)
 
-    console.log(`💰 Found ${scheduledQRCodes.length} PayPal-scheduled QR codes`)
+    console.log(`📅 Final PayPal scheduled QR codes for page: ${scheduledQRCodes.length}`)
 
     // Get seller information for scheduled QRs
     const sellerIds = Array.from(new Set(scheduledQRCodes.map(qr => qr.sellerId)))
@@ -195,25 +201,13 @@ export async function GET(request: NextRequest) {
 
     console.log(`💰 Total sales to return: ${sales.length}`)
 
-    // Get summary statistics (only PayPal purchases)
-    const totalQRCodesCount = await prisma.qRCode.count({
-      where: {
-        customerEmail: { not: null as any },
-        customerName: { not: null as any },
-        cost: { gt: 0 }
-      }
-    })
+    // Get summary statistics (using filtered counts)
+    const totalQRCodesCount = paypalQRCodes.length
+    const totalScheduledQRCodesCount = paypalScheduledQRCodes.length
 
-    const totalScheduledQRCodesCount = await prisma.scheduledQRCode.count({
-      where: {
-        clientEmail: { not: null as any },
-        clientName: { not: null as any }
-      }
-    })
-
-    const totalRevenue = qrCodes.reduce((sum, qr) => sum + (qr.cost || 0), 0)
-    const activeQRCodes = qrCodes.filter(qr => qr.isActive && qr.expiresAt > new Date()).length
-    const expiredQRCodes = qrCodes.filter(qr => qr.expiresAt <= new Date()).length
+    const totalRevenue = paypalQRCodes.reduce((sum, qr) => sum + (qr.cost || 0), 0)
+    const activeQRCodes = paypalQRCodes.filter(qr => qr.isActive && qr.expiresAt > new Date()).length
+    const expiredQRCodes = paypalQRCodes.filter(qr => qr.expiresAt <= new Date()).length
 
     const summary = {
       totalSales: totalQRCodesCount + totalScheduledQRCodesCount,
