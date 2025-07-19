@@ -49,11 +49,12 @@ export async function GET(request: NextRequest) {
 
     console.log(`📊 Found ${allQRCodes.length} total QR codes`)
 
-    // Filter for PayPal purchases only (customerEmail, customerName, and cost > 0)
+    // Filter for PayPal purchases only (customerEmail, customerName, cost > 0, and PASS_ prefix)
     let paypalQRCodes = allQRCodes.filter(qr => 
       qr.customerEmail && 
       qr.customerName && 
-      qr.cost > 0
+      qr.cost > 0 &&
+      qr.code.startsWith('PASS_') // Only QR codes from PayPal checkout flow
     )
 
     console.log(`💰 Found ${paypalQRCodes.length} PayPal-purchased QR codes`)
