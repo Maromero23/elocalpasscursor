@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
             deliveryDate: customData.deliveryDate,
             deliveryTime: customData.deliveryTime,
             discountCode: customData.discountCode,
-            sellerId: customData.sellerId,
+            sellerId: null, // PayPal orders don't have a specific seller
             status: 'PAID'
           }
         })
@@ -103,7 +103,7 @@ async function createQRCode(orderRecord: any) {
     const qrCode = await prisma.qRCode.create({
       data: {
         code: qrCodeId,
-        sellerId: orderRecord.sellerId || 'system',
+        sellerId: 'cmc4ha7l000086a96ef0e06qq', // Use existing seller for PayPal orders
         customerName: orderRecord.customerName,
         customerEmail: orderRecord.customerEmail,
         guests: orderRecord.guests,
@@ -312,7 +312,7 @@ async function handlePayPalIPN(body: string) {
             deliveryDate: customData.deliveryDate,
             deliveryTime: customData.deliveryTime,
             discountCode: customData.discountCode,
-            sellerId: customData.sellerId,
+            sellerId: null, // PayPal orders don't have a specific seller
             status: 'PAID'
           }
         })
