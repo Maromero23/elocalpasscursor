@@ -10,14 +10,22 @@ declare global {
 
 export default function TestPayPal() {
   useEffect(() => {
+    console.log('🔧 Loading PayPal script...')
+    
     // Load PayPal script
     const script = document.createElement('script')
     script.src = 'https://www.sandbox.paypal.com/sdk/js?client-id=AVhVRUYbs8mzjMm4X6_BwvaA9dT4-9KOImWI5gN3kQCPawuDdTx1IRAOeeyzE3lh81_MJsiHsg8Q2Mn9&currency=USD'
     script.async = true
+    
     script.onload = () => {
+      console.log('✅ PayPal script loaded')
+      console.log('🔍 window.paypal:', window.paypal)
+      
       if (window.paypal) {
+        console.log('🎯 Creating PayPal buttons...')
         window.paypal.Buttons({
           createOrder: function(data: any, actions: any) {
+            console.log('📝 Creating order...')
             return actions.order.create({
               purchase_units: [{
                 amount: {
@@ -37,18 +45,38 @@ export default function TestPayPal() {
             })
           },
           onApprove: function(data: any, actions: any) {
+            console.log('✅ Payment approved, capturing...')
             return actions.order.capture().then(function(details: any) {
-              console.log('Payment completed:', details)
+              console.log('💰 Payment completed:', details)
               alert('Payment completed! Check webhook logs.')
             })
+          },
+          onError: function(err: any) {
+            console.error('❌ PayPal error:', err)
+            alert('PayPal error: ' + err.message)
           }
-        }).render('#paypal-button-container')
+        }).render('#paypal-button-container').then(() => {
+          console.log('✅ PayPal button rendered successfully')
+        }).catch((err: any) => {
+          console.error('❌ PayPal button render error:', err)
+        })
+      } else {
+        console.error('❌ window.paypal is not available')
       }
     }
+    
+    script.onerror = () => {
+      console.error('❌ Failed to load PayPal script')
+    }
+    
     document.body.appendChild(script)
 
     return () => {
-      document.body.removeChild(script)
+      try {
+        document.body.removeChild(script)
+      } catch (e) {
+        console.log('Script already removed')
+      }
     }
   }, [])
 
