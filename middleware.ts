@@ -6,6 +6,13 @@ export default withAuth(
     const token = req.nextauth.token
     const { pathname } = req.nextUrl
 
+    // Special handling for PayPal POST requests to payment-success
+    if (pathname === "/payment-success" && req.method === "POST") {
+      console.log('📨 PayPal POST to payment-success - Redirecting to GET')
+      const url = req.nextUrl.clone()
+      return NextResponse.redirect(url, 302)
+    }
+
     // Public routes that don't require authentication
     if (
       pathname === "/" ||
