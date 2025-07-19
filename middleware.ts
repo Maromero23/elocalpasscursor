@@ -91,9 +91,14 @@ export default withAuth(
           pathname.startsWith("/icon-") ||
           pathname.startsWith("/locations") ||
           pathname.startsWith("/api/locations") ||
+          pathname.startsWith("/api/paypal") ||
+          pathname.startsWith("/api/orders") ||
+          pathname.startsWith("/api/verify-payment") ||
           pathname === "/passes" ||
           pathname === "/faq" ||
-          pathname === "/contact"
+          pathname === "/contact" ||
+          pathname === "/payment-success" ||
+          pathname === "/payment/cancel"
         ) {
           return true
         }
