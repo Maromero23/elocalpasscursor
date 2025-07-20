@@ -177,7 +177,11 @@ function EmailConfigPageContent() {
     }
   }, [])
 
-
+  // Load last saved custom template on page initialization
+  useEffect(() => {
+    console.log('🚀 Page initialized - loading last saved custom template')
+    loadFirstSavedTemplateForCustom()
+  }, [])
 
   // Form submission states
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -248,7 +252,7 @@ function EmailConfigPageContent() {
     companyName: 'ELocalPass',
     defaultWelcomeMessage: 'Welcome to your local pass experience!'
   })
-  const [isEditingCustom, setIsEditingCustom] = useState<boolean | null>(null) // null = none selected, true = editing custom, false = editing default
+  const [isEditingCustom, setIsEditingCustom] = useState<boolean | null>(true) // true = editing custom by default, false = editing default, null = view only
   const [previewKey, setPreviewKey] = useState(0) // Force preview re-render
   const [customPreviewHtml, setCustomPreviewHtml] = useState('')
   const [defaultPreviewHtml, setDefaultPreviewHtml] = useState('')
@@ -334,7 +338,9 @@ function EmailConfigPageContent() {
           // Use the emailConfig from the first saved template
           if (customTemplate.emailConfig) {
             setEmailConfig(customTemplate.emailConfig)
+            setCurrentLoadedTemplateName(customTemplate.name) // Set the loaded template name
             console.log('✅ Custom emailConfig loaded from database template:', customTemplate.emailConfig)
+            console.log('✅ Template name set to:', customTemplate.name)
             console.log('🎨 Custom template colors should be:', {
               emailPrimaryColor: customTemplate.emailConfig.emailPrimaryColor,
               emailSecondaryColor: customTemplate.emailConfig.emailSecondaryColor,
@@ -373,7 +379,9 @@ function EmailConfigPageContent() {
           // Use the emailConfig from the first saved template
           if (customTemplate.data?.emailConfig) {
             setEmailConfig(customTemplate.data.emailConfig)
+            setCurrentLoadedTemplateName(customTemplate.name) // Set the loaded template name
             console.log('✅ Custom emailConfig loaded from localStorage template:', customTemplate.data.emailConfig)
+            console.log('✅ Template name set to:', customTemplate.name)
             console.log('🎨 Custom template colors should be:', {
               emailPrimaryColor: customTemplate.data.emailConfig.emailPrimaryColor,
               emailSecondaryColor: customTemplate.data.emailConfig.emailSecondaryColor,
