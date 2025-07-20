@@ -1247,11 +1247,16 @@ function EmailConfigPageContent() {
     
     if (isEditingCustom) {
       setEmailConfig((prev: any) => ({ ...prev, ...updates }))
-      // Clear the loaded template name since we're editing
-      setCurrentLoadedTemplateName('')
+      // Don't clear the loaded template name - keep it visible while editing
+      // setCurrentLoadedTemplateName('') // Removed this line
     } else {
       setDefaultEmailConfig((prev: any) => ({ ...prev, ...updates }))
     }
+  }
+
+  // Function to clear the loaded template name
+  const clearLoadedTemplateName = () => {
+    setCurrentLoadedTemplateName('')
   }
 
   // Function to get the active config values
@@ -1400,7 +1405,10 @@ function EmailConfigPageContent() {
           <div className="flex space-x-4">
             <button
               type="button"
-              onClick={() => setIsEditingCustom(true)}
+              onClick={() => {
+                setIsEditingCustom(true)
+                // Don't clear template name when switching TO custom edit mode
+              }}
               className={`px-6 py-3 rounded-md text-sm font-medium transition-colors ${
                 isEditingCustom === true 
                   ? 'bg-blue-600 text-white' 
@@ -1411,7 +1419,10 @@ function EmailConfigPageContent() {
             </button>
             <button
               type="button"
-              onClick={() => setIsEditingCustom(false)}
+              onClick={() => {
+                setIsEditingCustom(false)
+                clearLoadedTemplateName() // Clear template name when switching away from custom edit mode
+              }}
               className={`px-6 py-3 rounded-md text-sm font-medium transition-colors ${
                 isEditingCustom === false 
                   ? 'bg-green-600 text-white' 
@@ -1422,7 +1433,10 @@ function EmailConfigPageContent() {
             </button>
             <button
               type="button"
-              onClick={() => setIsEditingCustom(null)}
+              onClick={() => {
+                setIsEditingCustom(null)
+                clearLoadedTemplateName() // Clear template name when switching away from custom edit mode
+              }}
               className={`px-6 py-3 rounded-md text-sm font-medium transition-colors ${
                 isEditingCustom === null 
                   ? 'bg-purple-600 text-white' 
