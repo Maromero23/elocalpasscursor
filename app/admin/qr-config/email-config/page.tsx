@@ -195,6 +195,7 @@ function EmailConfigPageContent() {
     defaultWelcomeMessage: 'Welcome to your local pass experience!'
   })
   const [isEditingCustom, setIsEditingCustom] = useState(true) // true = editing custom, false = editing default
+  const [previewKey, setPreviewKey] = useState(0) // Force preview re-render
   
   // Button 4 - Welcome Email Configuration State
   const [emailConfig, setEmailConfig] = useState({
@@ -946,6 +947,9 @@ function EmailConfigPageContent() {
       console.log('✅ New defaultEmailConfig (DEFAULT):', newConfig)
       setDefaultEmailConfig(newConfig)
     }
+    
+    // Force preview re-render
+    setPreviewKey(prev => prev + 1)
   }
 
   // Function to get the active config values
@@ -1541,6 +1545,7 @@ function EmailConfigPageContent() {
               </div>
               <div className="p-4">
                 <div 
+                  key={`custom-${previewKey}-${JSON.stringify(emailConfig.emailPrimaryColor)}`}
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
                     __html: generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'}) 
@@ -1569,6 +1574,7 @@ function EmailConfigPageContent() {
               </div>
               <div className="p-4">
                 <div 
+                  key={`default-${previewKey}-${JSON.stringify(defaultEmailConfig.emailPrimaryColor)}`}
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
                     __html: generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'}) 
