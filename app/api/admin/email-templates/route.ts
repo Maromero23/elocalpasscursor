@@ -52,16 +52,23 @@ export async function GET(request: NextRequest) {
     console.log('📧 LOADING EMAIL TEMPLATES FROM DATABASE...')
     
     const { searchParams } = new URL(request.url)
-    const isDefault = searchParams.get('isDefault')
+    const isDefaultParam = searchParams.get('isDefault')
+    
+    // Build the where clause based on the isDefault parameter
+    let whereClause = {}
+    if (isDefaultParam !== null) {
+      // Convert string to boolean
+      const isDefault = isDefaultParam === 'true'
+      whereClause = { isDefault: isDefault }
+    }
     
     // Get email templates from database
-    const whereClause = isDefault ? { isDefault: true } : {}
     const templates = await prisma.welcomeEmailTemplate.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' }
     })
     
-    console.log('✅ LOADED EMAIL TEMPLATES FROM DATABASE:', templates.length)
+    console.log('✅ LOADED EMAIL TEMPLATES FROM DATABASE:', templates.length, 'isDefault filter:', isDefaultParam)
     
     return NextResponse.json({
       success: true,

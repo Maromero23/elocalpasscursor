@@ -265,40 +265,85 @@ function EmailConfigPageContent() {
     try {
       console.log('🔧 LOADING FIRST SAVED TEMPLATE FOR CUSTOM CONFIG...')
       
+      // First, check database for custom templates (new priority)
       const response = await fetch('/api/admin/email-templates?isDefault=false')
       const result = await response.json()
       
       if (response.ok && result.templates && result.templates.length > 0) {
-        const firstTemplate = result.templates[0] // Get the first saved template
+        // Find the first NON-default template from database
+        const customTemplate = result.templates.find((template: any) => !template.isDefault)
         
-        console.log('✅ FIRST SAVED TEMPLATE LOADED FOR CUSTOM:', firstTemplate.name)
-        
-        // Use the emailConfig from the first saved template
-        if (firstTemplate.emailConfig) {
-          setEmailConfig(firstTemplate.emailConfig)
-          console.log('✅ Custom emailConfig loaded from first saved template:', firstTemplate.emailConfig)
-          console.log('🎨 Custom template colors should be:', {
-            emailPrimaryColor: firstTemplate.emailConfig.emailPrimaryColor,
-            emailSecondaryColor: firstTemplate.emailConfig.emailSecondaryColor,
-            emailBackgroundColor: firstTemplate.emailConfig.emailBackgroundColor
-          })
+        if (customTemplate) {
+          console.log('✅ FIRST SAVED TEMPLATE LOADED FROM DATABASE:', customTemplate.name)
           
-          // Force immediate HTML regeneration
-          setTimeout(() => {
-            const html = generateCustomEmailHtml({...firstTemplate.emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
-            setCustomPreviewHtml(html)
-            console.log('🎨 Custom preview HTML force-regenerated after template load')
-            console.log('🔍 CUSTOM template colors after load:', {
-              emailPrimaryColor: firstTemplate.emailConfig.emailPrimaryColor,
-              emailSecondaryColor: firstTemplate.emailConfig.emailSecondaryColor
+          // Use the emailConfig from the first saved template
+          if (customTemplate.emailConfig) {
+            setEmailConfig(customTemplate.emailConfig)
+            console.log('✅ Custom emailConfig loaded from database template:', customTemplate.emailConfig)
+            console.log('🎨 Custom template colors should be:', {
+              emailPrimaryColor: customTemplate.emailConfig.emailPrimaryColor,
+              emailSecondaryColor: customTemplate.emailConfig.emailSecondaryColor,
+              emailBackgroundColor: customTemplate.emailConfig.emailBackgroundColor
             })
-            setPreviewKey(prev => prev + 1)
-          }, 50)
+            
+            // Force immediate HTML regeneration
+            setTimeout(() => {
+              const html = generateCustomEmailHtml({...customTemplate.emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
+              setCustomPreviewHtml(html)
+              console.log('🎨 Custom preview HTML force-regenerated after template load')
+              console.log('🔍 CUSTOM template colors after load:', {
+                emailPrimaryColor: customTemplate.emailConfig.emailPrimaryColor,
+                emailSecondaryColor: customTemplate.emailConfig.emailSecondaryColor
+              })
+              setPreviewKey(prev => prev + 1)
+            }, 50)
+            return // Successfully loaded from database
+          } else {
+            console.log('❌ No emailConfig found in database template, trying localStorage...')
+          }
         } else {
-          console.log('❌ No emailConfig found in first saved template, keeping default custom config')
+          console.log('❌ No custom templates found in database, trying localStorage...')
+        }
+      }
+      
+      // Fallback to localStorage for legacy templates
+      const savedEmailTemplates = localStorage.getItem('elocalpass-email-templates')
+      if (savedEmailTemplates) {
+        const templates = JSON.parse(savedEmailTemplates)
+        const customTemplate = templates.find((template: any) => template.name && !template.isDefault)
+        
+        if (customTemplate) {
+          console.log('✅ FIRST SAVED TEMPLATE LOADED FROM LOCALSTORAGE:', customTemplate.name)
+          
+          // Use the emailConfig from the first saved template
+          if (customTemplate.data?.emailConfig) {
+            setEmailConfig(customTemplate.data.emailConfig)
+            console.log('✅ Custom emailConfig loaded from localStorage template:', customTemplate.data.emailConfig)
+            console.log('🎨 Custom template colors should be:', {
+              emailPrimaryColor: customTemplate.data.emailConfig.emailPrimaryColor,
+              emailSecondaryColor: customTemplate.data.emailConfig.emailSecondaryColor,
+              emailBackgroundColor: customTemplate.data.emailConfig.emailBackgroundColor
+            })
+            
+            // Force immediate HTML regeneration
+            setTimeout(() => {
+              const html = generateCustomEmailHtml({...customTemplate.data.emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
+              setCustomPreviewHtml(html)
+              console.log('🎨 Custom preview HTML force-regenerated after template load')
+              console.log('🔍 CUSTOM template colors after load:', {
+                emailPrimaryColor: customTemplate.data.emailConfig.emailPrimaryColor,
+                emailSecondaryColor: customTemplate.data.emailConfig.emailSecondaryColor
+              })
+              setPreviewKey(prev => prev + 1)
+            }, 50)
+          } else {
+            console.log('❌ No emailConfig found in localStorage template, keeping default custom config')
+          }
+        } else {
+          console.log('❌ No custom templates found in localStorage, keeping default custom config')
         }
       } else {
-        console.log('❌ No saved templates found, keeping default custom config')
+        console.log('❌ No saved templates found anywhere, keeping default custom config')
       }
     } catch (error) {
       console.error('❌ Error loading first saved template for custom config:', error)
@@ -327,23 +372,29 @@ function EmailConfigPageContent() {
     const isPreviewMode = mode === 'preview'
     setIsPreviewMode(isPreviewMode)
     
-    // Load saved templates (which includes loading custom templates in edit/preview mode)
-    loadSavedTemplates()
-    
-    // Load default template status
-    getDefaultTemplateStatus()
-    
-    // Only load default template if NOT in edit or preview mode
-    if (mode !== 'edit' && mode !== 'preview') {
-      // Load default template (affects defaultEmailConfig only)
-      loadDefaultEmailTemplate()
+    // Create async function to load templates
+    const initializeTemplates = async () => {
+      // Load saved templates (which includes loading custom templates in edit/preview mode)
+      await loadSavedTemplates()
       
-      // Load first saved template for custom config (affects emailConfig only)
-      // Use longer delay to ensure no conflict
-      setTimeout(() => {
-        loadFirstSavedTemplateForCustom()
-      }, 200)
+      // Load default template status
+      getDefaultTemplateStatus()
+      
+      // Only load default template if NOT in edit or preview mode
+      if (mode !== 'edit' && mode !== 'preview') {
+        // Load default template (affects defaultEmailConfig only)
+        loadDefaultEmailTemplate()
+        
+        // Load first saved template for custom config (affects emailConfig only)
+        // Use longer delay to ensure no conflict
+        setTimeout(() => {
+          loadFirstSavedTemplateForCustom()
+        }, 200)
+      }
     }
+    
+    // Call the async function
+    initializeTemplates()
   }, [])
 
   // Debug emailConfig changes and regenerate custom preview HTML
@@ -370,10 +421,39 @@ function EmailConfigPageContent() {
     console.log('🎨 Default preview HTML regenerated')
   }, [defaultEmailConfig])
 
-  const loadSavedTemplates = () => {
-    const savedEmailTemplates = localStorage.getItem('elocalpass-email-templates')
-    if (savedEmailTemplates) {
-      setEmailTemplates(JSON.parse(savedEmailTemplates))
+  const loadSavedTemplates = async () => {
+    try {
+      // Load email templates from database instead of localStorage
+      console.log('🔧 Loading email templates from database...')
+      const response = await fetch('/api/admin/email-templates?isDefault=false')
+      console.log('🔧 API Response status:', response.status)
+      
+      const result = await response.json()
+      console.log('🔧 API Response result:', result)
+      
+      if (response.ok && result.templates) {
+        console.log('🔧 Found templates in response:', result.templates.length)
+        console.log('🔧 Template names:', result.templates.map((t: any) => t.name))
+        
+        // Convert database templates to the format expected by the UI
+        const templates = result.templates.map((template: any) => ({
+          id: template.id,
+          name: template.name,
+          data: template.emailConfig || {},
+          createdAt: new Date(template.createdAt),
+          isDefault: template.isDefault
+        }))
+        console.log('🔧 Converted templates:', templates)
+        setEmailTemplates(templates)
+        console.log('✅ Loaded', templates.length, 'email templates from database')
+      } else {
+        console.log('❌ No email templates found in database')
+        console.log('❌ Response not ok or no templates:', { ok: response.ok, templates: result.templates })
+        setEmailTemplates([])
+      }
+    } catch (error) {
+      console.error('❌ Error loading email templates from database:', error)
+      setEmailTemplates([])
     }
     
     // Check if we're in edit mode or preview mode and load existing welcome email config
@@ -460,91 +540,97 @@ function EmailConfigPageContent() {
       const result = await response.json()
       
       if (response.ok && result.templates && result.templates.length > 0) {
-        const defaultTemplate = result.templates[0] // Get the first (and should be only) default template
+        // Find the first template that is actually marked as default
+        const defaultTemplate = result.templates.find((template: any) => template.isDefault)
         
-        console.log('✅ DEFAULT TEMPLATE LOADED FROM DATABASE:', defaultTemplate.name)
-        
-        // Convert database template back to emailConfig format with FULL structure
-        if (defaultTemplate.emailConfig) {
-          // Use the full emailConfig structure from database
-          setDefaultEmailConfig(defaultTemplate.emailConfig)
+        if (defaultTemplate) {
+          console.log('✅ DEFAULT TEMPLATE LOADED FROM DATABASE:', defaultTemplate.name)
           
-          // Force immediate HTML regeneration for default template
-          setTimeout(() => {
-            const html = generateCustomEmailHtml({...defaultTemplate.emailConfig, debugLabel: 'DEFAULT_PREVIEW'})
-            setDefaultPreviewHtml(html)
-            console.log('🎨 Default preview HTML force-regenerated after template load')
-            console.log('🔍 DEFAULT template colors after load:', {
-              emailPrimaryColor: defaultTemplate.emailConfig.emailPrimaryColor,
-              emailSecondaryColor: defaultTemplate.emailConfig.emailSecondaryColor
-            })
-          }, 100)
-        } else {
-          // Create a complete emailConfig structure from basic template fields
-          const completeEmailConfig = {
-            useDefaultEmail: true,
+          // Convert database template back to emailConfig format with FULL structure
+          if (defaultTemplate.emailConfig) {
+            // Use the full emailConfig structure from database
+            setDefaultEmailConfig(defaultTemplate.emailConfig)
             
-            // Email Header
-            emailHeaderText: defaultTemplate.headerText || 'Welcome to eLocalPass!',
-            emailHeaderColor: defaultTemplate.primaryColor || '#3b82f6',
-            emailHeaderTextColor: '#ffffff',
-            emailHeaderFontFamily: 'Arial, sans-serif',
-            emailHeaderFontSize: '28',
-            
-            // Main Message
-            emailMessageText: defaultTemplate.bodyText || 'Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass',
-            emailMessageTextColor: '#374151',
-            emailMessageFontFamily: 'Arial, sans-serif',
-            emailMessageFontSize: '16',
-            
-            // CTA Button
-            emailCtaText: defaultTemplate.buttonText || 'View Your Pass',
-            emailCtaTextColor: '#ffffff',
-            emailCtaFontFamily: 'Arial, sans-serif',
-            emailCtaFontSize: '18',
-            emailCtaBackgroundColor: defaultTemplate.buttonColor || '#3b82f6',
-            
-            // Important Notice
-            emailNoticeText: 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.',
-            emailNoticeTextColor: '#dc2626',
-            emailNoticeFontFamily: 'Arial, sans-serif',
-            emailNoticeFontSize: '14',
-            
-            // Footer Message
-            emailFooterText: defaultTemplate.footerText || 'Enjoy hundreds of discounts throughout your destination! Click below and discover all the benefits.',
-            emailFooterTextColor: '#6b7280',
-            emailFooterFontFamily: 'Arial, sans-serif',
-            emailFooterFontSize: '14',
-            
-            // Brand Colors
-            emailPrimaryColor: defaultTemplate.primaryColor || '#3b82f6',
-            emailSecondaryColor: '#f97316',
-            emailBackgroundColor: defaultTemplate.backgroundColor || '#ffffff',
-            
-            // Media Content
-            logoUrl: defaultTemplate.logoUrl || '',
-            bannerImages: [] as string[],
-            newBannerUrl: '',
-            videoUrl: '',
-            
-            // Affiliate Configuration
-            enableLocationBasedAffiliates: true,
-            selectedAffiliates: [],
-            customAffiliateMessage: 'Discover amazing local discounts at these partner establishments:',
-            
-            // Advanced Options
-            includeQRInEmail: false,
-            emailAccountCreationUrl: 'https://elocalpass.com/create-account',
-            customCssStyles: '',
-            
-            // Default Template Fields
-            companyName: 'ELocalPass',
-            defaultWelcomeMessage: 'Welcome to your local pass experience!'
+            // Force immediate HTML regeneration for default template
+            setTimeout(() => {
+              const html = generateCustomEmailHtml({...defaultTemplate.emailConfig, debugLabel: 'DEFAULT_PREVIEW'})
+              setDefaultPreviewHtml(html)
+              console.log('🎨 Default preview HTML force-regenerated after template load')
+              console.log('🔍 DEFAULT template colors after load:', {
+                emailPrimaryColor: defaultTemplate.emailConfig.emailPrimaryColor,
+                emailSecondaryColor: defaultTemplate.emailConfig.emailSecondaryColor
+              })
+            }, 100)
+          } else {
+            // Create a complete emailConfig structure from basic template fields
+            const completeEmailConfig = {
+              useDefaultEmail: true,
+              
+              // Email Header
+              emailHeaderText: defaultTemplate.headerText || 'Welcome to eLocalPass!',
+              emailHeaderColor: defaultTemplate.primaryColor || '#3b82f6',
+              emailHeaderTextColor: '#ffffff',
+              emailHeaderFontFamily: 'Arial, sans-serif',
+              emailHeaderFontSize: '28',
+              
+              // Main Message
+              emailMessageText: defaultTemplate.bodyText || 'Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass',
+              emailMessageTextColor: '#374151',
+              emailMessageFontFamily: 'Arial, sans-serif',
+              emailMessageFontSize: '16',
+              
+              // CTA Button
+              emailCtaText: defaultTemplate.buttonText || 'View Your Pass',
+              emailCtaTextColor: '#ffffff',
+              emailCtaFontFamily: 'Arial, sans-serif',
+              emailCtaFontSize: '18',
+              emailCtaBackgroundColor: defaultTemplate.buttonColor || '#3b82f6',
+              
+              // Important Notice
+              emailNoticeText: 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.',
+              emailNoticeTextColor: '#dc2626',
+              emailNoticeFontFamily: 'Arial, sans-serif',
+              emailNoticeFontSize: '14',
+              
+              // Footer Message
+              emailFooterText: defaultTemplate.footerText || 'Enjoy hundreds of discounts throughout your destination! Click below and discover all the benefits.',
+              emailFooterTextColor: '#6b7280',
+              emailFooterFontFamily: 'Arial, sans-serif',
+              emailFooterFontSize: '14',
+              
+              // Brand Colors
+              emailPrimaryColor: defaultTemplate.primaryColor || '#3b82f6',
+              emailSecondaryColor: '#f97316',
+              emailBackgroundColor: defaultTemplate.backgroundColor || '#ffffff',
+              
+              // Media Content
+              logoUrl: defaultTemplate.logoUrl || '',
+              bannerImages: [] as string[],
+              newBannerUrl: '',
+              videoUrl: '',
+              
+              // Affiliate Configuration
+              enableLocationBasedAffiliates: true,
+              selectedAffiliates: [],
+              customAffiliateMessage: 'Discover amazing local discounts at these partner establishments:',
+              
+              // Advanced Options
+              includeQRInEmail: false,
+              emailAccountCreationUrl: 'https://elocalpass.com/create-account',
+              customCssStyles: '',
+              
+              // Default Template Fields
+              companyName: 'ELocalPass',
+              defaultWelcomeMessage: 'Welcome to your local pass experience!'
+            }
+            setDefaultEmailConfig(completeEmailConfig)
           }
-          setDefaultEmailConfig(completeEmailConfig)
+          
+          toast.success('Default Template Loaded', 'Default template loaded from database successfully!')
+        } else {
+          console.log('⚠️ No default template found in database')
+          toast.warning('No Default Template', 'No default template found in database')
         }
-        
-        toast.success('Default Template Loaded', 'Default template loaded from database successfully!')
       } else {
         console.log('⚠️ No default template found in database')
         toast.warning('No Default Template', 'No default template found in database')
@@ -783,13 +869,39 @@ function EmailConfigPageContent() {
     console.log('✅ Email template loaded and preview should update')
   }
 
-  const deleteEmailTemplate = (index: number) => {
-    if (confirm(`Are you sure you want to delete template "${emailTemplates[index].name}"?`)) {
-      const updatedTemplates = emailTemplates.filter((template, i) => i !== index)
-      setEmailTemplates(updatedTemplates)
-      localStorage.setItem('elocalpass-email-templates', JSON.stringify(updatedTemplates))
-      setCurrentEmailTemplateName('')
-      toast.success('Template Deleted', `Template "${emailTemplates[index].name}" deleted successfully!`)
+  const deleteEmailTemplate = async (index: number) => {
+    const templateToDelete = emailTemplates[index]
+    
+    if (confirm(`Are you sure you want to delete template "${templateToDelete.name}"?`)) {
+      try {
+        console.log('🗑️ Deleting email template from database:', templateToDelete.name)
+        
+        // Delete from database
+        const response = await fetch(`/api/admin/email-templates/${templateToDelete.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        
+        const result = await response.json()
+        
+        if (response.ok && result.success) {
+          console.log('✅ Template deleted from database successfully')
+          
+          // Update local state
+          const updatedTemplates = emailTemplates.filter((template, i) => i !== index)
+          setEmailTemplates(updatedTemplates)
+          setCurrentEmailTemplateName('')
+          toast.success('Template Deleted', `Template "${templateToDelete.name}" deleted successfully!`)
+        } else {
+          console.error('❌ Failed to delete template from database:', result.error)
+          toast.error('Delete Failed', result.error || 'Failed to delete template from database')
+        }
+      } catch (error) {
+        console.error('❌ Error deleting template from database:', error)
+        toast.error('Delete Failed', 'Network error while deleting template')
+      }
     }
   }
 
