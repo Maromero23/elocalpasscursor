@@ -139,7 +139,7 @@ function EmailConfigPageContent() {
     
     // Email Header
     emailHeaderText: 'Welcome to eLocalPass!',
-    emailHeaderColor: '#3b82f6',
+    emailHeaderColor: '#059669',
     emailHeaderTextColor: '#ffffff',
     emailHeaderFontFamily: 'Arial, sans-serif',
     emailHeaderFontSize: '28',
@@ -155,7 +155,7 @@ function EmailConfigPageContent() {
     emailCtaTextColor: '#ffffff',
     emailCtaFontFamily: 'Arial, sans-serif',
     emailCtaFontSize: '18',
-    emailCtaBackgroundColor: '#3b82f6',
+    emailCtaBackgroundColor: '#059669',
     
     // Important Notice
     emailNoticeText: 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.',
@@ -170,9 +170,9 @@ function EmailConfigPageContent() {
     emailFooterFontSize: '14',
     
     // Brand Colors
-    emailPrimaryColor: '#3b82f6',
-    emailSecondaryColor: '#f97316',
-    emailBackgroundColor: '#ffffff',
+    emailPrimaryColor: '#059669',
+    emailSecondaryColor: '#7c3aed',
+    emailBackgroundColor: '#f0fdf4',
     
     // Media Content
     logoUrl: '',
@@ -233,9 +233,9 @@ function EmailConfigPageContent() {
     emailFooterFontSize: '14',
     
     // Brand Colors
-    emailPrimaryColor: '#3b82f6',
-    emailSecondaryColor: '#f97316',
-    emailBackgroundColor: '#ffffff',
+    emailPrimaryColor: '#dc2626',
+    emailSecondaryColor: '#f59e0b',
+    emailBackgroundColor: '#fef2f2',
     
     // Media Content
     logoUrl: '',
