@@ -273,9 +273,10 @@ function EmailConfigPageContent() {
     getDefaultTemplateStatus()
     
     // Only load default template if NOT in edit or preview mode
-    if (mode !== 'edit' && mode !== 'preview') {
-      loadDefaultEmailTemplate()
-    }
+    // TEMPORARILY DISABLED FOR TESTING STATE ISOLATION
+    // if (mode !== 'edit' && mode !== 'preview') {
+    //   loadDefaultEmailTemplate()
+    // }
   }, [])
 
   const loadSavedTemplates = () => {
