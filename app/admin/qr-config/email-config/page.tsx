@@ -381,6 +381,8 @@ function EmailConfigPageContent() {
     const mode = urlParams.get('mode')
     const qrId = urlParams.get('qrId')
     
+    console.log('🔧 loadSavedTemplates: mode =', mode, 'qrId =', qrId)
+    
     if (mode === 'edit' || mode === 'preview') {
       console.log('🔧 EMAIL CONFIG: Edit/Preview mode detected, qrId:', qrId)
       
@@ -393,6 +395,7 @@ function EmailConfigPageContent() {
         if (welcomeEmailConfig) {
           try {
             const savedConfig = JSON.parse(welcomeEmailConfig)
+            console.log('🔧 OVERRIDING emailConfig from localStorage:', savedConfig.emailConfig)
             setEmailConfig(savedConfig.emailConfig)
             console.log('✅ Loaded existing welcome email configuration from localStorage for', mode)
           } catch (error) {
