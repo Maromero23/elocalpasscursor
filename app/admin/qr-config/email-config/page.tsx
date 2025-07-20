@@ -973,8 +973,16 @@ function EmailConfigPageContent() {
         .message p { color: ${config.emailMessageTextColor || '#374151'}; font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailMessageFontSize || '16'}px; line-height: 1.5; margin: 0; }
         .cta-button { text-align: center; margin: 24px 0; }
         .cta-button a { background-color: ${config.emailCtaBackgroundColor || '#3b82f6'}; color: ${config.emailCtaTextColor || '#ffffff'}; font-family: ${config.emailCtaFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailCtaFontSize || '18'}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
+        .notice { text-align: center; margin: 24px 0; padding: 16px; background-color: #fef2f2; border-left: 4px solid ${config.emailNoticeTextColor || '#dc2626'}; }
+        .notice p { color: ${config.emailNoticeTextColor || '#dc2626'}; font-family: ${config.emailNoticeFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailNoticeFontSize || '14'}px; font-weight: 500; margin: 0; }
         .footer { background-color: #f9fafb; padding: 20px; text-align: center; }
         .footer p { color: ${config.emailFooterTextColor || '#6b7280'}; font-family: ${config.emailFooterFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailFooterFontSize || '14'}px; margin: 0; }
+        .logo { text-align: center; margin-bottom: 16px; }
+        .logo img { max-width: 120px; height: auto; }
+        .benefits { background-color: #f8fafc; padding: 20px; margin: 24px 0; border-radius: 8px; }
+        .benefits h3 { color: ${config.emailSecondaryColor || '#f97316'}; font-family: Arial, sans-serif; font-size: 18px; margin: 0 0 16px 0; text-align: center; }
+        .benefits ul { color: #374151; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; margin: 0; padding-left: 20px; }
+        .benefits li { margin-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -984,16 +992,28 @@ function EmailConfigPageContent() {
         </div>
         
         <div class="content">
+            ${config.logoUrl ? `<div class="logo"><img src="${config.logoUrl}" alt="eLocalPass Logo" /></div>` : ''}
+            
             <div class="message">
                 <p>${config.emailMessageText || 'Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass'}</p>
+            </div>
+            
+            <div class="benefits">
+                <h3>Your eLocalPass Benefits</h3>
+                <ul>
+                    <li>Exclusive local discounts at partner establishments</li>
+                    <li>No foreign transaction fees</li>
+                    <li>Secure digital payments</li>
+                    <li>24/7 customer support</li>
+                </ul>
             </div>
             
             <div class="cta-button">
                 <a href="{customerPortalUrl}">${config.emailCtaText || 'Create Your Account & Access Your eLocalPass'}</a>
             </div>
             
-            <div class="message">
-                <p style="color: ${config.emailNoticeTextColor || '#dc2626'}; font-size: ${config.emailNoticeFontSize || '14'}px; font-weight: 500;">${config.emailNoticeText || 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.'}</p>
+            <div class="notice">
+                <p>${config.emailNoticeText || 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.'}</p>
             </div>
         </div>
         
@@ -1570,7 +1590,7 @@ function EmailConfigPageContent() {
                 <div 
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
-                    __html: generateCustomEmailHtml(isEditingCustom ? getActiveConfig() : emailConfig) 
+                    __html: generateCustomEmailHtml(emailConfig) 
                   }} 
                 />
               </div>
@@ -1599,7 +1619,7 @@ function EmailConfigPageContent() {
                   <div 
                     className="border rounded-lg overflow-hidden"
                     dangerouslySetInnerHTML={{ 
-                      __html: generateCustomEmailHtml(!isEditingCustom ? getActiveConfig() : defaultEmailConfig) 
+                      __html: generateCustomEmailHtml(defaultEmailConfig) 
                     }} 
                   />
                 ) : (
