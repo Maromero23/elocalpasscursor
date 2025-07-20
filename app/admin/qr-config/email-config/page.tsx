@@ -932,16 +932,18 @@ function EmailConfigPageContent() {
   // Function to update the correct config based on edit mode
   const updateActiveConfig = (updates: any) => {
     console.log('🔄 updateActiveConfig called:', { isEditingCustom, updates })
+    console.log('📊 Current emailConfig before update:', emailConfig)
+    console.log('📊 Current defaultEmailConfig before update:', defaultEmailConfig)
     
     if (isEditingCustom) {
-      console.log('📝 Updating emailConfig:', updates)
+      console.log('📝 Updating emailConfig (CUSTOM):', updates)
       const newConfig = {...emailConfig, ...updates}
-      console.log('✅ New emailConfig:', newConfig)
+      console.log('✅ New emailConfig (CUSTOM):', newConfig)
       setEmailConfig(newConfig)
     } else {
-      console.log('📝 Updating defaultEmailConfig:', updates)
-      const newConfig = {...(defaultEmailConfig || emailConfig), ...updates}
-      console.log('✅ New defaultEmailConfig:', newConfig)
+      console.log('📝 Updating defaultEmailConfig (DEFAULT):', updates)
+      const newConfig = {...defaultEmailConfig, ...updates}
+      console.log('✅ New defaultEmailConfig (DEFAULT):', newConfig)
       setDefaultEmailConfig(newConfig)
     }
   }
@@ -955,6 +957,12 @@ function EmailConfigPageContent() {
 
   // Generate custom email HTML for preview
   const generateCustomEmailHtml = (config: any) => {
+    console.log('🎨 generateCustomEmailHtml called for:', config.debugLabel, 'with colors:', {
+      emailPrimaryColor: config.emailPrimaryColor,
+      emailSecondaryColor: config.emailSecondaryColor,
+      emailBackgroundColor: config.emailBackgroundColor
+    })
+    
     // Always generate HTML for preview, regardless of useDefaultEmail setting
     return `
 <!DOCTYPE html>
@@ -1535,7 +1543,7 @@ function EmailConfigPageContent() {
                 <div 
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
-                    __html: generateCustomEmailHtml(emailConfig) 
+                    __html: generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'}) 
                   }} 
                 />
               </div>
@@ -1563,7 +1571,7 @@ function EmailConfigPageContent() {
                 <div 
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
-                    __html: generateCustomEmailHtml(defaultEmailConfig) 
+                    __html: generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'}) 
                   }} 
                 />
               </div>
