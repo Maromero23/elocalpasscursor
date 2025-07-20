@@ -1567,7 +1567,7 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Button Background Color</label>
                         <input
                           type="color"
-                          value={getFormValue('emailCtaBackgroundColor', '#3b82f6')}
+                          value={getActiveConfig()?.emailCtaBackgroundColor || '#3b82f6'}
                           onChange={(e) => updateActiveConfig({ emailCtaBackgroundColor: e.target.value })}
                           disabled={isEditingCustom === null}
                           className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
@@ -1611,7 +1611,7 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Header Background Color</label>
                         <input
                           type="color"
-                          value={getFormValue('emailPrimaryColor', '#3b82f6')}
+                          value={getActiveConfig()?.emailPrimaryColor || '#3b82f6'}
                           onChange={(e) => updateActiveConfig({ emailPrimaryColor: e.target.value })}
                           disabled={isEditingCustom === null}
                           className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
@@ -1622,7 +1622,7 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
                         <input
                           type="color"
-                          value={getFormValue('emailSecondaryColor', '#f97316')}
+                          value={getActiveConfig()?.emailSecondaryColor || '#f97316'}
                           onChange={(e) => updateActiveConfig({ emailSecondaryColor: e.target.value })}
                           disabled={isEditingCustom === null}
                           className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
@@ -1633,7 +1633,7 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Email Background</label>
                         <input
                           type="color"
-                          value={getFormValue('emailBackgroundColor', '#ffffff')}
+                          value={getActiveConfig()?.emailBackgroundColor || '#ffffff'}
                           onChange={(e) => updateActiveConfig({ emailBackgroundColor: e.target.value })}
                           disabled={isEditingCustom === null}
                           className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
