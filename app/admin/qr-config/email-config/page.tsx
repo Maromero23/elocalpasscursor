@@ -275,6 +275,13 @@ function EmailConfigPageContent() {
         if (firstTemplate.emailConfig) {
           setEmailConfig(firstTemplate.emailConfig)
           console.log('✅ Custom emailConfig loaded from first saved template:', firstTemplate.emailConfig)
+          console.log('🎨 Custom template colors should be:', {
+            emailPrimaryColor: firstTemplate.emailConfig.emailPrimaryColor,
+            emailSecondaryColor: firstTemplate.emailConfig.emailSecondaryColor,
+            emailBackgroundColor: firstTemplate.emailConfig.emailBackgroundColor
+          })
+          // Force preview re-render after loading
+          setPreviewKey(prev => prev + 1)
         } else {
           console.log('❌ No emailConfig found in first saved template, keeping default custom config')
         }
@@ -308,6 +315,24 @@ function EmailConfigPageContent() {
       }, 100)
     }
   }, [])
+
+  // Debug emailConfig changes
+  useEffect(() => {
+    console.log('📊 emailConfig state changed:', {
+      emailPrimaryColor: emailConfig.emailPrimaryColor,
+      emailSecondaryColor: emailConfig.emailSecondaryColor,
+      emailBackgroundColor: emailConfig.emailBackgroundColor
+    })
+  }, [emailConfig])
+
+  // Debug defaultEmailConfig changes
+  useEffect(() => {
+    console.log('📊 defaultEmailConfig state changed:', {
+      emailPrimaryColor: defaultEmailConfig.emailPrimaryColor,
+      emailSecondaryColor: defaultEmailConfig.emailSecondaryColor,
+      emailBackgroundColor: defaultEmailConfig.emailBackgroundColor
+    })
+  }, [defaultEmailConfig])
 
   const loadSavedTemplates = () => {
     const savedEmailTemplates = localStorage.getItem('elocalpass-email-templates')
@@ -691,8 +716,21 @@ function EmailConfigPageContent() {
   }
 
   const loadEmailTemplate = (template: { name: string, data: any }) => {
-    setEmailConfig({ ...template.data })
+    console.log('🔄 Loading email template:', template.name, 'with data:', template.data)
+    console.log('🔄 Current edit mode - isEditingCustom:', isEditingCustom)
+    
+    if (isEditingCustom) {
+      console.log('📝 Loading template into CUSTOM config')
+      setEmailConfig({ ...template.data })
+    } else {
+      console.log('📝 Loading template into DEFAULT config')
+      setDefaultEmailConfig({ ...template.data })
+    }
+    
+    // Force preview re-render
+    setPreviewKey(prev => prev + 1)
     toast.success('Template Loaded', `Template "${template.name}" loaded successfully!`)
+    console.log('✅ Email template loaded and preview should update')
   }
 
   const deleteEmailTemplate = (index: number) => {
