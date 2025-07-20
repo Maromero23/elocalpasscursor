@@ -933,19 +933,21 @@ function EmailConfigPageContent() {
   // Function to update the correct config based on edit mode
   const updateActiveConfig = (updates: any) => {
     console.log('🔄 updateActiveConfig called:', { isEditingCustom, updates })
-    console.log('📊 Current emailConfig before update:', emailConfig)
-    console.log('📊 Current defaultEmailConfig before update:', defaultEmailConfig)
     
     if (isEditingCustom) {
-      console.log('📝 Updating emailConfig (CUSTOM):', updates)
-      const newConfig = {...emailConfig, ...updates}
-      console.log('✅ New emailConfig (CUSTOM):', newConfig)
-      setEmailConfig(newConfig)
+      console.log('📝 Updating CUSTOM emailConfig ONLY:', updates)
+      setEmailConfig((prevConfig: any) => {
+        const newConfig = {...prevConfig, ...updates}
+        console.log('✅ New CUSTOM emailConfig:', newConfig)
+        return newConfig
+      })
     } else {
-      console.log('📝 Updating defaultEmailConfig (DEFAULT):', updates)
-      const newConfig = {...defaultEmailConfig, ...updates}
-      console.log('✅ New defaultEmailConfig (DEFAULT):', newConfig)
-      setDefaultEmailConfig(newConfig)
+      console.log('📝 Updating DEFAULT emailConfig ONLY:', updates)
+      setDefaultEmailConfig((prevConfig: any) => {
+        const newConfig = {...prevConfig, ...updates}
+        console.log('✅ New DEFAULT emailConfig:', newConfig)
+        return newConfig
+      })
     }
     
     // Force preview re-render
@@ -1545,7 +1547,7 @@ function EmailConfigPageContent() {
               </div>
               <div className="p-4">
                 <div 
-                  key={`custom-${previewKey}-${JSON.stringify(emailConfig.emailPrimaryColor)}`}
+                  key={`custom-${previewKey}`}
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
                     __html: generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'}) 
@@ -1574,7 +1576,7 @@ function EmailConfigPageContent() {
               </div>
               <div className="p-4">
                 <div 
-                  key={`default-${previewKey}-${JSON.stringify(defaultEmailConfig.emailPrimaryColor)}`}
+                  key={`default-${previewKey}`}
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
                     __html: generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'}) 
