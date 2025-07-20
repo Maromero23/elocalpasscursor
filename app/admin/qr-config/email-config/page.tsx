@@ -177,23 +177,7 @@ function EmailConfigPageContent() {
     }
   }, [])
 
-  // Debug: Monitor currentLoadedTemplateName changes
-  useEffect(() => {
-    console.log('🔍 currentLoadedTemplateName changed to:', currentLoadedTemplateName)
-  }, [currentLoadedTemplateName])
 
-  // Regenerate preview HTML when configs change
-  useEffect(() => {
-    if (isEditingCustom === true) {
-      console.log('🔄 Regenerating custom preview HTML due to config change')
-      const html = generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
-      setCustomPreviewHtml(html)
-    } else if (isEditingCustom === false) {
-      console.log('🔄 Regenerating default preview HTML due to config change')
-      const html = generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'})
-      setDefaultPreviewHtml(html)
-    }
-  }, [emailConfig, defaultEmailConfig, isEditingCustom])
 
   // Form submission states
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -1388,6 +1372,24 @@ function EmailConfigPageContent() {
 </body>
 </html>`
   }
+
+  // Debug: Monitor currentLoadedTemplateName changes
+  useEffect(() => {
+    console.log('🔍 currentLoadedTemplateName changed to:', currentLoadedTemplateName)
+  }, [currentLoadedTemplateName])
+
+  // Regenerate preview HTML when configs change
+  useEffect(() => {
+    if (isEditingCustom === true) {
+      console.log('🔄 Regenerating custom preview HTML due to config change')
+      const html = generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
+      setCustomPreviewHtml(html)
+    } else if (isEditingCustom === false) {
+      console.log('🔄 Regenerating default preview HTML due to config change')
+      const html = generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'})
+      setDefaultPreviewHtml(html)
+    }
+  }, [emailConfig, defaultEmailConfig, isEditingCustom])
 
   return (
     <div className="min-h-screen bg-gray-50">
