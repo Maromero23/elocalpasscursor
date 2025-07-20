@@ -645,6 +645,10 @@ function EmailConfigPageContent() {
     try {
       console.log('🔧 SAVING DEFAULT TEMPLATE TO DATABASE')
       
+      // Determine which config to save based on edit mode
+      const configToSave = isEditingCustom ? emailConfig : defaultEmailConfig
+      console.log('🔧 Saving config based on edit mode:', isEditingCustom ? 'CUSTOM' : 'DEFAULT')
+      
       // Generate the custom HTML for the template
       const generateCustomEmailHtml = (config: any) => {
         if (config.useDefaultEmail) {
@@ -701,7 +705,7 @@ function EmailConfigPageContent() {
 </html>`
       }
       
-      const customHTML = generateCustomEmailHtml(emailConfig)
+      const customHTML = generateCustomEmailHtml(configToSave)
       
       // First, delete ALL existing default templates to save space
       console.log('🗑️ CLEANING UP OLD DEFAULT TEMPLATES...')
@@ -726,7 +730,7 @@ function EmailConfigPageContent() {
           subject: 'Welcome to ELocalPass!',
           customHTML: customHTML,
           isDefault: true,
-          emailConfig: emailConfig
+          emailConfig: configToSave
         })
       })
       
