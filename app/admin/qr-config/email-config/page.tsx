@@ -133,6 +133,7 @@ function EmailConfigPageContent() {
   const [emailTemplates, setEmailTemplates] = useState<Array<{id: string, name: string, data: any, createdAt: Date}>>([])
   const [currentEmailTemplateName, setCurrentEmailTemplateName] = useState('')
   const [showEmailSaveDialog, setShowEmailSaveDialog] = useState(false)
+  const [defaultTemplateStatus, setDefaultTemplateStatus] = useState<any>(null)
   
   // Button 4 - Welcome Email Configuration State
   const [emailConfig, setEmailConfig] = useState({
@@ -205,6 +206,9 @@ function EmailConfigPageContent() {
     
     // Load saved templates (which includes loading custom templates in edit/preview mode)
     loadSavedTemplates()
+    
+    // Load default template status
+    getDefaultTemplateStatus()
     
     // Only load default template if NOT in edit or preview mode
     if (mode !== 'edit' && mode !== 'preview') {
@@ -291,11 +295,74 @@ function EmailConfigPageContent() {
     }
   }
 
-  const loadDefaultEmailTemplate = () => {
-    const defaultTemplate = localStorage.getItem('elocalpass-default-email-template')
-    if (defaultTemplate) {
-      const template = JSON.parse(defaultTemplate)
-      setEmailConfig(template.data)
+  const loadDefaultEmailTemplate = async () => {
+    try {
+      console.log('🔧 LOADING DEFAULT TEMPLATE FROM DATABASE...')
+      
+      const response = await fetch('/api/admin/email-templates?isDefault=true')
+      const result = await response.json()
+      
+      if (response.ok && result.templates && result.templates.length > 0) {
+        const defaultTemplate = result.templates[0] // Get the first (and should be only) default template
+        
+        console.log('✅ DEFAULT TEMPLATE LOADED FROM DATABASE:', defaultTemplate.name)
+        
+        // Convert database template back to emailConfig format
+        if (defaultTemplate.emailConfig) {
+          setEmailConfig(defaultTemplate.emailConfig)
+                 } else {
+           // Fallback: create emailConfig from template fields
+           const emailConfig = {
+             useDefaultEmail: true,
+             emailHeaderText: defaultTemplate.headerText || 'Welcome to eLocalPass!',
+             emailHeaderColor: defaultTemplate.primaryColor || '#3b82f6',
+             emailHeaderTextColor: '#ffffff',
+             emailHeaderFontFamily: 'Arial, sans-serif',
+             emailHeaderFontSize: '28',
+             emailMessageText: defaultTemplate.bodyText || 'Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass',
+             emailMessageTextColor: '#374151',
+             emailMessageFontFamily: 'Arial, sans-serif',
+             emailMessageFontSize: '16',
+             emailCtaText: defaultTemplate.buttonText || 'View Your Pass',
+             emailCtaTextColor: '#ffffff',
+             emailCtaFontFamily: 'Arial, sans-serif',
+             emailCtaFontSize: '18',
+             emailCtaBackgroundColor: defaultTemplate.buttonColor || '#3b82f6',
+             emailNoticeText: 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.',
+             emailNoticeTextColor: '#dc2626',
+             emailNoticeFontFamily: 'Arial, sans-serif',
+             emailNoticeFontSize: '14',
+             emailFooterText: defaultTemplate.footerText || 'Enjoy hundreds of discounts throughout your destination! Click below and discover all the benefits.',
+             emailFooterTextColor: '#6b7280',
+             emailFooterFontFamily: 'Arial, sans-serif',
+             emailFooterFontSize: '14',
+             emailPrimaryColor: defaultTemplate.primaryColor || '#3b82f6',
+             emailSecondaryColor: '#f97316',
+             emailBackgroundColor: defaultTemplate.backgroundColor || '#ffffff',
+             logoUrl: '',
+             bannerImages: [] as string[],
+             newBannerUrl: '',
+             videoUrl: '',
+             enableLocationBasedAffiliates: true,
+             selectedAffiliates: [],
+             customAffiliateMessage: 'Discover amazing local discounts at these partner establishments:',
+             includeQRInEmail: false,
+             emailAccountCreationUrl: 'https://elocalpass.com/create-account',
+             customCssStyles: '',
+             companyName: 'ELocalPass',
+             defaultWelcomeMessage: 'Welcome to your local pass experience!'
+           }
+           setEmailConfig(emailConfig)
+         }
+        
+        toast.success('Default Template Loaded', 'Default template loaded from database successfully!')
+      } else {
+        console.log('⚠️ No default template found in database')
+        toast.warning('No Default Template', 'No default template found in database')
+      }
+    } catch (error) {
+      console.error('❌ Error loading default template from database:', error)
+      toast.error('Load Failed', 'Network error while loading default template from database')
     }
   }
 
@@ -435,9 +502,22 @@ function EmailConfigPageContent() {
     }
   }
 
-  const getDefaultTemplateStatus = () => {
-    const defaultTemplate = localStorage.getItem('elocalpass-default-email-template')
-    return defaultTemplate ? JSON.parse(defaultTemplate) : null
+  const getDefaultTemplateStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/email-templates?isDefault=true')
+      const result = await response.json()
+      
+      if (response.ok && result.templates && result.templates.length > 0) {
+        setDefaultTemplateStatus(result.templates[0])
+        return result.templates[0]
+      }
+      setDefaultTemplateStatus(null)
+      return null
+    } catch (error) {
+      console.error('Error getting default template status:', error)
+      setDefaultTemplateStatus(null)
+      return null
+    }
   }
 
   const saveEmailTemplate = async () => {
@@ -1318,37 +1398,30 @@ function EmailConfigPageContent() {
                     {/* Default Template Status */}
                     <div className="bg-white p-4 rounded border border-green-200">
                       <h4 className="text-sm font-medium text-green-700 mb-2">📌 Default Template Status</h4>
-                      {(() => {
-                        const defaultTemplate = getDefaultTemplateStatus()
-                        if (defaultTemplate) {
-                          return (
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm text-green-800">
-                                  ✅ Default template is set
-                                </p>
-                                <p className="text-xs text-green-600">
-                                  Created: {new Date(defaultTemplate.createdAt).toLocaleDateString()} - 
-                                  Loads automatically when you open this page
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={clearDefaultTemplate}
-                                className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
-                              >
-                                Clear
-                              </button>
-                            </div>
-                          )
-                        } else {
-                          return (
-                            <p className="text-sm text-gray-600">
-                              🔄 No default template set - Configure your email and click "Save as Default Template" below
+                      {defaultTemplateStatus ? (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-green-800">
+                              ✅ Default template is set
                             </p>
-                          )
-                        }
-                      })()}
+                            <p className="text-xs text-green-600">
+                              Created: {new Date(defaultTemplateStatus.createdAt).toLocaleDateString()} - 
+                              Loads automatically when you open this page
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={clearDefaultTemplate}
+                            className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600">
+                          🔄 No default template set - Configure your email and click "Save as Default Template" below
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex gap-4">
