@@ -177,6 +177,24 @@ function EmailConfigPageContent() {
     }
   }, [])
 
+  // Debug: Monitor currentLoadedTemplateName changes
+  useEffect(() => {
+    console.log('🔍 currentLoadedTemplateName changed to:', currentLoadedTemplateName)
+  }, [currentLoadedTemplateName])
+
+  // Regenerate preview HTML when configs change
+  useEffect(() => {
+    if (isEditingCustom === true) {
+      console.log('🔄 Regenerating custom preview HTML due to config change')
+      const html = generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
+      setCustomPreviewHtml(html)
+    } else if (isEditingCustom === false) {
+      console.log('🔄 Regenerating default preview HTML due to config change')
+      const html = generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'})
+      setDefaultPreviewHtml(html)
+    }
+  }, [emailConfig, defaultEmailConfig, isEditingCustom])
+
   // Form submission states
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [generatedEmailConfig, setGeneratedEmailConfig] = useState('')
@@ -911,11 +929,13 @@ function EmailConfigPageContent() {
   const loadEmailTemplate = (template: { name: string, data: any }) => {
     console.log('🔄 Loading email template:', template.name, 'with data:', template.data)
     console.log('🔄 Current edit mode - isEditingCustom:', isEditingCustom)
+    console.log('🔄 About to set currentLoadedTemplateName to:', template.name)
     
     if (isEditingCustom) {
       console.log('📝 Loading template into CUSTOM config')
       setEmailConfig({ ...template.data })
       setCurrentLoadedTemplateName(template.name) // Set the loaded template name
+      console.log('✅ Set currentLoadedTemplateName to:', template.name)
       
       // Force immediate HTML regeneration for custom preview
       setTimeout(() => {
@@ -1293,7 +1313,10 @@ function EmailConfigPageContent() {
     console.log('🎨 generateCustomEmailHtml called for:', config.debugLabel, 'with colors:', {
       emailPrimaryColor: config.emailPrimaryColor,
       emailSecondaryColor: config.emailSecondaryColor,
-      emailBackgroundColor: config.emailBackgroundColor
+      emailBackgroundColor: config.emailBackgroundColor,
+      emailHeaderTextColor: config.emailHeaderTextColor,
+      emailCtaBackgroundColor: config.emailCtaBackgroundColor,
+      emailNoticeTextColor: config.emailNoticeTextColor
     })
     
     // Always generate HTML for preview, regardless of useDefaultEmail setting
@@ -1933,6 +1956,8 @@ function EmailConfigPageContent() {
                 <div className="flex items-center justify-between">
                   <h3 className={`text-lg font-bold ${isEditingCustom === true || isEditingCustom === null ? 'text-blue-900' : 'text-gray-600'}`}>
                     🎨 Custom Email Template{currentLoadedTemplateName ? `: ${currentLoadedTemplateName}` : ''}
+                    {/* DEBUG: Show the actual value */}
+                    <span style={{fontSize: '12px', color: 'red'}}> [DEBUG: "{currentLoadedTemplateName}"]</span>
                   </h3>
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${isEditingCustom === true ? 'bg-green-500' : 'bg-gray-300'}`}></div>
