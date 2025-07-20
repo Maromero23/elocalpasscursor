@@ -1780,7 +1780,7 @@ function EmailConfigPageContent() {
               <div className="bg-blue-50 px-4 py-3 border-b border-blue-200 rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-blue-900">
-                    🎨 Custom Email Template
+                    🎨 Custom Email Template{currentLoadedTemplateName ? `: ${currentLoadedTemplateName}` : ''}
                   </h3>
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${isEditingCustom ? 'bg-green-500' : 'bg-gray-300'}`}></div>
@@ -1791,7 +1791,7 @@ function EmailConfigPageContent() {
                 </div>
                 <p className="text-sm text-blue-600 mt-1">
                   {currentLoadedTemplateName 
-                    ? `Loaded Template: "${currentLoadedTemplateName}" - edit the form above to see live changes`
+                    ? `Template loaded - edit the form above to see live changes`
                     : 'Your personalized email template - edit the form above to see live changes'
                   }
                 </p>
