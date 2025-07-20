@@ -288,6 +288,10 @@ function EmailConfigPageContent() {
             const html = generateCustomEmailHtml({...firstTemplate.emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
             setCustomPreviewHtml(html)
             console.log('🎨 Custom preview HTML force-regenerated after template load')
+            console.log('🔍 CUSTOM template colors after load:', {
+              emailPrimaryColor: firstTemplate.emailConfig.emailPrimaryColor,
+              emailSecondaryColor: firstTemplate.emailConfig.emailSecondaryColor
+            })
             setPreviewKey(prev => prev + 1)
           }, 50)
         } else {
@@ -331,11 +335,14 @@ function EmailConfigPageContent() {
     
     // Only load default template if NOT in edit or preview mode
     if (mode !== 'edit' && mode !== 'preview') {
+      // Load default template (affects defaultEmailConfig only)
       loadDefaultEmailTemplate()
-      // Load first saved template for custom config after a brief delay
+      
+      // Load first saved template for custom config (affects emailConfig only)
+      // Use longer delay to ensure no conflict
       setTimeout(() => {
         loadFirstSavedTemplateForCustom()
-      }, 100)
+      }, 200)
     }
   }, [])
 
@@ -464,6 +471,10 @@ function EmailConfigPageContent() {
             const html = generateCustomEmailHtml({...defaultTemplate.emailConfig, debugLabel: 'DEFAULT_PREVIEW'})
             setDefaultPreviewHtml(html)
             console.log('🎨 Default preview HTML force-regenerated after template load')
+            console.log('🔍 DEFAULT template colors after load:', {
+              emailPrimaryColor: defaultTemplate.emailConfig.emailPrimaryColor,
+              emailSecondaryColor: defaultTemplate.emailConfig.emailSecondaryColor
+            })
           }, 100)
         } else {
           // Create a complete emailConfig structure from basic template fields
