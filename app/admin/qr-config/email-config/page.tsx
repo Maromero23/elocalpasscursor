@@ -196,6 +196,8 @@ function EmailConfigPageContent() {
   })
   const [isEditingCustom, setIsEditingCustom] = useState(true) // true = editing custom, false = editing default
   const [previewKey, setPreviewKey] = useState(0) // Force preview re-render
+  const [customPreviewHtml, setCustomPreviewHtml] = useState('')
+  const [defaultPreviewHtml, setDefaultPreviewHtml] = useState('')
   
   // Button 4 - Welcome Email Configuration State
   const [emailConfig, setEmailConfig] = useState({
@@ -316,22 +318,28 @@ function EmailConfigPageContent() {
     }
   }, [])
 
-  // Debug emailConfig changes
+  // Debug emailConfig changes and regenerate custom preview HTML
   useEffect(() => {
     console.log('📊 emailConfig state changed:', {
       emailPrimaryColor: emailConfig.emailPrimaryColor,
       emailSecondaryColor: emailConfig.emailSecondaryColor,
       emailBackgroundColor: emailConfig.emailBackgroundColor
     })
+    const html = generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
+    setCustomPreviewHtml(html)
+    console.log('🎨 Custom preview HTML regenerated')
   }, [emailConfig])
 
-  // Debug defaultEmailConfig changes
+  // Debug defaultEmailConfig changes and regenerate default preview HTML
   useEffect(() => {
     console.log('📊 defaultEmailConfig state changed:', {
       emailPrimaryColor: defaultEmailConfig.emailPrimaryColor,
       emailSecondaryColor: defaultEmailConfig.emailSecondaryColor,
       emailBackgroundColor: defaultEmailConfig.emailBackgroundColor
     })
+    const html = generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'})
+    setDefaultPreviewHtml(html)
+    console.log('🎨 Default preview HTML regenerated')
   }, [defaultEmailConfig])
 
   const loadSavedTemplates = () => {
@@ -1619,7 +1627,7 @@ function EmailConfigPageContent() {
                   key={`custom-${previewKey}`}
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
-                    __html: generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'}) 
+                    __html: customPreviewHtml || generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'}) 
                   }} 
                 />
               </div>
@@ -1648,7 +1656,7 @@ function EmailConfigPageContent() {
                   key={`default-${previewKey}`}
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
-                    __html: generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'}) 
+                    __html: defaultPreviewHtml || generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'}) 
                   }} 
                 />
               </div>
