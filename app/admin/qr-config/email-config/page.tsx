@@ -198,6 +198,7 @@ function EmailConfigPageContent() {
   const [previewKey, setPreviewKey] = useState(0) // Force preview re-render
   const [customPreviewHtml, setCustomPreviewHtml] = useState('')
   const [defaultPreviewHtml, setDefaultPreviewHtml] = useState('')
+  const [currentLoadedTemplateName, setCurrentLoadedTemplateName] = useState('') // Track currently loaded template name
   
   // Button 4 - Welcome Email Configuration State
   const [emailConfig, setEmailConfig] = useState({
@@ -862,6 +863,7 @@ function EmailConfigPageContent() {
     if (isEditingCustom) {
       console.log('📝 Loading template into CUSTOM config')
       setEmailConfig({ ...template.data })
+      setCurrentLoadedTemplateName(template.name) // Set the loaded template name
       
       // Force immediate HTML regeneration for custom preview
       setTimeout(() => {
@@ -1189,26 +1191,15 @@ function EmailConfigPageContent() {
 
   // Function to update the correct config based on edit mode
   const updateActiveConfig = (updates: any) => {
-    console.log('🔄 updateActiveConfig called:', { isEditingCustom, updates })
+    console.log('🔧 getActiveConfig: {isEditingCustom:', isEditingCustom, 'activeConfig:', getActiveConfig())
     
     if (isEditingCustom) {
-      console.log('📝 Updating CUSTOM emailConfig ONLY:', updates)
-      setEmailConfig((prevConfig: any) => {
-        const newConfig = {...prevConfig, ...updates}
-        console.log('✅ New CUSTOM emailConfig:', newConfig)
-        return newConfig
-      })
+      setEmailConfig((prev: any) => ({ ...prev, ...updates }))
+      // Clear the loaded template name since we're editing
+      setCurrentLoadedTemplateName('')
     } else {
-      console.log('📝 Updating DEFAULT emailConfig ONLY:', updates)
-      setDefaultEmailConfig((prevConfig: any) => {
-        const newConfig = {...prevConfig, ...updates}
-        console.log('✅ New DEFAULT emailConfig:', newConfig)
-        return newConfig
-      })
+      setDefaultEmailConfig((prev: any) => ({ ...prev, ...updates }))
     }
-    
-    // Force preview re-render
-    setPreviewKey(prev => prev + 1)
   }
 
   // Function to get the active config values
@@ -1799,7 +1790,10 @@ function EmailConfigPageContent() {
                   </div>
                 </div>
                 <p className="text-sm text-blue-600 mt-1">
-                  Your personalized email template - edit the form above to see live changes
+                  {currentLoadedTemplateName 
+                    ? `Loaded Template: "${currentLoadedTemplateName}" - edit the form above to see live changes`
+                    : 'Your personalized email template - edit the form above to see live changes'
+                  }
                 </p>
               </div>
               <div className="p-4">
