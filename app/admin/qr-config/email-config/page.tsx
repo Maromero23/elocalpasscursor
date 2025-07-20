@@ -948,7 +948,7 @@ function EmailConfigPageContent() {
 
   // Function to get the active config values
   const getActiveConfig = () => {
-    const activeConfig = isEditingCustom ? emailConfig : (defaultEmailConfig || emailConfig)
+    const activeConfig = isEditingCustom ? emailConfig : defaultEmailConfig
     console.log('🔍 getActiveConfig:', { isEditingCustom, activeConfig })
     return activeConfig
   }
@@ -1615,19 +1615,12 @@ function EmailConfigPageContent() {
                 </p>
               </div>
               <div className="p-4">
-                {defaultEmailConfig ? (
-                  <div 
-                    className="border rounded-lg overflow-hidden"
-                    dangerouslySetInnerHTML={{ 
-                      __html: generateCustomEmailHtml(defaultEmailConfig) 
-                    }} 
-                  />
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No default template loaded</p>
-                    <p className="text-sm">Click "Load Default Template" to preview</p>
-                  </div>
-                )}
+                <div 
+                  className="border rounded-lg overflow-hidden"
+                  dangerouslySetInnerHTML={{ 
+                    __html: generateCustomEmailHtml(defaultEmailConfig) 
+                  }} 
+                />
               </div>
             </div>
 
