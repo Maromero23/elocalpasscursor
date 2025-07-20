@@ -301,41 +301,105 @@ function EmailConfigPageContent() {
 
   const saveAsDefaultTemplate = async () => {
     try {
-      console.log('🔧 ADMIN PANEL: Saving default template to database...')
+      console.log('🔧 SAVING DEFAULT TEMPLATE TO DATABASE')
       
-      const response = await fetch('/api/admin/default-email-template', {
+      // Generate the custom HTML for the template
+      const generateCustomEmailHtml = (config: any) => {
+        if (config.useDefaultEmail) {
+          return 'USE_DEFAULT_TEMPLATE'
+        }
+        
+        // Generate custom HTML template (same logic as in handleSubmit)
+        return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to eLocalPass</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background-color: ${config.emailBackgroundColor}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .header { background-color: ${config.emailPrimaryColor}; padding: 24px; text-align: center; }
+        .header h1 { color: ${config.emailHeaderTextColor}; font-family: ${config.emailHeaderFontFamily}; font-size: ${config.emailHeaderFontSize}px; font-weight: bold; margin: 0; }
+        .content { padding: 24px; }
+        .message { text-align: center; margin-bottom: 24px; }
+        .message p { color: ${config.emailMessageTextColor}; font-family: ${config.emailMessageFontFamily}; font-size: ${config.emailMessageFontSize}px; line-height: 1.5; margin: 0; }
+        .cta-button { text-align: center; margin: 24px 0; }
+        .cta-button a { background-color: ${config.emailCtaBackgroundColor}; color: ${config.emailCtaTextColor}; font-family: ${config.emailCtaFontFamily}; font-size: ${config.emailCtaFontSize}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
+        .footer { background-color: #f9fafb; padding: 20px; text-align: center; }
+        .footer p { color: ${config.emailFooterTextColor}; font-family: ${config.emailFooterFontFamily}; font-size: ${config.emailFooterFontSize}px; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>${config.emailHeaderText}</h1>
+        </div>
+        
+        <div class="content">
+            <div class="message">
+                <p>${config.emailMessageText}</p>
+            </div>
+            
+            <div class="cta-button">
+                <a href="{customerPortalUrl}">${config.emailCtaText}</a>
+            </div>
+            
+            <div class="message">
+                <p style="color: ${config.emailNoticeTextColor}; font-size: ${config.emailNoticeFontSize}px; font-weight: 500;">${config.emailNoticeText}</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>${config.emailFooterText}</p>
+        </div>
+    </div>
+</body>
+</html>`
+      }
+      
+      const customHTML = generateCustomEmailHtml(emailConfig)
+      
+      // First, delete ALL existing default templates to save space
+      console.log('🗑️ CLEANING UP OLD DEFAULT TEMPLATES...')
+      const deleteResponse = await fetch('/api/admin/email-templates/cleanup-defaults', {
+        method: 'DELETE'
+      })
+      
+      if (deleteResponse.ok) {
+        console.log('✅ Old default templates cleaned up')
+      } else {
+        console.log('⚠️ Could not clean up old templates, continuing anyway')
+      }
+      
+      // Save new default template to database
+      const response = await fetch('/api/admin/email-templates', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          emailConfig: emailConfig,
-          action: 'saveAsDefault'
+          name: `Welcome Email Template - ${new Date().toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })}`,
+          subject: 'Welcome to ELocalPass!',
+          customHTML: customHTML,
+          isDefault: true,
+          emailConfig: emailConfig
         })
       })
       
       const result = await response.json()
       
       if (response.ok && result.success) {
-        console.log('✅ ADMIN PANEL: Default template saved to database successfully')
-        toast.success('Default Template Saved', 'Current email configuration saved as default template in database!')
-        
-        // Also save to localStorage for backward compatibility
-        const defaultTemplate = {
-          id: 'default',
-          name: 'Default Email Template',
-          data: { ...emailConfig },
-          createdAt: new Date(),
-          isDefault: true
-        }
-        localStorage.setItem('elocalpass-default-email-template', JSON.stringify(defaultTemplate))
+        console.log('✅ DEFAULT TEMPLATE SAVED TO DATABASE:', result.templateId)
+        toast.success('Default Template Saved', 'Default template saved to database and will be used system-wide!')
       } else {
-        console.error('❌ ADMIN PANEL: Failed to save default template:', result.error)
+        console.error('❌ Failed to save default template to database:', result.error)
         toast.error('Save Failed', result.error || 'Failed to save default template to database')
       }
     } catch (error) {
-      console.error('❌ ADMIN PANEL: Error saving default template:', error)
-      toast.error('Save Failed', 'Network error while saving default template')
+      console.error('❌ Error saving default template to database:', error)
+      toast.error('Save Failed', 'Network error while saving default template to database')
     }
   }
 
