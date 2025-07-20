@@ -1271,6 +1271,18 @@ function EmailConfigPageContent() {
     return config ? config[key] || defaultValue : defaultValue
   }
 
+  // Helper function to safely get array form values
+  const getFormArray = (key: string, defaultValue: any[] = []) => {
+    const config = getActiveConfig()
+    return config ? config[key] || defaultValue : defaultValue
+  }
+
+  // Helper function to safely get boolean form values
+  const getFormBoolean = (key: string, defaultValue: boolean = false) => {
+    const config = getActiveConfig()
+    return config ? config[key] || defaultValue : defaultValue
+  }
+
   // Generate custom email HTML for preview
   const generateCustomEmailHtml = (config: any) => {
     console.log('🎨 generateCustomEmailHtml called for:', config.debugLabel, 'with colors:', {
@@ -1575,12 +1587,13 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Email Logo URL</label>
                         <input
                           type="url"
-                          value={getActiveConfig().logoUrl}
+                          value={getFormValue('logoUrl', '')}
                           onChange={(e) => updateActiveConfig({ logoUrl: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          disabled={isEditingCustom === null}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
                           placeholder="https://example.com/logo.png"
                         />
-                        {getActiveConfig().logoUrl && (
+                        {getFormValue('logoUrl') && (
                           <p className="text-xs text-green-600">✓ Logo URL added - will be displayed in email header</p>
                         )}
                       </div>
@@ -1591,47 +1604,50 @@ function EmailConfigPageContent() {
                         <div className="flex gap-2 mb-4">
                           <input
                             type="url"
-                            value={getActiveConfig().newBannerUrl || ''}
+                            value={getFormValue('newBannerUrl', '')}
                             onChange={(e) => updateActiveConfig({ newBannerUrl: e.target.value })}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            disabled={isEditingCustom === null}
+                            className={`flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
                             placeholder="https://example.com/banner.jpg"
                           />
                           <button
                             type="button"
                             onClick={() => {
-                              const currentBanners = getActiveConfig().bannerImages || []
+                              const currentBanners = getFormArray('bannerImages', [])
                               if (currentBanners.length >= 10) {
                                 toast.warning('Maximum Banners Reached', 'Maximum 10 banners allowed')
                               } else {
-                                const updatedBanners = [...currentBanners, getActiveConfig().newBannerUrl]
+                                const updatedBanners = [...currentBanners, getFormValue('newBannerUrl', '')]
                                 updateActiveConfig({ bannerImages: updatedBanners, newBannerUrl: '' })
                               }
                             }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                            disabled={isEditingCustom === null}
+                            className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors ${isEditingCustom === null ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             Add
                           </button>
                         </div>
                         
                         {/* Banner Preview */}
-                        {getActiveConfig().bannerImages && getActiveConfig().bannerImages.length > 0 && (
+                        {getFormArray('bannerImages').length > 0 && (
                           <div className="relative">
                             <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
-                              {getActiveConfig().bannerImages.map((bannerUrl: string, index: number) => {
+                              {getFormArray('bannerImages').map((bannerUrl: string, index: number) => {
                                 const actualIndex = currentBannerIndex + index
                                 return (
                                   <div key={actualIndex} className="relative bg-gray-100 rounded-lg overflow-hidden">
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        const updatedBanners = getActiveConfig().bannerImages.filter((_: any, i: number) => i !== actualIndex)
+                                        const updatedBanners = getFormArray('bannerImages').filter((_: any, i: number) => i !== actualIndex)
                                         updateActiveConfig({ bannerImages: updatedBanners })
                                         // Reset carousel if we removed from current view
                                         if (currentBannerIndex >= updatedBanners.length) {
                                           setCurrentBannerIndex(Math.max(0, updatedBanners.length - 3))
                                         }
                                       }}
-                                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors"
+                                      disabled={isEditingCustom === null}
+                                      className={`absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors ${isEditingCustom === null ? 'opacity-50 cursor-not-allowed' : ''}`}
                                       title="Remove banner"
                                     >
                                       ×
@@ -1654,12 +1670,13 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Video URL (Optional)</label>
                         <input
                           type="url"
-                          value={getActiveConfig().videoUrl}
+                          value={getFormValue('videoUrl', '')}
                           onChange={(e) => updateActiveConfig({ videoUrl: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          disabled={isEditingCustom === null}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
                           placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
                         />
-                        {getActiveConfig().videoUrl && (
+                        {getFormValue('videoUrl') && (
                           <p className="text-xs text-green-600 mt-1">✓ Video URL added - will be embedded in email</p>
                         )}
                       </div>
@@ -1676,9 +1693,10 @@ function EmailConfigPageContent() {
                       <label className="flex items-center space-x-3">
                         <input
                           type="checkbox"
-                          checked={getActiveConfig().enableLocationBasedAffiliates}
+                          checked={getFormBoolean('enableLocationBasedAffiliates', false)}
                           onChange={(e) => updateActiveConfig({ enableLocationBasedAffiliates: e.target.checked })}
-                          className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                          disabled={isEditingCustom === null}
+                          className={`w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 ${isEditingCustom === null ? 'opacity-50' : ''}`}
                         />
                         <span className="text-sm font-medium text-orange-900">
                           Enable Featured Partners Section
@@ -1689,7 +1707,7 @@ function EmailConfigPageContent() {
                       </p>
                     </div>
 
-                    {getActiveConfig().enableLocationBasedAffiliates && (
+                    {getFormBoolean('enableLocationBasedAffiliates') && (
                       <div className="space-y-4">
                         {/* Custom Affiliate Message */}
                         <div>
@@ -1697,11 +1715,12 @@ function EmailConfigPageContent() {
                             Partner Introduction Message
                           </label>
                           <textarea
-                            value={getActiveConfig().customAffiliateMessage}
+                            value={getFormValue('customAffiliateMessage', '')}
                             onChange={(e) => updateActiveConfig({ customAffiliateMessage: e.target.value })}
+                            disabled={isEditingCustom === null}
                             placeholder="Enter a custom message to introduce your featured partners..."
                             rows={2}
-                            className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            className={`w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
                           />
                           <p className="text-xs text-orange-600 mt-1">
                             This message appears below the partner listings
