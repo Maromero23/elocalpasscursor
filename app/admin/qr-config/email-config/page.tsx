@@ -282,8 +282,14 @@ function EmailConfigPageContent() {
             emailSecondaryColor: firstTemplate.emailConfig.emailSecondaryColor,
             emailBackgroundColor: firstTemplate.emailConfig.emailBackgroundColor
           })
-          // Force preview re-render after loading
-          setPreviewKey(prev => prev + 1)
+          
+          // Force immediate HTML regeneration
+          setTimeout(() => {
+            const html = generateCustomEmailHtml({...firstTemplate.emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
+            setCustomPreviewHtml(html)
+            console.log('🎨 Custom preview HTML force-regenerated after template load')
+            setPreviewKey(prev => prev + 1)
+          }, 50)
         } else {
           console.log('❌ No emailConfig found in first saved template, keeping default custom config')
         }
@@ -296,6 +302,13 @@ function EmailConfigPageContent() {
   }
 
   useEffect(() => {
+    // Generate initial HTML with current state
+    const customHtml = generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
+    const defaultHtml = generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'})
+    setCustomPreviewHtml(customHtml)
+    setDefaultPreviewHtml(defaultHtml)
+    console.log('🎨 Initial preview HTML generated')
+    
     // Check for preview mode first
     const urlParams = new URLSearchParams(window.location.search)
     const mode = urlParams.get('mode')
@@ -437,6 +450,13 @@ function EmailConfigPageContent() {
         if (defaultTemplate.emailConfig) {
           // Use the full emailConfig structure from database
           setDefaultEmailConfig(defaultTemplate.emailConfig)
+          
+          // Force immediate HTML regeneration for default template
+          setTimeout(() => {
+            const html = generateCustomEmailHtml({...defaultTemplate.emailConfig, debugLabel: 'DEFAULT_PREVIEW'})
+            setDefaultPreviewHtml(html)
+            console.log('🎨 Default preview HTML force-regenerated after template load')
+          }, 100)
         } else {
           // Create a complete emailConfig structure from basic template fields
           const completeEmailConfig = {
