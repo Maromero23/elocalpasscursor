@@ -949,7 +949,7 @@ function EmailConfigPageContent() {
   // Function to get the active config values
   const getActiveConfig = () => {
     const activeConfig = isEditingCustom ? emailConfig : (defaultEmailConfig || emailConfig)
-    console.log('🔍 getActiveConfig:', { isEditingCustom, activeConfig: activeConfig.emailHeaderText })
+    console.log('🔍 getActiveConfig:', { isEditingCustom, activeConfig })
     return activeConfig
   }
 
