@@ -953,6 +953,61 @@ function EmailConfigPageContent() {
     return activeConfig
   }
 
+  // Generate custom email HTML for preview
+  const generateCustomEmailHtml = (config: any) => {
+    if (config.useDefaultEmail) {
+      return 'USE_DEFAULT_TEMPLATE'
+    }
+    
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to eLocalPass</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background-color: ${config.emailBackgroundColor}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .header { background-color: ${config.emailPrimaryColor}; padding: 24px; text-align: center; }
+        .header h1 { color: ${config.emailHeaderTextColor}; font-family: ${config.emailHeaderFontFamily}; font-size: ${config.emailHeaderFontSize}px; font-weight: bold; margin: 0; }
+        .content { padding: 24px; }
+        .message { text-align: center; margin-bottom: 24px; }
+        .message p { color: ${config.emailMessageTextColor}; font-family: ${config.emailMessageFontFamily}; font-size: ${config.emailMessageFontSize}px; line-height: 1.5; margin: 0; }
+        .cta-button { text-align: center; margin: 24px 0; }
+        .cta-button a { background-color: ${config.emailCtaBackgroundColor}; color: ${config.emailCtaTextColor}; font-family: ${config.emailCtaFontFamily}; font-size: ${config.emailCtaFontSize}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
+        .footer { background-color: #f9fafb; padding: 20px; text-align: center; }
+        .footer p { color: ${config.emailFooterTextColor}; font-family: ${config.emailFooterFontFamily}; font-size: ${config.emailFooterFontSize}px; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>${config.emailHeaderText}</h1>
+        </div>
+        
+        <div class="content">
+            <div class="message">
+                <p>${config.emailMessageText}</p>
+            </div>
+            
+            <div class="cta-button">
+                <a href="{customerPortalUrl}">${config.emailCtaText}</a>
+            </div>
+            
+            <div class="message">
+                <p style="color: ${config.emailNoticeTextColor}; font-size: ${config.emailNoticeFontSize}px; font-weight: 500;">${config.emailNoticeText}</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>${config.emailFooterText}</p>
+        </div>
+    </div>
+</body>
+</html>`
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -1515,7 +1570,12 @@ function EmailConfigPageContent() {
                 </p>
               </div>
               <div className="p-4">
-                <EmailTemplatePreview emailConfig={isEditingCustom ? getActiveConfig() : emailConfig} />
+                <div 
+                  className="border rounded-lg overflow-hidden"
+                  dangerouslySetInnerHTML={{ 
+                    __html: generateCustomEmailHtml(isEditingCustom ? getActiveConfig() : emailConfig) 
+                  }} 
+                />
               </div>
             </div>
 
@@ -1539,7 +1599,12 @@ function EmailConfigPageContent() {
               </div>
               <div className="p-4">
                 {defaultEmailConfig ? (
-                  <EmailTemplatePreview emailConfig={!isEditingCustom ? getActiveConfig() : defaultEmailConfig} />
+                  <div 
+                    className="border rounded-lg overflow-hidden"
+                    dangerouslySetInnerHTML={{ 
+                      __html: generateCustomEmailHtml(!isEditingCustom ? getActiveConfig() : defaultEmailConfig) 
+                    }} 
+                  />
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     <p>No default template loaded</p>
