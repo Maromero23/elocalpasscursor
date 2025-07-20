@@ -63,20 +63,32 @@ export async function GET(
             const { sendEmail } = await import('@/lib/email-service')
             const { formatDate } = await import('@/lib/translations')
             
-            // Get default template (NEWEST one if multiple exist)
-            const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
-              where: { isDefault: true },
-              orderBy: { createdAt: 'desc' } // Get the newest default template
+            // Get PayPal-specific template (NEWEST one if multiple exist)
+            const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
+              where: { 
+                name: {
+                  contains: 'Welcome Email Paypal 2323'
+                }
+              },
+              orderBy: { createdAt: 'desc' } // Always get the latest copy
             })
             
-            if (defaultTemplate && defaultTemplate.customHTML) {
-              console.log('📧 Using branded default template')
+            console.log('📧 PayPal template search result:', {
+              found: !!paypalTemplate,
+              name: paypalTemplate?.name,
+              id: paypalTemplate?.id,
+              createdAt: paypalTemplate?.createdAt,
+              hasCustomHTML: !!paypalTemplate?.customHTML
+            })
+            
+                         if (paypalTemplate && paypalTemplate.customHTML) {
+               console.log('📧 Using PayPal-specific branded template')
               
               const formattedExpirationDate = formatDate(existingQR.expiresAt, 'en')
               const magicLinkUrl = `https://elocalpasscursor.vercel.app/customer/access`
               
               // Replace variables in template
-              const emailHtml = defaultTemplate.customHTML
+              const emailHtml = paypalTemplate.customHTML
                 .replace(/\{customerName\}/g, order.customerName)
                 .replace(/\{qrCode\}/g, existingQR.code)
                 .replace(/\{guests\}/g, order.guests.toString())
@@ -85,7 +97,7 @@ export async function GET(
                 .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
                 .replace(/\{magicLink\}/g, magicLinkUrl)
               
-              const emailSubject = defaultTemplate.subject
+              const emailSubject = paypalTemplate.subject
                 .replace(/\{customerName\}/g, order.customerName)
                 .replace(/\{qrCode\}/g, existingQR.code)
               
@@ -106,8 +118,8 @@ export async function GET(
                 })
                 console.log('📊 Analytics updated - email marked as sent')
               }
-            } else {
-              console.log('⚠️ No default template found')
+                         } else {
+               console.log('⚠️ No PayPal template found - falling back to generic template')
             }
           } catch (emailError) {
             console.error('❌ Error sending welcome email:', emailError)
