@@ -50,6 +50,58 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
   setFormData
 }) => {
   const InputComponent = isTextarea ? 'textarea' : 'input'
+  
+  // Handle null formData gracefully
+  if (!formData) {
+    return (
+      <div className="space-y-3">
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Text Content</label>
+            <InputComponent
+              type={isTextarea ? undefined : "text"}
+              value=""
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+              rows={isTextarea ? rows : undefined}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Color</label>
+              <input
+                type="color"
+                value="#000000"
+                disabled
+                className="w-full h-10 rounded-md border border-gray-300 bg-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Font</label>
+              <select
+                value="Arial, sans-serif"
+                disabled
+                className="w-full px-2 py-2 border border-gray-300 rounded-md text-xs bg-gray-100 text-gray-500"
+              >
+                <option>Arial</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Size</label>
+              <select
+                value="16"
+                disabled
+                className="w-full px-2 py-2 border border-gray-300 rounded-md text-xs bg-gray-100 text-gray-500"
+              >
+                <option>16px</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">
@@ -194,7 +246,7 @@ function EmailConfigPageContent() {
     companyName: 'ELocalPass',
     defaultWelcomeMessage: 'Welcome to your local pass experience!'
   })
-  const [isEditingCustom, setIsEditingCustom] = useState(true) // true = editing custom, false = editing default
+  const [isEditingCustom, setIsEditingCustom] = useState<boolean | null>(null) // null = none selected, true = editing custom, false = editing default
   const [previewKey, setPreviewKey] = useState(0) // Force preview re-render
   const [customPreviewHtml, setCustomPreviewHtml] = useState('')
   const [defaultPreviewHtml, setDefaultPreviewHtml] = useState('')
@@ -1204,9 +1256,19 @@ function EmailConfigPageContent() {
 
   // Function to get the active config values
   const getActiveConfig = () => {
+    if (isEditingCustom === null) {
+      console.log('🔍 getActiveConfig: No edit mode selected')
+      return null
+    }
     const activeConfig = isEditingCustom ? emailConfig : defaultEmailConfig
     console.log('🔍 getActiveConfig:', { isEditingCustom, activeConfig })
     return activeConfig
+  }
+
+  // Helper function to safely get form values
+  const getFormValue = (key: string, defaultValue: string = '') => {
+    const config = getActiveConfig()
+    return config ? config[key] || defaultValue : defaultValue
   }
 
   // Generate custom email HTML for preview
@@ -1320,18 +1382,71 @@ function EmailConfigPageContent() {
           </div>
         </div>
 
+        {/* Edit Mode Toggle - Moved to top */}
+        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-8">
+          <h4 className="text-lg font-medium text-gray-900 mb-4">✏️ Edit Mode Selection</h4>
+          <div className="flex space-x-4">
+            <button
+              type="button"
+              onClick={() => setIsEditingCustom(true)}
+              className={`px-6 py-3 rounded-md text-sm font-medium transition-colors ${
+                isEditingCustom === true 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Edit Custom Email
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEditingCustom(false)}
+              className={`px-6 py-3 rounded-md text-sm font-medium transition-colors ${
+                isEditingCustom === false 
+                  ? 'bg-green-600 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Edit Default Email
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEditingCustom(null)}
+              className={`px-6 py-3 rounded-md text-sm font-medium transition-colors ${
+                isEditingCustom === null 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              View Only
+            </button>
+          </div>
+          <p className="text-sm text-gray-600 mt-3">
+            {isEditingCustom === true 
+              ? 'Form changes will update the Custom Email preview'
+              : isEditingCustom === false
+              ? 'Form changes will update the Default Email preview'
+              : 'No edit mode selected - form is disabled'
+            }
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Configuration Panel */}
           <div className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               
               {/* Button 4 - Welcome Email Configuration */}
-              <div className="bg-indigo-50 p-6 rounded-lg border-2 border-indigo-200">
+              <div className={`p-6 rounded-lg border-2 ${isEditingCustom === null ? 'bg-gray-50 border-gray-200' : 'bg-indigo-50 border-indigo-200'}`}>
                 <h2 className="text-xl font-bold text-indigo-900 mb-4">📧 Welcome Email Configuration</h2>
-                <p className="text-indigo-700 text-sm mb-4">Configure both custom and default email templates. Use the edit mode toggle to switch between editing custom or default templates.</p>
+                <p className="text-indigo-700 text-sm mb-4">
+                  {isEditingCustom === null 
+                    ? 'Select an edit mode above to configure email templates'
+                    : 'Configure both custom and default email templates. Use the edit mode toggle to switch between editing custom or default templates.'
+                  }
+                </p>
                 
                 {/* Email Configuration (Same for both Custom and Default) */}
-                <div className="space-y-6">
+                <div className={`space-y-6 ${isEditingCustom === null ? 'opacity-50 pointer-events-none' : ''}`}>
                   
                   {/* Email Header */}
                   <TextWithTypography
@@ -1374,9 +1489,10 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Button Background Color</label>
                         <input
                           type="color"
-                          value={getActiveConfig().emailCtaBackgroundColor}
+                          value={getFormValue('emailCtaBackgroundColor', '#3b82f6')}
                           onChange={(e) => updateActiveConfig({ emailCtaBackgroundColor: e.target.value })}
-                          className="w-full h-12 rounded-md border border-gray-300"
+                          disabled={isEditingCustom === null}
+                          className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
                         />
                       </div>
                     </div>
@@ -1417,9 +1533,10 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Header Background Color</label>
                         <input
                           type="color"
-                          value={getActiveConfig().emailPrimaryColor}
+                          value={getFormValue('emailPrimaryColor', '#3b82f6')}
                           onChange={(e) => updateActiveConfig({ emailPrimaryColor: e.target.value })}
-                          className="w-full h-12 rounded-md border border-gray-300"
+                          disabled={isEditingCustom === null}
+                          className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
                         />
                         <p className="text-xs text-gray-500 mt-1">Main header background color</p>
                       </div>
@@ -1427,9 +1544,10 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
                         <input
                           type="color"
-                          value={getActiveConfig().emailSecondaryColor}
+                          value={getFormValue('emailSecondaryColor', '#f97316')}
                           onChange={(e) => updateActiveConfig({ emailSecondaryColor: e.target.value })}
-                          className="w-full h-12 rounded-md border border-gray-300"
+                          disabled={isEditingCustom === null}
+                          className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
                         />
                         <p className="text-xs text-gray-500 mt-1">Featured partners & accents</p>
                       </div>
@@ -1437,9 +1555,10 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Email Background</label>
                         <input
                           type="color"
-                          value={getActiveConfig().emailBackgroundColor}
+                          value={getFormValue('emailBackgroundColor', '#ffffff')}
                           onChange={(e) => updateActiveConfig({ emailBackgroundColor: e.target.value })}
-                          className="w-full h-12 rounded-md border border-gray-300"
+                          disabled={isEditingCustom === null}
+                          className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
                         />
                         <p className="text-xs text-gray-500 mt-1">Overall email background</p>
                       </div>
@@ -1783,9 +1902,9 @@ function EmailConfigPageContent() {
                     🎨 Custom Email Template{currentLoadedTemplateName ? `: ${currentLoadedTemplateName}` : ''}
                   </h3>
                   <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${isEditingCustom ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    <div className={`w-3 h-3 rounded-full ${isEditingCustom === true ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                     <span className="text-sm text-blue-700">
-                      {isEditingCustom ? 'Active Editing' : 'View Only'}
+                      {isEditingCustom === true ? 'Active Editing' : 'View Only'}
                     </span>
                   </div>
                 </div>
@@ -1815,9 +1934,9 @@ function EmailConfigPageContent() {
                     📋 System Default Template
                   </h3>
                   <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${!isEditingCustom ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    <div className={`w-3 h-3 rounded-full ${isEditingCustom === false ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                     <span className="text-sm text-green-700">
-                      {!isEditingCustom ? 'Active Editing' : 'View Only'}
+                      {isEditingCustom === false ? 'Active Editing' : 'View Only'}
                     </span>
                   </div>
                 </div>
@@ -1834,41 +1953,6 @@ function EmailConfigPageContent() {
                   }} 
                 />
               </div>
-            </div>
-
-            {/* Edit Mode Toggle */}
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">✏️ Edit Mode</h4>
-              <div className="flex space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setIsEditingCustom(true)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isEditingCustom 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Edit Custom Email
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingCustom(false)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    !isEditingCustom 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Edit Default Email
-                </button>
-              </div>
-              <p className="text-xs text-gray-600 mt-2">
-                {isEditingCustom 
-                  ? 'Form changes will update the Custom Email preview above'
-                  : 'Form changes will update the Default Email preview above'
-                }
-              </p>
             </div>
           </div>
         </div>
