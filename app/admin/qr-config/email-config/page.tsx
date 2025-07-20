@@ -1332,62 +1332,7 @@ function EmailConfigPageContent() {
                 </div>
               </div>
 
-              {/* Featured Partners Configuration */}
-              <div className="bg-orange-50 p-6 rounded-lg border-2 border-orange-200">
-                <h2 className="text-xl font-bold text-orange-900 mb-4">🏪 Featured Partners Configuration</h2>
-                <p className="text-orange-700 text-sm mb-4">Configure which local partners appear in your welcome emails.</p>
-                
-                {/* Enable/Disable Featured Partners */}
-                <div className="mb-6">
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={emailConfig.enableLocationBasedAffiliates}
-                      onChange={(e) => setEmailConfig({...emailConfig, enableLocationBasedAffiliates: e.target.checked })}
-                      className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                    />
-                    <span className="text-sm font-medium text-orange-900">
-                      Enable Featured Partners Section
-                    </span>
-                  </label>
-                  <p className="text-xs text-orange-600 mt-1 ml-7">
-                    Show local business partners and affiliate recommendations in the email
-                  </p>
-                </div>
 
-                {emailConfig.enableLocationBasedAffiliates && (
-                  <div className="space-y-4">
-                    {/* Custom Affiliate Message */}
-                    <div>
-                      <label className="block text-sm font-medium text-orange-700 mb-2">
-                        Partner Introduction Message
-                      </label>
-                      <textarea
-                        value={emailConfig.customAffiliateMessage}
-                        onChange={(e) => setEmailConfig({...emailConfig, customAffiliateMessage: e.target.value })}
-                        placeholder="Enter a custom message to introduce your featured partners..."
-                        rows={2}
-                        className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      />
-                      <p className="text-xs text-orange-600 mt-1">
-                        This message appears below the partner listings
-                      </p>
-                    </div>
-
-                    {/* Partner Management Note */}
-                    <div className="bg-orange-100 p-4 rounded-lg border border-orange-200">
-                      <h4 className="text-sm font-medium text-orange-900 mb-2">📋 Partner Management</h4>
-                      <p className="text-sm text-orange-700 mb-2">
-                        Featured partners are automatically populated based on the recipient's location. 
-                        Currently showing sample partners for preview.
-                      </p>
-                      <p className="text-xs text-orange-600">
-                        💡 In the full system, this will integrate with your partner database and show relevant local businesses based on the QR recipient's city/region.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
 
               {/* Email Template Management */}
               <div className="bg-green-50 p-6 rounded-lg border-2 border-green-200">
