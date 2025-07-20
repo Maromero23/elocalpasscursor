@@ -2025,12 +2025,11 @@ function EmailConfigPageContent() {
                 </p>
               </div>
               <div className={`p-4 ${isEditingCustom === false ? 'opacity-50' : ''}`}>
-                <div 
+                <iframe 
                   key={`custom-${previewKey}-${emailConfig.emailPrimaryColor}-${emailConfig.emailCtaBackgroundColor}`}
-                  className="border rounded-lg overflow-hidden"
-                  dangerouslySetInnerHTML={{ 
-                    __html: customPreviewHtml 
-                  }} 
+                  className="w-full h-96 border rounded-lg"
+                  srcDoc={customPreviewHtml || generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'})}
+                  title="Custom Email Preview"
                 />
               </div>
             </div>
@@ -2054,12 +2053,11 @@ function EmailConfigPageContent() {
                 </p>
               </div>
               <div className={`p-4 ${isEditingCustom === true ? 'opacity-50' : ''}`}>
-                <div 
+                <iframe 
                   key={`default-${previewKey}-${defaultEmailConfig.emailPrimaryColor}-${defaultEmailConfig.emailCtaBackgroundColor}`}
-                  className="border rounded-lg overflow-hidden"
-                  dangerouslySetInnerHTML={{ 
-                    __html: defaultPreviewHtml 
-                  }} 
+                  className="w-full h-96 border rounded-lg"
+                  srcDoc={defaultPreviewHtml || generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'})}
+                  title="Default Email Preview"
                 />
               </div>
             </div>
