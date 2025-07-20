@@ -1567,12 +1567,15 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Button Background Color</label>
                         <input
                           type="color"
-                          value={getActiveConfig()?.emailCtaBackgroundColor || '#3b82f6'}
+                          value={isEditingCustom ? emailConfig.emailCtaBackgroundColor || '#3b82f6' : defaultEmailConfig.emailCtaBackgroundColor || '#3b82f6'}
                           onChange={(e) => {
-                            console.log('🎨 Button color changed to:', e.target.value)
-                            console.log('🎨 Current config before update:', getActiveConfig())
-                            updateActiveConfig({ emailCtaBackgroundColor: e.target.value })
-                            console.log('🎨 Button color update sent to updateActiveConfig')
+                            const newValue = e.target.value
+                            console.log('🎨 Button color changed to:', newValue)
+                            if (isEditingCustom) {
+                              setEmailConfig((prev: any) => ({ ...prev, emailCtaBackgroundColor: newValue }))
+                            } else {
+                              setDefaultEmailConfig((prev: any) => ({ ...prev, emailCtaBackgroundColor: newValue }))
+                            }
                           }}
                           disabled={isEditingCustom === null}
                           className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
@@ -1616,12 +1619,15 @@ function EmailConfigPageContent() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Header Background Color</label>
                         <input
                           type="color"
-                          value={getActiveConfig()?.emailPrimaryColor || '#3b82f6'}
+                          value={isEditingCustom ? emailConfig.emailPrimaryColor || '#3b82f6' : defaultEmailConfig.emailPrimaryColor || '#3b82f6'}
                           onChange={(e) => {
-                            console.log('🎨 Header color changed to:', e.target.value)
-                            console.log('🎨 Current config before update:', getActiveConfig())
-                            updateActiveConfig({ emailPrimaryColor: e.target.value })
-                            console.log('🎨 Header color update sent to updateActiveConfig')
+                            const newValue = e.target.value
+                            console.log('🎨 Header color changed to:', newValue)
+                            if (isEditingCustom) {
+                              setEmailConfig((prev: any) => ({ ...prev, emailPrimaryColor: newValue }))
+                            } else {
+                              setDefaultEmailConfig((prev: any) => ({ ...prev, emailPrimaryColor: newValue }))
+                            }
                           }}
                           disabled={isEditingCustom === null}
                           className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
