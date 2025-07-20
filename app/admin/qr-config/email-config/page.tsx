@@ -1446,7 +1446,7 @@ function EmailConfigPageContent() {
                 </p>
               </div>
               <div className="p-4">
-                <EmailTemplatePreview emailConfig={emailConfig} />
+                <EmailTemplatePreview emailConfig={isEditingCustom ? getActiveConfig() : emailConfig} />
               </div>
             </div>
 
@@ -1470,7 +1470,7 @@ function EmailConfigPageContent() {
               </div>
               <div className="p-4">
                 {defaultEmailConfig ? (
-                  <EmailTemplatePreview emailConfig={defaultEmailConfig} />
+                  <EmailTemplatePreview emailConfig={!isEditingCustom ? getActiveConfig() : defaultEmailConfig} />
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     <p>No default template loaded</p>
