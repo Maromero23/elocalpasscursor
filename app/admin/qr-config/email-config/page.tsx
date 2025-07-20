@@ -955,10 +955,7 @@ function EmailConfigPageContent() {
 
   // Generate custom email HTML for preview
   const generateCustomEmailHtml = (config: any) => {
-    if (config.useDefaultEmail) {
-      return 'USE_DEFAULT_TEMPLATE'
-    }
-    
+    // Always generate HTML for preview, regardless of useDefaultEmail setting
     return `
 <!DOCTYPE html>
 <html lang="en">
@@ -968,40 +965,40 @@ function EmailConfigPageContent() {
     <title>Welcome to eLocalPass</title>
     <style>
         body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background-color: ${config.emailBackgroundColor}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        .header { background-color: ${config.emailPrimaryColor}; padding: 24px; text-align: center; }
-        .header h1 { color: ${config.emailHeaderTextColor}; font-family: ${config.emailHeaderFontFamily}; font-size: ${config.emailHeaderFontSize}px; font-weight: bold; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; background-color: ${config.emailBackgroundColor || '#ffffff'}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .header { background-color: ${config.emailPrimaryColor || '#3b82f6'}; padding: 24px; text-align: center; }
+        .header h1 { color: ${config.emailHeaderTextColor || '#ffffff'}; font-family: ${config.emailHeaderFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailHeaderFontSize || '28'}px; font-weight: bold; margin: 0; }
         .content { padding: 24px; }
         .message { text-align: center; margin-bottom: 24px; }
-        .message p { color: ${config.emailMessageTextColor}; font-family: ${config.emailMessageFontFamily}; font-size: ${config.emailMessageFontSize}px; line-height: 1.5; margin: 0; }
+        .message p { color: ${config.emailMessageTextColor || '#374151'}; font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailMessageFontSize || '16'}px; line-height: 1.5; margin: 0; }
         .cta-button { text-align: center; margin: 24px 0; }
-        .cta-button a { background-color: ${config.emailCtaBackgroundColor}; color: ${config.emailCtaTextColor}; font-family: ${config.emailCtaFontFamily}; font-size: ${config.emailCtaFontSize}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
+        .cta-button a { background-color: ${config.emailCtaBackgroundColor || '#3b82f6'}; color: ${config.emailCtaTextColor || '#ffffff'}; font-family: ${config.emailCtaFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailCtaFontSize || '18'}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
         .footer { background-color: #f9fafb; padding: 20px; text-align: center; }
-        .footer p { color: ${config.emailFooterTextColor}; font-family: ${config.emailFooterFontFamily}; font-size: ${config.emailFooterFontSize}px; margin: 0; }
+        .footer p { color: ${config.emailFooterTextColor || '#6b7280'}; font-family: ${config.emailFooterFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailFooterFontSize || '14'}px; margin: 0; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>${config.emailHeaderText}</h1>
+            <h1>${config.emailHeaderText || 'Welcome to eLocalPass!'}</h1>
         </div>
         
         <div class="content">
             <div class="message">
-                <p>${config.emailMessageText}</p>
+                <p>${config.emailMessageText || 'Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass'}</p>
             </div>
             
             <div class="cta-button">
-                <a href="{customerPortalUrl}">${config.emailCtaText}</a>
+                <a href="{customerPortalUrl}">${config.emailCtaText || 'Create Your Account & Access Your eLocalPass'}</a>
             </div>
             
             <div class="message">
-                <p style="color: ${config.emailNoticeTextColor}; font-size: ${config.emailNoticeFontSize}px; font-weight: 500;">${config.emailNoticeText}</p>
+                <p style="color: ${config.emailNoticeTextColor || '#dc2626'}; font-size: ${config.emailNoticeFontSize || '14'}px; font-weight: 500;">${config.emailNoticeText || 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.'}</p>
             </div>
         </div>
         
         <div class="footer">
-            <p>${config.emailFooterText}</p>
+            <p>${config.emailFooterText || 'Enjoy hundreds of discounts throughout your destination! Click below and discover all the benefits.'}</p>
         </div>
     </div>
 </body>
