@@ -308,6 +308,14 @@ function EmailConfigPageContent() {
     setCustomPreviewHtml(customHtml)
     setDefaultPreviewHtml(defaultHtml)
     console.log('🎨 Initial preview HTML generated')
+    console.log('🔍 Custom emailConfig colors:', {
+      emailPrimaryColor: emailConfig.emailPrimaryColor,
+      emailSecondaryColor: emailConfig.emailSecondaryColor
+    })
+    console.log('🔍 Default emailConfig colors:', {
+      emailPrimaryColor: defaultEmailConfig.emailPrimaryColor,
+      emailSecondaryColor: defaultEmailConfig.emailSecondaryColor
+    })
     
     // Check for preview mode first
     const urlParams = new URLSearchParams(window.location.search)
