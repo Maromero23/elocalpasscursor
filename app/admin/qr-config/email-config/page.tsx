@@ -309,54 +309,73 @@ function EmailConfigPageContent() {
         
         console.log('✅ DEFAULT TEMPLATE LOADED FROM DATABASE:', defaultTemplate.name)
         
-        // Convert database template back to emailConfig format
+        // Convert database template back to emailConfig format with FULL structure
         if (defaultTemplate.emailConfig) {
-          setEmailConfig(defaultTemplate.emailConfig)
+          // Use the full emailConfig structure from database
           setDefaultEmailConfig(defaultTemplate.emailConfig)
         } else {
-          // Fallback: create emailConfig from template fields
-          const emailConfig = {
+          // Create a complete emailConfig structure from basic template fields
+          const completeEmailConfig = {
             useDefaultEmail: true,
+            
+            // Email Header
             emailHeaderText: defaultTemplate.headerText || 'Welcome to eLocalPass!',
             emailHeaderColor: defaultTemplate.primaryColor || '#3b82f6',
             emailHeaderTextColor: '#ffffff',
             emailHeaderFontFamily: 'Arial, sans-serif',
             emailHeaderFontSize: '28',
+            
+            // Main Message
             emailMessageText: defaultTemplate.bodyText || 'Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass',
             emailMessageTextColor: '#374151',
             emailMessageFontFamily: 'Arial, sans-serif',
             emailMessageFontSize: '16',
+            
+            // CTA Button
             emailCtaText: defaultTemplate.buttonText || 'View Your Pass',
             emailCtaTextColor: '#ffffff',
             emailCtaFontFamily: 'Arial, sans-serif',
             emailCtaFontSize: '18',
             emailCtaBackgroundColor: defaultTemplate.buttonColor || '#3b82f6',
+            
+            // Important Notice
             emailNoticeText: 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.',
             emailNoticeTextColor: '#dc2626',
             emailNoticeFontFamily: 'Arial, sans-serif',
             emailNoticeFontSize: '14',
+            
+            // Footer Message
             emailFooterText: defaultTemplate.footerText || 'Enjoy hundreds of discounts throughout your destination! Click below and discover all the benefits.',
             emailFooterTextColor: '#6b7280',
             emailFooterFontFamily: 'Arial, sans-serif',
             emailFooterFontSize: '14',
+            
+            // Brand Colors
             emailPrimaryColor: defaultTemplate.primaryColor || '#3b82f6',
             emailSecondaryColor: '#f97316',
             emailBackgroundColor: defaultTemplate.backgroundColor || '#ffffff',
-            logoUrl: '',
+            
+            // Media Content
+            logoUrl: defaultTemplate.logoUrl || '',
             bannerImages: [] as string[],
             newBannerUrl: '',
             videoUrl: '',
+            
+            // Affiliate Configuration
             enableLocationBasedAffiliates: true,
             selectedAffiliates: [],
             customAffiliateMessage: 'Discover amazing local discounts at these partner establishments:',
+            
+            // Advanced Options
             includeQRInEmail: false,
             emailAccountCreationUrl: 'https://elocalpass.com/create-account',
             customCssStyles: '',
+            
+            // Default Template Fields
             companyName: 'ELocalPass',
             defaultWelcomeMessage: 'Welcome to your local pass experience!'
           }
-          setEmailConfig(emailConfig)
-          setDefaultEmailConfig(emailConfig)
+          setDefaultEmailConfig(completeEmailConfig)
         }
         
         toast.success('Default Template Loaded', 'Default template loaded from database successfully!')
@@ -937,376 +956,268 @@ function EmailConfigPageContent() {
                   </div>
                 </div>
 
-                {/* Default Email Template Configuration */}
-                {emailConfig.useDefaultEmail && (
-                  <div className="space-y-6">
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <h3 className="font-medium text-gray-900 mb-2">Default Email Template Preview</h3>
-                      <p className="text-sm text-gray-600 mb-4">
-                        This is the standard ELocalPass welcome email template. You can customize the basic text content and branding elements.
-                      </p>
-                      
-                      {/* Basic customizations for default template */}
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Company/Seller Name</label>
-                          <input
-                            type="text"
-                            value={getActiveConfig().companyName || 'ELocalPass'}
-                            onChange={(e) => updateActiveConfig({ companyName: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder="Enter company/seller name"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Welcome Message</label>
-                          <textarea
-                            value={getActiveConfig().defaultWelcomeMessage || 'Welcome to your local pass experience!'}
-                            onChange={(e) => updateActiveConfig({ defaultWelcomeMessage: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            rows={3}
-                            placeholder="Enter welcome message"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Custom Email Configuration */}
-                {!emailConfig.useDefaultEmail && (
-                  <div className="space-y-6">
-                    
-                    {/* Email Header */}
-                    <TextWithTypography
-                      label="Email Header Text"
-                      textKey="emailHeaderText"
-                      colorKey="emailHeaderTextColor"
-                      fontFamilyKey="emailHeaderFontFamily"
-                      fontSizeKey="emailHeaderFontSize"
-                      formData={emailConfig}
-                      setFormData={setEmailConfig}
-                    />
-                    
-                    {/* Main Message */}
-                    <TextWithTypography
-                      label="Main Welcome Message"
-                      textKey="emailMessageText"
-                      colorKey="emailMessageTextColor"
-                      fontFamilyKey="emailMessageFontFamily"
-                      fontSizeKey="emailMessageFontSize"
-                      isTextarea={true}
-                      rows={3}
-                      formData={emailConfig}
-                      setFormData={setEmailConfig}
-                    />
-                    
-                    {/* CTA Button */}
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="text-lg font-bold text-gray-900 mb-4">Call-to-Action Button</h3>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <TextWithTypography
-                          label="CTA Button Text"
-                          textKey="emailCtaText"
-                          colorKey="emailCtaTextColor"
-                          fontFamilyKey="emailCtaFontFamily"
-                          fontSizeKey="emailCtaFontSize"
-                          formData={emailConfig}
-                          setFormData={setEmailConfig}
+                {/* Email Configuration (Same for both Custom and Default) */}
+                <div className="space-y-6">
+                  
+                  {/* Email Header */}
+                  <TextWithTypography
+                    label="Email Header Text"
+                    textKey="emailHeaderText"
+                    colorKey="emailHeaderTextColor"
+                    fontFamilyKey="emailHeaderFontFamily"
+                    fontSizeKey="emailHeaderFontSize"
+                    formData={getActiveConfig()}
+                    setFormData={updateActiveConfig}
+                  />
+                  
+                  {/* Main Message */}
+                  <TextWithTypography
+                    label="Main Welcome Message"
+                    textKey="emailMessageText"
+                    colorKey="emailMessageTextColor"
+                    fontFamilyKey="emailMessageFontFamily"
+                    fontSizeKey="emailMessageFontSize"
+                    isTextarea={true}
+                    rows={3}
+                    formData={getActiveConfig()}
+                    setFormData={updateActiveConfig}
+                  />
+                  
+                  {/* CTA Button */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Call-to-Action Button</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <TextWithTypography
+                        label="CTA Button Text"
+                        textKey="emailCtaText"
+                        colorKey="emailCtaTextColor"
+                        fontFamilyKey="emailCtaFontFamily"
+                        fontSizeKey="emailCtaFontSize"
+                        formData={getActiveConfig()}
+                        setFormData={updateActiveConfig}
+                      />
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Button Background Color</label>
+                        <input
+                          type="color"
+                          value={getActiveConfig().emailCtaBackgroundColor}
+                          onChange={(e) => updateActiveConfig({ emailCtaBackgroundColor: e.target.value })}
+                          className="w-full h-12 rounded-md border border-gray-300"
                         />
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Button Background Color</label>
-                          <input
-                            type="color"
-                            value={getActiveConfig().emailCtaBackgroundColor}
-                            onChange={(e) => updateActiveConfig({ emailCtaBackgroundColor: e.target.value })}
-                            className="w-full h-12 rounded-md border border-gray-300"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Important Notice */}
-                    <TextWithTypography
-                      label="Important Notice Text"
-                      textKey="emailNoticeText"
-                      colorKey="emailNoticeTextColor"
-                      fontFamilyKey="emailNoticeFontFamily"
-                      fontSizeKey="emailNoticeFontSize"
-                      isTextarea={true}
-                      rows={2}
-                      formData={emailConfig}
-                      setFormData={setEmailConfig}
-                    />
-                    
-                    {/* Footer Message */}
-                    <TextWithTypography
-                      label="Footer Message"
-                      textKey="emailFooterText"
-                      colorKey="emailFooterTextColor"
-                      fontFamilyKey="emailFooterFontFamily"
-                      fontSizeKey="emailFooterFontSize"
-                      isTextarea={true}
-                      rows={2}
-                      formData={emailConfig}
-                      setFormData={setEmailConfig}
-                    />
-                    
-                    {/* Brand Colors */}
-                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border-2 border-blue-200">
-                      <h3 className="text-lg font-bold text-gray-900 mb-4">🎨 Brand Colors</h3>
-                      <p className="text-sm text-gray-600 mb-4">Customize the main brand colors used throughout the email template</p>
-                      <div className="grid md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Header Background Color</label>
-                          <input
-                            type="color"
-                            value={emailConfig.emailPrimaryColor}
-                            onChange={(e) => updateActiveConfig({ emailPrimaryColor: e.target.value })}
-                            className="w-full h-12 rounded-md border border-gray-300"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Main header background color</p>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
-                          <input
-                            type="color"
-                            value={emailConfig.emailSecondaryColor}
-                            onChange={(e) => updateActiveConfig({ emailSecondaryColor: e.target.value })}
-                            className="w-full h-12 rounded-md border border-gray-300"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Featured partners & accents</p>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Email Background</label>
-                          <input
-                            type="color"
-                            value={emailConfig.emailBackgroundColor}
-                            onChange={(e) => updateActiveConfig({ emailBackgroundColor: e.target.value })}
-                            className="w-full h-12 rounded-md border border-gray-300"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Overall email background</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Media Content */}
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="text-lg font-bold text-gray-900 mb-4">Media Content</h3>
-                      <div className="space-y-6">
-                        
-                        {/* Email Logo */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Email Logo URL</label>
-                          <input
-                            type="url"
-                            value={emailConfig.logoUrl}
-                            onChange={(e) => updateActiveConfig({ logoUrl: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="https://example.com/logo.png"
-                          />
-                          {emailConfig.logoUrl && (
-                            <div className="mt-2">
-                              <img 
-                                src={emailConfig.logoUrl} 
-                                alt="Logo preview" 
-                                className="h-16 w-auto border rounded"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none'
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Custom Banners */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Custom Email Banners</label>
-                          <p className="text-xs text-gray-500 mb-3">Add custom banner images for your email header or content sections</p>
-                          
-                          {/* Banner Input */}
-                          <div className="flex gap-2 mb-3">
-                            <input
-                              type="url"
-                              value={emailConfig.newBannerUrl || ''}
-                              onChange={(e) => updateActiveConfig({ newBannerUrl: e.target.value })}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="https://example.com/banner.jpg"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (emailConfig.newBannerUrl && emailConfig.newBannerUrl.trim()) {
-                                  const updatedBanners = [...(emailConfig.bannerImages || []), emailConfig.newBannerUrl.trim()]
-                                  if (updatedBanners.length > 10) {
-                                    toast.warning('Maximum Banners Reached', 'Maximum 10 banners allowed')
-                                  } else {
-                                    updateActiveConfig({ bannerImages: updatedBanners, newBannerUrl: '' })
-                                  }
-                                }
-                              }}
-                              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                            >
-                              Add Banner
-                            </button>
-                          </div>
-
-                          {/* Banner Preview Carousel */}
-                          {emailConfig.bannerImages && emailConfig.bannerImages.length > 0 && (
-                            <div className="space-y-3">
-                              {/* Banner Count and Limit Info */}
-                              <div className="flex justify-between items-center">
-                                <p className="text-sm text-gray-600">
-                                  {emailConfig.bannerImages.length} / 10 banners
-                                  {emailConfig.bannerImages.length > 3 && (
-                                    <span className="ml-2 text-xs text-blue-600">• Auto-rotating every 3s</span>
-                                  )}
-                                </p>
-                                {emailConfig.bannerImages.length > 3 && (
-                                  <div className="flex gap-1">
-                                    {Array.from({ length: Math.ceil(emailConfig.bannerImages.length / 3) }).map((_, groupIndex) => (
-                                      <button
-                                        key={groupIndex}
-                                        onClick={() => {
-                                          setCurrentBannerIndex(groupIndex * 3)
-                                          if (bannerIntervalId) clearInterval(bannerIntervalId)
-                                        }}
-                                        className={`w-2 h-2 rounded-full transition-colors ${
-                                          Math.floor(currentBannerIndex / 3) === groupIndex 
-                                            ? 'bg-blue-600' 
-                                            : 'bg-gray-300'
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Carousel Container */}
-                              <div className="relative overflow-hidden rounded-lg">
-                                <div className="grid grid-cols-3 gap-3">
-                                  {emailConfig.bannerImages
-                                    .slice(currentBannerIndex, currentBannerIndex + 3)
-                                    .concat(
-                                      emailConfig.bannerImages.length > currentBannerIndex + 3 
-                                        ? [] 
-                                        : Array(3 - (emailConfig.bannerImages.length - currentBannerIndex)).fill(null)
-                                    )
-                                    .slice(0, 3)
-                                    .map((bannerUrl, index) => {
-                                      const actualIndex = currentBannerIndex + index
-                                      if (!bannerUrl) {
-                                        return (
-                                          <div key={`empty-${index}`} className="border-2 border-dashed border-gray-200 rounded-lg h-24 flex items-center justify-center">
-                                            <span className="text-xs text-gray-400">Empty Slot</span>
-                                          </div>
-                                        )
-                                      }
-                                      return (
-                                        <div key={actualIndex} className="relative border rounded-lg overflow-hidden bg-white">
-                                          <img 
-                                            src={bannerUrl} 
-                                            alt={`Banner ${actualIndex + 1}`}
-                                            className="w-full h-24 object-cover"
-                                            onError={(e) => {
-                                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NzM3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkVycm9yPC90ZXh0Pjwvc3ZnPg=='
-                                            }}
-                                          />
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const updatedBanners = emailConfig.bannerImages.filter((_, i) => i !== actualIndex)
-                                              updateActiveConfig({ bannerImages: updatedBanners })
-                                              // Reset carousel if we removed from current view
-                                              if (currentBannerIndex >= updatedBanners.length) {
-                                                setCurrentBannerIndex(Math.max(0, updatedBanners.length - 3))
-                                              }
-                                            }}
-                                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors"
-                                            title="Remove banner"
-                                          >
-                                            ×
-                                          </button>
-                                          <div className="p-2">
-                                            <p className="text-xs text-gray-600 truncate" title={bannerUrl}>
-                                              Banner {actualIndex + 1}
-                                            </p>
-                                          </div>
-                                        </div>
-                                      )
-                                    })}
-                                </div>
-
-                                {/* Navigation Arrows (only show if more than 3 banners) */}
-                                {emailConfig.bannerImages.length > 3 && (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const newIndex = Math.max(0, currentBannerIndex - 3)
-                                        setCurrentBannerIndex(newIndex)
-                                        if (bannerIntervalId) clearInterval(bannerIntervalId)
-                                      }}
-                                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-70 transition-opacity"
-                                      disabled={currentBannerIndex === 0}
-                                    >
-                                      ‹
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const newIndex = Math.min(emailConfig.bannerImages.length - 3, currentBannerIndex + 3)
-                                        setCurrentBannerIndex(newIndex)
-                                        if (bannerIntervalId) clearInterval(bannerIntervalId)
-                                      }}
-                                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-70 transition-opacity"
-                                      disabled={currentBannerIndex >= emailConfig.bannerImages.length - 3}
-                                    >
-                                      ›
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          {(!emailConfig.bannerImages || emailConfig.bannerImages.length === 0) && (
-                            <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
-                              <p className="text-sm text-gray-500">No custom banners added yet</p>
-                              <p className="text-xs text-gray-400 mt-1">Add banner URLs above to preview them here</p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Video URL */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Video URL (Optional)</label>
-                          <input
-                            type="url"
-                            value={emailConfig.videoUrl}
-                            onChange={(e) => updateActiveConfig({ videoUrl: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
-                          />
-                          {emailConfig.videoUrl && (
-                            <p className="text-xs text-green-600 mt-1">✓ Video URL added - will be embedded in email</p>
-                          )}
-                        </div>
-
-                        {/* Upload Instructions */}
-                        <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                          <h4 className="text-sm font-medium text-blue-900 mb-2">📸 Image Upload Tips</h4>
-                          <ul className="text-xs text-blue-700 space-y-1">
-                            <li>• Use hosted images (Upload to your website, Cloudinary, AWS S3, etc.)</li>
-                            <li>• Recommended banner size: 600px wide x 300px high for best results</li>
-                            <li>• Supported formats: JPG, PNG, GIF, WebP</li>
-                            <li>• Custom banners appear separate from affiliate logos</li>
-                          </ul>
-                        </div>
                       </div>
                     </div>
                   </div>
-                )}
+                  
+                  {/* Important Notice */}
+                  <TextWithTypography
+                    label="Important Notice Text"
+                    textKey="emailNoticeText"
+                    colorKey="emailNoticeTextColor"
+                    fontFamilyKey="emailNoticeFontFamily"
+                    fontSizeKey="emailNoticeFontSize"
+                    isTextarea={true}
+                    rows={2}
+                    formData={getActiveConfig()}
+                    setFormData={updateActiveConfig}
+                  />
+                  
+                  {/* Footer Message */}
+                  <TextWithTypography
+                    label="Footer Message"
+                    textKey="emailFooterText"
+                    colorKey="emailFooterTextColor"
+                    fontFamilyKey="emailFooterFontFamily"
+                    fontSizeKey="emailFooterFontSize"
+                    isTextarea={true}
+                    rows={2}
+                    formData={getActiveConfig()}
+                    setFormData={updateActiveConfig}
+                  />
+                  
+                  {/* Brand Colors */}
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border-2 border-blue-200">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">🎨 Brand Colors</h3>
+                    <p className="text-sm text-gray-600 mb-4">Customize the main brand colors used throughout the email template</p>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Header Background Color</label>
+                        <input
+                          type="color"
+                          value={getActiveConfig().emailPrimaryColor}
+                          onChange={(e) => updateActiveConfig({ emailPrimaryColor: e.target.value })}
+                          className="w-full h-12 rounded-md border border-gray-300"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Main header background color</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
+                        <input
+                          type="color"
+                          value={getActiveConfig().emailSecondaryColor}
+                          onChange={(e) => updateActiveConfig({ emailSecondaryColor: e.target.value })}
+                          className="w-full h-12 rounded-md border border-gray-300"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Featured partners & accents</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Email Background</label>
+                        <input
+                          type="color"
+                          value={getActiveConfig().emailBackgroundColor}
+                          onChange={(e) => updateActiveConfig({ emailBackgroundColor: e.target.value })}
+                          className="w-full h-12 rounded-md border border-gray-300"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Overall email background</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Media Content */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Media Content</h3>
+                    <div className="space-y-6">
+                      
+                      {/* Email Logo */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Email Logo URL</label>
+                        <input
+                          type="url"
+                          value={getActiveConfig().logoUrl}
+                          onChange={(e) => updateActiveConfig({ logoUrl: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="https://example.com/logo.png"
+                        />
+                        {getActiveConfig().logoUrl && (
+                          <p className="text-xs text-green-600">✓ Logo URL added - will be displayed in email header</p>
+                        )}
+                      </div>
+                      
+                      {/* Banner Images */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Banner Images (Optional)</label>
+                        <div className="flex gap-2 mb-4">
+                          <input
+                            type="url"
+                            value={getActiveConfig().newBannerUrl || ''}
+                            onChange={(e) => updateActiveConfig({ newBannerUrl: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://example.com/banner.jpg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentBanners = getActiveConfig().bannerImages || []
+                              if (currentBanners.length >= 10) {
+                                toast.warning('Maximum Banners Reached', 'Maximum 10 banners allowed')
+                              } else {
+                                const updatedBanners = [...currentBanners, getActiveConfig().newBannerUrl]
+                                updateActiveConfig({ bannerImages: updatedBanners, newBannerUrl: '' })
+                              }
+                            }}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        
+                        {/* Banner Preview */}
+                        {getActiveConfig().bannerImages && getActiveConfig().bannerImages.length > 0 && (
+                          <div className="relative">
+                            <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+                              {getActiveConfig().bannerImages.map((bannerUrl: string, index: number) => {
+                                const actualIndex = currentBannerIndex + index
+                                return (
+                                  <div key={actualIndex} className="relative bg-gray-100 rounded-lg overflow-hidden">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updatedBanners = getActiveConfig().bannerImages.filter((_: any, i: number) => i !== actualIndex)
+                                        updateActiveConfig({ bannerImages: updatedBanners })
+                                        // Reset carousel if we removed from current view
+                                        if (currentBannerIndex >= updatedBanners.length) {
+                                          setCurrentBannerIndex(Math.max(0, updatedBanners.length - 3))
+                                        }
+                                      }}
+                                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors"
+                                      title="Remove banner"
+                                    >
+                                      ×
+                                    </button>
+                                    <div className="p-2">
+                                      <p className="text-xs text-gray-600 truncate" title={bannerUrl}>
+                                        Banner {actualIndex + 1}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Video URL */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Video URL (Optional)</label>
+                        <input
+                          type="url"
+                          value={getActiveConfig().videoUrl}
+                          onChange={(e) => updateActiveConfig({ videoUrl: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+                        />
+                        {getActiveConfig().videoUrl && (
+                          <p className="text-xs text-green-600 mt-1">✓ Video URL added - will be embedded in email</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Featured Partners Configuration */}
+                  <div className="bg-orange-50 p-6 rounded-lg border-2 border-orange-200">
+                    <h2 className="text-xl font-bold text-orange-900 mb-4">🏪 Featured Partners Configuration</h2>
+                    <p className="text-orange-700 text-sm mb-4">Configure which local partners appear in your welcome emails.</p>
+                    
+                    {/* Enable/Disable Featured Partners */}
+                    <div className="mb-6">
+                      <label className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={getActiveConfig().enableLocationBasedAffiliates}
+                          onChange={(e) => updateActiveConfig({ enableLocationBasedAffiliates: e.target.checked })}
+                          className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                        />
+                        <span className="text-sm font-medium text-orange-900">
+                          Enable Featured Partners Section
+                        </span>
+                      </label>
+                      <p className="text-xs text-orange-600 mt-1 ml-7">
+                        Show local business partners and affiliate recommendations in the email
+                      </p>
+                    </div>
+
+                    {getActiveConfig().enableLocationBasedAffiliates && (
+                      <div className="space-y-4">
+                        {/* Custom Affiliate Message */}
+                        <div>
+                          <label className="block text-sm font-medium text-orange-700 mb-2">
+                            Partner Introduction Message
+                          </label>
+                          <textarea
+                            value={getActiveConfig().customAffiliateMessage}
+                            onChange={(e) => updateActiveConfig({ customAffiliateMessage: e.target.value })}
+                            placeholder="Enter a custom message to introduce your featured partners..."
+                            rows={2}
+                            className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          />
+                          <p className="text-xs text-orange-600 mt-1">
+                            This message appears below the partner listings
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Featured Partners Configuration */}
@@ -1320,7 +1231,7 @@ function EmailConfigPageContent() {
                     <input
                       type="checkbox"
                       checked={emailConfig.enableLocationBasedAffiliates}
-                      onChange={(e) => updateActiveConfig({ enableLocationBasedAffiliates: e.target.checked })}
+                      onChange={(e) => setEmailConfig({...emailConfig, enableLocationBasedAffiliates: e.target.checked })}
                       className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
                     />
                     <span className="text-sm font-medium text-orange-900">
@@ -1341,7 +1252,7 @@ function EmailConfigPageContent() {
                       </label>
                       <textarea
                         value={emailConfig.customAffiliateMessage}
-                        onChange={(e) => updateActiveConfig({ customAffiliateMessage: e.target.value })}
+                        onChange={(e) => setEmailConfig({...emailConfig, customAffiliateMessage: e.target.value })}
                         placeholder="Enter a custom message to introduce your featured partners..."
                         rows={2}
                         className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
