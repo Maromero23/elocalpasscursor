@@ -1418,6 +1418,12 @@ function EmailConfigPageContent() {
     }
   }, [emailConfig, defaultEmailConfig, isEditingCustom])
 
+  // Force preview re-render when colors change
+  useEffect(() => {
+    console.log('🎨 Color change detected - forcing preview re-render')
+    setPreviewKey(prev => prev + 1)
+  }, [emailConfig.emailPrimaryColor, emailConfig.emailCtaBackgroundColor, defaultEmailConfig.emailPrimaryColor, defaultEmailConfig.emailCtaBackgroundColor])
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -2020,7 +2026,7 @@ function EmailConfigPageContent() {
               </div>
               <div className={`p-4 ${isEditingCustom === false ? 'opacity-50' : ''}`}>
                 <div 
-                  key={`custom-${previewKey}`}
+                  key={`custom-${previewKey}-${emailConfig.emailPrimaryColor}-${emailConfig.emailCtaBackgroundColor}`}
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
                     __html: customPreviewHtml 
@@ -2049,7 +2055,7 @@ function EmailConfigPageContent() {
               </div>
               <div className={`p-4 ${isEditingCustom === true ? 'opacity-50' : ''}`}>
                 <div 
-                  key={`default-${previewKey}`}
+                  key={`default-${previewKey}-${defaultEmailConfig.emailPrimaryColor}-${defaultEmailConfig.emailCtaBackgroundColor}`}
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
                     __html: defaultPreviewHtml 
