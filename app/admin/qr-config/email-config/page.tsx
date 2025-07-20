@@ -60,7 +60,7 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
           <InputComponent
             type={isTextarea ? undefined : "text"}
             value={formData[textKey] || ''}
-            onChange={(e) => setFormData({...formData, [textKey]: e.target.value})}
+            onChange={(e) => setFormData({ [textKey]: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={isTextarea ? rows : undefined}
           />
@@ -71,7 +71,7 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
             <input
               type="color"
               value={formData[colorKey] || '#000000'}
-              onChange={(e) => setFormData({...formData, [colorKey]: e.target.value})}
+              onChange={(e) => setFormData({ [colorKey]: e.target.value })}
               className="w-full h-10 rounded-md border border-gray-300"
             />
           </div>
@@ -79,7 +79,7 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
             <label className="block text-xs text-gray-500 mb-1">Font</label>
             <select
               value={formData[fontFamilyKey] || 'Arial, sans-serif'}
-              onChange={(e) => setFormData({...formData, [fontFamilyKey]: e.target.value})}
+              onChange={(e) => setFormData({ [fontFamilyKey]: e.target.value })}
               className="w-full px-2 py-2 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {fontFamilies.map((font) => (
@@ -91,7 +91,7 @@ const TextWithTypography: React.FC<TextWithTypographyProps> = ({
             <label className="block text-xs text-gray-500 mb-1">Size</label>
             <select
               value={formData[fontSizeKey] || '16'}
-              onChange={(e) => setFormData({...formData, [fontSizeKey]: e.target.value})}
+              onChange={(e) => setFormData({ [fontSizeKey]: e.target.value })}
               className="w-full px-2 py-2 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {fontSizes.map((size) => (
