@@ -134,6 +134,8 @@ function EmailConfigPageContent() {
   const [currentEmailTemplateName, setCurrentEmailTemplateName] = useState('')
   const [showEmailSaveDialog, setShowEmailSaveDialog] = useState(false)
   const [defaultTemplateStatus, setDefaultTemplateStatus] = useState<any>(null)
+  const [defaultEmailConfig, setDefaultEmailConfig] = useState<any>(null)
+  const [isEditingCustom, setIsEditingCustom] = useState(true) // true = editing custom, false = editing default
   
   // Button 4 - Welcome Email Configuration State
   const [emailConfig, setEmailConfig] = useState({
@@ -310,50 +312,52 @@ function EmailConfigPageContent() {
         // Convert database template back to emailConfig format
         if (defaultTemplate.emailConfig) {
           setEmailConfig(defaultTemplate.emailConfig)
-                 } else {
-           // Fallback: create emailConfig from template fields
-           const emailConfig = {
-             useDefaultEmail: true,
-             emailHeaderText: defaultTemplate.headerText || 'Welcome to eLocalPass!',
-             emailHeaderColor: defaultTemplate.primaryColor || '#3b82f6',
-             emailHeaderTextColor: '#ffffff',
-             emailHeaderFontFamily: 'Arial, sans-serif',
-             emailHeaderFontSize: '28',
-             emailMessageText: defaultTemplate.bodyText || 'Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass',
-             emailMessageTextColor: '#374151',
-             emailMessageFontFamily: 'Arial, sans-serif',
-             emailMessageFontSize: '16',
-             emailCtaText: defaultTemplate.buttonText || 'View Your Pass',
-             emailCtaTextColor: '#ffffff',
-             emailCtaFontFamily: 'Arial, sans-serif',
-             emailCtaFontSize: '18',
-             emailCtaBackgroundColor: defaultTemplate.buttonColor || '#3b82f6',
-             emailNoticeText: 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.',
-             emailNoticeTextColor: '#dc2626',
-             emailNoticeFontFamily: 'Arial, sans-serif',
-             emailNoticeFontSize: '14',
-             emailFooterText: defaultTemplate.footerText || 'Enjoy hundreds of discounts throughout your destination! Click below and discover all the benefits.',
-             emailFooterTextColor: '#6b7280',
-             emailFooterFontFamily: 'Arial, sans-serif',
-             emailFooterFontSize: '14',
-             emailPrimaryColor: defaultTemplate.primaryColor || '#3b82f6',
-             emailSecondaryColor: '#f97316',
-             emailBackgroundColor: defaultTemplate.backgroundColor || '#ffffff',
-             logoUrl: '',
-             bannerImages: [] as string[],
-             newBannerUrl: '',
-             videoUrl: '',
-             enableLocationBasedAffiliates: true,
-             selectedAffiliates: [],
-             customAffiliateMessage: 'Discover amazing local discounts at these partner establishments:',
-             includeQRInEmail: false,
-             emailAccountCreationUrl: 'https://elocalpass.com/create-account',
-             customCssStyles: '',
-             companyName: 'ELocalPass',
-             defaultWelcomeMessage: 'Welcome to your local pass experience!'
-           }
-           setEmailConfig(emailConfig)
-         }
+          setDefaultEmailConfig(defaultTemplate.emailConfig)
+        } else {
+          // Fallback: create emailConfig from template fields
+          const emailConfig = {
+            useDefaultEmail: true,
+            emailHeaderText: defaultTemplate.headerText || 'Welcome to eLocalPass!',
+            emailHeaderColor: defaultTemplate.primaryColor || '#3b82f6',
+            emailHeaderTextColor: '#ffffff',
+            emailHeaderFontFamily: 'Arial, sans-serif',
+            emailHeaderFontSize: '28',
+            emailMessageText: defaultTemplate.bodyText || 'Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass',
+            emailMessageTextColor: '#374151',
+            emailMessageFontFamily: 'Arial, sans-serif',
+            emailMessageFontSize: '16',
+            emailCtaText: defaultTemplate.buttonText || 'View Your Pass',
+            emailCtaTextColor: '#ffffff',
+            emailCtaFontFamily: 'Arial, sans-serif',
+            emailCtaFontSize: '18',
+            emailCtaBackgroundColor: defaultTemplate.buttonColor || '#3b82f6',
+            emailNoticeText: 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.',
+            emailNoticeTextColor: '#dc2626',
+            emailNoticeFontFamily: 'Arial, sans-serif',
+            emailNoticeFontSize: '14',
+            emailFooterText: defaultTemplate.footerText || 'Enjoy hundreds of discounts throughout your destination! Click below and discover all the benefits.',
+            emailFooterTextColor: '#6b7280',
+            emailFooterFontFamily: 'Arial, sans-serif',
+            emailFooterFontSize: '14',
+            emailPrimaryColor: defaultTemplate.primaryColor || '#3b82f6',
+            emailSecondaryColor: '#f97316',
+            emailBackgroundColor: defaultTemplate.backgroundColor || '#ffffff',
+            logoUrl: '',
+            bannerImages: [] as string[],
+            newBannerUrl: '',
+            videoUrl: '',
+            enableLocationBasedAffiliates: true,
+            selectedAffiliates: [],
+            customAffiliateMessage: 'Discover amazing local discounts at these partner establishments:',
+            includeQRInEmail: false,
+            emailAccountCreationUrl: 'https://elocalpass.com/create-account',
+            customCssStyles: '',
+            companyName: 'ELocalPass',
+            defaultWelcomeMessage: 'Welcome to your local pass experience!'
+          }
+          setEmailConfig(emailConfig)
+          setDefaultEmailConfig(emailConfig)
+        }
         
         toast.success('Default Template Loaded', 'Default template loaded from database successfully!')
       } else {
@@ -847,6 +851,20 @@ function EmailConfigPageContent() {
 
   const [isPreviewMode, setIsPreviewMode] = useState(false)
 
+  // Function to update the correct config based on edit mode
+  const updateActiveConfig = (updates: any) => {
+    if (isEditingCustom) {
+      setEmailConfig({...emailConfig, ...updates})
+    } else {
+      setDefaultEmailConfig({...defaultEmailConfig, ...updates})
+    }
+  }
+
+  // Function to get the active config values
+  const getActiveConfig = () => {
+    return isEditingCustom ? emailConfig : (defaultEmailConfig || emailConfig)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -934,8 +952,8 @@ function EmailConfigPageContent() {
                           <label className="block text-sm font-medium text-gray-700 mb-2">Company/Seller Name</label>
                           <input
                             type="text"
-                            value={emailConfig.companyName || 'ELocalPass'}
-                            onChange={(e) => setEmailConfig({...emailConfig, companyName: e.target.value})}
+                            value={getActiveConfig().companyName || 'ELocalPass'}
+                            onChange={(e) => updateActiveConfig({ companyName: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             placeholder="Enter company/seller name"
                           />
@@ -944,8 +962,8 @@ function EmailConfigPageContent() {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Welcome Message</label>
                           <textarea
-                            value={emailConfig.defaultWelcomeMessage || 'Welcome to your local pass experience!'}
-                            onChange={(e) => setEmailConfig({...emailConfig, defaultWelcomeMessage: e.target.value})}
+                            value={getActiveConfig().defaultWelcomeMessage || 'Welcome to your local pass experience!'}
+                            onChange={(e) => updateActiveConfig({ defaultWelcomeMessage: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             rows={3}
                             placeholder="Enter welcome message"
@@ -1001,8 +1019,8 @@ function EmailConfigPageContent() {
                           <label className="block text-sm font-medium text-gray-700 mb-2">Button Background Color</label>
                           <input
                             type="color"
-                            value={emailConfig.emailCtaBackgroundColor}
-                            onChange={(e) => setEmailConfig({...emailConfig, emailCtaBackgroundColor: e.target.value})}
+                            value={getActiveConfig().emailCtaBackgroundColor}
+                            onChange={(e) => updateActiveConfig({ emailCtaBackgroundColor: e.target.value })}
                             className="w-full h-12 rounded-md border border-gray-300"
                           />
                         </div>
@@ -1045,7 +1063,7 @@ function EmailConfigPageContent() {
                           <input
                             type="color"
                             value={emailConfig.emailPrimaryColor}
-                            onChange={(e) => setEmailConfig({...emailConfig, emailPrimaryColor: e.target.value})}
+                            onChange={(e) => updateActiveConfig({ emailPrimaryColor: e.target.value })}
                             className="w-full h-12 rounded-md border border-gray-300"
                           />
                           <p className="text-xs text-gray-500 mt-1">Main header background color</p>
@@ -1055,7 +1073,7 @@ function EmailConfigPageContent() {
                           <input
                             type="color"
                             value={emailConfig.emailSecondaryColor}
-                            onChange={(e) => setEmailConfig({...emailConfig, emailSecondaryColor: e.target.value})}
+                            onChange={(e) => updateActiveConfig({ emailSecondaryColor: e.target.value })}
                             className="w-full h-12 rounded-md border border-gray-300"
                           />
                           <p className="text-xs text-gray-500 mt-1">Featured partners & accents</p>
@@ -1065,7 +1083,7 @@ function EmailConfigPageContent() {
                           <input
                             type="color"
                             value={emailConfig.emailBackgroundColor}
-                            onChange={(e) => setEmailConfig({...emailConfig, emailBackgroundColor: e.target.value})}
+                            onChange={(e) => updateActiveConfig({ emailBackgroundColor: e.target.value })}
                             className="w-full h-12 rounded-md border border-gray-300"
                           />
                           <p className="text-xs text-gray-500 mt-1">Overall email background</p>
@@ -1084,7 +1102,7 @@ function EmailConfigPageContent() {
                           <input
                             type="url"
                             value={emailConfig.logoUrl}
-                            onChange={(e) => setEmailConfig({...emailConfig, logoUrl: e.target.value})}
+                            onChange={(e) => updateActiveConfig({ logoUrl: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="https://example.com/logo.png"
                           />
@@ -1112,7 +1130,7 @@ function EmailConfigPageContent() {
                             <input
                               type="url"
                               value={emailConfig.newBannerUrl || ''}
-                              onChange={(e) => setEmailConfig({...emailConfig, newBannerUrl: e.target.value})}
+                              onChange={(e) => updateActiveConfig({ newBannerUrl: e.target.value })}
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               placeholder="https://example.com/banner.jpg"
                             />
@@ -1124,7 +1142,7 @@ function EmailConfigPageContent() {
                                   if (updatedBanners.length > 10) {
                                     toast.warning('Maximum Banners Reached', 'Maximum 10 banners allowed')
                                   } else {
-                                    setEmailConfig({...emailConfig, bannerImages: updatedBanners, newBannerUrl: ''})
+                                    updateActiveConfig({ bannerImages: updatedBanners, newBannerUrl: '' })
                                   }
                                 }
                               }}
@@ -1199,7 +1217,7 @@ function EmailConfigPageContent() {
                                             type="button"
                                             onClick={() => {
                                               const updatedBanners = emailConfig.bannerImages.filter((_, i) => i !== actualIndex)
-                                              setEmailConfig({...emailConfig, bannerImages: updatedBanners})
+                                              updateActiveConfig({ bannerImages: updatedBanners })
                                               // Reset carousel if we removed from current view
                                               if (currentBannerIndex >= updatedBanners.length) {
                                                 setCurrentBannerIndex(Math.max(0, updatedBanners.length - 3))
@@ -1266,7 +1284,7 @@ function EmailConfigPageContent() {
                           <input
                             type="url"
                             value={emailConfig.videoUrl}
-                            onChange={(e) => setEmailConfig({...emailConfig, videoUrl: e.target.value})}
+                            onChange={(e) => updateActiveConfig({ videoUrl: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
                           />
@@ -1302,7 +1320,7 @@ function EmailConfigPageContent() {
                     <input
                       type="checkbox"
                       checked={emailConfig.enableLocationBasedAffiliates}
-                      onChange={(e) => setEmailConfig({...emailConfig, enableLocationBasedAffiliates: e.target.checked})}
+                      onChange={(e) => updateActiveConfig({ enableLocationBasedAffiliates: e.target.checked })}
                       className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
                     />
                     <span className="text-sm font-medium text-orange-900">
@@ -1323,7 +1341,7 @@ function EmailConfigPageContent() {
                       </label>
                       <textarea
                         value={emailConfig.customAffiliateMessage}
-                        onChange={(e) => setEmailConfig({...emailConfig, customAffiliateMessage: e.target.value})}
+                        onChange={(e) => updateActiveConfig({ customAffiliateMessage: e.target.value })}
                         placeholder="Enter a custom message to introduce your featured partners..."
                         rows={2}
                         className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -1525,9 +1543,95 @@ function EmailConfigPageContent() {
             )}
           </div>
 
-          {/* Preview Panel */}
-          <div className="lg:sticky lg:top-8">
-            <EmailTemplatePreview emailConfig={emailConfig} />
+          {/* Dual Preview Panel */}
+          <div className="lg:sticky lg:top-8 space-y-6">
+            {/* Custom Email Preview */}
+            <div className="bg-white rounded-lg border-2 border-blue-200 shadow-lg">
+              <div className="bg-blue-50 px-4 py-3 border-b border-blue-200 rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-blue-900">
+                    🎨 Custom Email Preview
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${isEditingCustom ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    <span className="text-sm text-blue-700">
+                      {isEditingCustom ? 'Active Editing' : 'View Only'}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-blue-600 mt-1">
+                  Your custom email configuration - edit the form above to see live changes
+                </p>
+              </div>
+              <div className="p-4">
+                <EmailTemplatePreview emailConfig={emailConfig} />
+              </div>
+            </div>
+
+            {/* Default Email Preview */}
+            <div className="bg-white rounded-lg border-2 border-green-200 shadow-lg">
+              <div className="bg-green-50 px-4 py-3 border-b border-green-200 rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-green-900">
+                    📋 Default Email Preview
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${!isEditingCustom ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    <span className="text-sm text-green-700">
+                      {!isEditingCustom ? 'Active Editing' : 'View Only'}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-green-600 mt-1">
+                  System default template - used when "Default Template" is selected
+                </p>
+              </div>
+              <div className="p-4">
+                {defaultEmailConfig ? (
+                  <EmailTemplatePreview emailConfig={defaultEmailConfig} />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No default template loaded</p>
+                    <p className="text-sm">Click "Load Default Template" to preview</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Edit Mode Toggle */}
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">✏️ Edit Mode</h4>
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingCustom(true)}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isEditingCustom 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Edit Custom Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingCustom(false)}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    !isEditingCustom 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Edit Default Email
+                </button>
+              </div>
+              <p className="text-xs text-gray-600 mt-2">
+                {isEditingCustom 
+                  ? 'Form changes will update the Custom Email preview above'
+                  : 'Form changes will update the Default Email preview above'
+                }
+              </p>
+            </div>
           </div>
         </div>
       </div>
