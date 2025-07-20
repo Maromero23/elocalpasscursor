@@ -212,48 +212,11 @@ function EmailConfigPageContent() {
     }
   }, [])
 
-  const loadSavedTemplates = async () => {
-    try {
-      console.log('📧 LOADING EMAIL TEMPLATES FROM DATABASE...')
-      
-      const response = await fetch('/api/admin/email-templates')
-      const result = await response.json()
-      
-      if (response.ok && result.success) {
-        console.log('✅ LOADED EMAIL TEMPLATES FROM DATABASE:', result.templates.length)
-        
-        // Convert database templates to the format expected by the UI
-        const formattedTemplates = result.templates.map((template: any) => ({
-          id: template.id,
-          name: template.name,
-          data: {
-            // This would need to be expanded to include the full email config
-            // For now, we'll use basic data
-            useDefaultEmail: false,
-            emailHeaderText: template.name,
-            emailPrimaryColor: '#3b82f6'
-          },
-          createdAt: new Date(template.createdAt)
-        }))
-        
-        setEmailTemplates(formattedTemplates)
-      } else {
-        console.error('❌ Failed to load templates from database:', result.error)
-        // Fallback to localStorage if database fails
-        const savedEmailTemplates = localStorage.getItem('elocalpass-email-templates')
-        if (savedEmailTemplates) {
-          setEmailTemplates(JSON.parse(savedEmailTemplates))
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error loading templates from database:', error)
-      // Fallback to localStorage if database fails
-      const savedEmailTemplates = localStorage.getItem('elocalpass-email-templates')
-      if (savedEmailTemplates) {
-        setEmailTemplates(JSON.parse(savedEmailTemplates))
-      }
+  const loadSavedTemplates = () => {
+    const savedEmailTemplates = localStorage.getItem('elocalpass-email-templates')
+    if (savedEmailTemplates) {
+      setEmailTemplates(JSON.parse(savedEmailTemplates))
     }
-  }
     
     // Check if we're in edit mode or preview mode and load existing welcome email config
     const urlParams = new URLSearchParams(window.location.search)
@@ -422,63 +385,8 @@ function EmailConfigPageContent() {
     try {
       console.log('🔧 SAVING NAMED TEMPLATE TO DATABASE:', currentEmailTemplateName)
       
-      // Generate the custom HTML for the template
-      const generateCustomEmailHtml = (config: any) => {
-        if (config.useDefaultEmail) {
-          return 'USE_DEFAULT_TEMPLATE'
-        }
-        
-        // Generate custom HTML template (same logic as in handleSubmit)
-        return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to eLocalPass</title>
-    <style>
-        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background-color: ${config.emailBackgroundColor}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        .header { background-color: ${config.emailPrimaryColor}; padding: 24px; text-align: center; }
-        .header h1 { color: ${config.emailHeaderTextColor}; font-family: ${config.emailHeaderFontFamily}; font-size: ${config.emailHeaderFontSize}px; font-weight: bold; margin: 0; }
-        .content { padding: 24px; }
-        .message { text-align: center; margin-bottom: 24px; }
-        .message p { color: ${config.emailMessageTextColor}; font-family: ${config.emailMessageFontFamily}; font-size: ${config.emailMessageFontSize}px; line-height: 1.5; margin: 0; }
-        .cta-button { text-align: center; margin: 24px 0; }
-        .cta-button a { background-color: ${config.emailCtaBackgroundColor}; color: ${config.emailCtaTextColor}; font-family: ${config.emailCtaFontFamily}; font-size: ${config.emailCtaFontSize}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
-        .footer { background-color: #f9fafb; padding: 20px; text-align: center; }
-        .footer p { color: ${config.emailFooterTextColor}; font-family: ${config.emailFooterFontFamily}; font-size: ${config.emailFooterFontSize}px; margin: 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>${config.emailHeaderText}</h1>
-        </div>
-        
-        <div class="content">
-            <div class="message">
-                <p>${config.emailMessageText}</p>
-            </div>
-            
-            <div class="cta-button">
-                <a href="{customerPortalUrl}">${config.emailCtaText}</a>
-            </div>
-            
-            <div class="message">
-                <p style="color: ${config.emailNoticeTextColor}; font-size: ${config.emailNoticeFontSize}px; font-weight: 500;">${config.emailNoticeText}</p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>${config.emailFooterText}</p>
-        </div>
-    </div>
-</body>
-</html>`
-      }
-      
-      const customHTML = generateCustomEmailHtml(emailConfig)
+      // Generate the custom HTML for the template (simple version)
+      const customHTML = emailConfig.useDefaultEmail ? 'USE_DEFAULT_TEMPLATE' : 'CUSTOM_TEMPLATE'
       
       // Save to database via API
       const response = await fetch('/api/admin/email-templates', {
@@ -510,9 +418,6 @@ function EmailConfigPageContent() {
         
         const updatedTemplates = [...emailTemplates, newTemplate]
         setEmailTemplates(updatedTemplates)
-        
-        // Remove localStorage save - everything goes to database now
-        // localStorage.setItem('elocalpass-email-templates', JSON.stringify(updatedTemplates))
         
         setShowEmailSaveDialog(false)
         setCurrentEmailTemplateName('')
@@ -753,54 +658,17 @@ function EmailConfigPageContent() {
           return // Stop here - don't fall back to localStorage
         }
       } else {
-        // No qrId provided - save as standalone template to DATABASE (not localStorage)
-        console.log('✅ EMAIL SAVE DEBUG: No qrId provided, saving as standalone template to DATABASE')
+        // No qrId provided - save as standalone template to localStorage for later use
+        console.log('✅ EMAIL SAVE DEBUG: No qrId provided, saving as standalone template')
+        localStorage.setItem('elocalpass-welcome-email-config', JSON.stringify(welcomeEmailConfig))
         
-        try {
-          // Generate the custom HTML for the template
-          const customHTML = generateCustomEmailHtml(emailConfig)
-          
-          // Save to database as a named template
-          const templateName = `Welcome Email Template - ${new Date().toLocaleDateString()}`
-          
-          const response = await fetch('/api/admin/email-templates', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              name: templateName,
-              subject: 'Welcome to ELocalPass!',
-              customHTML: customHTML,
-              isDefault: false,
-              // Store the configuration for editing later
-              emailConfig: emailConfig
-            })
-          })
-          
-          const result = await response.json()
-          
-          if (response.ok && result.success) {
-            console.log('✅ EMAIL SAVE DEBUG: Template saved to database successfully')
-            setGeneratedEmailConfig(result.templateId)
-            toast.success('Email Template Saved to Database', `Template "${templateName}" saved successfully and will be available to all users!`)
-            
-            // Remove localStorage fallback - everything goes to database now
-            // localStorage.removeItem('elocalpass-welcome-email-config')
-            
-            // Redirect back to QR config after 2 seconds
-            setTimeout(() => {
-              router.push('/admin/qr-config')
-            }, 2000)
-          } else {
-            console.error('❌ EMAIL SAVE DEBUG: Failed to save template to database:', result.error)
-            toast.error('Database Save Failed', result.error || 'Failed to save template to database')
-          }
-        } catch (error) {
-          console.error('❌ EMAIL SAVE DEBUG: Error saving template to database:', error)
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-          toast.error('Database Save Failed', `Failed to save template to database: ${errorMessage}`)
-        }
+        setGeneratedEmailConfig(welcomeEmailConfig.id)
+        toast.success('Email Template Saved', `Welcome Email Template saved successfully! This template will be used for new QR configurations.`)
+        
+        // Redirect back to QR config after 2 seconds
+        setTimeout(() => {
+          router.push('/admin/qr-config')
+        }, 2000)
       }
       
     } catch (error) {
