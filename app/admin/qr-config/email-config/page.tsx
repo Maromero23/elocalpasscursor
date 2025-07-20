@@ -925,37 +925,8 @@ function EmailConfigPageContent() {
               {/* Button 4 - Welcome Email Configuration */}
               <div className="bg-indigo-50 p-6 rounded-lg border-2 border-indigo-200">
                 <h2 className="text-xl font-bold text-indigo-900 mb-4">📧 Welcome Email Configuration</h2>
-                <p className="text-indigo-700 text-sm mb-4">Configure the welcome email sent to QR recipients. Choose between default or custom email templates.</p>
+                <p className="text-indigo-700 text-sm mb-4">Configure both custom and default email templates. Use the edit mode toggle to switch between editing custom or default templates.</p>
                 
-                {/* Email Type Selection */}
-                <div className="mb-6">
-                  <div className="bg-white p-4 rounded-lg border border-indigo-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-3 h-3 rounded-full ${!emailConfig.useDefaultEmail ? 'bg-purple-500' : 'bg-gray-400'}`}></div>
-                        <div>
-                          <h3 className="font-medium text-gray-900">
-                            {!emailConfig.useDefaultEmail ? 'Custom Email Template' : 'Default Email Template'}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {!emailConfig.useDefaultEmail 
-                              ? 'Creating a personalized email template with custom branding'
-                              : 'Using the standard ELocalPass email template'
-                            }
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setEmailConfig({...emailConfig, useDefaultEmail: !emailConfig.useDefaultEmail})}
-                        className="px-3 py-1 text-sm border border-indigo-300 text-indigo-600 rounded-md hover:bg-indigo-50 transition-colors"
-                      >
-                        Switch to {!emailConfig.useDefaultEmail ? 'Default' : 'Custom'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Email Configuration (Same for both Custom and Default) */}
                 <div className="space-y-6">
                   
@@ -1423,9 +1394,9 @@ function EmailConfigPageContent() {
                   className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-105"
                 >
                   {isSubmitting ? 
-                    (emailConfig.useDefaultEmail ? 'Confirming Default Template...' : 'Creating Custom Email Configuration...') 
+                    'Saving Email Configuration...' 
                     : 
-                    (emailConfig.useDefaultEmail ? 'Confirm Default Template' : 'Create Custom Email Configuration')
+                    'Save Email Configuration'
                   }
                 </button>
               </div>
