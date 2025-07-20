@@ -1501,7 +1501,7 @@ function EmailConfigPageContent() {
               <div className="bg-blue-50 px-4 py-3 border-b border-blue-200 rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-blue-900">
-                    🎨 Custom Email Preview
+                    🎨 Custom Email Template
                   </h3>
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${isEditingCustom ? 'bg-green-500' : 'bg-gray-300'}`}></div>
@@ -1511,7 +1511,7 @@ function EmailConfigPageContent() {
                   </div>
                 </div>
                 <p className="text-sm text-blue-600 mt-1">
-                  Your custom email configuration - edit the form above to see live changes
+                  Your personalized email template - edit the form above to see live changes
                 </p>
               </div>
               <div className="p-4">
@@ -1524,7 +1524,7 @@ function EmailConfigPageContent() {
               <div className="bg-green-50 px-4 py-3 border-b border-green-200 rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-green-900">
-                    📋 Default Email Preview
+                    📋 System Default Template
                   </h3>
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${!isEditingCustom ? 'bg-green-500' : 'bg-gray-300'}`}></div>
@@ -1534,7 +1534,7 @@ function EmailConfigPageContent() {
                   </div>
                 </div>
                 <p className="text-sm text-green-600 mt-1">
-                  System default template - used when "Default Template" is selected
+                  Built-in default template - used when "Default Template" is selected
                 </p>
               </div>
               <div className="p-4">
