@@ -1344,12 +1344,19 @@ function EmailConfigPageContent() {
         .notice p { color: ${config.emailNoticeTextColor || '#dc2626'}; font-family: ${config.emailNoticeFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailNoticeFontSize || '14'}px; font-weight: 500; margin: 0; }
         .footer { background-color: #f9fafb; padding: 20px; text-align: center; }
         .footer p { color: ${config.emailFooterTextColor || '#6b7280'}; font-family: ${config.emailFooterFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailFooterFontSize || '14'}px; margin: 0; }
-        .logo { text-align: center; margin-bottom: 16px; }
-        .logo img { max-width: 120px; height: auto; }
+        .logo { text-align: center; margin-bottom: 20px; }
+        .logo img { max-width: 200px; height: auto; }
         .benefits { background-color: #f8fafc; padding: 20px; margin: 24px 0; border-radius: 8px; }
         .benefits h3 { color: ${config.emailSecondaryColor || '#f97316'}; font-family: Arial, sans-serif; font-size: 18px; margin: 0 0 16px 0; text-align: center; }
         .benefits ul { color: #374151; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; margin: 0; padding-left: 20px; }
         .benefits li { margin-bottom: 8px; }
+        .banner-section { margin: 24px 0; text-align: center; }
+        .banner-image { max-width: 100%; height: auto; margin: 8px 0; border-radius: 8px; }
+        .video-section { margin: 24px 0; text-align: center; }
+        .video-placeholder { background-color: #f3f4f6; padding: 40px; border-radius: 8px; color: #6b7280; }
+        .partners-section { margin: 24px 0; padding: 20px; background-color: #fef7ed; border-radius: 8px; }
+        .partners-section h3 { color: ${config.emailSecondaryColor || '#f97316'}; text-align: center; margin-bottom: 16px; }
+        .partners-intro { color: #374151; text-align: center; margin-bottom: 16px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -1365,6 +1372,12 @@ function EmailConfigPageContent() {
                 <p>${config.emailMessageText || 'Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass'}</p>
             </div>
             
+            ${config.bannerImages && config.bannerImages.length > 0 ? `
+            <div class="banner-section">
+                ${config.bannerImages.map((url: string) => `<img src="${url}" alt="Banner" class="banner-image" />`).join('')}
+            </div>
+            ` : ''}
+            
             <div class="benefits">
                 <h3>Your eLocalPass Benefits</h3>
                 <ul>
@@ -1379,9 +1392,25 @@ function EmailConfigPageContent() {
                 <a href="{customerPortalUrl}">${config.emailCtaText || 'Create Your Account & Access Your eLocalPass'}</a>
             </div>
             
+            ${config.videoUrl ? `
+            <div class="video-section">
+                <div class="video-placeholder">
+                    📹 Video: ${config.videoUrl}
+                </div>
+            </div>
+            ` : ''}
+            
             <div class="notice">
                 <p>${config.emailNoticeText || 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.'}</p>
             </div>
+            
+            ${config.enableLocationBasedAffiliates ? `
+            <div class="partners-section">
+                <h3>Featured Local Partners</h3>
+                <div class="partners-intro">${config.customAffiliateMessage || 'Discover amazing local discounts at these partner establishments:'}</div>
+                <p style="text-align: center; color: #6b7280; font-size: 12px;">Partner listings will appear here based on location</p>
+            </div>
+            ` : ''}
         </div>
         
         <div class="footer">
@@ -2027,7 +2056,7 @@ function EmailConfigPageContent() {
               <div className={`p-4 ${isEditingCustom === false ? 'opacity-50' : ''}`}>
                 <iframe 
                   key={`custom-${previewKey}-${emailConfig.emailPrimaryColor}-${emailConfig.emailCtaBackgroundColor}`}
-                  className="w-full h-[600px] border rounded-lg"
+                  className="w-full h-[800px] border rounded-lg"
                   srcDoc={customPreviewHtml || generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'})}
                   title="Custom Email Preview"
                 />
@@ -2055,7 +2084,7 @@ function EmailConfigPageContent() {
               <div className={`p-4 ${isEditingCustom === true ? 'opacity-50' : ''}`}>
                 <iframe 
                   key={`default-${previewKey}-${defaultEmailConfig.emailPrimaryColor}-${defaultEmailConfig.emailCtaBackgroundColor}`}
-                  className="w-full h-[600px] border rounded-lg"
+                  className="w-full h-[800px] border rounded-lg"
                   srcDoc={defaultPreviewHtml || generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'})}
                   title="Default Email Preview"
                 />
