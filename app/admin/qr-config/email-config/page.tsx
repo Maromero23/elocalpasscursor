@@ -1390,12 +1390,20 @@ function EmailConfigPageContent() {
   useEffect(() => {
     if (isEditingCustom === true) {
       console.log('🔄 Regenerating custom preview HTML due to config change')
+      console.log('🔍 Current emailConfig for custom preview:', emailConfig)
       const html = generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
+      console.log('🎨 Generated HTML for custom preview (first 500 chars):', html.substring(0, 500))
       setCustomPreviewHtml(html)
+      // Force re-render with new key
+      setPreviewKey(prev => prev + 1)
     } else if (isEditingCustom === false) {
       console.log('🔄 Regenerating default preview HTML due to config change')
+      console.log('🔍 Current defaultEmailConfig for default preview:', defaultEmailConfig)
       const html = generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'})
+      console.log('🎨 Generated HTML for default preview (first 500 chars):', html.substring(0, 500))
       setDefaultPreviewHtml(html)
+      // Force re-render with new key
+      setPreviewKey(prev => prev + 1)
     }
   }, [emailConfig, defaultEmailConfig, isEditingCustom])
 
@@ -1988,7 +1996,7 @@ function EmailConfigPageContent() {
                   key={`custom-${previewKey}`}
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
-                    __html: customPreviewHtml || generateCustomEmailHtml({...emailConfig, debugLabel: 'CUSTOM_PREVIEW'}) 
+                    __html: customPreviewHtml 
                   }} 
                 />
               </div>
@@ -2017,7 +2025,7 @@ function EmailConfigPageContent() {
                   key={`default-${previewKey}`}
                   className="border rounded-lg overflow-hidden"
                   dangerouslySetInnerHTML={{ 
-                    __html: defaultPreviewHtml || generateCustomEmailHtml({...defaultEmailConfig, debugLabel: 'DEFAULT_PREVIEW'}) 
+                    __html: defaultPreviewHtml 
                   }} 
                 />
               </div>
