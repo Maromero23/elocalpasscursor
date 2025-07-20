@@ -858,9 +858,31 @@ function EmailConfigPageContent() {
     if (isEditingCustom) {
       console.log('📝 Loading template into CUSTOM config')
       setEmailConfig({ ...template.data })
+      
+      // Force immediate HTML regeneration for custom preview
+      setTimeout(() => {
+        const html = generateCustomEmailHtml({...template.data, debugLabel: 'CUSTOM_PREVIEW'})
+        setCustomPreviewHtml(html)
+        console.log('🎨 Custom preview HTML regenerated after template load')
+        console.log('🔍 CUSTOM template colors after load:', {
+          emailPrimaryColor: template.data.emailPrimaryColor,
+          emailSecondaryColor: template.data.emailSecondaryColor
+        })
+      }, 50)
     } else {
       console.log('📝 Loading template into DEFAULT config')
       setDefaultEmailConfig({ ...template.data })
+      
+      // Force immediate HTML regeneration for default preview
+      setTimeout(() => {
+        const html = generateCustomEmailHtml({...template.data, debugLabel: 'DEFAULT_PREVIEW'})
+        setDefaultPreviewHtml(html)
+        console.log('🎨 Default preview HTML regenerated after template load')
+        console.log('🔍 DEFAULT template colors after load:', {
+          emailPrimaryColor: template.data.emailPrimaryColor,
+          emailSecondaryColor: template.data.emailSecondaryColor
+        })
+      }, 50)
     }
     
     // Force preview re-render
