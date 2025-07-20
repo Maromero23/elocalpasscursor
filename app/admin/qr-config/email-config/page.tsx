@@ -259,6 +259,33 @@ function EmailConfigPageContent() {
     defaultWelcomeMessage: 'Welcome to your local pass experience!'
   })
 
+  const loadFirstSavedTemplateForCustom = async () => {
+    try {
+      console.log('🔧 LOADING FIRST SAVED TEMPLATE FOR CUSTOM CONFIG...')
+      
+      const response = await fetch('/api/admin/email-templates?isDefault=false')
+      const result = await response.json()
+      
+      if (response.ok && result.templates && result.templates.length > 0) {
+        const firstTemplate = result.templates[0] // Get the first saved template
+        
+        console.log('✅ FIRST SAVED TEMPLATE LOADED FOR CUSTOM:', firstTemplate.name)
+        
+        // Use the emailConfig from the first saved template
+        if (firstTemplate.emailConfig) {
+          setEmailConfig(firstTemplate.emailConfig)
+          console.log('✅ Custom emailConfig loaded from first saved template:', firstTemplate.emailConfig)
+        } else {
+          console.log('❌ No emailConfig found in first saved template, keeping default custom config')
+        }
+      } else {
+        console.log('❌ No saved templates found, keeping default custom config')
+      }
+    } catch (error) {
+      console.error('❌ Error loading first saved template for custom config:', error)
+    }
+  }
+
   useEffect(() => {
     // Check for preview mode first
     const urlParams = new URLSearchParams(window.location.search)
@@ -273,10 +300,13 @@ function EmailConfigPageContent() {
     getDefaultTemplateStatus()
     
     // Only load default template if NOT in edit or preview mode
-    // TEMPORARILY DISABLED FOR TESTING STATE ISOLATION
-    // if (mode !== 'edit' && mode !== 'preview') {
-    //   loadDefaultEmailTemplate()
-    // }
+    if (mode !== 'edit' && mode !== 'preview') {
+      loadDefaultEmailTemplate()
+      // Load first saved template for custom config after a brief delay
+      setTimeout(() => {
+        loadFirstSavedTemplateForCustom()
+      }, 100)
+    }
   }, [])
 
   const loadSavedTemplates = () => {
