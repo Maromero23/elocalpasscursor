@@ -1568,7 +1568,12 @@ function EmailConfigPageContent() {
                         <input
                           type="color"
                           value={getActiveConfig()?.emailCtaBackgroundColor || '#3b82f6'}
-                          onChange={(e) => updateActiveConfig({ emailCtaBackgroundColor: e.target.value })}
+                          onChange={(e) => {
+                            console.log('🎨 Button color changed to:', e.target.value)
+                            console.log('🎨 Current config before update:', getActiveConfig())
+                            updateActiveConfig({ emailCtaBackgroundColor: e.target.value })
+                            console.log('🎨 Button color update sent to updateActiveConfig')
+                          }}
                           disabled={isEditingCustom === null}
                           className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
                         />
@@ -1612,7 +1617,12 @@ function EmailConfigPageContent() {
                         <input
                           type="color"
                           value={getActiveConfig()?.emailPrimaryColor || '#3b82f6'}
-                          onChange={(e) => updateActiveConfig({ emailPrimaryColor: e.target.value })}
+                          onChange={(e) => {
+                            console.log('🎨 Header color changed to:', e.target.value)
+                            console.log('🎨 Current config before update:', getActiveConfig())
+                            updateActiveConfig({ emailPrimaryColor: e.target.value })
+                            console.log('🎨 Header color update sent to updateActiveConfig')
+                          }}
                           disabled={isEditingCustom === null}
                           className={`w-full h-12 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
                         />
