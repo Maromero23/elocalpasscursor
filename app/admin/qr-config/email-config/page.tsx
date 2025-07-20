@@ -134,7 +134,66 @@ function EmailConfigPageContent() {
   const [currentEmailTemplateName, setCurrentEmailTemplateName] = useState('')
   const [showEmailSaveDialog, setShowEmailSaveDialog] = useState(false)
   const [defaultTemplateStatus, setDefaultTemplateStatus] = useState<any>(null)
-  const [defaultEmailConfig, setDefaultEmailConfig] = useState<any>(null)
+  const [defaultEmailConfig, setDefaultEmailConfig] = useState<any>({
+    useDefaultEmail: true,
+    
+    // Email Header
+    emailHeaderText: 'Welcome to eLocalPass!',
+    emailHeaderColor: '#3b82f6',
+    emailHeaderTextColor: '#ffffff',
+    emailHeaderFontFamily: 'Arial, sans-serif',
+    emailHeaderFontSize: '28',
+    
+    // Main Message
+    emailMessageText: 'Congratulations! Starting today you will be able to pay like a local while on vacation with eLocalPass',
+    emailMessageTextColor: '#374151',
+    emailMessageFontFamily: 'Arial, sans-serif',
+    emailMessageFontSize: '16',
+    
+    // CTA Button
+    emailCtaText: 'View Your Pass',
+    emailCtaTextColor: '#ffffff',
+    emailCtaFontFamily: 'Arial, sans-serif',
+    emailCtaFontSize: '18',
+    emailCtaBackgroundColor: '#3b82f6',
+    
+    // Important Notice
+    emailNoticeText: 'IMPORTANT: Remember to show your eLocalPass AT ARRIVAL to any of our affiliated establishments.',
+    emailNoticeTextColor: '#dc2626',
+    emailNoticeFontFamily: 'Arial, sans-serif',
+    emailNoticeFontSize: '14',
+    
+    // Footer Message
+    emailFooterText: 'Enjoy hundreds of discounts throughout your destination! Click below and discover all the benefits.',
+    emailFooterTextColor: '#6b7280',
+    emailFooterFontFamily: 'Arial, sans-serif',
+    emailFooterFontSize: '14',
+    
+    // Brand Colors
+    emailPrimaryColor: '#3b82f6',
+    emailSecondaryColor: '#f97316',
+    emailBackgroundColor: '#ffffff',
+    
+    // Media Content
+    logoUrl: '',
+    bannerImages: [],
+    newBannerUrl: '',
+    videoUrl: '',
+    
+    // Affiliate Configuration
+    enableLocationBasedAffiliates: true,
+    selectedAffiliates: [],
+    customAffiliateMessage: 'Discover amazing local discounts at these partner establishments:',
+    
+    // Advanced Options
+    includeQRInEmail: false,
+    emailAccountCreationUrl: 'https://elocalpass.com/create-account',
+    customCssStyles: '',
+    
+    // Default Template Fields
+    companyName: 'ELocalPass',
+    defaultWelcomeMessage: 'Welcome to your local pass experience!'
+  })
   const [isEditingCustom, setIsEditingCustom] = useState(true) // true = editing custom, false = editing default
   
   // Button 4 - Welcome Email Configuration State
@@ -872,16 +931,26 @@ function EmailConfigPageContent() {
 
   // Function to update the correct config based on edit mode
   const updateActiveConfig = (updates: any) => {
+    console.log('🔄 updateActiveConfig called:', { isEditingCustom, updates })
+    
     if (isEditingCustom) {
-      setEmailConfig({...emailConfig, ...updates})
+      console.log('📝 Updating emailConfig:', updates)
+      const newConfig = {...emailConfig, ...updates}
+      console.log('✅ New emailConfig:', newConfig)
+      setEmailConfig(newConfig)
     } else {
-      setDefaultEmailConfig({...defaultEmailConfig, ...updates})
+      console.log('📝 Updating defaultEmailConfig:', updates)
+      const newConfig = {...(defaultEmailConfig || emailConfig), ...updates}
+      console.log('✅ New defaultEmailConfig:', newConfig)
+      setDefaultEmailConfig(newConfig)
     }
   }
 
   // Function to get the active config values
   const getActiveConfig = () => {
-    return isEditingCustom ? emailConfig : (defaultEmailConfig || emailConfig)
+    const activeConfig = isEditingCustom ? emailConfig : (defaultEmailConfig || emailConfig)
+    console.log('🔍 getActiveConfig:', { isEditingCustom, activeConfig: activeConfig.emailHeaderText })
+    return activeConfig
   }
 
   return (
