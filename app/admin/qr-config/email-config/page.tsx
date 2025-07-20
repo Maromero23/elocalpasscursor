@@ -1914,27 +1914,27 @@ function EmailConfigPageContent() {
           {/* Dual Preview Panel */}
           <div className="lg:sticky lg:top-8 space-y-6">
             {/* Custom Email Preview */}
-            <div className="bg-white rounded-lg border-2 border-blue-200 shadow-lg">
-              <div className="bg-blue-50 px-4 py-3 border-b border-blue-200 rounded-t-lg">
+            <div className={`rounded-lg border-2 shadow-lg ${isEditingCustom === true ? 'bg-white border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+              <div className={`px-4 py-3 border-b rounded-t-lg ${isEditingCustom === true ? 'bg-blue-50 border-blue-200' : 'bg-gray-100 border-gray-200'}`}>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-blue-900">
+                  <h3 className={`text-lg font-bold ${isEditingCustom === true ? 'text-blue-900' : 'text-gray-600'}`}>
                     🎨 Custom Email Template{currentLoadedTemplateName ? `: ${currentLoadedTemplateName}` : ''}
                   </h3>
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${isEditingCustom === true ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    <span className="text-sm text-blue-700">
+                    <span className={`text-sm ${isEditingCustom === true ? 'text-blue-700' : 'text-gray-500'}`}>
                       {isEditingCustom === true ? 'Active Editing' : 'View Only'}
                     </span>
                   </div>
                 </div>
-                <p className="text-sm text-blue-600 mt-1">
+                <p className={`text-sm mt-1 ${isEditingCustom === true ? 'text-blue-600' : 'text-gray-500'}`}>
                   {currentLoadedTemplateName 
                     ? `Template loaded - edit the form above to see live changes`
                     : 'Your personalized email template - edit the form above to see live changes'
                   }
                 </p>
               </div>
-              <div className="p-4">
+              <div className={`p-4 ${isEditingCustom !== true ? 'opacity-50' : ''}`}>
                 <div 
                   key={`custom-${previewKey}`}
                   className="border rounded-lg overflow-hidden"
@@ -1946,24 +1946,24 @@ function EmailConfigPageContent() {
             </div>
 
             {/* Default Email Preview */}
-            <div className="bg-white rounded-lg border-2 border-green-200 shadow-lg">
-              <div className="bg-green-50 px-4 py-3 border-b border-green-200 rounded-t-lg">
+            <div className={`rounded-lg border-2 shadow-lg ${isEditingCustom === false ? 'bg-white border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+              <div className={`px-4 py-3 border-b rounded-t-lg ${isEditingCustom === false ? 'bg-green-50 border-green-200' : 'bg-gray-100 border-gray-200'}`}>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-green-900">
+                  <h3 className={`text-lg font-bold ${isEditingCustom === false ? 'text-green-900' : 'text-gray-600'}`}>
                     📋 System Default Template
                   </h3>
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${isEditingCustom === false ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    <span className="text-sm text-green-700">
+                    <span className={`text-sm ${isEditingCustom === false ? 'text-green-700' : 'text-gray-500'}`}>
                       {isEditingCustom === false ? 'Active Editing' : 'View Only'}
                     </span>
                   </div>
                 </div>
-                <p className="text-sm text-green-600 mt-1">
+                <p className={`text-sm mt-1 ${isEditingCustom === false ? 'text-green-600' : 'text-gray-500'}`}>
                   Built-in default template - used when "Default Template" is selected
                 </p>
               </div>
-              <div className="p-4">
+              <div className={`p-4 ${isEditingCustom !== false ? 'opacity-50' : ''}`}>
                 <div 
                   key={`default-${previewKey}`}
                   className="border rounded-lg overflow-hidden"
