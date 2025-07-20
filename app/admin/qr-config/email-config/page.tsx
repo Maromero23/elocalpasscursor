@@ -1255,14 +1255,25 @@ function EmailConfigPageContent() {
 
   // Function to update the correct config based on edit mode
   const updateActiveConfig = (updates: any) => {
+    console.log('🔧 updateActiveConfig called with updates:', updates)
     console.log('🔧 getActiveConfig: {isEditingCustom:', isEditingCustom, 'activeConfig:', getActiveConfig())
     
     if (isEditingCustom) {
-      setEmailConfig((prev: any) => ({ ...prev, ...updates }))
+      console.log('📝 Updating CUSTOM config with:', updates)
+      setEmailConfig((prev: any) => {
+        const newConfig = { ...prev, ...updates }
+        console.log('📝 New CUSTOM config will be:', newConfig)
+        return newConfig
+      })
       // Don't clear the loaded template name - keep it visible while editing
       // setCurrentLoadedTemplateName('') // Removed this line
     } else {
-      setDefaultEmailConfig((prev: any) => ({ ...prev, ...updates }))
+      console.log('📝 Updating DEFAULT config with:', updates)
+      setDefaultEmailConfig((prev: any) => {
+        const newConfig = { ...prev, ...updates }
+        console.log('📝 New DEFAULT config will be:', newConfig)
+        return newConfig
+      })
     }
   }
 
