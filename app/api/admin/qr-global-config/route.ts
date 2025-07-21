@@ -80,22 +80,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('Received data:', body)
     
-    // Clean and validate the data
-    const cleanData = {
-      // OLD Button 1 fields (backward compatibility)
-      button1AllowCustomGuestsDays: Boolean(body.button1AllowCustomGuestsDays),
-      button1DefaultGuests: parseInt(body.button1DefaultGuests) || 2,
-      button1DefaultDays: parseInt(body.button1DefaultDays) || 3,
-      button1MaxGuests: parseInt(body.button1MaxGuests) || 10,
-      button1MaxDays: parseInt(body.button1MaxDays) || 30,
-      
-      // NEW Button 1 fields
-      button1GuestsLocked: Boolean(body.button1GuestsLocked),
-      button1GuestsDefault: parseInt(body.button1GuestsDefault) || 2,
-      button1GuestsRangeMax: parseInt(body.button1GuestsRangeMax) || 10,
-      button1DaysLocked: Boolean(body.button1DaysLocked),
-      button1DaysDefault: parseInt(body.button1DaysDefault) || 3,
-      button1DaysRangeMax: parseInt(body.button1DaysRangeMax) || 30,
+          // Clean and validate the data
+      const cleanData = {
+        // OLD Button 1 fields (backward compatibility)
+        button1AllowCustomGuestsDays: Boolean(body.button1AllowCustomGuestsDays),
+        button1DefaultGuests: parseInt(body.button1DefaultGuests) || 1,
+        button1DefaultDays: parseInt(body.button1DefaultDays) || 1,
+        button1MaxGuests: parseInt(body.button1MaxGuests) || 10,
+        button1MaxDays: parseInt(body.button1MaxDays) || 30,
+        
+        // NEW Button 1 fields
+        button1GuestsLocked: Boolean(body.button1GuestsLocked),
+        button1GuestsDefault: parseInt(body.button1GuestsDefault) || 1,
+        button1GuestsRangeMax: parseInt(body.button1GuestsRangeMax) || 10,
+        button1DaysLocked: Boolean(body.button1DaysLocked),
+        button1DaysDefault: parseInt(body.button1DaysDefault) || 1,
+        button1DaysRangeMax: parseInt(body.button1DaysRangeMax) || 30,
       
       // Button 2 fields
       button2PricingType: body.button2PricingType || 'FIXED',
