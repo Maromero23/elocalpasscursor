@@ -252,7 +252,7 @@ function EmailConfigPageContent() {
     companyName: 'ELocalPass',
     defaultWelcomeMessage: 'Welcome to your local pass experience!'
   })
-  const [isEditingCustom, setIsEditingCustom] = useState<boolean | null>(true) // true = editing custom by default, false = editing default, null = view only
+  const [isEditingCustom, setIsEditingCustom] = useState<boolean | null>(null) // null = view only by default, true = editing custom, false = editing default
   const [previewKey, setPreviewKey] = useState(0) // Force preview re-render
   const [customPreviewHtml, setCustomPreviewHtml] = useState('')
   const [defaultPreviewHtml, setDefaultPreviewHtml] = useState('')
@@ -2036,8 +2036,6 @@ function EmailConfigPageContent() {
                 <div className="flex items-center justify-between">
                   <h3 className={`text-lg font-bold ${isEditingCustom === true || isEditingCustom === null ? 'text-blue-900' : 'text-gray-600'}`}>
                     🎨 Custom Email Template{currentLoadedTemplateName ? `: ${currentLoadedTemplateName}` : ''}
-                    {/* DEBUG: Show the actual value */}
-                    <span style={{fontSize: '12px', color: 'red'}}> [DEBUG: "{currentLoadedTemplateName}"]</span>
                   </h3>
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${isEditingCustom === true ? 'bg-green-500' : 'bg-gray-300'}`}></div>
