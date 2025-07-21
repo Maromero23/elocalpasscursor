@@ -349,7 +349,7 @@ ${t('email.welcome.signature', customerLanguage)}
         const scheduledDateTime = new Date(scheduledFor)
         const delay = scheduledDateTime.getTime() - Date.now()
         
-        if (delay > 0) {
+        if (delay > 0 && process.env.QSTASH_TOKEN) {
           try {
             // Schedule exact processing with Upstash QStash V2
             const qstashResponse = await fetch(`https://qstash.upstash.io/v2/publish/${process.env.NEXTAUTH_URL}/api/scheduled-qr/process-single`, {
@@ -375,6 +375,8 @@ ${t('email.welcome.signature', customerLanguage)}
             console.error('❌ QStash error:', qstashError)
             // Fallback: could still rely on periodic checking
           }
+        } else if (delay > 0) {
+          console.log(`📅 SCHEDULED QR: QStash token not configured, relying on periodic processing`)
         }
       }
       
