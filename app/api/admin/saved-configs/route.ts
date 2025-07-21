@@ -70,16 +70,50 @@ export async function POST(request: NextRequest) {
     if (!name || !config) {
       return NextResponse.json({ error: 'Name and config are required' }, { status: 400 })
     }
+
+    // Process email templates - copy default template if USE_DEFAULT_TEMPLATE is selected
+    let processedEmailTemplates = emailTemplates
+    if (emailTemplates?.welcomeEmail?.customHTML === 'USE_DEFAULT_TEMPLATE') {
+      console.log('📧 COPY DEFAULT: USE_DEFAULT_TEMPLATE detected, copying current default template')
+      
+      try {
+        // Get the current default template from database
+        const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
+          where: { isDefault: true }
+        })
+        
+        if (defaultTemplate && defaultTemplate.customHTML) {
+          console.log('📧 COPY DEFAULT: Found default template, copying HTML content')
+          
+          // Copy the default template content to this configuration
+          processedEmailTemplates = {
+            ...emailTemplates,
+            welcomeEmail: {
+              ...emailTemplates.welcomeEmail,
+              customHTML: defaultTemplate.customHTML,
+              subject: emailTemplates.welcomeEmail.subject || defaultTemplate.subject
+            }
+          }
+          
+          console.log('📧 COPY DEFAULT: Successfully copied default template content')
+        } else {
+          console.log('⚠️ COPY DEFAULT: No default template found, keeping USE_DEFAULT_TEMPLATE')
+        }
+      } catch (error) {
+        console.error('❌ COPY DEFAULT: Error copying default template:', error)
+        // Keep original emailTemplates if copying fails
+      }
+    }
     
     // Create new saved configuration (with custom ID if provided for migration)
-    const createData: any = {
-      name,
-      description: description || '',
-      config: JSON.stringify(config),
-      emailTemplates: emailTemplates ? JSON.stringify(emailTemplates) : null,
-      landingPageConfig: landingPageConfig ? JSON.stringify(landingPageConfig) : null,
-      selectedUrlIds: selectedUrlIds ? JSON.stringify(selectedUrlIds) : null,
-    }
+          const createData: any = {
+        name,
+        description: description || '',
+        config: JSON.stringify(config),
+        emailTemplates: processedEmailTemplates ? JSON.stringify(processedEmailTemplates) : null,
+        landingPageConfig: landingPageConfig ? JSON.stringify(landingPageConfig) : null,
+        selectedUrlIds: selectedUrlIds ? JSON.stringify(selectedUrlIds) : null,
+      }
     
     // If custom ID is provided (for migration), use it
     if (id) {

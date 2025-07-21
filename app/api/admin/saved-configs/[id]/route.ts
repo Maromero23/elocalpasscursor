@@ -81,6 +81,40 @@ export async function PUT(
     if (!existingConfig) {
       return NextResponse.json({ error: 'Configuration not found' }, { status: 404 })
     }
+
+    // Process email templates - copy default template if USE_DEFAULT_TEMPLATE is selected
+    let processedEmailTemplates = emailTemplates
+    if (emailTemplates?.welcomeEmail?.customHTML === 'USE_DEFAULT_TEMPLATE') {
+      console.log('📧 COPY DEFAULT: USE_DEFAULT_TEMPLATE detected in update, copying current default template')
+      
+      try {
+        // Get the current default template from database
+        const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
+          where: { isDefault: true }
+        })
+        
+        if (defaultTemplate && defaultTemplate.customHTML) {
+          console.log('📧 COPY DEFAULT: Found default template, copying HTML content')
+          
+          // Copy the default template content to this configuration
+          processedEmailTemplates = {
+            ...emailTemplates,
+            welcomeEmail: {
+              ...emailTemplates.welcomeEmail,
+              customHTML: defaultTemplate.customHTML,
+              subject: emailTemplates.welcomeEmail.subject || defaultTemplate.subject
+            }
+          }
+          
+          console.log('📧 COPY DEFAULT: Successfully copied default template content')
+        } else {
+          console.log('⚠️ COPY DEFAULT: No default template found, keeping USE_DEFAULT_TEMPLATE')
+        }
+      } catch (error) {
+        console.error('❌ COPY DEFAULT: Error copying default template:', error)
+        // Keep original emailTemplates if copying fails
+      }
+    }
     
     // Update the configuration
     const updatedConfig = await prisma.savedQRConfiguration.update({
@@ -89,7 +123,7 @@ export async function PUT(
         name: name || existingConfig.name,
         description: description || existingConfig.description,
         config: config ? JSON.stringify(config) : existingConfig.config,
-        emailTemplates: emailTemplates ? JSON.stringify(emailTemplates) : existingConfig.emailTemplates,
+        emailTemplates: processedEmailTemplates ? JSON.stringify(processedEmailTemplates) : existingConfig.emailTemplates,
         landingPageConfig: landingPageConfig ? JSON.stringify(landingPageConfig) : existingConfig.landingPageConfig,
         selectedUrlIds: selectedUrlIds ? JSON.stringify(selectedUrlIds) : existingConfig.selectedUrlIds,
         updatedAt: new Date()
