@@ -1662,60 +1662,66 @@ function EmailConfigPageContent() {
                     <h3 className="text-lg font-bold text-gray-900 mb-4">🎨 Brand Colors</h3>
                     <p className="text-sm text-gray-600 mb-4">Customize the main brand colors used throughout the email template</p>
                     <div className="grid md:grid-cols-3 gap-4">
-                      <div className="flex flex-col h-full">
+                      <div className="flex flex-col">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Header Background Color</label>
-                        <input
-                          type="color"
-                          value={isEditingCustom ? emailConfig.emailPrimaryColor || '#3b82f6' : defaultEmailConfig.emailPrimaryColor || '#3b82f6'}
-                          onChange={(e) => {
-                            const newValue = e.target.value
-                            console.log('🎨 Header color changed to:', newValue)
-                            if (isEditingCustom) {
-                              setEmailConfig((prev: any) => ({ ...prev, emailPrimaryColor: newValue }))
-                            } else {
-                              setDefaultEmailConfig((prev: any) => ({ ...prev, emailPrimaryColor: newValue }))
-                            }
-                          }}
-                          disabled={isEditingCustom === null}
-                          className={`w-full h-16 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
-                        />
-                        <p className="text-xs text-gray-500 mt-2 flex-grow">Main header background color</p>
+                        <div className="flex-1 flex flex-col justify-between min-h-[120px]">
+                          <input
+                            type="color"
+                            value={isEditingCustom ? emailConfig.emailPrimaryColor || '#3b82f6' : defaultEmailConfig.emailPrimaryColor || '#3b82f6'}
+                            onChange={(e) => {
+                              const newValue = e.target.value
+                              console.log('🎨 Header color changed to:', newValue)
+                              if (isEditingCustom) {
+                                setEmailConfig((prev: any) => ({ ...prev, emailPrimaryColor: newValue }))
+                              } else {
+                                setDefaultEmailConfig((prev: any) => ({ ...prev, emailPrimaryColor: newValue }))
+                              }
+                            }}
+                            disabled={isEditingCustom === null}
+                            className={`w-full h-20 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
+                          />
+                          <p className="text-xs text-gray-500 mt-2">Main header background color</p>
+                        </div>
                       </div>
-                      <div className="flex flex-col h-full">
+                      <div className="flex flex-col">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Accent Color</label>
-                        <input
-                          type="color"
-                          value={isEditingCustom ? emailConfig.emailSecondaryColor || '#f97316' : defaultEmailConfig.emailSecondaryColor || '#f97316'}
-                          onChange={(e) => {
-                            const newValue = e.target.value
-                            if (isEditingCustom) {
-                              setEmailConfig((prev: any) => ({ ...prev, emailSecondaryColor: newValue }))
-                            } else {
-                              setDefaultEmailConfig((prev: any) => ({ ...prev, emailSecondaryColor: newValue }))
-                            }
-                          }}
-                          disabled={isEditingCustom === null}
-                          className={`w-full h-16 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
-                        />
-                        <p className="text-xs text-gray-500 mt-2 flex-grow">Featured partners & accents</p>
+                        <div className="flex-1 flex flex-col justify-between min-h-[120px]">
+                          <input
+                            type="color"
+                            value={isEditingCustom ? emailConfig.emailSecondaryColor || '#f97316' : defaultEmailConfig.emailSecondaryColor || '#f97316'}
+                            onChange={(e) => {
+                              const newValue = e.target.value
+                              if (isEditingCustom) {
+                                setEmailConfig((prev: any) => ({ ...prev, emailSecondaryColor: newValue }))
+                              } else {
+                                setDefaultEmailConfig((prev: any) => ({ ...prev, emailSecondaryColor: newValue }))
+                              }
+                            }}
+                            disabled={isEditingCustom === null}
+                            className={`w-full h-20 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
+                          />
+                          <p className="text-xs text-gray-500 mt-2">Featured partners & accents</p>
+                        </div>
                       </div>
-                      <div className="flex flex-col h-full">
+                      <div className="flex flex-col">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Email Background</label>
-                        <input
-                          type="color"
-                          value={isEditingCustom ? emailConfig.emailBackgroundColor || '#ffffff' : defaultEmailConfig.emailBackgroundColor || '#ffffff'}
-                          onChange={(e) => {
-                            const newValue = e.target.value
-                            if (isEditingCustom) {
-                              setEmailConfig((prev: any) => ({ ...prev, emailBackgroundColor: newValue }))
-                            } else {
-                              setDefaultEmailConfig((prev: any) => ({ ...prev, emailBackgroundColor: newValue }))
-                            }
-                          }}
-                          disabled={isEditingCustom === null}
-                          className={`w-full h-16 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
-                        />
-                        <p className="text-xs text-gray-500 mt-2 flex-grow">Overall email background</p>
+                        <div className="flex-1 flex flex-col justify-between min-h-[120px]">
+                          <input
+                            type="color"
+                            value={isEditingCustom ? emailConfig.emailBackgroundColor || '#ffffff' : defaultEmailConfig.emailBackgroundColor || '#ffffff'}
+                            onChange={(e) => {
+                              const newValue = e.target.value
+                              if (isEditingCustom) {
+                                setEmailConfig((prev: any) => ({ ...prev, emailBackgroundColor: newValue }))
+                              } else {
+                                setDefaultEmailConfig((prev: any) => ({ ...prev, emailBackgroundColor: newValue }))
+                              }
+                            }}
+                            disabled={isEditingCustom === null}
+                            className={`w-full h-20 rounded-md border border-gray-300 ${isEditingCustom === null ? 'bg-gray-100' : ''}`}
+                          />
+                          <p className="text-xs text-gray-500 mt-2">Overall email background</p>
+                        </div>
                       </div>
                     </div>
                   </div>
