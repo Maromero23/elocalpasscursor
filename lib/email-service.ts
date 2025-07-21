@@ -333,10 +333,14 @@ export async function sendWelcomeEmailWithTemplates(data: WelcomeEmailData): Pro
     // Get email templates from saved configuration
     let emailTemplates = null
     if (data.savedConfigId && data.savedConfigId.trim() !== '') {
+      console.log(`📧 LOADING CONFIG: Attempting to load templates from savedConfigId: ${data.savedConfigId}`)
+      
       const savedConfig = await prisma.savedQRConfiguration.findUnique({
         where: { id: data.savedConfigId },
         select: { emailTemplates: true }
       })
+      
+      console.log(`📧 LOADING CONFIG: Found savedConfig: ${!!savedConfig}`)
       
       // Parse email templates JSON
       if (savedConfig?.emailTemplates) {
@@ -344,10 +348,19 @@ export async function sendWelcomeEmailWithTemplates(data: WelcomeEmailData): Pro
           emailTemplates = typeof savedConfig.emailTemplates === 'string' 
             ? JSON.parse(savedConfig.emailTemplates) 
             : savedConfig.emailTemplates
+          
+          console.log(`📧 LOADING CONFIG: Parsed email templates successfully`)
+          console.log(`📧 LOADING CONFIG: welcomeEmail exists: ${!!emailTemplates?.welcomeEmail}`)
+          console.log(`📧 LOADING CONFIG: customHTML exists: ${!!emailTemplates?.welcomeEmail?.customHTML}`)
+          console.log(`📧 LOADING CONFIG: customHTML content: ${emailTemplates?.welcomeEmail?.customHTML?.substring(0, 100)}...`)
         } catch (error) {
-          console.log('Error parsing email templates:', error)
+          console.log('❌ LOADING CONFIG: Error parsing email templates:', error)
         }
+      } else {
+        console.log(`📧 LOADING CONFIG: No emailTemplates found in savedConfig`)
       }
+    } else {
+      console.log(`📧 LOADING CONFIG: No savedConfigId provided: ${data.savedConfigId}`)
     }
 
     // Professional Email Translation System
@@ -487,8 +500,16 @@ export async function sendWelcomeEmailWithTemplates(data: WelcomeEmailData): Pro
     let emailHtml
     let emailSubject = subject
     
+    console.log(`📧 TEMPLATE DECISION: Starting template selection process`)
+    console.log(`📧 TEMPLATE DECISION: emailTemplates exists: ${!!emailTemplates}`)
+    console.log(`📧 TEMPLATE DECISION: welcomeEmail exists: ${!!emailTemplates?.welcomeEmail}`)
+    console.log(`📧 TEMPLATE DECISION: customHTML exists: ${!!emailTemplates?.welcomeEmail?.customHTML}`)
+    console.log(`📧 TEMPLATE DECISION: customHTML value: ${emailTemplates?.welcomeEmail?.customHTML?.substring(0, 50)}...`)
+    
     // Use custom HTML template if available, otherwise use default
     if (emailTemplates?.welcomeEmail?.customHTML && emailTemplates.welcomeEmail.customHTML !== 'USE_DEFAULT_TEMPLATE') {
+      console.log(`📧 TEMPLATE DECISION: Using custom HTML template from QR configuration`)
+      
       // Use custom HTML template from QR configuration
       const customTemplate = emailTemplates.welcomeEmail.customHTML
       
@@ -511,6 +532,7 @@ export async function sendWelcomeEmailWithTemplates(data: WelcomeEmailData): Pro
       
       console.log(`📧 Using custom HTML template from QR configuration (translated for ${data.customerLanguage})`)
     } else if (emailTemplates?.welcomeEmail?.customHTML === 'USE_DEFAULT_TEMPLATE') {
+      console.log(`📧 TEMPLATE DECISION: USE_DEFAULT_TEMPLATE detected - This should not happen with new configurations!`)
       console.log(`📧 USE_DEFAULT_TEMPLATE detected - Loading actual default template`)
       
       // Load the actual default template from database
@@ -573,6 +595,7 @@ export async function sendWelcomeEmailWithTemplates(data: WelcomeEmailData): Pro
         console.log(`📧 Generated error fallback HTML template`)
       }
     } else {
+      console.log(`📧 TEMPLATE DECISION: No custom template found, using default template from database`)
       // No saved config provided - use default template from database
       console.log(`📧 No saved config provided - Loading default template from database`)
       
