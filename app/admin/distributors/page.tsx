@@ -595,14 +595,8 @@ export default function DistributorsPage() {
       if (response.ok) {
         const result = await response.json()
         
-        // Show success message with generated code if applicable
-        if (result.generatedDiscountCode) {
-          setError(`✅ Seller updated successfully! Auto-generated discount code: ${result.generatedDiscountCode}`)
-        } else if (sellerEditFormData.defaultDiscountValue > 0) {
-          setError(`✅ Seller updated successfully! Discount code will be auto-generated when needed.`)
-        } else {
-          setError(`✅ Seller updated successfully!`)
-        }
+        // Show success message
+        setError(`✅ Seller updated successfully!`)
         
         // Refresh the distributors list and details
         await fetchDistributors()
