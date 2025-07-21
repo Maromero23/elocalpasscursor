@@ -1658,8 +1658,9 @@ function EmailConfigPageContent() {
                   />
                   
                   {/* Brand Colors */}
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border-2 border-blue-200">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">🎨 Brand Colors</h3>
+                  <div className="bg-red-100 p-6 rounded-lg border-4 border-red-500">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">🎨 Brand Colors - UPDATED!</h3>
+                    <p className="text-sm text-red-600 mb-4 font-bold">TEST: This section has been updated! If you see this, the changes are working.</p>
                     <p className="text-sm text-gray-600 mb-4">Customize the main brand colors used throughout the email template</p>
                     <div className="grid md:grid-cols-3 gap-4">
                       <div className="flex flex-col">
