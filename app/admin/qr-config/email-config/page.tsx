@@ -715,122 +715,12 @@ function EmailConfigPageContent() {
       const configToSave = isEditingCustom ? emailConfig : defaultEmailConfig
       console.log('🔧 Saving config based on edit mode:', isEditingCustom ? 'CUSTOM' : 'DEFAULT')
       
-      // Generate the custom HTML for the template
-      const generateCustomEmailHtml = (config: any) => {
-        // When saving as default template, ALWAYS generate actual HTML
-        // Never return USE_DEFAULT_TEMPLATE placeholder
-        
-        // Generate custom HTML template (same logic as in handleSubmit)
-        return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to eLocalPass</title>
-    <style>
-        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background-color: ${config.emailBackgroundColor}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        .header { background-color: ${config.emailPrimaryColor}; padding: 24px; text-align: center; }
-        .header h1 { color: ${config.emailHeaderTextColor}; font-family: ${config.emailHeaderFontFamily}; font-size: ${config.emailHeaderFontSize}px; font-weight: bold; margin: 0; }
-        .content { padding: 24px; }
-        .message { text-align: center; margin-bottom: 24px; }
-        .message p { color: ${config.emailMessageTextColor}; font-family: ${config.emailMessageFontFamily}; font-size: ${config.emailMessageFontSize}px; line-height: 1.5; margin: 0; }
-        .cta-button { text-align: center; margin: 24px 0; }
-        .cta-button a { background-color: ${config.emailCtaBackgroundColor}; color: ${config.emailCtaTextColor}; font-family: ${config.emailCtaFontFamily}; font-size: ${config.emailCtaFontSize}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
-        .notice { background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 24px 0; }
-        .notice p { color: ${config.emailNoticeTextColor}; font-family: ${config.emailNoticeFontFamily}; font-size: ${config.emailNoticeFontSize}px; font-weight: 500; margin: 0; }
-        .affiliates { background-color: ${config.emailSecondaryColor}20; padding: 16px; border-radius: 8px; margin: 24px 0; }
-        .affiliates h3 { color: ${config.emailSecondaryColor}; font-weight: 600; margin: 0 0 12px 0; }
-        .affiliate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
-        .affiliate-item { background-color: white; padding: 8px; border-radius: 4px; text-align: center; border: 1px solid #e5e7eb; }
-        .affiliate-placeholder { width: 100%; height: 32px; background-color: #e5e7eb; border-radius: 4px; margin-bottom: 4px; }
-        .footer-message { text-align: center; border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px; }
-        .footer-message p { color: ${config.emailFooterTextColor}; font-family: ${config.emailFooterFontFamily}; font-size: ${config.emailFooterFontSize}px; margin: 0; }
-        .email-footer { background-color: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280; }
-        @media only screen and (max-width: 600px) {
-            .container { margin: 0; border-radius: 0; }
-            .content { padding: 16px; }
-            .affiliate-grid { grid-template-columns: 1fr; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            ${config.logoUrl ? `<div style="margin-bottom: 16px;"><img src="${config.logoUrl}" alt="Logo" style="height: 40px; width: auto;"></div>` : ''}
-            <h1>${config.emailHeaderText}</h1>
-        </div>
-        
-        <!-- Content -->
-        <div class="content">
-            <!-- Welcome Message -->
-            <div class="message">
-                <p>${config.emailMessageText}</p>
-            </div>
-            
-            <!-- Video Section -->
-            ${config.videoUrl ? `
-            <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; text-align: center; margin: 24px 0;">
-                <div style="background-color: #e5e7eb; height: 128px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-                    <div style="color: #6b7280;">
-                        🎥 Welcome Video<br>
-                        <span style="font-size: 12px;">Click to play</span>
-                    </div>
-                </div>
-                <p style="font-size: 14px; color: #6b7280; margin: 0;">Watch this quick intro to get started!</p>
-            </div>
-            ` : ''}
-            
-            <!-- CTA Button -->
-            <div class="cta-button">
-                <a href="{magicLink}">${config.emailCtaText}</a>
-            </div>
-            
-            <!-- Important Notice -->
-            <div class="notice">
-                <p>⚠️ ${config.emailNoticeText}</p>
-            </div>
-            
-            <!-- Location-Based Affiliates -->
-            ${config.enableLocationBasedAffiliates ? `
-            <div class="affiliates">
-                <h3>Featured Partners in Playa del Carmen</h3>
-                <div class="affiliate-grid">
-                    <div class="affiliate-item">
-                        <div class="affiliate-placeholder"></div>
-                        <div style="font-size: 12px;">Local Restaurant</div>
-                    </div>
-                    <div class="affiliate-item">
-                        <div class="affiliate-placeholder"></div>
-                        <div style="font-size: 12px;">Adventure Tours</div>
-                    </div>
-                </div>
-                <p style="color: ${config.emailSecondaryColor}; font-size: 14px; margin: 12px 0 0 0;">${config.customAffiliateMessage}</p>
-            </div>
-            ` : ''}
-            
-            <!-- Footer Message -->
-            <div class="footer-message">
-                <p>${config.emailFooterText}</p>
-            </div>
-        </div>
-        
-        <!-- Email Footer -->
-        <div class="email-footer">
-            <p>© 2025 eLocalPass. All rights reserved.</p>
-            <p style="margin-top: 4px;">
-                You received this email because you obtained an eLocalPass.
-                <a href="#" style="color: #3b82f6;">Unsubscribe</a>
-            </p>
-        </div>
-    </div>
-</body>
-</html>`
-      }
+      // Use the SAME HTML generation function as the preview to ensure consistency
+      const customHTML = generateCustomEmailHtml({...configToSave, debugLabel: 'SAVE_DEFAULT_TEMPLATE'})
       
-      const customHTML = generateCustomEmailHtml(configToSave)
+      console.log('🔧 Generated HTML for saving - Length:', customHTML.length)
+      console.log('🔧 HTML contains benefits:', customHTML.includes('Your eLocalPass Benefits'))
+      console.log('🔧 HTML contains partners:', customHTML.includes('Featured Local Partners'))
       
       // First, delete ALL existing default templates to save space
       console.log('🗑️ CLEANING UP OLD DEFAULT TEMPLATES...')
