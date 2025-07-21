@@ -436,7 +436,8 @@ Rebuy Email Scheduled: ${config.button5SendRebuyEmail || false}`)
           const prisma = new PrismaClient()
           
           const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
-            where: { isDefault: true }
+            where: { isDefault: true },
+            orderBy: { createdAt: 'desc' } // Get the NEWEST default template
           })
           
           if (defaultTemplate && defaultTemplate.customHTML) {

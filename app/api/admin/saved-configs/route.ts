@@ -79,7 +79,8 @@ export async function POST(request: NextRequest) {
       try {
         // Get the current default template from database
         const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
-          where: { isDefault: true }
+          where: { isDefault: true },
+          orderBy: { createdAt: 'desc' } // Get the NEWEST default template
         })
         
         if (defaultTemplate && defaultTemplate.customHTML) {

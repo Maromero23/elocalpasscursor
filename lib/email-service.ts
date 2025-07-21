@@ -538,7 +538,8 @@ export async function sendWelcomeEmailWithTemplates(data: WelcomeEmailData): Pro
       // Load the actual default template from database
       try {
         const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
-          where: { isDefault: true }
+          where: { isDefault: true },
+          orderBy: { createdAt: 'desc' } // Get the NEWEST default template
         })
         
         if (defaultTemplate && defaultTemplate.customHTML) {
@@ -601,7 +602,8 @@ export async function sendWelcomeEmailWithTemplates(data: WelcomeEmailData): Pro
       
       try {
         const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
-          where: { isDefault: true }
+          where: { isDefault: true },
+          orderBy: { createdAt: 'desc' } // Get the NEWEST default template
         })
         
         if (defaultTemplate && defaultTemplate.customHTML) {
