@@ -717,9 +717,8 @@ function EmailConfigPageContent() {
       
       // Generate the custom HTML for the template
       const generateCustomEmailHtml = (config: any) => {
-        if (config.useDefaultEmail) {
-          return 'USE_DEFAULT_TEMPLATE'
-        }
+        // When saving as default template, ALWAYS generate actual HTML
+        // Never return USE_DEFAULT_TEMPLATE placeholder
         
         // Generate custom HTML template (same logic as in handleSubmit)
         return `
@@ -739,32 +738,92 @@ function EmailConfigPageContent() {
         .message p { color: ${config.emailMessageTextColor}; font-family: ${config.emailMessageFontFamily}; font-size: ${config.emailMessageFontSize}px; line-height: 1.5; margin: 0; }
         .cta-button { text-align: center; margin: 24px 0; }
         .cta-button a { background-color: ${config.emailCtaBackgroundColor}; color: ${config.emailCtaTextColor}; font-family: ${config.emailCtaFontFamily}; font-size: ${config.emailCtaFontSize}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
-        .footer { background-color: #f9fafb; padding: 20px; text-align: center; }
-        .footer p { color: ${config.emailFooterTextColor}; font-family: ${config.emailFooterFontFamily}; font-size: ${config.emailFooterFontSize}px; margin: 0; }
+        .notice { background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 24px 0; }
+        .notice p { color: ${config.emailNoticeTextColor}; font-family: ${config.emailNoticeFontFamily}; font-size: ${config.emailNoticeFontSize}px; font-weight: 500; margin: 0; }
+        .affiliates { background-color: ${config.emailSecondaryColor}20; padding: 16px; border-radius: 8px; margin: 24px 0; }
+        .affiliates h3 { color: ${config.emailSecondaryColor}; font-weight: 600; margin: 0 0 12px 0; }
+        .affiliate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+        .affiliate-item { background-color: white; padding: 8px; border-radius: 4px; text-align: center; border: 1px solid #e5e7eb; }
+        .affiliate-placeholder { width: 100%; height: 32px; background-color: #e5e7eb; border-radius: 4px; margin-bottom: 4px; }
+        .footer-message { text-align: center; border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px; }
+        .footer-message p { color: ${config.emailFooterTextColor}; font-family: ${config.emailFooterFontFamily}; font-size: ${config.emailFooterFontSize}px; margin: 0; }
+        .email-footer { background-color: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280; }
+        @media only screen and (max-width: 600px) {
+            .container { margin: 0; border-radius: 0; }
+            .content { padding: 16px; }
+            .affiliate-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <div class="header">
+            ${config.logoUrl ? `<div style="margin-bottom: 16px;"><img src="${config.logoUrl}" alt="Logo" style="height: 40px; width: auto;"></div>` : ''}
             <h1>${config.emailHeaderText}</h1>
         </div>
         
+        <!-- Content -->
         <div class="content">
+            <!-- Welcome Message -->
             <div class="message">
                 <p>${config.emailMessageText}</p>
             </div>
             
+            <!-- Video Section -->
+            ${config.videoUrl ? `
+            <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; text-align: center; margin: 24px 0;">
+                <div style="background-color: #e5e7eb; height: 128px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                    <div style="color: #6b7280;">
+                        🎥 Welcome Video<br>
+                        <span style="font-size: 12px;">Click to play</span>
+                    </div>
+                </div>
+                <p style="font-size: 14px; color: #6b7280; margin: 0;">Watch this quick intro to get started!</p>
+            </div>
+            ` : ''}
+            
+            <!-- CTA Button -->
             <div class="cta-button">
-                <a href="{customerPortalUrl}">${config.emailCtaText}</a>
+                <a href="{magicLink}">${config.emailCtaText}</a>
             </div>
             
-            <div class="message">
-                <p style="color: ${config.emailNoticeTextColor}; font-size: ${config.emailNoticeFontSize}px; font-weight: 500;">${config.emailNoticeText}</p>
+            <!-- Important Notice -->
+            <div class="notice">
+                <p>⚠️ ${config.emailNoticeText}</p>
+            </div>
+            
+            <!-- Location-Based Affiliates -->
+            ${config.enableLocationBasedAffiliates ? `
+            <div class="affiliates">
+                <h3>Featured Partners in Playa del Carmen</h3>
+                <div class="affiliate-grid">
+                    <div class="affiliate-item">
+                        <div class="affiliate-placeholder"></div>
+                        <div style="font-size: 12px;">Local Restaurant</div>
+                    </div>
+                    <div class="affiliate-item">
+                        <div class="affiliate-placeholder"></div>
+                        <div style="font-size: 12px;">Adventure Tours</div>
+                    </div>
+                </div>
+                <p style="color: ${config.emailSecondaryColor}; font-size: 14px; margin: 12px 0 0 0;">${config.customAffiliateMessage}</p>
+            </div>
+            ` : ''}
+            
+            <!-- Footer Message -->
+            <div class="footer-message">
+                <p>${config.emailFooterText}</p>
             </div>
         </div>
         
-        <div class="footer">
-            <p>${config.emailFooterText}</p>
+        <!-- Email Footer -->
+        <div class="email-footer">
+            <p>© 2025 eLocalPass. All rights reserved.</p>
+            <p style="margin-top: 4px;">
+                You received this email because you obtained an eLocalPass.
+                <a href="#" style="color: #3b82f6;">Unsubscribe</a>
+            </p>
         </div>
     </div>
 </body>
