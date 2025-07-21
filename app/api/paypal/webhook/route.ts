@@ -186,7 +186,7 @@ async function createQRCode(orderRecord: any) {
     const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
       where: { 
         name: {
-          contains: 'Welcome Email Paypal 2323'
+          contains: 'Paypal welcome email template'
         }
       },
       orderBy: { createdAt: 'desc' } // Always get the latest copy
