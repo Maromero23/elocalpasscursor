@@ -379,15 +379,15 @@ function QRConfigPageContent() {
       const defaultConfig = {
         // Button 1 defaults
         button1AllowCustomGuestsDays: false,
-        button1DefaultGuests: 1,
-        button1DefaultDays: 1,
+        button1DefaultGuests: 2,
+        button1DefaultDays: 3,
         button1MaxGuests: 10,
         button1MaxDays: 30,
         button1GuestsLocked: true,
-        button1GuestsDefault: 1,
+        button1GuestsDefault: 2,
         button1GuestsRangeMax: 10,
         button1DaysLocked: true,
-        button1DaysDefault: 1,
+        button1DaysDefault: 3,
         button1DaysRangeMax: 30,
         
         // Button 2 defaults
@@ -1578,15 +1578,15 @@ function QRConfigPageContent() {
             // Reset global config to defaults
     const defaultConfig = {
       button1AllowCustomGuestsDays: false,
-      button1DefaultGuests: 1,
-      button1DefaultDays: 1,
+      button1DefaultGuests: 2,
+      button1DefaultDays: 3,
       button1MaxGuests: 10,
       button1MaxDays: 30,
       button1GuestsLocked: false,
-      button1GuestsDefault: 1,
+      button1GuestsDefault: 2,
       button1GuestsRangeMax: 10,
       button1DaysLocked: false,
-      button1DaysDefault: 1,
+      button1DaysDefault: 3,
       button1DaysRangeMax: 30,
           button2PricingType: 'FIXED' as const,
           button2FixedPrice: 0,
