@@ -71,21 +71,40 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    if (!seller?.savedConfigId) {
-      throw new Error('No configuration assigned to seller')
+    let config
+    let savedConfig = null
+
+    // Handle different types of scheduled QRs
+    if (scheduledQR.configurationId === 'default' || !seller?.savedConfigId) {
+      // This is a PayPal or system-generated QR with default configuration
+      console.log(`📅 PROCESSING: Using default configuration for scheduled QR: ${scheduledQR.id}`)
+      
+      // Use default configuration for PayPal/system QRs
+      config = {
+        button2PricingType: 'FIXED',
+        button2FixedPrice: 0,
+        button5SendRebuyEmail: false
+      }
+    } else {
+      // This is a seller dashboard QR with saved configuration
+      console.log(`📅 PROCESSING: Using saved configuration for scheduled QR: ${scheduledQR.id}`)
+      
+      if (!seller || !seller.savedConfigId) {
+        throw new Error('No configuration assigned to seller')
+      }
+
+      // Get the saved QR configuration
+      savedConfig = await prisma.savedQRConfiguration.findUnique({
+        where: { id: seller.savedConfigId }
+      })
+
+      if (!savedConfig) {
+        throw new Error('Configuration not found')
+      }
+
+      // Parse the configuration JSON
+      config = JSON.parse(savedConfig.config)
     }
-
-    // Get the saved QR configuration
-    const savedConfig = await prisma.savedQRConfiguration.findUnique({
-      where: { id: seller.savedConfigId }
-    })
-
-    if (!savedConfig) {
-      throw new Error('Configuration not found')
-    }
-
-    // Parse the configuration JSON
-    const config = JSON.parse(savedConfig.config)
     
     // Calculate pricing
     let calculatedPrice = 0
@@ -177,8 +196,8 @@ export async function POST(request: NextRequest) {
         locationName: sellerDetails?.location?.name,
         distributorId: sellerDetails?.location?.distributorId,
         distributorName: sellerDetails?.location?.distributor?.name,
-        configurationId: seller.savedConfigId,
-        configurationName: seller.configurationName,
+        configurationId: seller?.savedConfigId || scheduledQR.configurationId,
+        configurationName: seller?.configurationName || 'Default Configuration',
         pricingType: config.button2PricingType,
         fixedPrice: config.button2PricingType === 'FIXED' ? config.button2FixedPrice : null,
         variableBasePrice: config.button2PricingType === 'VARIABLE' ? config.button2VariableBasePrice : null,
@@ -215,7 +234,7 @@ export async function POST(request: NextRequest) {
       magicLinkUrl: magicLinkUrl,
       customerLanguage: customerLanguage,
       deliveryMethod: scheduledQR.deliveryMethod,
-      savedConfigId: seller.savedConfigId
+      savedConfigId: seller?.savedConfigId || 'default'
     })
 
     if (emailSent) {
