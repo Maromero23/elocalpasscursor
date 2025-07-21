@@ -157,13 +157,13 @@ export const createWelcomeEmailHtml = (data: {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>${isSpanish ? 'Tu ELocalPass está listo' : 'Your ELocalPass is Ready'}</title>
+      <title>${isSpanish ? 'Bienvenido a ELocalPass' : 'Welcome to ELocalPass!'}</title>
       ${baseStyles}
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h1>🎉 ${isSpanish ? 'Tu ELocalPass está listo!' : 'Your ELocalPass is Ready!'}</h1>
+          <h1>🎉 ${isSpanish ? 'Bienvenido a ELocalPass!' : 'Welcome to ELocalPass!'}</h1>
         </div>
         
         <div class="content">
