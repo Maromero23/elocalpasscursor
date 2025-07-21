@@ -324,6 +324,9 @@ function EmailConfigPageContent() {
     try {
       console.log('🔧 LOADING FIRST SAVED TEMPLATE FOR CUSTOM CONFIG...')
       
+      // Always ensure default template is loaded first to prevent it being overridden
+      await loadDefaultEmailTemplate()
+      
       // First, check database for custom templates (new priority)
       const response = await fetch('/api/admin/email-templates?isDefault=false')
       const result = await response.json()
@@ -335,7 +338,7 @@ function EmailConfigPageContent() {
         if (customTemplate) {
           console.log('✅ FIRST SAVED TEMPLATE LOADED FROM DATABASE:', customTemplate.name)
           
-          // Use the emailConfig from the first saved template
+          // Use the emailConfig from the first saved template ONLY for custom config
           if (customTemplate.emailConfig) {
             setEmailConfig(customTemplate.emailConfig)
             setCurrentLoadedTemplateName(customTemplate.name) // Set the loaded template name
@@ -347,7 +350,7 @@ function EmailConfigPageContent() {
               emailBackgroundColor: customTemplate.emailConfig.emailBackgroundColor
             })
             
-            // Force immediate HTML regeneration
+            // Force immediate HTML regeneration for CUSTOM preview only
             setTimeout(() => {
               const html = generateCustomEmailHtml({...customTemplate.emailConfig, debugLabel: 'CUSTOM_PREVIEW'})
               setCustomPreviewHtml(html)
@@ -985,6 +988,15 @@ function EmailConfigPageContent() {
           const updatedTemplates = emailTemplates.filter((template, i) => i !== index)
           setEmailTemplates(updatedTemplates)
           setCurrentEmailTemplateName('')
+          
+          // Always reload default template to ensure it's not affected
+          await loadDefaultEmailTemplate()
+          
+          // Reload first custom template if any remain
+          if (updatedTemplates.length > 0) {
+            await loadFirstSavedTemplateForCustom()
+          }
+          
           toast.success('Template Deleted', `Template "${templateToDelete.name}" deleted successfully!`)
         } else {
           console.error('❌ Failed to delete template from database:', result.error)
