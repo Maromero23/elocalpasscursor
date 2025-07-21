@@ -20,12 +20,40 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       config: {
+        // OLD Button 1 fields (backward compatibility)
+        button1AllowCustomGuestsDays: globalConfig.button1AllowCustomGuestsDays,
+        button1DefaultGuests: globalConfig.button1DefaultGuests,
+        button1DefaultDays: globalConfig.button1DefaultDays,
+        button1MaxGuests: globalConfig.button1MaxGuests,
+        button1MaxDays: globalConfig.button1MaxDays,
+        
+        // NEW Button 1 fields
+        button1GuestsLocked: globalConfig.button1GuestsLocked,
+        button1GuestsDefault: globalConfig.button1GuestsDefault,
+        button1GuestsRangeMax: globalConfig.button1GuestsRangeMax,
+        button1DaysLocked: globalConfig.button1DaysLocked,
+        button1DaysDefault: globalConfig.button1DaysDefault,
+        button1DaysRangeMax: globalConfig.button1DaysRangeMax,
+        
+        // Button 2 fields
+        button2PricingType: globalConfig.button2PricingType,
+        button2FixedPrice: globalConfig.button2FixedPrice,
         button2VariableBasePrice: globalConfig.button2VariableBasePrice,
         button2VariableGuestIncrease: globalConfig.button2VariableGuestIncrease,
         button2VariableDayIncrease: globalConfig.button2VariableDayIncrease,
         button2VariableCommission: globalConfig.button2VariableCommission,
         button2IncludeTax: globalConfig.button2IncludeTax,
-        button2TaxPercentage: globalConfig.button2TaxPercentage
+        button2TaxPercentage: globalConfig.button2TaxPercentage,
+        
+        // Button 3-6 fields
+        button3DeliveryMethod: globalConfig.button3DeliveryMethod,
+        button4LandingPageRequired: globalConfig.button4LandingPageRequired,
+        button5SendRebuyEmail: globalConfig.button5SendRebuyEmail,
+        button6AllowFutureQR: globalConfig.button6AllowFutureQR,
+        
+        // Metadata
+        id: globalConfig.id,
+        updatedAt: globalConfig.updatedAt
       }
     })
 
