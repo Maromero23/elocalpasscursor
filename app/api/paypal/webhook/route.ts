@@ -193,6 +193,9 @@ async function createQRCode(orderRecord: any) {
       locationName = sellerDetails.location?.name || null
       distributorId = sellerDetails.location?.distributor?.id || null
       distributorName = sellerDetails.location?.distributor?.name || 'Elocalpass'
+    } else {
+      // For direct purchases (no seller attribution), set location to "Online"
+      locationName = 'Online'
     }
     
     await prisma.qRCodeAnalytics.create({
