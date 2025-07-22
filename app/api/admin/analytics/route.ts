@@ -80,7 +80,8 @@ export async function GET(request: NextRequest) {
                }
              }
            }
-         }
+         },
+         analytics: true
        },
        orderBy: {
          [sortBy]: sortOrder as 'asc' | 'desc'
@@ -108,12 +109,12 @@ export async function GET(request: NextRequest) {
        guests: qr.guests,
        days: qr.days,
        cost: qr.cost,
-       sellerName: qr.seller?.name || '',
-       sellerEmail: qr.seller?.email || '',
-       locationName: qr.seller?.location?.name || '',
-       distributorName: qr.seller?.location?.distributor?.name || '',
-       deliveryMethod: 'DIRECT',
-       language: 'en',
+       sellerName: qr.analytics?.sellerName || qr.seller?.name || '',
+       sellerEmail: qr.analytics?.sellerEmail || qr.seller?.email || '',
+       locationName: qr.analytics?.locationName || qr.seller?.location?.name || '',
+       distributorName: qr.analytics?.distributorName || qr.seller?.location?.distributor?.name || '',
+       deliveryMethod: qr.analytics?.deliveryMethod || 'DIRECT',
+       language: qr.analytics?.language || 'en',
        createdAt: qr.createdAt,
        expiresAt: qr.expiresAt,
        isActive: qr.isActive
