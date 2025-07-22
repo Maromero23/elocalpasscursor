@@ -35,3 +35,28 @@ input, textarea, select {
 input::placeholder, textarea::placeholder {
   color: #6b7280 !important; /* text-gray-500 equivalent */
 }
+
+/* Custom scrollbar styles for analytics table */
+.analytics-table-container {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f3f4f6;
+}
+.analytics-table-container::-webkit-scrollbar {
+  height: 14px;
+  width: 14px;
+}
+.analytics-table-container::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+.analytics-table-container::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 8px;
+  border: 2px solid #f3f4f6;
+}
+.analytics-table-container::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+.analytics-table-container::-webkit-scrollbar-corner {
+  background: #f3f4f6;
+}
