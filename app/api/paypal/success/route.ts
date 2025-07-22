@@ -206,16 +206,35 @@ export async function GET(request: NextRequest) {
 async function createQRCode(orderRecord: any) {
   try {
     console.log('🎫 CREATING QR CODE FOR ORDER:', orderRecord.id)
+    console.log('📋 Order details:', {
+      id: orderRecord.id,
+      customerEmail: orderRecord.customerEmail,
+      customerName: orderRecord.customerName,
+      guests: orderRecord.guests,
+      days: orderRecord.days,
+      amount: orderRecord.amount,
+      deliveryType: orderRecord.deliveryType
+    })
     
     // Import necessary modules
+    console.log('📦 Importing crypto module...')
     const crypto = await import('crypto')
+    console.log('📦 Importing translations module...')
     const { detectLanguage, t, getPlural, formatDate } = await import('@/lib/translations')
+    console.log('✅ All modules imported successfully')
     
     // Generate unique QR code
     const qrCodeId = `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const expiresAt = new Date(Date.now() + (orderRecord.days * 24 * 60 * 60 * 1000))
     
+    console.log('🎯 Generated QR details:', {
+      qrCodeId,
+      expiresAt,
+      daysFromNow: orderRecord.days
+    })
+    
     // Create QR code record
+    console.log('💾 Creating QR code in database...')
     const qrCode = await prisma.qRCode.create({
       data: {
         code: qrCodeId,
@@ -346,6 +365,13 @@ async function createQRCode(orderRecord: any) {
     
   } catch (error) {
     console.error('❌ QR CODE CREATION ERROR:', error)
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      orderRecordId: orderRecord?.id,
+      customerEmail: orderRecord?.customerEmail
+    })
+    // Don't throw the error - let the PayPal flow continue
   }
 }
 
