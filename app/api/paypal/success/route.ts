@@ -315,14 +315,33 @@ async function createQRCode(orderRecord: any) {
     // Send welcome email using simple working approach
     let emailSent = false
     try {
+      console.log('📧 STARTING EMAIL SENDING PROCESS...')
+      console.log('📧 Order details for email:', {
+        customerName: orderRecord.customerName,
+        customerEmail: orderRecord.customerEmail,
+        qrCodeId: qrCodeId
+      })
+      
       // Import email service and translations
       const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
       const { formatDate } = await import('@/lib/translations')
+      
+      console.log('📧 Email service imported successfully')
       
       const customerLanguage = 'en' // Default language for PayPal orders
       const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
       
       console.log('📧 Creating welcome email with working template system...')
+      console.log('📧 Email parameters:', {
+        customerName: orderRecord.customerName,
+        qrCode: qrCodeId,
+        guests: orderRecord.guests,
+        days: orderRecord.days,
+        expiresAt: formattedExpirationDate,
+        customerPortalUrl: magicLinkUrl,
+        language: customerLanguage,
+        deliveryMethod: 'DIRECT'
+      })
       
       // Use the simple working email template
       const emailHtml = createWelcomeEmailHtml({
@@ -337,6 +356,7 @@ async function createQRCode(orderRecord: any) {
       })
       
       console.log(`📧 Generated welcome email HTML - Length: ${emailHtml.length} chars`)
+      console.log('📧 About to send email to:', orderRecord.customerEmail)
 
       // Send the email
       emailSent = await sendEmail({
@@ -344,6 +364,8 @@ async function createQRCode(orderRecord: any) {
         subject: 'Your ELocalPass is Ready - Immediate Access',
         html: emailHtml
       })
+      
+      console.log('📧 Email send result:', emailSent)
 
       if (emailSent) {
         console.log(`✅ Welcome email sent successfully to ${orderRecord.customerEmail}`)
@@ -353,11 +375,13 @@ async function createQRCode(orderRecord: any) {
           where: { qrCodeId: qrCode.id },
           data: { welcomeEmailSent: true }
         })
+        console.log('✅ Analytics updated - email marked as sent')
       } else {
         console.error(`❌ Failed to send welcome email to ${orderRecord.customerEmail}`)
       }
     } catch (emailError) {
       console.error('❌ Error sending welcome email:', emailError)
+      console.error('❌ Email error stack:', emailError instanceof Error ? emailError.stack : 'No stack trace')
       emailSent = false
     }
     
