@@ -197,7 +197,6 @@ export default function AnalyticsPage() {
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
       <div className="min-h-screen bg-gray-100 w-full">
-        <div style={{ minWidth: '1800px' }}>
 
         {/* Navigation */}
         <nav className="bg-orange-400 shadow-sm w-full">
@@ -418,7 +417,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* QR Analytics Table - Full Width with Horizontal Scroll */}
-        <div className="w-full px-4 sm:px-6 lg:px-8 pb-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 pb-6" style={{ minWidth: '1800px' }}>
           <div className="bg-white rounded-lg shadow w-full">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">
@@ -516,7 +515,6 @@ export default function AnalyticsPage() {
               </div>
             )}
           </div>
-        </div>
         </div>
       </div>
     </ProtectedRoute>
