@@ -57,6 +57,20 @@ export async function POST(request: NextRequest) {
           return NextResponse.redirect(redirectUrl)
         }
 
+        // Convert delivery date/time to proper DateTime format
+        let deliveryDateTime = null
+        if (orderData.deliveryDate && orderData.deliveryTime) {
+          deliveryDateTime = new Date(`${orderData.deliveryDate}T${orderData.deliveryTime}`)
+          console.log('📅 Converted delivery date/time:', {
+            originalDate: orderData.deliveryDate,
+            originalTime: orderData.deliveryTime,
+            convertedDateTime: deliveryDateTime.toISOString()
+          })
+        } else if (orderData.deliveryDate) {
+          deliveryDateTime = new Date(`${orderData.deliveryDate}T12:00:00`)
+          console.log('📅 Converted delivery date (default noon):', deliveryDateTime.toISOString())
+        }
+
         // Create order record
         const orderRecord = await prisma.order.create({
           data: {
@@ -69,7 +83,7 @@ export async function POST(request: NextRequest) {
             guests: orderData.guests,
             days: orderData.days,
             deliveryType: orderData.deliveryType,
-            deliveryDate: orderData.deliveryDate,
+            deliveryDate: deliveryDateTime,
             deliveryTime: orderData.deliveryTime,
             discountCode: orderData.discountCode,
             sellerId: orderData.sellerId || null, // Use seller ID from order data (discount codes, rebuy emails)
@@ -145,6 +159,20 @@ export async function POST(request: NextRequest) {
           return NextResponse.redirect(redirectUrl)
         }
 
+        // Convert delivery date/time to proper DateTime format
+        let deliveryDateTime = null
+        if (orderData.deliveryDate && orderData.deliveryTime) {
+          deliveryDateTime = new Date(`${orderData.deliveryDate}T${orderData.deliveryTime}`)
+          console.log('📅 POST: Converted delivery date/time:', {
+            originalDate: orderData.deliveryDate,
+            originalTime: orderData.deliveryTime,
+            convertedDateTime: deliveryDateTime.toISOString()
+          })
+        } else if (orderData.deliveryDate) {
+          deliveryDateTime = new Date(`${orderData.deliveryDate}T12:00:00`)
+          console.log('📅 POST: Converted delivery date (default noon):', deliveryDateTime.toISOString())
+        }
+
         // Create order record
         const orderRecord = await prisma.order.create({
           data: {
@@ -157,7 +185,7 @@ export async function POST(request: NextRequest) {
             guests: orderData.guests,
             days: orderData.days,
             deliveryType: orderData.deliveryType,
-            deliveryDate: orderData.deliveryDate,
+            deliveryDate: deliveryDateTime,
             deliveryTime: orderData.deliveryTime,
             discountCode: orderData.discountCode,
             sellerId: orderData.sellerId || null, // Use seller ID from order data (discount codes, rebuy emails)
