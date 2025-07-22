@@ -458,7 +458,7 @@ export default function AnalyticsPage() {
                 }
               `}</style>
               <div className="custom-scrollbar">
-                <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1200px' }}>
+                <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1800px' }}>
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
