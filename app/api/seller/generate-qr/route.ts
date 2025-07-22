@@ -180,7 +180,10 @@ export async function POST(request: NextRequest) {
       ? calculatedPrice * (config.button2TaxPercentage / 100)
       : 0
     
-    // Create comprehensive analytics record
+    // Create comprehensive analytics record with Cancun timezone
+    const now = new Date()
+    const cancunTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Cancun"}))
+    
     await prisma.qRCodeAnalytics.create({
       data: {
         qrCodeId: qrCode.id,
@@ -236,7 +239,9 @@ export async function POST(request: NextRequest) {
         landingUrl: qrCode.landingUrl,
         magicLinkUrl: magicLinkUrl,
         welcomeEmailSent: false, // Will be updated when email is actually sent
-        rebuyEmailScheduled: config.button5SendRebuyEmail || false
+        rebuyEmailScheduled: config.button5SendRebuyEmail || false,
+        createdAt: cancunTime, // Use Cancun timezone
+        updatedAt: cancunTime
       }
     })
     

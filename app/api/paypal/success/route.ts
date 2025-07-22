@@ -268,7 +268,43 @@ async function createQRCode(orderRecord: any) {
 
     const magicLinkUrl = `${process.env.NEXTAUTH_URL}/customer/access?token=${accessToken}`
     
-    // Create analytics record
+    // Determine seller information for PayPal orders
+    let sellerId = 'cmc4ha7l000086a96ef0e06qq' // Default system seller ID
+    let sellerName = 'Direct Purchase'
+    let sellerEmail = 'direct@elocalpass.com'
+    
+    // Check if customer came from a specific seller (rebuy email or discount code)
+    if (orderRecord.sellerId) {
+      console.log('🔍 PayPal order: Customer came from seller:', orderRecord.sellerId)
+      
+      // Get seller details from database
+      const sellerDetails = await prisma.user.findUnique({
+        where: { id: orderRecord.sellerId },
+        include: {
+          location: {
+            include: {
+              distributor: true
+            }
+          }
+        }
+      })
+      
+      if (sellerDetails) {
+        sellerId = sellerDetails.id
+        sellerName = sellerDetails.name || 'Unknown Seller'
+        sellerEmail = sellerDetails.email || 'unknown@elocalpass.com'
+        console.log('✅ PayPal order: Using seller details:', { sellerName, sellerEmail })
+      } else {
+        console.log('⚠️ PayPal order: Seller not found, using direct purchase')
+      }
+    } else {
+      console.log('📋 PayPal order: Direct purchase from passes page')
+    }
+    
+    // Create analytics record with proper seller information and Cancun timezone
+    const now = new Date()
+    const cancunTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Cancun"}))
+    
     await prisma.qRCodeAnalytics.create({
       data: {
         qrCodeId: qrCode.id,
@@ -282,9 +318,9 @@ async function createQRCode(orderRecord: any) {
         isActive: true,
         deliveryMethod: 'DIRECT',
         language: 'en',
-        sellerId: 'cmc4ha7l000086a96ef0e06qq', // Use existing system seller for PayPal orders
-        sellerName: 'ELocalPass System',
-        sellerEmail: 'system@elocalpass.com',
+        sellerId: sellerId,
+        sellerName: sellerName,
+        sellerEmail: sellerEmail,
         locationId: null,
         locationName: null,
         distributorId: null,
@@ -308,7 +344,9 @@ async function createQRCode(orderRecord: any) {
         landingUrl: null,
         magicLinkUrl: magicLinkUrl,
         welcomeEmailSent: false,
-        rebuyEmailScheduled: false
+        rebuyEmailScheduled: false,
+        createdAt: cancunTime, // Use Cancun timezone
+        updatedAt: cancunTime
       }
     })
     

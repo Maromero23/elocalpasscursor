@@ -148,6 +148,10 @@ export async function POST(request: NextRequest) {
           }
         })
 
+        // Create analytics record with Cancun timezone
+        const currentTime = new Date()
+        const cancunTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "America/Cancun"}))
+        
         await prisma.qRCodeAnalytics.create({
           data: {
             qrCodeId: qrCode.id,
@@ -184,10 +188,12 @@ export async function POST(request: NextRequest) {
             commissionAmount: config.button2PricingType === 'VARIABLE' ? config.button2VariableCommission || 0 : 0,
             taxAmount: config.button2IncludeTax && config.button2TaxPercentage > 0 ? calculatedPrice * (config.button2TaxPercentage / 100) : 0,
             totalAmount: calculatedPrice,
-            landingUrl: qrCode.landingUrl,
+            landingUrl: null,
             magicLinkUrl: magicLinkUrl,
             welcomeEmailSent: false,
-            rebuyEmailScheduled: config.button5SendRebuyEmail || false
+            rebuyEmailScheduled: config.button5SendRebuyEmail || false,
+            createdAt: cancunTime, // Use Cancun timezone
+            updatedAt: cancunTime
           }
         })
 
