@@ -10,8 +10,19 @@ export async function POST(request: NextRequest) {
     console.log('🎯 SINGLE QR PROCESSOR: Request received')
     console.log('📋 Headers:', Object.fromEntries(request.headers.entries()))
     
-    // TEMPORARY: Skip all verification for debugging
-    console.log('⚠️ TEMPORARY: Skipping all verification for debugging')
+    // QStash webhook verification (using correct signing key)
+    const qstashSignature = request.headers.get('upstash-signature')
+    const qstashTimestamp = request.headers.get('upstash-timestamp')
+    const qstashSigningKey = process.env.QSTASH_CURRENT_SIGNING_KEY
+    
+    console.log('🔍 QStash verification check:', {
+      hasSignature: !!qstashSignature,
+      hasTimestamp: !!qstashTimestamp,
+      hasSigningKey: !!qstashSigningKey
+    })
+    
+    // TEMPORARY: Skip verification for debugging
+    console.log('⚠️ TEMPORARY: Skipping QStash verification for debugging')
     
     const data = await request.json()
     scheduledQRId = data.scheduledQRId

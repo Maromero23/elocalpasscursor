@@ -553,13 +553,13 @@ async function scheduleQRCode(orderRecord: any) {
     // Use our existing QStash system for exact-time scheduling [[memory:3709459]]
     const delay = deliveryDateTime.getTime() - Date.now()
     
-    if (delay > 0 && process.env.QSTASH_CURRENT_SIGNING_KEY) {
+    if (delay > 0 && process.env.QSTASH_TOKEN) {
       try {
         // Schedule exact processing with Upstash QStash V2
         const qstashResponse = await fetch(`https://qstash.upstash.io/v2/publish/${process.env.NEXTAUTH_URL}/api/scheduled-qr/process-single`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.QSTASH_CURRENT_SIGNING_KEY}`,
+            'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
             'Content-Type': 'application/json',
             'Upstash-Delay': `${delay}ms`
           },

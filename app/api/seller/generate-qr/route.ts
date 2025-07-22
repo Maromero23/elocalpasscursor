@@ -354,19 +354,19 @@ ${t('email.welcome.signature', customerLanguage)}
         const scheduledDateTime = new Date(scheduledFor)
         const delay = scheduledDateTime.getTime() - Date.now()
         
-        if (delay > 0 && process.env.QSTASH_CURRENT_SIGNING_KEY) {
+        if (delay > 0 && process.env.QSTASH_TOKEN) {
           try {
             console.log(`🔄 ATTEMPTING QSTASH SCHEDULING:`)
             console.log(`   Delay: ${delay}ms (${Math.round(delay / 1000 / 60)} minutes)`)
             console.log(`   Scheduled for: ${scheduledDateTime.toISOString()}`)
             console.log(`   QStash URL: https://qstash.upstash.io/v2/publish/${process.env.NEXTAUTH_URL}/api/scheduled-qr/process-single`)
-            console.log(`   Has QStash Token: ${!!process.env.QSTASH_CURRENT_SIGNING_KEY}`)
+            console.log(`   Has QStash Token: ${!!process.env.QSTASH_TOKEN}`)
             
             // Schedule exact processing with Upstash QStash V2
             const qstashResponse = await fetch(`https://qstash.upstash.io/v2/publish/${process.env.NEXTAUTH_URL}/api/scheduled-qr/process-single`, {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${process.env.QSTASH_CURRENT_SIGNING_KEY}`,
+                'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
                 'Content-Type': 'application/json',
                 'Upstash-Delay': `${delay}ms`
               },
@@ -398,7 +398,7 @@ ${t('email.welcome.signature', customerLanguage)}
         } else {
           console.log(`📅 QStash scheduling skipped:`)
           console.log(`   Delay > 0: ${delay > 0} (${delay}ms)`)
-          console.log(`   Has QStash Token: ${!!process.env.QSTASH_CURRENT_SIGNING_KEY}`)
+          console.log(`   Has QStash Token: ${!!process.env.QSTASH_TOKEN}`)
           if (delay > 0) {
             console.log(`📅 SCHEDULED QR: QStash token not configured, relying on periodic processing`)
           }
