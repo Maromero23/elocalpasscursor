@@ -272,13 +272,14 @@ async function createQRCode(orderRecord: any) {
     let sellerId = 'cmc4ha7l000086a96ef0e06qq' // Default system seller ID
     let sellerName = 'Direct Purchase'
     let sellerEmail = 'directsale@elocalpass.com'
+    let sellerDetails = null // Declare outside the block
     
     // Check if customer came from a specific seller (rebuy email or discount code)
     if (orderRecord.sellerId) {
       console.log('🔍 PayPal order: Customer came from seller:', orderRecord.sellerId)
       
       // Get seller details from database
-      const sellerDetails = await prisma.user.findUnique({
+      sellerDetails = await prisma.user.findUnique({
         where: { id: orderRecord.sellerId },
         include: {
           location: {
@@ -305,6 +306,20 @@ async function createQRCode(orderRecord: any) {
     const now = new Date()
     const cancunTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Cancun"}))
     
+    // Determine location and distributor information
+    let locationId = null
+    let locationName = null
+    let distributorId = null
+    let distributorName = 'Elocalpass' // Default for direct sales
+    
+    if (orderRecord.sellerId && sellerDetails) {
+      // Use seller's location and distributor information for attributed sales
+      locationId = sellerDetails.location?.id || null
+      locationName = sellerDetails.location?.name || null
+      distributorId = sellerDetails.location?.distributor?.id || null
+      distributorName = sellerDetails.location?.distributor?.name || 'Elocalpass'
+    }
+    
     await prisma.qRCodeAnalytics.create({
       data: {
         qrCodeId: qrCode.id,
@@ -321,10 +336,10 @@ async function createQRCode(orderRecord: any) {
         sellerId: sellerId,
         sellerName: sellerName,
         sellerEmail: sellerEmail,
-        locationId: null,
-        locationName: null,
-        distributorId: null,
-        distributorName: null,
+        locationId: locationId,
+        locationName: locationName,
+        distributorId: distributorId,
+        distributorName: distributorName,
         configurationId: 'default',
         configurationName: 'Default PayPal Configuration',
         pricingType: 'FIXED',
