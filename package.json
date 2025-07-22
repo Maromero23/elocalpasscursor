@@ -1,6 +1,6 @@
 {
   "name": "elocalpass",
-  "version": "3.39.34",
+  "version": "3.39.35",
   "description": "ELocalPass - Local Business QR Code Management System",
   "private": true,
   "scripts": {

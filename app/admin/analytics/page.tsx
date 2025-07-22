@@ -197,6 +197,7 @@ export default function AnalyticsPage() {
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
       <div className="min-h-screen bg-gray-100 w-full">
+        <div style={{ minWidth: '1800px' }}>
 
         {/* Navigation */}
         <nav className="bg-orange-400 shadow-sm w-full">
@@ -240,8 +241,8 @@ export default function AnalyticsPage() {
         </nav>
 
         {/* Main Content - Full Width */}
-        <div className="w-full py-6 px-4 sm:px-6 lg:px-8 analytics-table-container" style={{ overflowY: 'hidden' }}>
-          <div className="w-full" style={{ minWidth: '1800px' }}>
+        <div className="w-full py-6 px-4 sm:px-6 lg:px-8">
+          <div className="w-full">
             <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 w-full">
               <div className="mb-8 flex justify-between items-center">
                 <div>
@@ -432,32 +433,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Horizontal Scrollable Container with Custom Scrollbar */}
-            <div 
-              className="w-full overflow-x-auto" 
-              style={{ 
-                scrollbarWidth: 'thin', 
-                scrollbarColor: '#9CA3AF #F3F4F6',
-                WebkitOverflowScrolling: 'touch',
-                overflowY: 'hidden'
-              }}
-            >
-              <style jsx>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                  height: 12px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                  background: #f3f4f6;
-                  border-radius: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                  background: #9ca3af;
-                  border-radius: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                  background: #6b7280;
-                }
-              `}</style>
-              <div className="custom-scrollbar">
+            <div className="w-full overflow-x-auto analytics-table-container">
                 <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1800px' }}>
                   <thead className="bg-gray-50">
                     <tr>
@@ -523,7 +499,6 @@ export default function AnalyticsPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
             </div>
 
             {analytics.length === 0 && (
@@ -541,6 +516,7 @@ export default function AnalyticsPage() {
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </ProtectedRoute>
