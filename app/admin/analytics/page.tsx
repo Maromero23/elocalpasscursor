@@ -184,11 +184,11 @@ export default function AnalyticsPage() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100 w-full">
 
         {/* Navigation */}
-        <nav className="bg-orange-400 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav className="bg-orange-400 shadow-sm w-full">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center space-x-8">
                 <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
@@ -227,10 +227,10 @@ export default function AnalyticsPage() {
           </div>
         </nav>
 
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
-            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
+        {/* Main Content - Full Width */}
+        <div className="w-full py-6 px-4 sm:px-6 lg:px-8">
+          <div className="w-full">
+            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 w-full">
               <div className="mb-8 flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics Dashboard</h2>
@@ -251,208 +251,162 @@ export default function AnalyticsPage() {
                 </div>
               )}
 
-          {/* Summary Cards */}
-          {summary && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div 
-                className="bg-white rounded-lg shadow p-6 cursor-pointer hover:bg-gray-50 transition-colors duration-200 border-2 hover:border-blue-300"
-                onClick={handleShowAllQRCodes}
-                title="Click to show all QR codes"
-              >
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <QrCode className="h-8 w-8 text-blue-600" />
+              {/* Summary Cards */}
+              {summary && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  <div className="bg-white overflow-hidden shadow rounded-lg">
+                    <div className="p-5">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <QrCode className="h-6 w-6 text-gray-400" />
+                        </div>
+                        <div className="ml-5 w-0 flex-1">
+                          <dl>
+                            <dt className="text-sm font-medium text-gray-500 truncate">Total QR Codes</dt>
+                            <dd className="text-lg font-medium text-gray-900">{summary.totalQRCodes}</dd>
+                          </dl>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Total QR Codes</p>
-                    <p className="text-2xl font-semibold text-gray-900">{summary.totalQRCodes}</p>
-                    <p className="text-xs text-blue-600 mt-1">Click to view all</p>
+
+                  <div className="bg-white overflow-hidden shadow rounded-lg">
+                    <div className="p-5">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <DollarSign className="h-6 w-6 text-gray-400" />
+                        </div>
+                        <div className="ml-5 w-0 flex-1">
+                          <dl>
+                            <dt className="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
+                            <dd className="text-lg font-medium text-gray-900">{formatCurrency(summary.totalRevenue)}</dd>
+                          </dl>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white overflow-hidden shadow rounded-lg">
+                    <div className="p-5">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <Users2 className="h-6 w-6 text-gray-400" />
+                        </div>
+                        <div className="ml-5 w-0 flex-1">
+                          <dl>
+                            <dt className="text-sm font-medium text-gray-500 truncate">Total Customers</dt>
+                            <dd className="text-lg font-medium text-gray-900">{summary.totalCustomers}</dd>
+                          </dl>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white overflow-hidden shadow rounded-lg">
+                    <div className="p-5">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <Calendar className="h-6 w-6 text-gray-400" />
+                        </div>
+                        <div className="ml-5 w-0 flex-1">
+                          <dl>
+                            <dt className="text-sm font-medium text-gray-500 truncate">Active QR Codes</dt>
+                            <dd className="text-lg font-medium text-gray-900">{summary.activeQRCodes}</dd>
+                          </dl>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <DollarSign className="h-8 w-8 text-green-600" />
+              {/* Filters */}
+              <div className="mb-6 bg-white p-4 rounded-lg shadow">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+                    <select
+                      value={dateRange}
+                      onChange={(e) => setDateRange(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    >
+                      <option value="7">Last 7 days</option>
+                      <option value="30">Last 30 days</option>
+                      <option value="90">Last 90 days</option>
+                      <option value="365">Last year</option>
+                    </select>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-                    <p className="text-2xl font-semibold text-gray-900">{formatCurrency(summary.totalRevenue)}</p>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="expired">Expired</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    >
+                      <option value="createdAt">Created Date</option>
+                      <option value="cost">Cost</option>
+                      <option value="customerName">Customer Name</option>
+                      <option value="qrCode">QR Code</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    >
+                      <option value="desc">Newest First</option>
+                      <option value="asc">Oldest First</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      onClick={handleShowAllQRCodes}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                    >
+                      {showAllQRCodes ? "Show Recent" : "Show All"}
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Users2 className="h-8 w-8 text-purple-600" />
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search QR codes, customers, or emails..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm"
+                    />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Total Customers</p>
-                    <p className="text-2xl font-semibold text-gray-900">{summary.totalCustomers}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <TrendingUp className="h-8 w-8 text-orange-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Avg. Cost</p>
-                    <p className="text-2xl font-semibold text-gray-900">{formatCurrency(summary.avgCost)}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Users className="h-8 w-8 text-indigo-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Total Guests</p>
-                    <p className="text-2xl font-semibold text-gray-900">{summary.totalGuests}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Calendar className="h-8 w-8 text-red-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Avg. Days</p>
-                    <p className="text-2xl font-semibold text-gray-900">{summary.avgDays.toFixed(1)}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Eye className="h-8 w-8 text-green-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Active QR Codes</p>
-                    <p className="text-2xl font-semibold text-gray-900">{summary.activeQRCodes}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Globe className="h-8 w-8 text-gray-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Expired QR Codes</p>
-                    <p className="text-2xl font-semibold text-gray-900">{summary.expiredQRCodes}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Filters */}
-          <div className="bg-white rounded-lg shadow mb-6 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                <select
-                  value={dateRange}
-                  onChange={(e) => setDateRange(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="7">Last 7 days</option>
-                  <option value="30">Last 30 days</option>
-                  <option value="90">Last 90 days</option>
-                  <option value="365">Last year</option>
-                  <option value="all">All time</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="expired">Expired</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="createdAt">Created Date</option>
-                  <option value="cost">Cost</option>
-                  <option value="guests">Guests</option>
-                  <option value="days">Days</option>
-                  <option value="customerName">Customer Name</option>
-                  <option value="distributorName">Distributor</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search customers, QR codes..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Show All QR Codes Notice */}
-          {showAllQRCodes && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <QrCode className="h-5 w-5 text-blue-600 mr-2" />
-                  <div>
-                    <p className="text-sm font-medium text-blue-800">
-                      Showing all QR codes ever created ({analytics.length} total)
-                    </p>
-                    <p className="text-sm text-blue-600">
-                      You clicked on "Total QR Codes" to view the complete history
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowAllQRCodes(false)
-                    setDateRange("30")
-                    setStatusFilter("all")
-                    setSearchQuery("")
-                  }}
-                  className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-md hover:bg-blue-200 transition-colors"
-                >
-                  Reset Filters
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* QR Analytics Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+        {/* QR Analytics Table - Full Width with Horizontal Scroll */}
+        <div className="w-full px-4 sm:px-6 lg:px-8 pb-6">
+          <div className="bg-white rounded-lg shadow w-full">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">
                 {showAllQRCodes ? "Complete QR Code History" : "QR Code Analytics"}
@@ -465,72 +419,77 @@ export default function AnalyticsPage() {
               </p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      QR Code
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Details
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cost
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Seller
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {analytics.map((qr) => (
-                    <tr key={qr.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{qr.qrCode}</div>
-                        <div className="text-sm text-gray-500">{qr.deliveryMethod}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{qr.customerName}</div>
-                        <div className="text-sm text-gray-500">{qr.customerEmail}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{qr.guests} guests • {qr.days} days</div>
-                        <div className="text-sm text-gray-500">Expires: {formatDate(qr.expiresAt)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{formatCurrency(qr.cost)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{qr.sellerName}</div>
-                        <div className="text-sm text-gray-500">{qr.sellerEmail}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{qr.locationName}</div>
-                        <div className="text-sm text-gray-500">{qr.distributorName}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(qr.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(qr)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Horizontal Scrollable Container */}
+            <div className="w-full overflow-x-auto" style={{ scrollbarWidth: 'auto', scrollbarColor: '#9CA3AF #F3F4F6' }}>
+              <div className="min-w-full inline-block align-middle">
+                <div className="overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          QR Code
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Customer
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Cost
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Seller
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Location
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Created
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {analytics.map((qr) => (
+                        <tr key={qr.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{qr.qrCode}</div>
+                            <div className="text-sm text-gray-500">{qr.deliveryMethod}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{qr.customerName}</div>
+                            <div className="text-sm text-gray-500">{qr.customerEmail}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{qr.guests} guests • {qr.days} days</div>
+                            <div className="text-sm text-gray-500">Expires: {formatDate(qr.expiresAt)}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{formatCurrency(qr.cost)}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{qr.sellerName}</div>
+                            <div className="text-sm text-gray-500">{qr.sellerEmail}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{qr.locationName}</div>
+                            <div className="text-sm text-gray-500">{qr.distributorName}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(qr.createdAt)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getStatusBadge(qr)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
             {analytics.length === 0 && (
@@ -547,8 +506,6 @@ export default function AnalyticsPage() {
                 </p>
               </div>
             )}
-              </div>
-            </div>
           </div>
         </div>
       </div>
