@@ -1919,7 +1919,7 @@ export default function AdminAffiliates() {
       <div className="min-h-screen bg-gray-100">
         {/* Navigation */}
         <nav className="bg-orange-400 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center space-x-8">
                 <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
@@ -1953,7 +1953,7 @@ export default function AdminAffiliates() {
 
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
               <Building2 className="w-8 h-8 text-blue-600" />
@@ -2004,7 +2004,7 @@ export default function AdminAffiliates() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
