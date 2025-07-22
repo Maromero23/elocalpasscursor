@@ -240,9 +240,9 @@ export default function AnalyticsPage() {
         </nav>
 
         {/* Main Content - Full Width */}
-        <div className="w-full py-6 px-4 sm:px-6 lg:px-8">
-          <div className="w-full">
-            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 w-full">
+        <div className="w-full py-6 px-4 sm:px-6 lg:px-8 analytics-table-container" style={{ overflowY: 'hidden' }}>
+          <div className="w-full" style={{ minWidth: '1800px' }}>
+            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
               <div className="mb-8 flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics Dashboard</h2>
