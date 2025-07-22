@@ -282,7 +282,7 @@ async function createQRCode(orderRecord: any) {
         isActive: true,
         deliveryMethod: 'DIRECT',
         language: 'en',
-        sellerId: orderRecord.sellerId || 'system',
+        sellerId: 'cmc4ha7l000086a96ef0e06qq', // Use existing system seller for PayPal orders
         sellerName: 'ELocalPass System',
         sellerEmail: 'system@elocalpass.com',
         locationId: null,
