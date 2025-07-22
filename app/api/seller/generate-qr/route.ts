@@ -354,13 +354,13 @@ ${t('email.welcome.signature', customerLanguage)}
         const scheduledDateTime = new Date(scheduledFor)
         const delay = scheduledDateTime.getTime() - Date.now()
         
-        if (delay > 0 && process.env.QSTASH_TOKEN) {
+        if (delay > 0 && process.env.QSTASH_CURRENT_SIGNING_KEY) {
           try {
             // Schedule exact processing with Upstash QStash V2
             const qstashResponse = await fetch(`https://qstash.upstash.io/v2/publish/${process.env.NEXTAUTH_URL}/api/scheduled-qr/process-single`, {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
+                'Authorization': `Bearer ${process.env.QSTASH_CURRENT_SIGNING_KEY}`,
                 'Content-Type': 'application/json',
                 'Upstash-Delay': `${delay}ms`
               },
