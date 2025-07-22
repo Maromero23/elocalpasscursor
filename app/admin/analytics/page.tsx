@@ -432,8 +432,32 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Horizontal Scrollable Container with Custom Scrollbar */}
-            <div className="w-full overflow-x-auto analytics-table-container">
-
+            <div 
+              className="w-full overflow-x-auto" 
+              style={{ 
+                scrollbarWidth: 'thin', 
+                scrollbarColor: '#9CA3AF #F3F4F6',
+                WebkitOverflowScrolling: 'touch',
+                overflowY: 'hidden'
+              }}
+            >
+              <style jsx>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                  height: 12px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                  background: #f3f4f6;
+                  border-radius: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                  background: #9ca3af;
+                  border-radius: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                  background: #6b7280;
+                }
+              `}</style>
+              <div className="custom-scrollbar">
                 <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1800px' }}>
                   <thead className="bg-gray-50">
                     <tr>
