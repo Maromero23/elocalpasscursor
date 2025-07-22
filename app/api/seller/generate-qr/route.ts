@@ -356,6 +356,12 @@ ${t('email.welcome.signature', customerLanguage)}
         
         if (delay > 0 && process.env.QSTASH_CURRENT_SIGNING_KEY) {
           try {
+            console.log(`🔄 ATTEMPTING QSTASH SCHEDULING:`)
+            console.log(`   Delay: ${delay}ms (${Math.round(delay / 1000 / 60)} minutes)`)
+            console.log(`   Scheduled for: ${scheduledDateTime.toISOString()}`)
+            console.log(`   QStash URL: https://qstash.upstash.io/v2/publish/${process.env.NEXTAUTH_URL}/api/scheduled-qr/process-single`)
+            console.log(`   Has QStash Token: ${!!process.env.QSTASH_CURRENT_SIGNING_KEY}`)
+            
             // Schedule exact processing with Upstash QStash V2
             const qstashResponse = await fetch(`https://qstash.upstash.io/v2/publish/${process.env.NEXTAUTH_URL}/api/scheduled-qr/process-single`, {
               method: 'POST',
@@ -369,19 +375,33 @@ ${t('email.welcome.signature', customerLanguage)}
               })
             })
             
+            console.log(`🔄 QStash Response Status: ${qstashResponse.status}`)
+            console.log(`🔄 QStash Response Headers:`, Object.fromEntries(qstashResponse.headers.entries()))
+            
             if (qstashResponse.ok) {
               const qstashData = await qstashResponse.json()
-              console.log(`📅 SCHEDULED QR: QStash job created for exact time: ${scheduledDateTime}`)
+              console.log(`✅ SCHEDULED QR: QStash job created successfully!`)
+              console.log(`📅 Scheduled for exact time: ${scheduledDateTime.toISOString()}`)
               console.log(`🆔 QStash Message ID: ${qstashData.messageId}`)
+              console.log(`📋 QStash Response Data:`, qstashData)
             } else {
-              console.error('❌ QStash scheduling failed:', await qstashResponse.text())
+              const errorText = await qstashResponse.text()
+              console.error('❌ QStash scheduling failed!')
+              console.error(`   Status: ${qstashResponse.status}`)
+              console.error(`   Error: ${errorText}`)
             }
           } catch (qstashError) {
             console.error('❌ QStash error:', qstashError)
+            console.error('❌ QStash error stack:', qstashError instanceof Error ? qstashError.stack : 'No stack')
             // Fallback: could still rely on periodic checking
           }
-        } else if (delay > 0) {
-          console.log(`📅 SCHEDULED QR: QStash token not configured, relying on periodic processing`)
+        } else {
+          console.log(`📅 QStash scheduling skipped:`)
+          console.log(`   Delay > 0: ${delay > 0} (${delay}ms)`)
+          console.log(`   Has QStash Token: ${!!process.env.QSTASH_CURRENT_SIGNING_KEY}`)
+          if (delay > 0) {
+            console.log(`📅 SCHEDULED QR: QStash token not configured, relying on periodic processing`)
+          }
         }
       }
       
