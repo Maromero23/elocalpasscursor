@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
             deliveryDate: customData.deliveryDate,
             deliveryTime: customData.deliveryTime,
             discountCode: customData.discountCode,
-            sellerId: null, // PayPal orders don't have a specific seller
+            sellerId: customData.sellerId || null, // Use seller ID from custom data (discount codes, rebuy emails)
             status: 'PAID'
           }
         })
@@ -459,7 +459,7 @@ async function handlePayPalIPN(body: string) {
             deliveryDate: customData.deliveryDate,
             deliveryTime: customData.deliveryTime,
             discountCode: customData.discountCode,
-            sellerId: null, // PayPal orders don't have a specific seller
+            sellerId: customData.sellerId || null, // Use seller ID from custom data (discount codes, rebuy emails)
             status: 'PAID'
           }
         })

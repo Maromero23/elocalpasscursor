@@ -321,7 +321,13 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         customerName: orderData.customerName,
         passType: orderData.passType,
         guests: orderData.guests,
-        days: orderData.days
+        days: orderData.days,
+        deliveryType: orderData.deliveryType,
+        deliveryDate: orderData.deliveryDate,
+        deliveryTime: orderData.deliveryTime,
+        discountCode: orderData.discountCode,
+        sellerId: orderData.sellerId,
+        calculatedPrice: orderData.calculatedPrice
       }))
 
       console.log('🔗 PayPal URL:', paypalUrl.toString())
