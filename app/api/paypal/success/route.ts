@@ -21,6 +21,13 @@ export async function POST(request: NextRequest) {
     const orderDataParam = searchParams.get('orderData')
     const amountParam = searchParams.get('amount')
     
+    console.log('🔍 PayPal Success - URL Parameters Check:', {
+      hasOrderData: !!orderDataParam,
+      hasAmount: !!amountParam,
+      orderDataLength: orderDataParam ? orderDataParam.length : 0,
+      allParams: Object.fromEntries(searchParams.entries())
+    })
+    
     if (orderDataParam) {
       console.log('💰 Processing PayPal payment from return URL...')
       
@@ -74,9 +81,20 @@ export async function POST(request: NextRequest) {
 
         // Handle QR code creation based on delivery type
         if (orderData.deliveryType === 'now') {
+          console.log('🚀 IMMEDIATE DELIVERY: Creating QR code now')
           await createQRCode(orderRecord)
-        } else {
+        } else if (orderData.deliveryType === 'future') {
+          console.log('📅 FUTURE DELIVERY: Scheduling QR code')
+          console.log('📋 Future delivery data:', {
+            deliveryType: orderData.deliveryType,
+            deliveryDate: orderData.deliveryDate,
+            deliveryTime: orderData.deliveryTime,
+            orderRecordId: orderRecord.id
+          })
           await scheduleQRCode(orderRecord)
+        } else {
+          console.log('⚠️ UNKNOWN DELIVERY TYPE:', orderData.deliveryType)
+          console.log('📋 Order data:', orderData)
         }
 
         // Redirect to payment success page with order ID
@@ -90,6 +108,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('⚠️ FALLBACK PATH: No orderData parameter found or processing failed')
+    console.log('📋 Available parameters:', Object.fromEntries(searchParams.entries()))
+    
     // Fallback: Check if we can process this payment from PayPal POST data
     const paymentStatus = searchParams.get('payment_status')
     const txnId = searchParams.get('txn_id')
@@ -529,9 +550,45 @@ async function createQRCode(orderRecord: any) {
 async function scheduleQRCode(orderRecord: any) {
   try {
     console.log('📅 SCHEDULING QR CODE FOR ORDER:', orderRecord.id)
+    console.log('📋 Order details:', {
+      deliveryType: orderRecord.deliveryType,
+      deliveryDate: orderRecord.deliveryDate,
+      deliveryTime: orderRecord.deliveryTime,
+      customerEmail: orderRecord.customerEmail
+    })
     
     // Calculate delivery date and time
-    const deliveryDateTime = orderRecord.deliveryDate ? new Date(orderRecord.deliveryDate) : new Date()
+    let deliveryDateTime: Date
+    
+    if (orderRecord.deliveryDate && orderRecord.deliveryTime) {
+      // Combine date and time properly
+      deliveryDateTime = new Date(`${orderRecord.deliveryDate}T${orderRecord.deliveryTime}`)
+      console.log('✅ Using provided delivery date/time:', deliveryDateTime.toISOString())
+    } else if (orderRecord.deliveryDate) {
+      // Only date provided, default to noon
+      deliveryDateTime = new Date(`${orderRecord.deliveryDate}T12:00:00`)
+      console.log('⚠️ Only date provided, defaulting to noon:', deliveryDateTime.toISOString())
+    } else {
+      // No date provided - this shouldn't happen for future delivery
+      console.error('❌ CRITICAL: Future delivery order without delivery date!')
+      console.error('📋 Order data:', orderRecord)
+      
+      // Default to 1 hour from now as fallback
+      deliveryDateTime = new Date(Date.now() + 60 * 60 * 1000)
+      console.log('🚨 FALLBACK: Scheduling for 1 hour from now:', deliveryDateTime.toISOString())
+    }
+    
+    // Validate that delivery time is in the future
+    const now = new Date()
+    if (deliveryDateTime <= now) {
+      console.error('❌ Delivery time is in the past!', {
+        deliveryDateTime: deliveryDateTime.toISOString(),
+        now: now.toISOString()
+      })
+      // Adjust to 1 hour from now
+      deliveryDateTime = new Date(Date.now() + 60 * 60 * 1000)
+      console.log('🔧 Adjusted to 1 hour from now:', deliveryDateTime.toISOString())
+    }
     
     // Create scheduled QR configuration using our existing system
     const scheduledQR = await prisma.scheduledQRCode.create({
