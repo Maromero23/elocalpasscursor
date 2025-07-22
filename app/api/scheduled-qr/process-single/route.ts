@@ -7,19 +7,36 @@ export async function POST(request: NextRequest) {
   let isRetry: boolean = false
   
   try {
+    console.log('🎯 SINGLE QR PROCESSOR: Request received')
+    console.log('📋 Headers:', Object.fromEntries(request.headers.entries()))
+    
     // QStash webhook verification
     const qstashSignature = request.headers.get('upstash-signature')
     const qstashTimestamp = request.headers.get('upstash-timestamp')
     const qstashToken = process.env.QSTASH_CURRENT_SIGNING_KEY
     
+    console.log('🔍 QStash verification check:', {
+      hasSignature: !!qstashSignature,
+      hasTimestamp: !!qstashTimestamp,
+      hasToken: !!qstashToken
+    })
+    
     if (qstashSignature && qstashTimestamp && qstashToken) {
       try {
         // Verify QStash signature
         const body = await request.text()
+        console.log('📄 Request body length:', body.length)
+        
         const signature = crypto
           .createHmac('sha256', qstashToken)
           .update(body + qstashTimestamp)
           .digest('hex')
+        
+        console.log('🔐 Signature verification:', {
+          expected: signature,
+          received: qstashSignature,
+          match: signature === qstashSignature
+        })
         
         if (signature !== qstashSignature) {
           console.log('🔒 SINGLE QR PROCESSOR: Invalid QStash signature')
@@ -37,19 +54,32 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Verification failed' }, { status: 401 })
       }
     } else {
+      console.log('🔍 No QStash headers, checking for manual/cron request')
+      
       // Fallback to cron secret for manual testing
       const cronSecret = process.env.CRON_SECRET
       if (cronSecret) {
         const authHeader = request.headers.get('authorization')
+        console.log('🔍 Authorization check:', {
+          hasAuthHeader: !!authHeader,
+          expected: `Bearer ${cronSecret}`,
+          match: authHeader === `Bearer ${cronSecret}`
+        })
+        
         if (authHeader !== `Bearer ${cronSecret}`) {
           console.log('🔒 SINGLE QR PROCESSOR: Unauthorized request')
           return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
+      } else {
+        // TEMPORARY: Allow requests without verification for debugging
+        console.log('⚠️ TEMPORARY: No cron secret, allowing request for debugging')
       }
       
       const data = await request.json()
       scheduledQRId = data.scheduledQRId
       isRetry = data.isRetry || false
+      
+      console.log(`🔓 SINGLE QR PROCESSOR: Manual/cron request for QR: ${scheduledQRId}`)
     }
 
     if (!scheduledQRId) {
