@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
         </nav>
 
         {/* Main Content - Full Width */}
-        <div className="w-full py-6 px-4 sm:px-6 lg:px-8">
+        <div className="w-full py-6 px-4 sm:px-6 lg:px-8" style={{ minWidth: '1800px' }}>
           <div className="w-full">
             <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 w-full">
               <div className="mb-8 flex justify-between items-center">
@@ -417,7 +417,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* QR Analytics Table - Full Width with Horizontal Scroll */}
-        <div className="w-full px-4 sm:px-6 lg:px-8 pb-6" style={{ minWidth: '1800px' }}>
+        <div className="w-full px-4 sm:px-6 lg:px-8 pb-6">
           <div className="bg-white rounded-lg shadow w-full">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">
