@@ -357,7 +357,10 @@ async function createQRCode(orderRecord: any) {
       if (paypalTemplate && paypalTemplate.customHTML) {
         console.log('📧 Using PayPal-specific branded template')
         
-        const magicLinkUrl = `https://elocalpasscursor.vercel.app/customer/access`
+        // Use the actual magic link URL that was created earlier with the token
+        const magicLinkUrl = `${process.env.NEXTAUTH_URL}/customer/access?token=${accessToken}`
+        
+        console.log('📧 Magic link URL for PayPal template:', magicLinkUrl)
         
         // Replace variables in PayPal template
         emailHtml = paypalTemplate.customHTML
