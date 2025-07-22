@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../../components/auth/protected-route"
 import Link from "next/link"
@@ -74,6 +74,23 @@ export default function AnalyticsPage() {
   const [sortBy, setSortBy] = useState("createdAt")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [showAllQRCodes, setShowAllQRCodes] = useState(false)
+
+  // Scroll synchronization refs
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const mainScrollRef = useRef<HTMLDivElement>(null)
+
+  // Scroll synchronization functions
+  const syncScrollFromTop = (e: React.UIEvent<HTMLDivElement>) => {
+    if (mainScrollRef.current && topScrollRef.current) {
+      mainScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
+    }
+  }
+
+  const syncScrollFromMain = (e: React.UIEvent<HTMLDivElement>) => {
+    if (topScrollRef.current && mainScrollRef.current) {
+      topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
+    }
+  }
 
   const fetchAnalytics = async () => {
     try {
@@ -433,6 +450,7 @@ export default function AnalyticsPage() {
 
             {/* Top scroll bar */}
             <div 
+              ref={topScrollRef}
               className="overflow-x-scroll analytics-table-container" 
               style={{ 
                 scrollBehavior: 'auto',
@@ -441,6 +459,7 @@ export default function AnalyticsPage() {
                 WebkitOverflowScrolling: 'touch',
                 height: '20px'
               }}
+              onScroll={syncScrollFromTop}
             >
               <div style={{ 
                 width: '1800px',
@@ -449,13 +468,16 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Main table container */}
-            <div className="overflow-x-scroll analytics-table-container" 
+            <div 
+              ref={mainScrollRef}
+              className="overflow-x-scroll analytics-table-container" 
               style={{ 
                 scrollBehavior: 'auto',
                 scrollbarWidth: 'auto',
                 msOverflowStyle: 'scrollbar',
                 WebkitOverflowScrolling: 'touch'
               }}
+              onScroll={syncScrollFromMain}
             >
                 <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1800px' }}>
                   <thead className="bg-gray-50">
