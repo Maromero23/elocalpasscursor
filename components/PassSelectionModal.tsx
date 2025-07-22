@@ -268,6 +268,12 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       // Get seller tracking from localStorage if available
       const sellerTracking = localStorage.getItem('elocalpass-seller-tracking')
       
+      // Clear seller tracking if no discount code is being used (direct purchase)
+      if (!discountCode || !discountCode.trim()) {
+        localStorage.removeItem('elocalpass-seller-tracking')
+        console.log('🧹 PASS MODAL: Cleared seller tracking for direct purchase')
+      }
+      
       console.log('💳 PAYMENT SUBMIT:', {
         calculatedPrice,
         originalPrice,
@@ -276,7 +282,9 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         guests,
         days,
         customerEmail,
-        customerName
+        customerName,
+        discountCode,
+        sellerTracking: discountCode ? sellerTracking : 'CLEARED'
       })
 
       // Create the pass order
@@ -289,7 +297,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         deliveryTime: deliveryType === 'future' ? deliveryTime : null,
         discountCode: discountCode || null,
         calculatedPrice,
-        sellerId: sellerTracking || null, // Track which seller referred this customer
+        sellerId: discountCode ? sellerTracking : null, // Only use seller tracking if discount code is provided
         customerEmail: customerEmail, // Use form email
         customerName: customerName // Use form name
       }
