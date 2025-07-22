@@ -312,7 +312,7 @@ async function createQRCode(orderRecord: any) {
       }
     })
     
-    // Send welcome email using simple working approach
+    // Send welcome email using PayPal-specific template
     let emailSent = false
     try {
       console.log('📧 STARTING EMAIL SENDING PROCESS...')
@@ -323,7 +323,7 @@ async function createQRCode(orderRecord: any) {
       })
       
       // Import email service and translations
-      const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
+      const { sendEmail } = await import('@/lib/email-service')
       const { formatDate } = await import('@/lib/translations')
       
       console.log('📧 Email service imported successfully')
@@ -331,29 +331,67 @@ async function createQRCode(orderRecord: any) {
       const customerLanguage = 'en' // Default language for PayPal orders
       const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
       
-      console.log('📧 Creating welcome email with working template system...')
-      console.log('📧 Email parameters:', {
-        customerName: orderRecord.customerName,
-        qrCode: qrCodeId,
-        guests: orderRecord.guests,
-        days: orderRecord.days,
-        expiresAt: formattedExpirationDate,
-        customerPortalUrl: magicLinkUrl,
-        language: customerLanguage,
-        deliveryMethod: 'DIRECT'
+      console.log('📧 Looking for PayPal welcome email template...')
+      
+      // Get PayPal-specific template from database
+      const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
+        where: { 
+          name: {
+            contains: 'Paypal welcome email template'
+          }
+        },
+        orderBy: { createdAt: 'desc' } // Get the newest one
       })
       
-      // Use the simple working email template
-      const emailHtml = createWelcomeEmailHtml({
-        customerName: orderRecord.customerName,
-        qrCode: qrCodeId,
-        guests: orderRecord.guests,
-        days: orderRecord.days,
-        expiresAt: formattedExpirationDate,
-        customerPortalUrl: magicLinkUrl,
-        language: customerLanguage,
-        deliveryMethod: 'DIRECT'
+      console.log('📧 PayPal template search result:', {
+        found: !!paypalTemplate,
+        name: paypalTemplate?.name,
+        id: paypalTemplate?.id,
+        hasCustomHTML: !!paypalTemplate?.customHTML,
+        htmlLength: paypalTemplate?.customHTML?.length || 0
       })
+      
+      let emailHtml = ''
+      let emailSubject = 'Your ELocalPass is Ready - Immediate Access'
+      
+      if (paypalTemplate && paypalTemplate.customHTML) {
+        console.log('📧 Using PayPal-specific branded template')
+        
+        const magicLinkUrl = `https://elocalpasscursor.vercel.app/customer/access`
+        
+        // Replace variables in PayPal template
+        emailHtml = paypalTemplate.customHTML
+          .replace(/\{customerName\}/g, orderRecord.customerName)
+          .replace(/\{qrCode\}/g, qrCodeId)
+          .replace(/\{guests\}/g, orderRecord.guests.toString())
+          .replace(/\{days\}/g, orderRecord.days.toString())
+          .replace(/\{expirationDate\}/g, formattedExpirationDate)
+          .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
+          .replace(/\{magicLink\}/g, magicLinkUrl)
+        
+        if (paypalTemplate.subject) {
+          emailSubject = paypalTemplate.subject
+            .replace(/\{customerName\}/g, orderRecord.customerName)
+            .replace(/\{qrCode\}/g, qrCodeId)
+        }
+        
+        console.log('📧 PayPal template variables replaced successfully')
+      } else {
+        console.log('⚠️ PayPal template not found - using fallback template')
+        
+        // Fallback to generic template
+        const { createWelcomeEmailHtml } = await import('@/lib/email-service')
+        emailHtml = createWelcomeEmailHtml({
+          customerName: orderRecord.customerName,
+          qrCode: qrCodeId,
+          guests: orderRecord.guests,
+          days: orderRecord.days,
+          expiresAt: formattedExpirationDate,
+          customerPortalUrl: magicLinkUrl,
+          language: customerLanguage,
+          deliveryMethod: 'DIRECT'
+        })
+      }
       
       console.log(`📧 Generated welcome email HTML - Length: ${emailHtml.length} chars`)
       console.log('📧 About to send email to:', orderRecord.customerEmail)
@@ -361,7 +399,7 @@ async function createQRCode(orderRecord: any) {
       // Send the email
       emailSent = await sendEmail({
         to: orderRecord.customerEmail,
-        subject: 'Your ELocalPass is Ready - Immediate Access',
+        subject: emailSubject,
         html: emailHtml
       })
       
