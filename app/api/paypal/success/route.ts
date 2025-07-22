@@ -35,9 +35,10 @@ export async function POST(request: NextRequest) {
         const existingOrder = await prisma.order.findFirst({
           where: { 
             customerEmail: orderData.customerEmail,
+            customerName: orderData.customerName,
             amount: parseFloat(amountParam || orderData.calculatedPrice.toString()),
             createdAt: {
-              gte: new Date(Date.now() - 5 * 60 * 1000) // Within last 5 minutes
+              gte: new Date(Date.now() - 2 * 60 * 1000) // Within last 2 minutes (reduced from 5)
             }
           }
         })
@@ -224,7 +225,7 @@ async function createQRCode(orderRecord: any) {
     console.log('✅ All modules imported successfully')
     
     // Generate unique QR code
-    const qrCodeId = `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    let qrCodeId = `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const expiresAt = new Date(Date.now() + (orderRecord.days * 24 * 60 * 60 * 1000))
     
     console.log('🎯 Generated QR details:', {
@@ -235,6 +236,25 @@ async function createQRCode(orderRecord: any) {
     
     // Create QR code record
     console.log('💾 Creating QR code in database...')
+    
+    // Double-check that we don't already have a QR code for this specific order
+    const existingQRCode = await prisma.qRCode.findFirst({
+      where: {
+        customerEmail: orderRecord.customerEmail,
+        customerName: orderRecord.customerName,
+        createdAt: {
+          gte: new Date(Date.now() - 1 * 60 * 1000) // Within last 1 minute
+        }
+      }
+    })
+    
+    if (existingQRCode) {
+      console.log('⚠️ QR code already exists for this customer, creating new one with different ID')
+      // Generate a new unique ID to ensure uniqueness
+      qrCodeId = `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${orderRecord.id.substr(-6)}`
+      console.log('🎯 New QR ID generated:', qrCodeId)
+    }
+    
     const qrCode = await prisma.qRCode.create({
       data: {
         code: qrCodeId,
