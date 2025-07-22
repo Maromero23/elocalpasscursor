@@ -10,6 +10,14 @@ export async function GET(
     
     console.log(`📋 Fetching order details for: ${orderId}`)
     
+    // Check if this is a repeat request (user navigating back)
+    const referer = request.headers.get('referer') || ''
+    const isNavigatingBack = referer.includes('/payment-success')
+    
+    if (isNavigatingBack) {
+      console.log('🔄 User navigating back to payment success page - skipping email logic')
+    }
+    
     const order = await prisma.order.findUnique({
       where: { id: orderId }
     })
@@ -28,12 +36,12 @@ export async function GET(
       status: order.status
     })
     
-    // 🚀 AUTO-SEND WELCOME EMAIL FOR PAYPAL ORDERS
-    // Check if this is a PayPal order that needs welcome email
-    if (order.paymentId && order.paymentId.startsWith('PAYPAL_') && order.status === 'PAID') {
+    // 🚀 AUTO-SEND WELCOME EMAIL FOR PAYPAL ORDERS (ONLY ONCE)
+    // Check if this is a PayPal order that needs welcome email AND not a back navigation
+    if (!isNavigatingBack && order.paymentId && order.paymentId.startsWith('PAYPAL_') && order.status === 'PAID') {
       console.log('📧 PayPal order detected - checking if welcome email was sent...')
       
-      // Check if QR code exists and if email was sent
+      // ENHANCED DUPLICATE PREVENTION - Check multiple sources
       const existingQR = await prisma.qRCode.findFirst({
         where: {
           customerEmail: order.customerEmail,
@@ -51,11 +59,45 @@ export async function GET(
       if (existingQR) {
         console.log('📋 QR code found:', existingQR.code)
         
-        // Check if welcome email was already sent
+        // MULTIPLE CHECKS to prevent duplicate emails
         const emailAlreadySent = existingQR.analytics?.welcomeEmailSent || false
-        console.log('📧 Email already sent:', emailAlreadySent)
         
-        if (!emailAlreadySent) {
+        // Additional check: Look for ANY welcome email sent to this customer in the last 24 hours
+        const anyRecentWelcomeEmail = await prisma.qRCodeAnalytics.findFirst({
+          where: {
+            customerEmail: order.customerEmail,
+            welcomeEmailSent: true,
+            createdAt: {
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Within last 24 hours
+            }
+          }
+        })
+        
+        // Additional check: Look for ANY QR code for this customer that has email sent
+        const anyQRWithEmailSent = await prisma.qRCode.findFirst({
+          where: {
+            customerEmail: order.customerEmail,
+            createdAt: {
+              gte: new Date(order.createdAt.getTime() - 30 * 60 * 1000) // Within 30 minutes of this order
+            }
+          },
+          include: {
+            analytics: true
+          }
+        })
+        
+        const hasEmailSentForSimilarQR = anyQRWithEmailSent?.analytics?.welcomeEmailSent || false
+        
+        console.log('📧 Email status checks:', {
+          currentQREmailSent: emailAlreadySent,
+          anyRecentWelcomeEmail: !!anyRecentWelcomeEmail,
+          hasEmailSentForSimilarQR: hasEmailSentForSimilarQR
+        })
+        
+        // If ANY of these checks show email was sent, skip sending
+        if (emailAlreadySent || anyRecentWelcomeEmail || hasEmailSentForSimilarQR) {
+          console.log('📧 Welcome email already sent (multiple checks) - skipping to prevent duplicates')
+        } else {
           console.log('📧 SENDING WELCOME EMAIL WITH BRANDED TEMPLATE...')
           
           try {
@@ -124,8 +166,6 @@ export async function GET(
           } catch (emailError) {
             console.error('❌ Error sending welcome email:', emailError)
           }
-        } else {
-          console.log('📧 Welcome email already sent - skipping')
         }
       } else {
         console.log('⚠️ No QR code found for this PayPal order')
