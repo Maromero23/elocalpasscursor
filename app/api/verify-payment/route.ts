@@ -145,7 +145,7 @@ async function createQRCode(orderRecord: any) {
     // Determine seller information for PayPal orders
     let sellerId = 'cmc4ha7l000086a96ef0e06qq' // Default system seller ID
     let sellerName = 'Direct Purchase'
-    let sellerEmail = 'direct@elocalpass.com'
+    let sellerEmail = 'directsale@elocalpass.com'
     
     // Check if customer came from a specific seller (rebuy email or discount code)
     if (orderRecord.sellerId) {
