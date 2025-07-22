@@ -260,7 +260,7 @@ export async function GET(
         <div class="invoice-container">
             <div class="header">
                 <div class="logo">
-                    <img src="/images/elocal_logo_2.png" alt="ELocalPass Logo">
+                    <img src="https://elocalpasscursor.vercel.app/images/elocal_logo_2.png" alt="ELocalPass Logo">
                 </div>
                 <div class="company-name">ELocalPass</div>
                 <div class="invoice-title">INVOICE</div>
