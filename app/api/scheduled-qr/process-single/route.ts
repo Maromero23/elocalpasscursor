@@ -1,20 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
+  let scheduledQRId: string = ''
+  let isRetry: boolean = false
+  
   try {
-    // Security check for external cron services
-    const cronSecret = process.env.CRON_SECRET
-    if (cronSecret) {
-      const authHeader = request.headers.get('authorization')
-      if (authHeader !== `Bearer ${cronSecret}`) {
-        console.log('🔒 SINGLE QR PROCESSOR: Unauthorized request')
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // QStash webhook verification
+    const qstashSignature = request.headers.get('upstash-signature')
+    const qstashTimestamp = request.headers.get('upstash-timestamp')
+    const qstashToken = process.env.QSTASH_CURRENT_SIGNING_KEY
+    
+    if (qstashSignature && qstashTimestamp && qstashToken) {
+      try {
+        // Verify QStash signature
+        const body = await request.text()
+        const signature = crypto
+          .createHmac('sha256', qstashToken)
+          .update(body + qstashTimestamp)
+          .digest('hex')
+        
+        if (signature !== qstashSignature) {
+          console.log('🔒 SINGLE QR PROCESSOR: Invalid QStash signature')
+          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+        }
+        
+        // Re-parse the body for processing
+        const data = JSON.parse(body)
+        scheduledQRId = data.scheduledQRId
+        isRetry = data.isRetry || false
+        
+        console.log(`🔐 SINGLE QR PROCESSOR: QStash webhook verified for QR: ${scheduledQRId}`)
+      } catch (verificationError) {
+        console.error('❌ QStash verification error:', verificationError)
+        return NextResponse.json({ error: 'Verification failed' }, { status: 401 })
       }
+    } else {
+      // Fallback to cron secret for manual testing
+      const cronSecret = process.env.CRON_SECRET
+      if (cronSecret) {
+        const authHeader = request.headers.get('authorization')
+        if (authHeader !== `Bearer ${cronSecret}`) {
+          console.log('🔒 SINGLE QR PROCESSOR: Unauthorized request')
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+      }
+      
+      const data = await request.json()
+      scheduledQRId = data.scheduledQRId
+      isRetry = data.isRetry || false
     }
 
-    const { scheduledQRId, isRetry = false } = await request.json()
-    
     if (!scheduledQRId) {
       return NextResponse.json({ error: 'Missing scheduledQRId' }, { status: 400 })
     }
@@ -58,7 +95,6 @@ export async function POST(request: NextRequest) {
 
     // Process this specific QR using the same logic as the batch processor
     // Import the necessary modules
-    const crypto = await import('crypto')
     const { detectLanguage, t, getPlural, formatDate } = await import('@/lib/translations')
     
     // Get seller info and configuration
@@ -149,7 +185,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Generate magic link token
-    const accessToken = crypto.default.randomBytes(32).toString('hex')
+    const accessToken = crypto.randomBytes(32).toString('hex')
     const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
     
     await prisma.customerAccessToken.create({
@@ -255,12 +291,12 @@ export async function POST(request: NextRequest) {
       const rebuyTriggerTime = new Date(expiresAt.getTime() - (12 * 60 * 60 * 1000)) // 12 hours before expiration
       const rebuyDelay = rebuyTriggerTime.getTime() - Date.now()
       
-      if (rebuyDelay > 0 && process.env.QSTASH_TOKEN) {
+      if (rebuyDelay > 0 && process.env.QSTASH_CURRENT_SIGNING_KEY) {
         try {
           const qstashResponse = await fetch(`https://qstash.upstash.io/v2/publish/${process.env.NEXTAUTH_URL}/api/rebuy-emails/send-single`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
+              'Authorization': `Bearer ${process.env.QSTASH_CURRENT_SIGNING_KEY}`,
               'Content-Type': 'application/json',
               'Upstash-Delay': `${rebuyDelay}ms`
             },
@@ -306,7 +342,6 @@ export async function POST(request: NextRequest) {
     console.error('❌ SINGLE QR PROCESSOR: Error:', error)
     
     // If this was a retry attempt, increment retry count
-    const { scheduledQRId, isRetry = false } = await request.json()
     if (isRetry && scheduledQRId) {
       try {
         const scheduledQR = await prisma.scheduledQRCode.findUnique({
