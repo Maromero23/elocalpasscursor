@@ -213,7 +213,7 @@ export default function AnalyticsPage() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
-      <div className="min-h-screen bg-gray-100 w-full">
+      <div className="min-h-screen bg-gray-100 w-full" style={{ minWidth: '1800px' }}>
 
         {/* Navigation */}
         <nav className="bg-orange-400 shadow-sm w-full">
