@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
         </nav>
 
         {/* Main Content - Full Width */}
-        <div className="w-full py-6 px-4 sm:px-6 lg:px-8" style={{ minWidth: '1800px' }}>
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
           <div className="w-full">
             <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 w-full">
               <div className="mb-8 flex justify-between items-center">
@@ -431,8 +431,32 @@ export default function AnalyticsPage() {
               </p>
             </div>
 
-            {/* Horizontal Scrollable Container with Custom Scrollbar */}
-            <div className="w-full overflow-x-auto analytics-table-container">
+            {/* Top scroll bar */}
+            <div 
+              className="overflow-x-scroll analytics-table-container" 
+              style={{ 
+                scrollBehavior: 'auto',
+                scrollbarWidth: 'auto',
+                msOverflowStyle: 'scrollbar',
+                WebkitOverflowScrolling: 'touch',
+                height: '20px'
+              }}
+            >
+              <div style={{ 
+                width: '1800px',
+                height: '1px'
+              }}></div>
+            </div>
+
+            {/* Main table container */}
+            <div className="overflow-x-scroll analytics-table-container" 
+              style={{ 
+                scrollBehavior: 'auto',
+                scrollbarWidth: 'auto',
+                msOverflowStyle: 'scrollbar',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
                 <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1800px' }}>
                   <thead className="bg-gray-50">
                     <tr>
