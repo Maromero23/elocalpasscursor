@@ -171,9 +171,19 @@ async function createQRCode(orderRecord: any) {
         console.log('✅ Verify payment: Using seller details:', { sellerName, sellerEmail })
       } else {
         console.log('⚠️ Verify payment: Seller not found, using direct purchase')
+        // Reset to defaults if seller not found
+        sellerId = 'cmc4ha7l000086a96ef0e06qq'
+        sellerName = 'Direct Purchase'
+        sellerEmail = 'directsale@elocalpass.com'
+        sellerDetails = null
       }
     } else {
       console.log('📋 Verify payment: Direct purchase from passes page')
+      // Explicitly reset all seller information for direct sales
+      sellerId = 'cmc4ha7l000086a96ef0e06qq'
+      sellerName = 'Direct Purchase'
+      sellerEmail = 'directsale@elocalpass.com'
+      sellerDetails = null
     }
     
     // Create analytics record with proper seller information and Cancun timezone

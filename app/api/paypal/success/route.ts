@@ -297,9 +297,19 @@ async function createQRCode(orderRecord: any) {
         console.log('✅ PayPal order: Using seller details:', { sellerName, sellerEmail })
       } else {
         console.log('⚠️ PayPal order: Seller not found, using direct purchase')
+        // Reset to defaults if seller not found
+        sellerId = 'cmc4ha7l000086a96ef0e06qq'
+        sellerName = 'Direct Purchase'
+        sellerEmail = 'directsale@elocalpass.com'
+        sellerDetails = null
       }
     } else {
       console.log('📋 PayPal order: Direct purchase from passes page')
+      // Explicitly reset all seller information for direct sales
+      sellerId = 'cmc4ha7l000086a96ef0e06qq'
+      sellerName = 'Direct Purchase'
+      sellerEmail = 'directsale@elocalpass.com'
+      sellerDetails = null
     }
     
     // Create analytics record with proper seller information and Cancun timezone
