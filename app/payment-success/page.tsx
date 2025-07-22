@@ -67,8 +67,24 @@ function PaymentSuccessContent() {
       
       if (data.success) {
         console.log('✅ Order found, setting details and generating invoice')
-        setOrderDetails(data.order)
-        generateInvoice(data.order)
+        // Map the database order to our OrderDetails interface
+        const orderDetails: OrderDetails = {
+          orderId: data.order.id, // Database uses 'id', interface expects 'orderId'
+          customerName: data.order.customerName,
+          customerEmail: data.order.customerEmail,
+          amount: data.order.amount,
+          currency: data.order.currency,
+          guests: data.order.guests,
+          days: data.order.days,
+          deliveryType: data.order.deliveryType,
+          deliveryDate: data.order.deliveryDate,
+          deliveryTime: data.order.deliveryTime,
+          discountCode: data.order.discountCode,
+          status: data.order.status,
+          createdAt: data.order.createdAt
+        }
+        setOrderDetails(orderDetails)
+        generateInvoice(orderDetails)
       } else {
         console.error('❌ Order API failed:', data.error)
       }
