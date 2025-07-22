@@ -59,12 +59,18 @@ function PaymentSuccessContent() {
 
   const fetchOrderDetails = async (orderId: string) => {
     try {
+      console.log('🔍 Fetching order details for:', orderId)
       const response = await fetch(`/api/orders/${orderId}`)
       const data = await response.json()
       
+      console.log('📋 Order API response:', data)
+      
       if (data.success) {
+        console.log('✅ Order found, setting details and generating invoice')
         setOrderDetails(data.order)
         generateInvoice(data.order)
+      } else {
+        console.error('❌ Order API failed:', data.error)
       }
     } catch (error) {
       console.error('Error fetching order details:', error)
@@ -103,6 +109,8 @@ function PaymentSuccessContent() {
 
   const generateInvoice = async (order: OrderDetails) => {
     try {
+      console.log('📄 Starting invoice generation for order:', order.orderId)
+      
       const response = await fetch('/api/orders/invoice', {
         method: 'POST',
         headers: {
@@ -111,12 +119,26 @@ function PaymentSuccessContent() {
         body: JSON.stringify({ orderId: order.orderId })
       })
       
+      console.log('📄 Invoice API response status:', response.status)
+      console.log('📄 Invoice API response ok:', response.ok)
+      
+      if (!response.ok) {
+        console.error('📄 Invoice API request failed:', response.status, response.statusText)
+        return
+      }
+      
       const data = await response.json()
-      if (data.success) {
+      console.log('📄 Invoice API response data:', data)
+      
+      if (data.success && data.invoiceUrl) {
+        console.log('📄 Setting invoice URL:', data.invoiceUrl)
         setInvoiceUrl(data.invoiceUrl)
+        console.log('📄 Invoice URL state should be updated')
+      } else {
+        console.error('📄 Invoice generation failed:', data.error || 'No invoice URL returned')
       }
     } catch (error) {
-      console.error('Error generating invoice:', error)
+      console.error('📄 Error in generateInvoice:', error)
     }
   }
 
