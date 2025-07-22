@@ -247,8 +247,8 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         return
       }
 
-      // Validate email confirmation
-      if (customerEmail !== confirmEmail) {
+      // Validate email confirmation (case-insensitive)
+      if (customerEmail.toLowerCase() !== confirmEmail.toLowerCase()) {
         setDiscountError('Email addresses do not match. Please check and try again.')
         setIsLoading(false)
         return
@@ -536,10 +536,10 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
                 placeholder="Confirm your email address"
                 required
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                  confirmEmail && customerEmail !== confirmEmail ? 'border-red-500' : 'border-gray-300'
+                  confirmEmail && customerEmail.toLowerCase() !== confirmEmail.toLowerCase() ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              {confirmEmail && customerEmail !== confirmEmail && (
+              {confirmEmail && customerEmail.toLowerCase() !== confirmEmail.toLowerCase() && (
                 <p className="text-red-500 text-sm mt-1 flex items-center">
                   <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />

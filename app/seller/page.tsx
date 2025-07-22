@@ -122,7 +122,7 @@ export default function SellerDashboard() {
   const handleGenerateQR = async () => {
     // Only validate client info if it should be shown
     if (shouldShowClientInfo()) {
-      if (!clientName || !clientEmail || !confirmEmail || clientEmail !== confirmEmail) {
+      if (!clientName || !clientEmail || !confirmEmail || clientEmail.toLowerCase() !== confirmEmail.toLowerCase()) {
         error('Please fill in client name and email, and ensure emails match')
         return
       }
@@ -786,7 +786,7 @@ export default function SellerDashboard() {
                         <button
                           onClick={handleGenerateQR}
                           disabled={generating || 
-                            (shouldShowClientInfo() && (!clientName || !clientEmail || !confirmEmail || clientEmail !== confirmEmail)) ||
+                            (shouldShowClientInfo() && (!clientName || !clientEmail || !confirmEmail || clientEmail.toLowerCase() !== confirmEmail.toLowerCase())) ||
                             (enableFutureQR && futureQRDate.length > 0 && futureQRTime.length > 0 && new Date(`${futureQRDate}T${futureQRTime}`) < new Date(Date.now() + 2 * 60 * 1000))
                           }
                           className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
