@@ -110,7 +110,19 @@ export default function AnalyticsPage() {
   }, [session, dateRange, distributorFilter, locationFilter, statusFilter, searchQuery, sortBy, sortOrder, showAllQRCodes])
 
   const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString()
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'America/Cancun'
+    })
+  }
+  
+  const truncateEmail = (email: string, maxLength: number = 25) => {
+    if (email.length <= maxLength) return email
+    return email.substring(0, maxLength) + '...'
+  }
 
   const handleShowAllQRCodes = () => {
     setShowAllQRCodes(true)
@@ -419,76 +431,98 @@ export default function AnalyticsPage() {
               </p>
             </div>
 
-            {/* Horizontal Scrollable Container */}
-            <div className="w-full overflow-x-auto" style={{ scrollbarWidth: 'auto', scrollbarColor: '#9CA3AF #F3F4F6' }}>
-              <div className="min-w-full inline-block align-middle">
-                <div className="overflow-hidden">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          QR Code
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          Customer
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          Details
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          Cost
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          Seller
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          Location
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          Created
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          Status
-                        </th>
+            {/* Horizontal Scrollable Container with Custom Scrollbar */}
+            <div 
+              className="w-full overflow-x-auto" 
+              style={{ 
+                scrollbarWidth: 'thin', 
+                scrollbarColor: '#9CA3AF #F3F4F6',
+                WebkitOverflowScrolling: 'touch',
+                overflowY: 'hidden'
+              }}
+            >
+              <style jsx>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                  height: 12px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                  background: #f3f4f6;
+                  border-radius: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                  background: #9ca3af;
+                  border-radius: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                  background: #6b7280;
+                }
+              `}</style>
+              <div className="custom-scrollbar">
+                <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1200px' }}>
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        QR Code
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Details
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Cost
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Seller
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Location
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Created
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {analytics.map((qr) => (
+                      <tr key={qr.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{qr.qrCode}</div>
+                          <div className="text-sm text-gray-500">{qr.deliveryMethod}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{qr.customerName}</div>
+                          <div className="text-sm text-gray-500" title={qr.customerEmail}>{truncateEmail(qr.customerEmail)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{qr.guests} guests • {qr.days} days</div>
+                          <div className="text-sm text-gray-500">Expires: {formatDate(qr.expiresAt)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{formatCurrency(qr.cost)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{qr.sellerName}</div>
+                          <div className="text-sm text-gray-500" title={qr.sellerEmail}>{truncateEmail(qr.sellerEmail)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{qr.locationName}</div>
+                          <div className="text-sm text-gray-500">{qr.distributorName}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(qr.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(qr)}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {analytics.map((qr) => (
-                        <tr key={qr.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{qr.qrCode}</div>
-                            <div className="text-sm text-gray-500">{qr.deliveryMethod}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{qr.customerName}</div>
-                            <div className="text-sm text-gray-500">{qr.customerEmail}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{qr.guests} guests • {qr.days} days</div>
-                            <div className="text-sm text-gray-500">Expires: {formatDate(qr.expiresAt)}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{formatCurrency(qr.cost)}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{qr.sellerName}</div>
-                            <div className="text-sm text-gray-500">{qr.sellerEmail}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{qr.locationName}</div>
-                            <div className="text-sm text-gray-500">{qr.distributorName}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(qr.createdAt)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(qr)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
