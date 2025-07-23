@@ -265,6 +265,33 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         setDiscountValid(true)
       }
 
+      // Validate future delivery date/time
+      if (deliveryType === 'future') {
+        if (!deliveryDate || !deliveryTime) {
+          setDiscountError('Please select both delivery date and time for future delivery.')
+          setIsLoading(false)
+          return
+        }
+        
+        // Validate that delivery date/time is at least 3 minutes in the future
+        const selectedDateTime = new Date(`${deliveryDate}T${deliveryTime}`)
+        const now = new Date()
+        const minDateTime = new Date(now.getTime() + 3 * 60 * 1000) // 3 minutes from now
+        
+        if (selectedDateTime < minDateTime) {
+          setDiscountError('Delivery time must be at least 3 minutes from now.')
+          setIsLoading(false)
+          return
+        }
+        
+        console.log('📅 FUTURE DELIVERY VALIDATED:', {
+          deliveryDate,
+          deliveryTime,
+          selectedDateTime: selectedDateTime.toISOString(),
+          minRequired: minDateTime.toISOString()
+        })
+      }
+
       // Get seller tracking from localStorage if available
       const sellerTracking = localStorage.getItem('elocalpass-seller-tracking')
       
@@ -444,19 +471,29 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
 
             {deliveryType === 'future' && (
               <div className="mt-3 space-y-3">
-                <input
-                  type="date"
-                  value={deliveryDate}
-                  onChange={(e) => setDeliveryDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-                <input
-                  type="time"
-                  value={deliveryTime}
-                  onChange={(e) => setDeliveryTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Delivery Date (same-day delivery allowed)
+                  </label>
+                  <input
+                    type="date"
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Delivery Time (at least 3 minutes from now)
+                  </label>
+                  <input
+                    type="time"
+                    value={deliveryTime}
+                    onChange={(e) => setDeliveryTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
               </div>
             )}
           </div>
