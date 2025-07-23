@@ -60,14 +60,20 @@ export async function POST(request: NextRequest) {
         // Convert delivery date/time to proper DateTime format
         let deliveryDateTime = null
         if (orderData.deliveryDate && orderData.deliveryTime) {
-          deliveryDateTime = new Date(`${orderData.deliveryDate}T${orderData.deliveryTime}`)
+          // Parse date and time in local timezone, not UTC
+          const [year, month, day] = orderData.deliveryDate.split('-').map(Number)
+          const [hours, minutes] = orderData.deliveryTime.split(':').map(Number)
+          deliveryDateTime = new Date(year, month - 1, day, hours, minutes, 0)
+          
           console.log('📅 Converted delivery date/time:', {
             originalDate: orderData.deliveryDate,
             originalTime: orderData.deliveryTime,
-            convertedDateTime: deliveryDateTime.toISOString()
+            convertedDateTime: deliveryDateTime.toISOString(),
+            localString: deliveryDateTime.toString()
           })
         } else if (orderData.deliveryDate) {
-          deliveryDateTime = new Date(`${orderData.deliveryDate}T12:00:00`)
+          const [year, month, day] = orderData.deliveryDate.split('-').map(Number)
+          deliveryDateTime = new Date(year, month - 1, day, 12, 0, 0)
           console.log('📅 Converted delivery date (default noon):', deliveryDateTime.toISOString())
         }
 
@@ -174,14 +180,20 @@ export async function POST(request: NextRequest) {
         // Convert delivery date/time to proper DateTime format
         let deliveryDateTime = null
         if (orderData.deliveryDate && orderData.deliveryTime) {
-          deliveryDateTime = new Date(`${orderData.deliveryDate}T${orderData.deliveryTime}`)
+          // Parse date and time in local timezone, not UTC
+          const [year, month, day] = orderData.deliveryDate.split('-').map(Number)
+          const [hours, minutes] = orderData.deliveryTime.split(':').map(Number)
+          deliveryDateTime = new Date(year, month - 1, day, hours, minutes, 0)
+          
           console.log('📅 POST: Converted delivery date/time:', {
             originalDate: orderData.deliveryDate,
             originalTime: orderData.deliveryTime,
-            convertedDateTime: deliveryDateTime.toISOString()
+            convertedDateTime: deliveryDateTime.toISOString(),
+            localString: deliveryDateTime.toString()
           })
         } else if (orderData.deliveryDate) {
-          deliveryDateTime = new Date(`${orderData.deliveryDate}T12:00:00`)
+          const [year, month, day] = orderData.deliveryDate.split('-').map(Number)
+          deliveryDateTime = new Date(year, month - 1, day, 12, 0, 0)
           console.log('📅 POST: Converted delivery date (default noon):', deliveryDateTime.toISOString())
         }
 
@@ -632,16 +644,21 @@ async function scheduleQRCode(orderRecord: any) {
       console.log('🚨 FALLBACK: Scheduling for 1 hour from now:', deliveryDateTime.toISOString())
     }
     
-    // Validate that delivery time is in the future
+    // Validate that delivery time is in the future (allow 5 minute grace period for processing)
     const now = new Date()
-    if (deliveryDateTime <= now) {
-      console.error('❌ Delivery time is in the past!', {
+    const graceTime = new Date(Date.now() - 5 * 60 * 1000) // 5 minutes ago
+    
+    if (deliveryDateTime <= graceTime) {
+      console.error('❌ Delivery time is too far in the past!', {
         deliveryDateTime: deliveryDateTime.toISOString(),
-        now: now.toISOString()
+        now: now.toISOString(),
+        graceTime: graceTime.toISOString()
       })
       // Adjust to 1 hour from now
       deliveryDateTime = new Date(Date.now() + 60 * 60 * 1000)
       console.log('🔧 Adjusted to 1 hour from now:', deliveryDateTime.toISOString())
+    } else if (deliveryDateTime <= now) {
+      console.log('⏰ Delivery time is recent past, will process immediately after creation')
     }
     
     // Create scheduled QR configuration using our existing system
