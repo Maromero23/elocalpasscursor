@@ -670,16 +670,13 @@ async function scheduleQRCode(orderRecord: any) {
     const graceTime = new Date(Date.now() - 5 * 60 * 1000) // 5 minutes ago
     
     if (deliveryDateTime <= graceTime) {
-      console.error('❌ Delivery time is too far in the past!', {
-        deliveryDateTime: deliveryDateTime.toISOString(),
-        now: now.toISOString(),
-        graceTime: graceTime.toISOString()
-      })
-      // Adjust to 1 hour from now
-      deliveryDateTime = new Date(Date.now() + 60 * 60 * 1000)
-      console.log('🔧 Adjusted to 1 hour from now:', deliveryDateTime.toISOString())
+      console.log('⏰ Delivery time has passed, will process immediately after creation')
+      // Don't change deliveryDateTime - keep the user's selected time for record keeping
+      // The scheduled QR will be created and then immediately processed
     } else if (deliveryDateTime <= now) {
       console.log('⏰ Delivery time is recent past, will process immediately after creation')
+    } else {
+      console.log('📅 Delivery time is in future, will schedule normally')
     }
     
     // Create scheduled QR configuration using our existing system
