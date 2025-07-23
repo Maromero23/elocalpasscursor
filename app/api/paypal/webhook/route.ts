@@ -392,6 +392,7 @@ async function scheduleQRCode(orderRecord: any) {
     const deliveryDateTime = orderRecord.deliveryDate ? new Date(orderRecord.deliveryDate) : new Date()
     
     // Create scheduled QR configuration using our existing system
+    // For PayPal orders, always use the default system seller ID to ensure consistent seller info
     const scheduledQR = await prisma.scheduledQRCode.create({
       data: {
         scheduledFor: deliveryDateTime,
@@ -399,7 +400,7 @@ async function scheduleQRCode(orderRecord: any) {
         clientEmail: orderRecord.customerEmail,
         guests: orderRecord.guests,
         days: orderRecord.days,
-        sellerId: orderRecord.sellerId || 'system',
+        sellerId: 'cmc4ha7l000086a96ef0e06qq', // Always use default PayPal seller for consistency
         configurationId: 'default',
         deliveryMethod: 'DIRECT',
         isProcessed: false

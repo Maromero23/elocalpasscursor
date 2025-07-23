@@ -151,14 +151,31 @@ export async function GET(request: NextRequest) {
         timeFromNow: timeDiff,
         timeFromNowText: timeFromNowText,
         
-        // Seller info
-        seller: {
-          id: qr.sellerId,
-          name: sellerMap.get(qr.sellerId)?.name || 'Unknown',
-          email: sellerMap.get(qr.sellerId)?.email || 'Unknown',
-          locationName: sellerMap.get(qr.sellerId)?.location?.name || null,
-          distributorName: sellerMap.get(qr.sellerId)?.location?.distributor?.name || null
-        }
+        // Seller info - PayPal QRs should show consistent seller information
+        seller: (() => {
+          // Check if this is a PayPal QR (configurationId === 'default' or specific seller ID)
+          const isPayPalQR = qr.configurationId === 'default' || qr.sellerId === 'cmc4ha7l000086a96ef0e06qq'
+          
+          if (isPayPalQR) {
+            // PayPal QR - show consistent seller information
+            return {
+              id: qr.sellerId,
+              name: 'Online',
+              email: 'direct@elocalpass.com',
+              locationName: 'Online',
+              distributorName: 'Elocalpass'
+            }
+          } else {
+            // Seller dashboard QR - show actual seller information
+            return {
+              id: qr.sellerId,
+              name: sellerMap.get(qr.sellerId)?.name || 'Unknown',
+              email: sellerMap.get(qr.sellerId)?.email || 'Unknown',
+              locationName: sellerMap.get(qr.sellerId)?.location?.name || null,
+              distributorName: sellerMap.get(qr.sellerId)?.location?.distributor?.name || null
+            }
+          }
+        })()
       }
     })
 
