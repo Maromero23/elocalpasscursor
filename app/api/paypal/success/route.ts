@@ -105,7 +105,19 @@ export async function POST(request: NextRequest) {
             deliveryTime: orderData.deliveryTime,
             orderRecordId: orderRecord.id
           })
-          await scheduleQRCode(orderRecord)
+          
+          try {
+            await scheduleQRCode(orderRecord)
+            console.log('✅ FUTURE DELIVERY: scheduleQRCode completed successfully')
+          } catch (scheduleError) {
+            console.error('❌ FUTURE DELIVERY: scheduleQRCode failed:', scheduleError)
+            console.error('📋 Schedule error details:', {
+              message: scheduleError instanceof Error ? scheduleError.message : 'Unknown error',
+              stack: scheduleError instanceof Error ? scheduleError.stack : 'No stack trace',
+              orderData: orderRecord
+            })
+            // Don't throw - let the payment success continue
+          }
         } else {
           console.log('⚠️ UNKNOWN DELIVERY TYPE:', orderData.deliveryType)
           console.log('📋 Order data:', orderData)
@@ -198,8 +210,22 @@ export async function POST(request: NextRequest) {
         // Handle QR code creation based on delivery type
         if (orderData.deliveryType === 'now') {
           await createQRCode(orderRecord)
+        } else if (orderData.deliveryType === 'future') {
+          console.log('📅 FUTURE DELIVERY (POST): Scheduling QR code')
+          try {
+            await scheduleQRCode(orderRecord)
+            console.log('✅ FUTURE DELIVERY (POST): scheduleQRCode completed successfully')
+          } catch (scheduleError) {
+            console.error('❌ FUTURE DELIVERY (POST): scheduleQRCode failed:', scheduleError)
+            console.error('📋 Schedule error details:', {
+              message: scheduleError instanceof Error ? scheduleError.message : 'Unknown error',
+              stack: scheduleError instanceof Error ? scheduleError.stack : 'No stack trace',
+              orderData: orderRecord
+            })
+            // Don't throw - let the payment success continue
+          }
         } else {
-          await scheduleQRCode(orderRecord)
+          console.log('⚠️ UNKNOWN DELIVERY TYPE (POST):', orderData.deliveryType)
         }
 
         // Redirect to payment success page with order ID
@@ -626,7 +652,7 @@ async function scheduleQRCode(orderRecord: any) {
         clientEmail: orderRecord.customerEmail,
         guests: orderRecord.guests,
         days: orderRecord.days,
-        sellerId: orderRecord.sellerId || 'system',
+        sellerId: orderRecord.sellerId || 'cmc4ha7l000086a96ef0e06qq', // Use default seller instead of 'system'
         configurationId: 'default',
         deliveryMethod: 'DIRECT',
         isProcessed: false
