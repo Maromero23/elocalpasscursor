@@ -57,24 +57,27 @@ export async function POST(request: NextRequest) {
           return NextResponse.redirect(redirectUrl)
         }
 
-        // Convert delivery date/time to proper DateTime format
+        // Convert delivery date/time to proper DateTime format in Cancun timezone
         let deliveryDateTime = null
         if (orderData.deliveryDate && orderData.deliveryTime) {
-          // Parse date and time in local timezone, not UTC
+          // Parse date and time in Cancun timezone with explicit offset
           const [year, month, day] = orderData.deliveryDate.split('-').map(Number)
           const [hours, minutes] = orderData.deliveryTime.split(':').map(Number)
-          deliveryDateTime = new Date(year, month - 1, day, hours, minutes, 0)
+          const isoString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00.000-05:00`
+          deliveryDateTime = new Date(isoString)
           
-          console.log('📅 Converted delivery date/time:', {
+          console.log('📅 Converted delivery date/time to Cancun timezone:', {
             originalDate: orderData.deliveryDate,
             originalTime: orderData.deliveryTime,
+            isoString: isoString,
             convertedDateTime: deliveryDateTime.toISOString(),
             localString: deliveryDateTime.toString()
           })
         } else if (orderData.deliveryDate) {
           const [year, month, day] = orderData.deliveryDate.split('-').map(Number)
-          deliveryDateTime = new Date(year, month - 1, day, 12, 0, 0)
-          console.log('📅 Converted delivery date (default noon):', deliveryDateTime.toISOString())
+          const isoString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T12:00:00.000-05:00`
+          deliveryDateTime = new Date(isoString)
+          console.log('📅 Converted delivery date (default noon Cancun time):', deliveryDateTime.toISOString())
         }
 
         // Create order record
@@ -177,24 +180,27 @@ export async function POST(request: NextRequest) {
           return NextResponse.redirect(redirectUrl)
         }
 
-        // Convert delivery date/time to proper DateTime format
+        // Convert delivery date/time to proper DateTime format in Cancun timezone
         let deliveryDateTime = null
         if (orderData.deliveryDate && orderData.deliveryTime) {
-          // Parse date and time in local timezone, not UTC
+          // Parse date and time in Cancun timezone with explicit offset
           const [year, month, day] = orderData.deliveryDate.split('-').map(Number)
           const [hours, minutes] = orderData.deliveryTime.split(':').map(Number)
-          deliveryDateTime = new Date(year, month - 1, day, hours, minutes, 0)
+          const isoString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00.000-05:00`
+          deliveryDateTime = new Date(isoString)
           
-          console.log('📅 POST: Converted delivery date/time:', {
+          console.log('📅 POST: Converted delivery date/time to Cancun timezone:', {
             originalDate: orderData.deliveryDate,
             originalTime: orderData.deliveryTime,
+            isoString: isoString,
             convertedDateTime: deliveryDateTime.toISOString(),
             localString: deliveryDateTime.toString()
           })
         } else if (orderData.deliveryDate) {
           const [year, month, day] = orderData.deliveryDate.split('-').map(Number)
-          deliveryDateTime = new Date(year, month - 1, day, 12, 0, 0)
-          console.log('📅 POST: Converted delivery date (default noon):', deliveryDateTime.toISOString())
+          const isoString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T12:00:00.000-05:00`
+          deliveryDateTime = new Date(isoString)
+          console.log('📅 POST: Converted delivery date (default noon Cancun time):', deliveryDateTime.toISOString())
         }
 
         // Create order record
@@ -627,18 +633,20 @@ async function scheduleQRCode(orderRecord: any) {
     let deliveryDateTime: Date
     
     if (orderRecord.deliveryDate && orderRecord.deliveryTime) {
-      // orderRecord.deliveryDate is stored in UTC, but we need to recreate the user's original local time
-      // Extract the date components from the stored UTC date
+      // orderRecord.deliveryDate is stored, but we need to recreate the user's original Cancun time
+      // Extract the date components from the stored date
       const storedDate = new Date(orderRecord.deliveryDate)
       const [hours, minutes] = orderRecord.deliveryTime.split(':').map(Number)
       
       // Get the date components from the stored date (which represents the user's intended date)
-      // We need to extract the date from the ISO string to avoid timezone conversion
       const dateStr = storedDate.toISOString().split('T')[0] // Get YYYY-MM-DD
       const [year, month, day] = dateStr.split('-').map(Number)
       
-      // Create new date with the user's intended local time
-      deliveryDateTime = new Date(year, month - 1, day, hours, minutes, 0)
+      // Create the scheduled delivery time as the user intended it in Cancun time
+      // Since Cancun is UTC-5 and doesn't observe DST changes that matter to us,
+      // we create the date with explicit timezone offset
+      const isoString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00.000-05:00`
+      deliveryDateTime = new Date(isoString)
       
       console.log('✅ Reconstructed user delivery time:', {
         storedUTC: orderRecord.deliveryDate,
@@ -648,13 +656,15 @@ async function scheduleQRCode(orderRecord: any) {
         iso: deliveryDateTime.toISOString()
       })
     } else if (orderRecord.deliveryDate) {
-      // Only date provided, default to noon
+      // Only date provided, default to noon Cancun time
       const storedDate = new Date(orderRecord.deliveryDate)
       const dateStr = storedDate.toISOString().split('T')[0]
       const [year, month, day] = dateStr.split('-').map(Number)
       
-      deliveryDateTime = new Date(year, month - 1, day, 12, 0, 0)
-      console.log('⚠️ Only date provided, defaulting to noon:', deliveryDateTime.toISOString())
+      // Default to noon Cancun time with explicit timezone offset
+      const isoString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T12:00:00.000-05:00`
+      deliveryDateTime = new Date(isoString)
+      console.log('⚠️ Only date provided, defaulting to noon Cancun time:', deliveryDateTime.toISOString())
     } else {
       // No date provided - this shouldn't happen for future delivery
       console.error('❌ CRITICAL: Future delivery order without delivery date!')
