@@ -286,23 +286,95 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Send welcome email using shared template system
-    const { sendWelcomeEmailWithTemplates } = await import('@/lib/email-service')
-    
-    const customerLanguage = 'en' // Default language for now
-    
-    const emailSent = await sendWelcomeEmailWithTemplates({
-      customerName: scheduledQR.clientName,
-      customerEmail: scheduledQR.clientEmail,
-      qrCode: qrCodeId,
-      guests: scheduledQR.guests,
-      days: scheduledQR.days,
-      expiresAt: expiresAt,
-      magicLinkUrl: magicLinkUrl,
-      customerLanguage: customerLanguage,
-      deliveryMethod: scheduledQR.deliveryMethod,
-      savedConfigId: seller?.savedConfigId || 'default'
-    })
+    // Send welcome email using PayPal template (same logic as immediate PayPal creation)
+    let emailSent = false
+    try {
+      // Import email service and translations
+      const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
+      const { formatDate } = await import('@/lib/translations')
+      
+      const customerLanguage = 'en' // Default language for PayPal orders
+      const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
+      
+      console.log('📧 SCHEDULED QR: Looking for PayPal welcome email template...')
+      
+      // Get PayPal-specific template from database (same search as immediate creation)
+      const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
+        where: { 
+          name: {
+            contains: 'Paypal welcome email template'
+          }
+        },
+        orderBy: { createdAt: 'desc' } // Get the newest one
+      })
+      
+      console.log('📧 SCHEDULED QR: PayPal template search result:', {
+        found: !!paypalTemplate,
+        name: paypalTemplate?.name,
+        id: paypalTemplate?.id,
+        hasCustomHTML: !!paypalTemplate?.customHTML,
+        htmlLength: paypalTemplate?.customHTML?.length || 0
+      })
+      
+      let emailHtml = ''
+      let emailSubject = 'Your ELocalPass is Ready - Scheduled Delivery'
+      
+      if (paypalTemplate && paypalTemplate.customHTML) {
+        console.log('📧 SCHEDULED QR: Using PayPal-specific branded template')
+        
+        // Replace variables in PayPal template (same as immediate creation)
+        emailHtml = paypalTemplate.customHTML
+          .replace(/\{customerName\}/g, scheduledQR.clientName)
+          .replace(/\{qrCode\}/g, qrCodeId)
+          .replace(/\{guests\}/g, scheduledQR.guests.toString())
+          .replace(/\{days\}/g, scheduledQR.days.toString())
+          .replace(/\{expirationDate\}/g, formattedExpirationDate)
+          .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
+          .replace(/\{magicLink\}/g, magicLinkUrl)
+        
+        if (paypalTemplate.subject) {
+          emailSubject = paypalTemplate.subject
+            .replace(/\{customerName\}/g, scheduledQR.clientName)
+            .replace(/\{qrCode\}/g, qrCodeId)
+        }
+        
+        console.log('📧 SCHEDULED QR: PayPal template variables replaced successfully')
+      } else {
+        console.log('⚠️ SCHEDULED QR: PayPal template not found - using fallback template')
+        
+        // Fallback to generic template
+        emailHtml = createWelcomeEmailHtml({
+          customerName: scheduledQR.clientName,
+          qrCode: qrCodeId,
+          guests: scheduledQR.guests,
+          days: scheduledQR.days,
+          expiresAt: formattedExpirationDate,
+          customerPortalUrl: magicLinkUrl,
+          language: customerLanguage,
+          deliveryMethod: 'DIRECT'
+        })
+      }
+      
+      console.log(`📧 SCHEDULED QR: Generated welcome email HTML - Length: ${emailHtml.length} chars`)
+      
+      // Send the email
+      emailSent = await sendEmail({
+        to: scheduledQR.clientEmail,
+        subject: emailSubject,
+        html: emailHtml
+      })
+      
+      console.log('📧 SCHEDULED QR: Email send result:', emailSent)
+
+      if (emailSent) {
+        console.log(`✅ SCHEDULED QR: Welcome email sent successfully to ${scheduledQR.clientEmail}`)
+      } else {
+        console.error(`❌ SCHEDULED QR: Failed to send welcome email to ${scheduledQR.clientEmail}`)
+      }
+    } catch (emailError) {
+      console.error('❌ SCHEDULED QR: Error sending welcome email:', emailError)
+      emailSent = false
+    }
 
     if (emailSent) {
       await prisma.qRCodeAnalytics.updateMany({

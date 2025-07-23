@@ -120,32 +120,42 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        // Send welcome email using PayPal template or fallback
+        // Send welcome email using PayPal template (same logic as immediate PayPal creation)
         let emailSent = false
         try {
-          // Detect customer language
-          const customerLanguage = detectLanguage(scheduledQR.clientName)
+          // Use English for PayPal orders (same as immediate creation)
+          const customerLanguage = 'en'
           
           // Format expiration date
           const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
           
-          // Try to get PayPal-specific template first
+          console.log('📧 OVERDUE SCHEDULED QR: Looking for PayPal welcome email template...')
+          
+          // Get PayPal-specific template from database (same search as immediate creation)
           const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
-            where: {
+            where: { 
               name: {
-                contains: 'Paypal',
-                mode: 'insensitive'
+                contains: 'Paypal welcome email template'
               }
-            }
+            },
+            orderBy: { createdAt: 'desc' } // Get the newest one
+          })
+          
+          console.log('📧 OVERDUE SCHEDULED QR: PayPal template search result:', {
+            found: !!paypalTemplate,
+            name: paypalTemplate?.name,
+            id: paypalTemplate?.id,
+            hasCustomHTML: !!paypalTemplate?.customHTML,
+            htmlLength: paypalTemplate?.customHTML?.length || 0
           })
           
           let emailHtml = ''
-          let emailSubject = 'Your ELocalPass is Ready!'
+          let emailSubject = 'Your ELocalPass is Ready - Overdue Processing'
           
           if (paypalTemplate && paypalTemplate.customHTML) {
-            console.log('📧 Using PayPal-specific template for overdue QR')
+            console.log('📧 OVERDUE SCHEDULED QR: Using PayPal-specific branded template')
             
-            // Replace variables in PayPal template
+            // Replace variables in PayPal template (same as immediate creation)
             emailHtml = paypalTemplate.customHTML
               .replace(/\{customerName\}/g, scheduledQR.clientName)
               .replace(/\{qrCode\}/g, qrCodeId)
@@ -160,8 +170,10 @@ export async function POST(request: NextRequest) {
                 .replace(/\{customerName\}/g, scheduledQR.clientName)
                 .replace(/\{qrCode\}/g, qrCodeId)
             }
+            
+            console.log('📧 OVERDUE SCHEDULED QR: PayPal template variables replaced successfully')
           } else {
-            console.log('⚠️ PayPal template not found - using fallback template for overdue QR')
+            console.log('⚠️ OVERDUE SCHEDULED QR: PayPal template not found - using fallback template')
             
             // Fallback to generic template
             const { createWelcomeEmailHtml } = await import('@/lib/email-service')
