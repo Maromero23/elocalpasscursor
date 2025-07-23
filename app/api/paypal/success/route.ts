@@ -627,12 +627,31 @@ async function scheduleQRCode(orderRecord: any) {
     let deliveryDateTime: Date
     
     if (orderRecord.deliveryDate && orderRecord.deliveryTime) {
-      // Combine date and time properly
-      deliveryDateTime = new Date(`${orderRecord.deliveryDate}T${orderRecord.deliveryTime}`)
+      // orderRecord.deliveryDate is already a Date object, extract components
+      const deliveryDate = new Date(orderRecord.deliveryDate)
+      const [hours, minutes] = orderRecord.deliveryTime.split(':').map(Number)
+      
+      // Create new date with the time from deliveryTime
+      deliveryDateTime = new Date(
+        deliveryDate.getFullYear(),
+        deliveryDate.getMonth(),
+        deliveryDate.getDate(),
+        hours,
+        minutes,
+        0
+      )
       console.log('✅ Using provided delivery date/time:', deliveryDateTime.toISOString())
     } else if (orderRecord.deliveryDate) {
       // Only date provided, default to noon
-      deliveryDateTime = new Date(`${orderRecord.deliveryDate}T12:00:00`)
+      const deliveryDate = new Date(orderRecord.deliveryDate)
+      deliveryDateTime = new Date(
+        deliveryDate.getFullYear(),
+        deliveryDate.getMonth(),
+        deliveryDate.getDate(),
+        12,
+        0,
+        0
+      )
       console.log('⚠️ Only date provided, defaulting to noon:', deliveryDateTime.toISOString())
     } else {
       // No date provided - this shouldn't happen for future delivery
