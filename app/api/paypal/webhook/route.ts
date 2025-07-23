@@ -135,8 +135,8 @@ async function createQRCode(orderRecord: any) {
     
     // Determine seller information for PayPal orders
     let sellerId = 'cmc4ha7l000086a96ef0e06qq' // Default system seller ID
-    let sellerName = 'Direct Purchase'
-    let sellerEmail = 'directsale@elocalpass.com'
+    let sellerName = 'Online'
+    let sellerEmail = 'direct@elocalpass.com'
     let sellerDetails = null // Declare outside the block
     
     // Check if customer came from a specific seller (rebuy email or discount code)
@@ -164,16 +164,16 @@ async function createQRCode(orderRecord: any) {
         console.log('⚠️ PayPal webhook: Seller not found, using direct purchase')
         // Reset to defaults if seller not found
         sellerId = 'cmc4ha7l000086a96ef0e06qq'
-        sellerName = 'Direct Purchase'
-        sellerEmail = 'directsale@elocalpass.com'
+        sellerName = 'Online'
+        sellerEmail = 'direct@elocalpass.com'
         sellerDetails = null
       }
     } else {
       console.log('📋 PayPal webhook: Direct purchase from passes page')
       // Explicitly reset all seller information for direct sales
       sellerId = 'cmc4ha7l000086a96ef0e06qq'
-      sellerName = 'Direct Purchase'
-      sellerEmail = 'directsale@elocalpass.com'
+      sellerName = 'Online'
+      sellerEmail = 'direct@elocalpass.com'
       sellerDetails = null
     }
     

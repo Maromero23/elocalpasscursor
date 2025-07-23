@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         const crypto = await import('crypto')
         const { detectLanguage, t, getPlural, formatDate } = await import('@/lib/translations')
         
-        // Get seller info and configuration (same as generate-qr API)
+        // Get seller info and configuration 
         const seller = await prisma.user.findUnique({
           where: { id: scheduledQR.sellerId },
           select: { 
@@ -62,21 +62,40 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        if (!seller?.savedConfigId) {
-          throw new Error('No configuration assigned to seller')
+        let config
+        let savedConfig = null
+
+        // Handle different types of scheduled QRs
+        if (scheduledQR.configurationId === 'default' || !seller?.savedConfigId) {
+          // This is a PayPal or system-generated QR with default configuration
+          console.log(`📅 BATCH PROCESSING: Using default configuration for scheduled QR: ${scheduledQR.id}`)
+          
+          // Use default configuration for PayPal/system QRs
+          config = {
+            button2PricingType: 'FIXED',
+            button2FixedPrice: 0,
+            button5SendRebuyEmail: false
+          }
+        } else {
+          // This is a seller dashboard QR with saved configuration
+          console.log(`📅 BATCH PROCESSING: Using saved configuration for scheduled QR: ${scheduledQR.id}`)
+          
+          if (!seller || !seller.savedConfigId) {
+            throw new Error('No configuration assigned to seller')
+          }
+
+          // Get the saved QR configuration
+          savedConfig = await prisma.savedQRConfiguration.findUnique({
+            where: { id: seller.savedConfigId }
+          })
+
+          if (!savedConfig) {
+            throw new Error('Configuration not found')
+          }
+
+          // Parse the configuration JSON
+          config = JSON.parse(savedConfig.config)
         }
-
-        // Get the saved QR configuration
-        const savedConfig = await prisma.savedQRConfiguration.findUnique({
-          where: { id: seller.savedConfigId }
-        })
-
-        if (!savedConfig) {
-          throw new Error('Configuration not found')
-        }
-
-        // Parse the configuration JSON
-        const config = JSON.parse(savedConfig.config)
         
         // Calculate pricing (same logic as generate-qr API)
         let calculatedPrice = 0
@@ -152,6 +171,23 @@ export async function POST(request: NextRequest) {
         const currentTime = new Date()
         const cancunTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "America/Cancun"}))
         
+        // Determine seller information for analytics (consistent with PayPal immediate creation)
+        let analyticsSellerName, analyticsSellerEmail, analyticsLocationName, analyticsDistributorName
+        
+        if (scheduledQR.configurationId === 'default' || !seller?.savedConfigId) {
+          // This is a PayPal QR - use consistent PayPal seller information
+          analyticsSellerName = 'Online'
+          analyticsSellerEmail = 'direct@elocalpass.com'
+          analyticsLocationName = 'Online'
+          analyticsDistributorName = 'Elocalpass'
+        } else {
+          // This is a seller dashboard QR - use actual seller information
+          analyticsSellerName = sellerDetails?.name || 'Unknown Seller'
+          analyticsSellerEmail = sellerDetails?.email || 'unknown@elocalpass.com'
+          analyticsLocationName = sellerDetails?.location?.name || null
+          analyticsDistributorName = sellerDetails?.location?.distributor?.name || null
+        }
+        
         await prisma.qRCodeAnalytics.create({
           data: {
             qrCodeId: qrCode.id,
@@ -166,14 +202,14 @@ export async function POST(request: NextRequest) {
             deliveryMethod: scheduledQR.deliveryMethod,
             language: 'en',
             sellerId: scheduledQR.sellerId,
-            sellerName: sellerDetails?.name,
-            sellerEmail: sellerDetails?.email || '',
+            sellerName: analyticsSellerName,
+            sellerEmail: analyticsSellerEmail,
             locationId: sellerDetails?.locationId,
-            locationName: sellerDetails?.location?.name,
+            locationName: analyticsLocationName,
             distributorId: sellerDetails?.location?.distributorId,
-            distributorName: sellerDetails?.location?.distributor?.name,
-            configurationId: seller.savedConfigId,
-            configurationName: seller.configurationName,
+            distributorName: analyticsDistributorName,
+            configurationId: seller?.savedConfigId || scheduledQR.configurationId,
+            configurationName: seller?.configurationName || 'Default Configuration',
             pricingType: config.button2PricingType,
             fixedPrice: config.button2PricingType === 'FIXED' ? config.button2FixedPrice : null,
             variableBasePrice: config.button2PricingType === 'VARIABLE' ? config.button2VariableBasePrice : null,

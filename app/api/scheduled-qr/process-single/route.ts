@@ -241,6 +241,23 @@ export async function POST(request: NextRequest) {
     const currentTime = new Date()
     const cancunTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "America/Cancun"}))
     
+    // Determine seller information for analytics (consistent with PayPal immediate creation)
+    let analyticsSellerName, analyticsSellerEmail, analyticsLocationName, analyticsDistributorName
+    
+    if (scheduledQR.configurationId === 'default' || !seller?.savedConfigId) {
+      // This is a PayPal QR - use consistent PayPal seller information
+      analyticsSellerName = 'Online'
+      analyticsSellerEmail = 'direct@elocalpass.com'
+      analyticsLocationName = 'Online'
+      analyticsDistributorName = 'Elocalpass'
+    } else {
+      // This is a seller dashboard QR - use actual seller information
+      analyticsSellerName = sellerDetails?.name || 'Unknown Seller'
+      analyticsSellerEmail = sellerDetails?.email || 'unknown@elocalpass.com'
+      analyticsLocationName = sellerDetails?.location?.name || null
+      analyticsDistributorName = sellerDetails?.location?.distributor?.name || null
+    }
+    
     await prisma.qRCodeAnalytics.create({
       data: {
         qrCodeId: qrCode.id,
@@ -255,12 +272,12 @@ export async function POST(request: NextRequest) {
         deliveryMethod: scheduledQR.deliveryMethod,
         language: 'en',
         sellerId: scheduledQR.sellerId,
-        sellerName: sellerDetails?.name,
-        sellerEmail: sellerDetails?.email || '',
+        sellerName: analyticsSellerName,
+        sellerEmail: analyticsSellerEmail,
         locationId: sellerDetails?.locationId,
-        locationName: sellerDetails?.location?.name,
+        locationName: analyticsLocationName,
         distributorId: sellerDetails?.location?.distributorId,
-        distributorName: sellerDetails?.location?.distributor?.name,
+        distributorName: analyticsDistributorName,
         configurationId: seller?.savedConfigId || scheduledQR.configurationId,
         configurationName: seller?.configurationName || 'Default Configuration',
         pricingType: config.button2PricingType,
