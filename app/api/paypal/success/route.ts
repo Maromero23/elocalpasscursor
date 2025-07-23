@@ -627,31 +627,33 @@ async function scheduleQRCode(orderRecord: any) {
     let deliveryDateTime: Date
     
     if (orderRecord.deliveryDate && orderRecord.deliveryTime) {
-      // orderRecord.deliveryDate is already a Date object, extract components
-      const deliveryDate = new Date(orderRecord.deliveryDate)
+      // orderRecord.deliveryDate is stored in UTC, but we need to recreate the user's original local time
+      // Extract the date components from the stored UTC date
+      const storedDate = new Date(orderRecord.deliveryDate)
       const [hours, minutes] = orderRecord.deliveryTime.split(':').map(Number)
       
-      // Create new date with the time from deliveryTime
-      deliveryDateTime = new Date(
-        deliveryDate.getFullYear(),
-        deliveryDate.getMonth(),
-        deliveryDate.getDate(),
-        hours,
-        minutes,
-        0
-      )
-      console.log('✅ Using provided delivery date/time:', deliveryDateTime.toISOString())
+      // Get the date components from the stored date (which represents the user's intended date)
+      // We need to extract the date from the ISO string to avoid timezone conversion
+      const dateStr = storedDate.toISOString().split('T')[0] // Get YYYY-MM-DD
+      const [year, month, day] = dateStr.split('-').map(Number)
+      
+      // Create new date with the user's intended local time
+      deliveryDateTime = new Date(year, month - 1, day, hours, minutes, 0)
+      
+      console.log('✅ Reconstructed user delivery time:', {
+        storedUTC: orderRecord.deliveryDate,
+        extractedDate: dateStr,
+        userTime: orderRecord.deliveryTime,
+        reconstructed: deliveryDateTime.toString(),
+        iso: deliveryDateTime.toISOString()
+      })
     } else if (orderRecord.deliveryDate) {
       // Only date provided, default to noon
-      const deliveryDate = new Date(orderRecord.deliveryDate)
-      deliveryDateTime = new Date(
-        deliveryDate.getFullYear(),
-        deliveryDate.getMonth(),
-        deliveryDate.getDate(),
-        12,
-        0,
-        0
-      )
+      const storedDate = new Date(orderRecord.deliveryDate)
+      const dateStr = storedDate.toISOString().split('T')[0]
+      const [year, month, day] = dateStr.split('-').map(Number)
+      
+      deliveryDateTime = new Date(year, month - 1, day, 12, 0, 0)
       console.log('⚠️ Only date provided, defaulting to noon:', deliveryDateTime.toISOString())
     } else {
       // No date provided - this shouldn't happen for future delivery
