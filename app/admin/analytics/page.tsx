@@ -225,6 +225,24 @@ export default function AnalyticsPage() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .analytics-table-container::-webkit-scrollbar {
+          height: 12px;
+        }
+        .analytics-table-container::-webkit-scrollbar-thumb {
+          background-color: #cbd5e0;
+          border-radius: 8px;
+          border: 2px solid #f7fafc;
+        }
+        .analytics-table-container::-webkit-scrollbar-track {
+          background-color: #f1f1f1;
+          border-radius: 8px;
+        }
+        .analytics-table-container {
+          scrollbar-width: auto !important;
+          overflow-x: scroll !important;
+        }
+      `}} />
       <div className="min-h-screen bg-gray-100 w-full">
 
         {/* Navigation */}
@@ -471,6 +489,13 @@ export default function AnalyticsPage() {
                 WebkitOverflowScrolling: 'touch',
                 height: '20px'
               }}
+              onWheel={(e) => {
+                if (e.shiftKey) {
+                  e.preventDefault()
+                  const container = e.currentTarget
+                  container.scrollLeft += e.deltaY * 3
+                }
+              }}
               onScroll={syncScrollFromTop}
             >
               <div style={{ 
@@ -488,6 +513,13 @@ export default function AnalyticsPage() {
                 scrollbarWidth: 'auto',
                 msOverflowStyle: 'scrollbar',
                 WebkitOverflowScrolling: 'touch'
+              }}
+              onWheel={(e) => {
+                if (e.shiftKey) {
+                  e.preventDefault()
+                  const container = e.currentTarget
+                  container.scrollLeft += e.deltaY * 3
+                }
               }}
               onScroll={syncScrollFromMain}
             >
