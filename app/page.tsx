@@ -62,7 +62,7 @@ function TestimonialsSection() {
 
         <div className="relative overflow-hidden max-w-6xl mx-auto">
           <div 
-            className="flex ease-in-out"
+            className="flex gap-8 ease-in-out"
             style={{ 
               transform: `translateX(-${(currentTestimonial * 50)}%)`,
               width: `${testimonials.length * 50}%`,
@@ -70,7 +70,7 @@ function TestimonialsSection() {
             }}
           >
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="w-full flex-shrink-0 px-4" style={{ width: '50%' }}>
+              <div key={index} className="flex-shrink-0" style={{ width: 'calc(50% - 16px)' }}>
                 <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-48">
                   <div className="flex h-full">
                     <div className="w-40 flex-shrink-0">
