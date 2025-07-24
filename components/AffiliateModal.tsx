@@ -98,7 +98,11 @@ export default function AffiliateModal({ affiliate, isOpen, onClose }: Affiliate
                 src={convertGoogleDriveUrl(affiliate.logo)}
                 alt={affiliate.name}
                 className="w-full h-48 object-cover rounded-xl"
-                style={{ borderRadius: '12px' }}
+                style={{ 
+                  borderRadius: '12px',
+                  minHeight: '192px',
+                  maxHeight: '192px'
+                }}
                 onError={(e) => {
                   e.currentTarget.style.display = 'none'
                 }}

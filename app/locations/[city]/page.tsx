@@ -643,7 +643,13 @@ export default function CityPage() {
                           src={convertGoogleDriveUrl(affiliate.logo)}
                           alt={affiliate.name}
                           className="w-40 h-40 object-contain rounded-xl"
-                          style={{ borderRadius: '12px' }}
+                          style={{ 
+                            borderRadius: '12px',
+                            minWidth: '160px',
+                            minHeight: '160px',
+                            maxWidth: '160px',
+                            maxHeight: '160px'
+                          }}
                           onError={(e) => {
                             const target = e.target as HTMLImageElement
                             target.style.display = 'none'
