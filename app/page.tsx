@@ -49,7 +49,7 @@ function TestimonialsSection() {
   }, [testimonials.length])
 
   return (
-    <div className="py-16 bg-gray-50">
+    <div className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm uppercase tracking-wide">
@@ -65,16 +65,16 @@ function TestimonialsSection() {
             testimonials[currentTestimonial],
             testimonials[(currentTestimonial + 1) % testimonials.length]
           ].map((testimonial, index) => (
-            <div key={`${currentTestimonial}-${index}`} className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="flex">
-                <div className="w-32 flex-shrink-0">
+            <div key={`${currentTestimonial}-${index}`} className="bg-white rounded-2xl shadow-lg overflow-hidden h-48">
+              <div className="flex h-full">
+                <div className="w-40 flex-shrink-0">
                   <img 
                     src={testimonial.image}
                     alt="Customer" 
-                    className="w-full h-32 object-cover"
+                    className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="flex-1 bg-gray-100 p-6">
+                <div className="flex-1 bg-gray-100 p-6 flex flex-col justify-center">
                   <h4 className="font-bold text-gray-800 mb-3 text-lg">
                     {testimonial.title}
                   </h4>
