@@ -10,6 +10,7 @@ import { useTranslation } from '@/contexts/LanguageContext'
 function TestimonialsSection() {
   const { t } = useTranslation()
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
+  const [isVisible, setIsVisible] = useState(true)
 
   const testimonials = [
     {
@@ -39,10 +40,14 @@ function TestimonialsSection() {
     }
   ]
 
-  // Auto-rotate testimonials every 8 seconds with sliding animation
+  // Auto-rotate testimonials every 8 seconds with fade effect
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTestimonial((prev: number) => (prev + 1) % testimonials.length)
+      setIsVisible(false) // Start fade out
+      setTimeout(() => {
+        setCurrentTestimonial((prev: number) => (prev + 1) % testimonials.length)
+        setIsVisible(true) // Start fade in
+      }, 500) // Change content halfway through fade
     }, 8000)
 
     return () => clearInterval(interval)
@@ -62,8 +67,9 @@ function TestimonialsSection() {
 
         <div className="max-w-6xl mx-auto px-4">
           <div 
-            key={currentTestimonial} 
-            className="flex flex-col md:flex-row gap-8 transition-opacity duration-1000 ease-in-out"
+            className={`flex flex-col md:flex-row gap-8 transition-opacity duration-500 ease-in-out ${
+              isVisible ? 'opacity-100' : 'opacity-0'
+            }`}
           >
             {/* First Testimonial */}
             <div className="flex-1 bg-white rounded-2xl shadow-lg overflow-hidden h-48">
