@@ -42,7 +42,7 @@ function TestimonialsSection() {
   // Auto-rotate testimonials every 8 seconds for visible sliding
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTestimonial((prev: number) => (prev + 1) % testimonials.length)
+      setCurrentTestimonial((prev: number) => (prev + 1) % (testimonials.length - 1))
     }, 8000)
 
     return () => clearInterval(interval)
@@ -80,7 +80,7 @@ function TestimonialsSection() {
                         className="w-full h-32 object-cover"
                       />
                     </div>
-                    <div className="flex-1 bg-gray-100 p-6">
+                    <div className="flex-1 bg-white p-6">
                       <h4 className="font-bold text-gray-800 mb-3 text-lg">
                         {testimonial.title}
                       </h4>
