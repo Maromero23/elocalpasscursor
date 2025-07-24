@@ -48,7 +48,7 @@ export default function SellersManagement() {
       const response = await fetch("/api/admin/sellers")
       if (response.ok) {
         const data = await response.json()
-        setSellers(data)
+        setSellers(data.sellers || [])
       }
     } catch (error) {
       console.error("Error fetching sellers:", error)
