@@ -634,13 +634,14 @@ async function scheduleQRCode(orderRecord: any) {
     
     if (orderRecord.deliveryDate && orderRecord.deliveryTime) {
       // orderRecord.deliveryDate is stored, but we need to recreate the user's original Cancun time
-      // Extract the date components from the stored date
+      // Extract the date components from the stored date using local methods to avoid UTC conversion
       const storedDate = new Date(orderRecord.deliveryDate)
       const [hours, minutes] = orderRecord.deliveryTime.split(':').map(Number)
       
-      // Get the date components from the stored date (which represents the user's intended date)
-      const dateStr = storedDate.toISOString().split('T')[0] // Get YYYY-MM-DD
-      const [year, month, day] = dateStr.split('-').map(Number)
+      // Get the date components using local methods to preserve the original date
+      const year = storedDate.getFullYear()
+      const month = storedDate.getMonth() + 1 // getMonth() returns 0-11
+      const day = storedDate.getDate()
       
       // Create the scheduled delivery time as the user intended it in Cancun time
       // Since Cancun is UTC-5 and doesn't observe DST changes that matter to us,
@@ -650,7 +651,7 @@ async function scheduleQRCode(orderRecord: any) {
       
       console.log('✅ Reconstructed user delivery time:', {
         storedUTC: orderRecord.deliveryDate,
-        extractedDate: dateStr,
+        extractedDate: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
         userTime: orderRecord.deliveryTime,
         reconstructed: deliveryDateTime.toString(),
         iso: deliveryDateTime.toISOString()
@@ -658,8 +659,11 @@ async function scheduleQRCode(orderRecord: any) {
     } else if (orderRecord.deliveryDate) {
       // Only date provided, default to noon Cancun time
       const storedDate = new Date(orderRecord.deliveryDate)
-      const dateStr = storedDate.toISOString().split('T')[0]
-      const [year, month, day] = dateStr.split('-').map(Number)
+      
+      // Get the date components using local methods to preserve the original date
+      const year = storedDate.getFullYear()
+      const month = storedDate.getMonth() + 1 // getMonth() returns 0-11
+      const day = storedDate.getDate()
       
       // Default to noon Cancun time with explicit timezone offset
       const isoString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T12:00:00.000-05:00`
