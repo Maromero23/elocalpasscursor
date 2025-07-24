@@ -226,19 +226,19 @@ export default function AnalyticsPage() {
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
       <style dangerouslySetInnerHTML={{ __html: `
-        .analytics-table-container::-webkit-scrollbar {
+        .table-scroll-container::-webkit-scrollbar {
           height: 12px;
         }
-        .analytics-table-container::-webkit-scrollbar-thumb {
+        .table-scroll-container::-webkit-scrollbar-thumb {
           background-color: #cbd5e0;
           border-radius: 8px;
           border: 2px solid #f7fafc;
         }
-        .analytics-table-container::-webkit-scrollbar-track {
+        .table-scroll-container::-webkit-scrollbar-track {
           background-color: #f1f1f1;
           border-radius: 8px;
         }
-        .analytics-table-container {
+        .table-scroll-container {
           scrollbar-width: auto !important;
           overflow-x: scroll !important;
         }
@@ -481,7 +481,7 @@ export default function AnalyticsPage() {
             {/* Top scroll bar */}
             <div 
               ref={topScrollRef}
-              className="overflow-x-scroll analytics-table-container" 
+              className="overflow-x-scroll table-scroll-container" 
               style={{ 
                 scrollBehavior: 'auto',
                 scrollbarWidth: 'auto',
@@ -499,7 +499,7 @@ export default function AnalyticsPage() {
               onScroll={syncScrollFromTop}
             >
               <div style={{ 
-                width: '1900px',
+                width: '2500px', // Wide enough for all analytics columns + large safety margin
                 height: '1px'
               }}></div>
             </div>
@@ -507,7 +507,7 @@ export default function AnalyticsPage() {
             {/* Main table container */}
             <div 
               ref={mainScrollRef}
-              className="overflow-x-scroll analytics-table-container" 
+              className="overflow-x-scroll table-scroll-container" 
               style={{ 
                 scrollBehavior: 'auto',
                 scrollbarWidth: 'auto',
@@ -523,7 +523,7 @@ export default function AnalyticsPage() {
               }}
               onScroll={syncScrollFromMain}
             >
-                <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1900px' }}>
+                <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '2500px' }}>
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -623,7 +623,7 @@ export default function AnalyticsPage() {
       >
         <div
           ref={fixedScrollRef}
-          className="w-full h-full overflow-x-auto overflow-y-hidden analytics-table-container"
+          className="w-full h-full overflow-x-auto overflow-y-hidden table-scroll-container"
           style={{
             scrollbarWidth: 'auto',
             msOverflowStyle: 'scrollbar',
@@ -640,7 +640,7 @@ export default function AnalyticsPage() {
         >
           <div 
             style={{ 
-              width: '1900px',
+              width: '2500px',
               height: '1px'
             }}
           />
