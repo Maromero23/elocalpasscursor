@@ -267,6 +267,7 @@ export async function POST(request: NextRequest) {
         guests: scheduledQR.guests,
         days: scheduledQR.days,
         cost: scheduledQR.configurationId === 'default' ? scheduledQR.amount : calculatedPrice,
+        discountAmount: scheduledQR.configurationId === 'default' ? scheduledQR.discountAmount : 0,
         expiresAt: expiresAt,
         isActive: true,
         deliveryMethod: scheduledQR.deliveryMethod,

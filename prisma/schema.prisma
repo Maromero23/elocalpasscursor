@@ -385,6 +385,7 @@ model QRCodeAnalytics {
   guests                Int
   days                  Int
   cost                  Float
+  discountAmount        Float    @default(0) // Amount of discount applied
   expiresAt             DateTime
   isActive              Boolean  @default(true)
   deliveryMethod        String   // DIRECT, URLS, BOTH
@@ -450,6 +451,7 @@ model ScheduledQRCode {
   guests          Int
   days            Int
   amount          Float    @default(0) // Cost of the QR code
+  discountAmount  Float    @default(0) // Amount of discount applied
   sellerId        String
   configurationId String
   deliveryMethod  String   @default("DIRECT")
@@ -576,7 +578,9 @@ model AffiliateFieldAnnotation {
 model Order {
   id            String   @id @default(cuid())
   paymentId     String   @unique // PayPal payment ID
-  amount        Float
+  amount        Float    // Final amount paid (after discounts)
+  originalAmount Float   @default(0) // Original price before discount
+  discountAmount Float   @default(0) // Amount of discount applied
   currency      String   @default("USD")
   customerEmail String
   customerName  String

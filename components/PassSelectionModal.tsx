@@ -323,6 +323,8 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         deliveryDate: deliveryType === 'future' ? deliveryDate : null,
         deliveryTime: deliveryType === 'future' ? deliveryTime : null,
         discountCode: discountCode || null,
+        originalPrice,
+        discountAmount,
         calculatedPrice,
         sellerId: discountCode ? sellerTracking : null, // Only use seller tracking if discount code is provided
         customerEmail: customerEmail, // Use form email
@@ -350,20 +352,17 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       const cancelUrl = `${window.location.origin}/payment/cancel`
       paypalUrl.searchParams.set('cancel_return', cancelUrl)
       
-      // Add custom data for tracking
-      paypalUrl.searchParams.set('custom', JSON.stringify({
-        customerEmail: orderData.customerEmail,
-        customerName: orderData.customerName,
-        passType: orderData.passType,
-        guests: orderData.guests,
-        days: orderData.days,
-        deliveryType: orderData.deliveryType,
-        deliveryDate: orderData.deliveryDate,
-        deliveryTime: orderData.deliveryTime,
-        discountCode: orderData.discountCode,
-        sellerId: orderData.sellerId,
-        calculatedPrice: orderData.calculatedPrice
-      }))
+      // Add minimal custom data for tracking (PayPal custom field has 256 char limit)
+      const minimalCustomData = {
+        email: orderData.customerEmail,
+        name: orderData.customerName,
+        type: orderData.passType,
+        g: orderData.guests,
+        d: orderData.days,
+        price: orderData.calculatedPrice
+      }
+      
+      paypalUrl.searchParams.set('custom', JSON.stringify(minimalCustomData))
 
       console.log('🔗 PayPal URL:', paypalUrl.toString())
       

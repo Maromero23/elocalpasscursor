@@ -13,6 +13,7 @@ interface ScheduledQR {
   guests: number
   days: number
   amount: number
+  discountAmount: number
   scheduledFor: string
   isProcessed: boolean
   processedAt?: string
@@ -326,6 +327,9 @@ export default function ScheduledQRsAdminPage() {
                         Cost
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Discount
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Scheduled For
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -357,6 +361,11 @@ export default function ScheduledQRsAdminPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{formatCurrency(qr.amount)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-green-600">
+                            {qr.discountAmount > 0 ? `-${formatCurrency(qr.discountAmount)}` : '-'}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{formatDateTime(qr.scheduledFor)}</div>

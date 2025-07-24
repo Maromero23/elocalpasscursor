@@ -85,6 +85,8 @@ export async function POST(request: NextRequest) {
           data: {
             paymentId: txnId,
             amount: parseFloat(amountParam || orderData.calculatedPrice.toString()),
+            originalAmount: orderData.originalPrice || parseFloat(amountParam || orderData.calculatedPrice.toString()),
+            discountAmount: orderData.discountAmount || 0,
             currency: 'USD',
             customerEmail: orderData.customerEmail,
             customerName: orderData.customerName,
@@ -676,6 +678,7 @@ async function scheduleQRCode(orderRecord: any) {
         guests: orderRecord.guests,
         days: orderRecord.days,
         amount: orderRecord.amount, // Store the cost for tracking
+        discountAmount: orderRecord.discountAmount || 0, // Store discount amount
         sellerId: 'cmc4ha7l000086a96ef0e06qq', // Always use default PayPal seller for consistency
         configurationId: 'default',
         deliveryMethod: 'DIRECT',

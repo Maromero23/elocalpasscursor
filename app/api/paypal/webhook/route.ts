@@ -474,22 +474,29 @@ async function handlePayPalIPN(body: string) {
       if (customData) {
         console.log('📋 Custom order data:', customData)
         
+        // Handle both old and new custom data formats for backward compatibility
+        const customerEmail = customData.email || customData.customerEmail
+        const customerName = customData.name || customData.customerName
+        const passType = customData.type || customData.passType
+        const guests = customData.g || customData.guests
+        const days = customData.d || customData.days
+        
         // Create order record
         const orderRecord = await prisma.order.create({
           data: {
             paymentId: ipnData.txn_id,
             amount: parseFloat(ipnData.mc_gross),
             currency: ipnData.mc_currency,
-            customerEmail: customData.customerEmail,
-            customerName: customData.customerName,
-            passType: customData.passType,
-            guests: customData.guests,
-            days: customData.days,
-            deliveryType: customData.deliveryType,
-            deliveryDate: customData.deliveryDate,
-            deliveryTime: customData.deliveryTime,
-            discountCode: customData.discountCode,
-            sellerId: customData.sellerId || null, // Use seller ID from custom data (discount codes, rebuy emails)
+            customerEmail: customerEmail,
+            customerName: customerName,
+            passType: passType,
+            guests: guests,
+            days: days,
+            deliveryType: 'now', // Default to immediate for webhook
+            deliveryDate: null,
+            deliveryTime: null,
+            discountCode: null, // Will be handled by success route
+            sellerId: null, // Will be handled by success route
             status: 'PAID'
           }
         })
