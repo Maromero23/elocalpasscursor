@@ -60,10 +60,12 @@ export default function HomePage() {
               {/* Restaurants */}
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  <div className="w-20 h-20 flex items-center justify-center">
-                    <svg className="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 512 512">
-                      <path d="M384 64c-24.8 0-48 77.3-48 160 0 57 32 80 32 80v128c0 8.8 7.2 16 16 16s16-7.2 16-16V75c0-11-11-11-16-11zM288 64l10 104c0 4.4-3.6 8-8 8s-8-3.6-8-8l-6-104h-8l-6 104c0 4.4-3.6 8-8 8s-8-3.6-8-8l10-104h-8s-24 107.2-24 128 13.4 38.6 32 45.2V432c0 8.8 7.2 16 16 16s16-7.2 16-16V237.2c18.6-6.6 32-24.2 32-45.2S296 64 296 64h-8zM160 64c-26.5 0-48 64-48 128 0 20.8 13.4 38.6 32 45.2V432c0 8.8 7.2 16 16 16s16-7.2 16-16V237.2c18.6-6.6 32-24.2 32-45.2 0-64-21.5-128-48-128z"/>
-                    </svg>
+                  <div className="w-32 h-24 rounded-2xl overflow-hidden">
+                    <img 
+                      src="/images/restaurantes_current.webp" 
+                      alt="Restaurants" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </div>
                 <h3 className="text-2xl font-bold">{t.home.restaurants_title}</h3>
@@ -75,10 +77,12 @@ export default function HomePage() {
               {/* Shops */}
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  <div className="w-20 h-20 flex items-center justify-center">
-                    <svg className="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 640 512">
-                      <path d="M36.8 192H603.2c20.3 0 36.8-16.5 36.8-36.8c0-7.3-2.2-14.4-6.2-20.4L558.2 21.4C549.3 8 534.4 0 518.3 0H121.7c-16 0-31 8-39.9 21.4L6.2 134.7c-4 6.1-6.2 13.2-6.2 20.4C0 175.5 16.5 192 36.8 192zM64 224V384v80c0 26.5 21.5 48 48 48H336c26.5 0 48-21.5 48-48V384 224H320V384H128V224H64zm448 0V480c0 17.7 14.3 32 32 32s32-14.3 32-32V224H512z"/>
-                    </svg>
+                  <div className="w-32 h-24 rounded-2xl overflow-hidden">
+                    <img 
+                      src="/images/tiendas_current.webp" 
+                      alt="Shops" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </div>
                 <h3 className="text-2xl font-bold">{t.home.shops_title}</h3>
@@ -90,10 +94,12 @@ export default function HomePage() {
               {/* Services */}
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  <div className="w-20 h-20 flex items-center justify-center">
-                    <svg className="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M21 8C22.1046 8 23 8.89543 23 10V14C23 15.1046 22.1046 16 21 16H19.9381C19.446 19.9463 16.0796 23 12 23V21C15.3137 21 18 18.3137 18 15V9C18 5.68629 15.3137 3 12 3C8.68629 3 6 5.68629 6 9V16H3C1.89543 16 1 15.1046 1 14V10C1 8.89543 1.89543 8 3 8H4.06189C4.55399 4.05369 7.92038 1 12 1C16.0796 1 19.446 4.05369 19.9381 8H21ZM7.75944 15.7849L8.81958 14.0887C9.74161 14.6662 10.8318 15 12 15C13.1682 15 14.2584 14.6662 15.1804 14.0887L16.2406 15.7849C15.0112 16.5549 13.5576 17 12 17C10.4424 17 8.98882 16.5549 7.75944 15.7849Z"/>
-                    </svg>
+                  <div className="w-32 h-24 rounded-2xl overflow-hidden">
+                    <img 
+                      src="/images/services_current.png" 
+                      alt="Services" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </div>
                 <h3 className="text-2xl font-bold">{t.home.services_title}</h3>
