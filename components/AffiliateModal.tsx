@@ -97,7 +97,8 @@ export default function AffiliateModal({ affiliate, isOpen, onClose }: Affiliate
               <img
                 src={convertGoogleDriveUrl(affiliate.logo)}
                 alt={affiliate.name}
-                className="w-full h-48 object-cover rounded-lg"
+                className="w-full h-48 object-cover rounded-xl"
+                style={{ borderRadius: '12px' }}
                 onError={(e) => {
                   e.currentTarget.style.display = 'none'
                 }}
