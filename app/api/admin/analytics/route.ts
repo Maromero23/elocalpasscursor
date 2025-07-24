@@ -109,6 +109,7 @@ export async function GET(request: NextRequest) {
        guests: qr.guests,
        days: qr.days,
        cost: qr.cost,
+       discountAmount: qr.analytics?.discountAmount || 0,
        sellerName: qr.analytics?.sellerName || qr.seller?.name || '',
        sellerEmail: qr.analytics?.sellerEmail || qr.seller?.email || '',
        locationName: qr.analytics?.locationName || qr.seller?.location?.name || '',

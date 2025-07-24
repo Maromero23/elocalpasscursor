@@ -18,6 +18,7 @@ interface QRAnalytics {
   guests: number
   days: number
   cost: number
+  discountAmount: number
   sellerName: string
   sellerEmail: string
   locationName: string
@@ -171,7 +172,7 @@ export default function AnalyticsPage() {
 
   const exportToCSV = () => {
     const headers = [
-      "QR Code", "Customer Name", "Customer Email", "Guests", "Days", "Cost",
+      "QR Code", "Customer Name", "Customer Email", "Guests", "Days", "Cost", "Discount",
       "Seller", "Location", "Distributor", "Delivery Method", "Language",
       "Created Date", "Expires Date", "Status"
     ]
@@ -183,6 +184,7 @@ export default function AnalyticsPage() {
       qr.guests,
       qr.days,
       qr.cost,
+      qr.discountAmount > 0 ? qr.discountAmount : 0,
       qr.sellerName,
       qr.locationName,
       qr.distributorName,
@@ -472,7 +474,7 @@ export default function AnalyticsPage() {
               onScroll={syncScrollFromTop}
             >
               <div style={{ 
-                width: '1800px',
+                width: '1900px',
                 height: '1px'
               }}></div>
             </div>
@@ -489,7 +491,7 @@ export default function AnalyticsPage() {
               }}
               onScroll={syncScrollFromMain}
             >
-                <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1800px' }}>
+                <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1900px' }}>
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -503,6 +505,9 @@ export default function AnalyticsPage() {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Cost
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Discount
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Seller
@@ -535,6 +540,11 @@ export default function AnalyticsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{formatCurrency(qr.cost)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-green-600">
+                            {qr.discountAmount > 0 ? `-${formatCurrency(qr.discountAmount)}` : '-'}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{qr.sellerName}</div>
@@ -598,7 +608,7 @@ export default function AnalyticsPage() {
         >
           <div 
             style={{ 
-              width: '1800px',
+              width: '1900px',
               height: '1px'
             }}
           />

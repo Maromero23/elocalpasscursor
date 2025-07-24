@@ -457,6 +457,7 @@ async function createQRCode(orderRecord: any) {
         guests: orderRecord.guests,
         days: orderRecord.days,
         cost: orderRecord.amount,
+        discountAmount: orderRecord.discountAmount || 0,
         expiresAt: expiresAt,
         isActive: true,
         deliveryMethod: 'DIRECT',
