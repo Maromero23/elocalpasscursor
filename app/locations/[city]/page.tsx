@@ -416,31 +416,7 @@ export default function CityPage() {
         </div>
       </div>
 
-      {/* Mobile Top Bar - Simplified */}
-      <div className="block md:hidden bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Back Arrow with Home Text */}
-          <a 
-            href="/" 
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            <span className="font-medium">Home</span>
-          </a>
-
-          {/* Mobile Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder={language === 'es' ? 'Buscar...' : 'Search...'}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-32"
-            />
-          </div>
-        </div>
-      </div>
+      {/* Mobile Top Bar - Removed for Airbnb-style layout */}
 
       {/* Tablet/Medium Screen Top Bar - Hidden on Mobile and Desktop */}
       <div className="hidden md:block lg:hidden bg-white border-b border-gray-200 px-4 py-3">
