@@ -39,19 +39,14 @@ function TestimonialsSection() {
     }
   ]
 
-  // Auto-rotate testimonials every 5 seconds
+  // Auto-rotate testimonials every 8 seconds for visible sliding
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTestimonial((prev: number) => (prev + 1) % testimonials.length)
-    }, 5000)
+    }, 8000)
 
     return () => clearInterval(interval)
   }, [testimonials.length])
-
-  const currentSet = [
-    testimonials[currentTestimonial],
-    testimonials[(currentTestimonial + 1) % testimonials.length]
-  ]
 
   return (
     <div className="py-16 bg-gray-50">
@@ -65,26 +60,39 @@ function TestimonialsSection() {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-          {currentSet.map((testimonial, index) => (
-            <div key={`${currentTestimonial}-${index}`} className="bg-white rounded-lg p-6 shadow-lg">
-              <div className="flex items-start space-x-4">
-                <img 
-                  src={testimonial.image}
-                  alt="Customer" 
-                  className="w-20 h-20 rounded-lg object-cover"
-                />
-                <div>
-                  <h4 className="font-bold text-gray-800 mb-2 text-lg">
-                    {testimonial.title}
-                  </h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {testimonial.description}
-                  </p>
+        <div className="relative overflow-hidden max-w-6xl mx-auto">
+          <div 
+            className="flex ease-in-out"
+            style={{ 
+              transform: `translateX(-${(currentTestimonial * 50)}%)`,
+              width: `${testimonials.length * 50}%`,
+              transition: 'transform 2s ease-in-out'
+            }}
+          >
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="w-full flex-shrink-0 px-4" style={{ width: '50%' }}>
+                <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                  <div className="flex">
+                    <div className="w-32 flex-shrink-0">
+                      <img 
+                        src={testimonial.image}
+                        alt="Customer" 
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 bg-gray-100 p-6">
+                      <h4 className="font-bold text-gray-800 mb-3 text-lg">
+                        {testimonial.title}
+                      </h4>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {testimonial.description}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
