@@ -59,8 +59,9 @@ export default function HomePage() {
             <div className="grid md:grid-cols-3 gap-8 text-center text-white">
               {/* Restaurants */}
               <div className="space-y-4">
+                <h3 className="text-2xl font-bold">{t.home.restaurants_title}</h3>
                 <div className="flex justify-center">
-                  <div className="w-32 h-24 rounded-2xl overflow-hidden">
+                  <div className="w-64 h-48 rounded-2xl overflow-hidden">
                     <img 
                       src="/images/restaurantes_current.webp" 
                       alt="Restaurants" 
@@ -68,7 +69,6 @@ export default function HomePage() {
                     />
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold">{t.home.restaurants_title}</h3>
                 <p className="text-lg font-semibold">
                   {t.home.restaurants_description}
                 </p>
@@ -76,8 +76,9 @@ export default function HomePage() {
               
               {/* Shops */}
               <div className="space-y-4">
+                <h3 className="text-2xl font-bold">{t.home.shops_title}</h3>
                 <div className="flex justify-center">
-                  <div className="w-32 h-24 rounded-2xl overflow-hidden">
+                  <div className="w-64 h-48 rounded-2xl overflow-hidden">
                     <img 
                       src="/images/tiendas_current.webp" 
                       alt="Shops" 
@@ -85,7 +86,6 @@ export default function HomePage() {
                     />
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold">{t.home.shops_title}</h3>
                 <p className="text-lg font-semibold">
                   {t.home.shops_description}
                 </p>
@@ -93,8 +93,9 @@ export default function HomePage() {
               
               {/* Services */}
               <div className="space-y-4">
+                <h3 className="text-2xl font-bold">{t.home.services_title}</h3>
                 <div className="flex justify-center">
-                  <div className="w-32 h-24 rounded-2xl overflow-hidden">
+                  <div className="w-64 h-48 rounded-2xl overflow-hidden">
                     <img 
                       src="/images/services_current.png" 
                       alt="Services" 
@@ -102,7 +103,6 @@ export default function HomePage() {
                     />
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold">{t.home.services_title}</h3>
                 <p className="text-lg font-semibold">
                   {t.home.services_description}
                 </p>
