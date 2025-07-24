@@ -39,7 +39,7 @@ function TestimonialsSection() {
     }
   ]
 
-  // Auto-rotate testimonials every 8 seconds
+  // Auto-rotate testimonials every 8 seconds with sliding animation
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTestimonial((prev: number) => (prev + 1) % testimonials.length)
@@ -60,31 +60,39 @@ function TestimonialsSection() {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-          {[
-            testimonials[currentTestimonial],
-            testimonials[(currentTestimonial + 1) % testimonials.length]
-          ].map((testimonial, index) => (
-            <div key={`${currentTestimonial}-${index}`} className="bg-white rounded-2xl shadow-lg overflow-hidden h-48">
-              <div className="flex h-full">
-                <div className="w-40 flex-shrink-0">
-                  <img 
-                    src={testimonial.image}
-                    alt="Customer" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 bg-gray-100 p-6 flex flex-col justify-center">
-                  <h4 className="font-bold text-gray-800 mb-3 text-lg">
-                    {testimonial.title}
-                  </h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {testimonial.description}
-                  </p>
+        <div className="relative overflow-hidden max-w-6xl mx-auto">
+          <div 
+            className="flex ease-in-out"
+            style={{ 
+              transform: `translateX(-${(currentTestimonial * 50)}%)`,
+              width: `${testimonials.length * 50}%`,
+              transition: 'transform 2s ease-in-out'
+            }}
+          >
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="w-full flex-shrink-0 px-4" style={{ width: '50%' }}>
+                <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-48">
+                  <div className="flex h-full">
+                    <div className="w-40 flex-shrink-0">
+                      <img 
+                        src={testimonial.image}
+                        alt="Customer" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 bg-gray-100 p-6 flex flex-col justify-center">
+                      <h4 className="font-bold text-gray-800 mb-3 text-lg">
+                        {testimonial.title}
+                      </h4>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {testimonial.description}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
