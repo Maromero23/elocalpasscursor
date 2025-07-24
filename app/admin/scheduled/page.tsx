@@ -12,6 +12,7 @@ interface ScheduledQR {
   clientEmail: string
   guests: number
   days: number
+  amount: number
   scheduledFor: string
   isProcessed: boolean
   processedAt?: string
@@ -159,6 +160,13 @@ export default function ScheduledQRsAdminPage() {
     } else {
       return <span className="text-blue-600">{timeFromNowText}</span>
     }
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount)
   }
 
   return (
@@ -315,6 +323,9 @@ export default function ScheduledQRsAdminPage() {
                         Details
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cost
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Scheduled For
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -343,6 +354,9 @@ export default function ScheduledQRsAdminPage() {
                             {qr.guests} guests • {qr.days} days
                           </div>
                           <div className="text-sm text-gray-500">{qr.deliveryMethod}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{formatCurrency(qr.amount)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{formatDateTime(qr.scheduledFor)}</div>

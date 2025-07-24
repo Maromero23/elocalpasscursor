@@ -138,6 +138,7 @@ export async function GET(request: NextRequest) {
         clientEmail: qr.clientEmail,
         guests: qr.guests,
         days: qr.days,
+        amount: qr.amount,
         scheduledFor: qr.scheduledFor,
         isProcessed: qr.isProcessed,
         processedAt: qr.processedAt,

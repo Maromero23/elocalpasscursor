@@ -400,6 +400,7 @@ async function scheduleQRCode(orderRecord: any) {
         clientEmail: orderRecord.customerEmail,
         guests: orderRecord.guests,
         days: orderRecord.days,
+        amount: orderRecord.amount, // Store the cost for tracking
         sellerId: 'cmc4ha7l000086a96ef0e06qq', // Always use default PayPal seller for consistency
         configurationId: 'default',
         deliveryMethod: 'DIRECT',

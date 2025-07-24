@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
         customerEmail: scheduledQR.clientEmail,
         guests: scheduledQR.guests,
         days: scheduledQR.days,
-        cost: calculatedPrice,
+        cost: scheduledQR.configurationId === 'default' ? scheduledQR.amount : calculatedPrice,
         expiresAt: expiresAt,
         isActive: true,
         landingUrl: scheduledQR.deliveryMethod === 'DIRECT' ? null : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/landing/${qrCodeId}`
@@ -266,7 +266,7 @@ export async function POST(request: NextRequest) {
         customerEmail: scheduledQR.clientEmail,
         guests: scheduledQR.guests,
         days: scheduledQR.days,
-        cost: calculatedPrice,
+        cost: scheduledQR.configurationId === 'default' ? scheduledQR.amount : calculatedPrice,
         expiresAt: expiresAt,
         isActive: true,
         deliveryMethod: scheduledQR.deliveryMethod,

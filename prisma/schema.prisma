@@ -449,6 +449,7 @@ model ScheduledQRCode {
   clientEmail     String
   guests          Int
   days            Int
+  amount          Float    @default(0) // Cost of the QR code
   sellerId        String
   configurationId String
   deliveryMethod  String   @default("DIRECT")
