@@ -171,7 +171,7 @@ export default function HomePage() {
         </div>
 
         {/* Blue Banner Section */}
-        <div className="py-8 bg-blue-600">
+        <div className="py-6 bg-blue-700">
           <div className="container mx-auto px-4">
             <h2 className="text-4xl lg:text-5xl font-bold text-white text-center">
               <span dangerouslySetInnerHTML={{ __html: t.home.cities_title }} />
@@ -180,7 +180,7 @@ export default function HomePage() {
         </div>
 
         {/* Cities Section with Large Photos */}
-        <div className="py-8 bg-blue-600">
+        <div className="py-8 bg-white">
           <div className="px-6">
             {/* 3x3 Grid of Cities - Full Width */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
