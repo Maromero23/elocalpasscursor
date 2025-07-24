@@ -60,54 +60,28 @@ function TestimonialsSection() {
           </h2>
         </div>
 
-        <div className="max-w-6xl mx-auto overflow-hidden">
-          <div 
-            className="flex transition-transform duration-2000 ease-in-out"
-            style={{ 
-              transform: `translateX(-${(currentTestimonial * 100)}%)`,
-              width: `${testimonials.length * 100}%`
-            }}
-          >
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="w-full flex-shrink-0 px-4">
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-48">
-                    <div className="flex h-full">
-                      <div className="w-40 flex-shrink-0">
-                        <img 
-                          src={testimonial.image}
-                          alt="Customer" 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 bg-gray-100 p-6 flex flex-col justify-center">
-                        <h4 className="font-bold text-gray-800 mb-3 text-lg">
-                          {testimonial.title}
-                        </h4>
-                        <p className="text-gray-600 text-sm leading-relaxed">
-                          {testimonial.description}
-                        </p>
-                      </div>
-                    </div>
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 transition-all duration-2000 ease-in-out">
+            {[
+              testimonials[currentTestimonial],
+              testimonials[(currentTestimonial + 1) % testimonials.length]
+            ].map((testimonial, index) => (
+              <div key={`${currentTestimonial}-${index}`} className="bg-white rounded-2xl shadow-lg overflow-hidden h-48">
+                <div className="flex h-full">
+                  <div className="w-40 flex-shrink-0">
+                    <img 
+                      src={testimonial.image}
+                      alt="Customer" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-48">
-                    <div className="flex h-full">
-                      <div className="w-40 flex-shrink-0">
-                        <img 
-                          src={testimonials[(index + 1) % testimonials.length].image}
-                          alt="Customer" 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 bg-gray-100 p-6 flex flex-col justify-center">
-                        <h4 className="font-bold text-gray-800 mb-3 text-lg">
-                          {testimonials[(index + 1) % testimonials.length].title}
-                        </h4>
-                        <p className="text-gray-600 text-sm leading-relaxed">
-                          {testimonials[(index + 1) % testimonials.length].description}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="flex-1 bg-gray-100 p-6 flex flex-col justify-center">
+                    <h4 className="font-bold text-gray-800 mb-3 text-lg">
+                      {testimonial.title}
+                    </h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {testimonial.description}
+                    </p>
                   </div>
                 </div>
               </div>
