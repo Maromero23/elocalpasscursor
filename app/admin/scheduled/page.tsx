@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react"
 import { ProtectedRoute } from "../../../components/auth/protected-route"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { ArrowLeft, Clock, User, Calendar, Eye, RefreshCw, Filter, AlertCircle, XCircle } from "lucide-react"
 
@@ -64,6 +64,42 @@ export default function ScheduledQRsAdminPage() {
     hasNextPage: false,
     hasPreviousPage: false
   })
+
+  // Refs for synchronizing scroll bars
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const mainScrollRef = useRef<HTMLDivElement>(null)
+  const fixedScrollRef = useRef<HTMLDivElement>(null)
+
+  // Synchronize scroll positions
+  const syncScrollFromTop = (e: any) => {
+    const scrollLeft = e.target.scrollLeft
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollLeft = scrollLeft
+    }
+    if (fixedScrollRef.current) {
+      fixedScrollRef.current.scrollLeft = scrollLeft
+    }
+  }
+
+  const syncScrollFromMain = (e: any) => {
+    const scrollLeft = e.target.scrollLeft
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollLeft = scrollLeft
+    }
+    if (fixedScrollRef.current) {
+      fixedScrollRef.current.scrollLeft = scrollLeft
+    }
+  }
+
+  const syncScrollFromFixed = (e: any) => {
+    const scrollLeft = e.target.scrollLeft
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollLeft = scrollLeft
+    }
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollLeft = scrollLeft
+    }
+  }
 
   const fetchScheduledQRs = async (page = 1, status = 'all') => {
     setIsLoading(true)
@@ -172,6 +208,24 @@ export default function ScheduledQRsAdminPage() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .table-scroll-container::-webkit-scrollbar {
+          height: 12px;
+        }
+        .table-scroll-container::-webkit-scrollbar-thumb {
+          background-color: #cbd5e0;
+          border-radius: 8px;
+          border: 2px solid #f7fafc;
+        }
+        .table-scroll-container::-webkit-scrollbar-track {
+          background-color: #f1f1f1;
+          border-radius: 8px;
+        }
+        .table-scroll-container {
+          scrollbar-width: auto !important;
+          overflow-x: scroll !important;
+        }
+      `}} />
       <div className="min-h-screen bg-gray-100">
         {/* Header */}
         <div className="bg-white shadow">
@@ -217,7 +271,7 @@ export default function ScheduledQRsAdminPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center">
@@ -293,8 +347,9 @@ export default function ScheduledQRsAdminPage() {
             </div>
           </div>
 
-          {/* Scheduled QRs Table */}
-          <div className="bg-white shadow rounded-lg">
+        {/* Scheduled QRs Table - Full Width with Horizontal Scroll */}
+        <div className="w-full px-4 sm:px-6 lg:px-8 pb-6">
+          <div className="bg-white rounded-lg shadow w-full">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">
                 Scheduled QR Codes ({pagination.totalCount})
@@ -310,8 +365,53 @@ export default function ScheduledQRsAdminPage() {
                 <p className="text-gray-500">Loading scheduled QRs...</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+              <>
+                {/* Top scroll bar */}
+                <div 
+                  ref={topScrollRef}
+                  className="overflow-x-scroll table-scroll-container" 
+                  style={{ 
+                    scrollBehavior: 'auto',
+                    scrollbarWidth: 'auto',
+                    msOverflowStyle: 'scrollbar',
+                    WebkitOverflowScrolling: 'touch',
+                    height: '20px'
+                  }}
+                  onWheel={(e) => {
+                    if (e.shiftKey) {
+                      e.preventDefault()
+                      const container = e.currentTarget
+                      container.scrollLeft += e.deltaY * 3
+                    }
+                  }}
+                  onScroll={syncScrollFromTop}
+                >
+                  <div style={{ 
+                    width: '2000px', // Wide enough for all scheduled QR columns + safety margin
+                    height: '1px'
+                  }}></div>
+                </div>
+
+                {/* Main table container */}
+                <div 
+                  ref={mainScrollRef}
+                  className="overflow-x-scroll table-scroll-container" 
+                  style={{ 
+                    scrollBehavior: 'auto',
+                    scrollbarWidth: 'auto',
+                    msOverflowStyle: 'scrollbar',
+                    WebkitOverflowScrolling: 'touch'
+                  }}
+                  onWheel={(e) => {
+                    if (e.shiftKey) {
+                      e.preventDefault()
+                      const container = e.currentTarget
+                      container.scrollLeft += e.deltaY * 3
+                    }
+                  }}
+                  onScroll={syncScrollFromMain}
+                >
+                                  <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '2000px' }}>
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -395,7 +495,8 @@ export default function ScheduledQRsAdminPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+                </div>
+              </>
             )}
 
             {/* Pagination */}
@@ -446,6 +547,37 @@ export default function ScheduledQRsAdminPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Fixed Bottom Scroll Bar */}
+      <div 
+        className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-40"
+        style={{ height: '12px' }}
+      >
+        <div
+          ref={fixedScrollRef}
+          className="w-full h-full overflow-x-auto overflow-y-hidden table-scroll-container"
+          style={{
+            scrollbarWidth: 'auto',
+            msOverflowStyle: 'scrollbar',
+          }}
+          onScroll={syncScrollFromFixed}
+          onWheel={(e) => {
+            if (e.deltaY !== 0) {
+              e.preventDefault()
+              if (fixedScrollRef.current) {
+                fixedScrollRef.current.scrollLeft += e.deltaY
+              }
+            }
+          }}
+        >
+          <div 
+            style={{ 
+              width: '2000px',
+              height: '1px'
+            }}
+          />
         </div>
       </div>
     </ProtectedRoute>
