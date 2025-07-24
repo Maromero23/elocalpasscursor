@@ -61,7 +61,10 @@ function TestimonialsSection() {
         </div>
 
         <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row gap-8">
+          <div 
+            key={currentTestimonial} 
+            className="flex flex-col md:flex-row gap-8 transition-opacity duration-1000 ease-in-out"
+          >
             {/* First Testimonial */}
             <div className="flex-1 bg-white rounded-2xl shadow-lg overflow-hidden h-48">
               <div className="flex h-full">
