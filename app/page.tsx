@@ -170,97 +170,57 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Cities Section with Large Photos */}
-        <div className="py-16 bg-blue-600">
+        {/* Blue Banner Section */}
+        <div className="py-8 bg-blue-600">
           <div className="container mx-auto px-4">
-            <h2 className="text-4xl lg:text-5xl font-bold text-white text-center mb-12">
+            <h2 className="text-4xl lg:text-5xl font-bold text-white text-center">
               <span dangerouslySetInnerHTML={{ __html: t.home.cities_title }} />
             </h2>
-            
-            {/* 3x3 Grid of Cities */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          </div>
+        </div>
+
+        {/* Cities Section with Large Photos */}
+        <div className="py-8 bg-blue-600">
+          <div className="px-6">
+            {/* 3x3 Grid of Cities - Full Width */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
               {/* Row 1 */}
-              <div className="relative rounded-lg overflow-hidden h-64 group cursor-pointer">
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
                 <img src="/images/cancun_large.png" alt="Cancún" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-opacity duration-300">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <h3 className="text-4xl font-bold text-white text-center">CANCÚN</h3>
-                  </div>
-                </div>
               </div>
               
-              <div className="relative rounded-lg overflow-hidden h-64 group cursor-pointer">
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
                 <img src="/images/tulum_large.png" alt="Tulum" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-opacity duration-300">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <h3 className="text-4xl font-bold text-white text-center">TULUM</h3>
-                  </div>
-                </div>
               </div>
               
-              <div className="relative rounded-lg overflow-hidden h-64 group cursor-pointer">
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
                 <img src="/images/cozumel_large.png" alt="Cozumel" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-opacity duration-300">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <h3 className="text-4xl font-bold text-white text-center">COZUMEL</h3>
-                  </div>
-                </div>
               </div>
               
               {/* Row 2 */}
-              <div className="relative rounded-lg overflow-hidden h-64 group cursor-pointer">
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
                 <img src="/images/playa_carmen_large.png" alt="Playa del Carmen" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-opacity duration-300">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <h3 className="text-3xl font-bold text-white text-center">PLAYA DEL<br />CARMEN</h3>
-                  </div>
-                </div>
               </div>
               
-              <div className="relative rounded-lg overflow-hidden h-64 group cursor-pointer">
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
                 <img src="/images/isla_mujeres_large.png" alt="Isla Mujeres" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-opacity duration-300">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <h3 className="text-3xl font-bold text-white text-center">ISLA<br />MUJERES</h3>
-                  </div>
-                </div>
               </div>
               
-              <div className="relative rounded-lg overflow-hidden h-64 group cursor-pointer">
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
                 <img src="/images/puerto_morelos_large.png" alt="Puerto Morelos" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-opacity duration-300">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <h3 className="text-3xl font-bold text-white text-center">PUERTO<br />MORELOS</h3>
-                  </div>
-                </div>
               </div>
               
               {/* Row 3 */}
-              <div className="relative rounded-lg overflow-hidden h-64 group cursor-pointer">
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
                 <img src="/images/bacalar_large.png" alt="Bacalar" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-opacity duration-300">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <h3 className="text-4xl font-bold text-white text-center">BACALAR</h3>
-                  </div>
-                </div>
               </div>
               
-              <div className="relative rounded-lg overflow-hidden h-64 group cursor-pointer">
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
                 <img src="/images/puerto_aventuras_large.png" alt="Puerto Aventuras" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-opacity duration-300">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <h3 className="text-3xl font-bold text-white text-center">PUERTO<br />AVENTURAS</h3>
-                  </div>
-                </div>
               </div>
               
-              <div className="relative rounded-lg overflow-hidden h-64 group cursor-pointer">
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
                 <img src="/images/holbox_large.png" alt="Holbox" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-opacity duration-300">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <h3 className="text-4xl font-bold text-white text-center">HOLBOX</h3>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
