@@ -82,6 +82,8 @@ export default function CityPage() {
   const [showAffiliateDetail, setShowAffiliateDetail] = useState(false)
   const [detailAffiliate, setDetailAffiliate] = useState<Affiliate | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [swipeOffset, setSwipeOffset] = useState(0)
+  const [isSwipingDown, setIsSwipingDown] = useState(false)
 
 
   const cityId = params.city as string
@@ -401,8 +403,68 @@ export default function CityPage() {
 
       {/* Affiliate Detail View - Full Screen */}
       {showAffiliateDetail && detailAffiliate && (
-        <div className="fixed inset-0 bg-white z-50 block md:hidden">
-          <div className="h-full overflow-y-auto">
+        <div 
+          className="fixed inset-0 bg-white z-50 block md:hidden"
+          style={{
+            transform: `translateY(${swipeOffset}px)`,
+            transition: isSwipingDown ? 'none' : 'transform 0.3s ease-out'
+          }}
+        >
+          <div 
+            className="h-full overflow-y-auto"
+            onTouchStart={(e) => {
+              if (window.scrollY === 0) {
+                const touch = e.touches[0]
+                setStartY(touch.clientY)
+                setIsSwipingDown(true)
+                // Prevent pull-to-refresh
+                document.body.style.overscrollBehavior = 'none'
+                document.body.style.touchAction = 'none'
+              }
+            }}
+            onTouchMove={(e) => {
+              if (!isSwipingDown || window.scrollY > 0) return
+              
+              e.preventDefault()
+              e.stopPropagation()
+              
+              const touch = e.touches[0]
+              const deltaY = touch.clientY - startY
+              
+              // Only allow downward swipes
+              if (deltaY > 0) {
+                // Apply resistance to the swipe (slower movement)
+                const resistance = Math.min(deltaY * 0.5, 150)
+                setSwipeOffset(resistance)
+              }
+            }}
+            onTouchEnd={(e) => {
+              if (!isSwipingDown) return
+              
+              e.preventDefault()
+              e.stopPropagation()
+              
+              // Reset body styles
+              document.body.style.overscrollBehavior = 'auto'
+              document.body.style.touchAction = 'auto'
+              
+              // If swiped down enough, close the detail view
+              if (swipeOffset > 100) {
+                setIsTransitioning(true)
+                setShowAffiliateDetail(false)
+                setTimeout(() => {
+                  setDetailAffiliate(null)
+                  setIsTransitioning(false)
+                  setSwipeOffset(0)
+                  setIsSwipingDown(false)
+                }, 300)
+              } else {
+                // Snap back to original position
+                setSwipeOffset(0)
+                setIsSwipingDown(false)
+              }
+            }}
+          >
             {/* Header with back functionality */}
             <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
               <div className="flex items-center justify-between p-4">
@@ -413,6 +475,8 @@ export default function CityPage() {
                     setTimeout(() => {
                       setDetailAffiliate(null)
                       setIsTransitioning(false)
+                      setSwipeOffset(0)
+                      setIsSwipingDown(false)
                     }, 300)
                   }}
                   className="p-2 -ml-2 rounded-full hover:bg-gray-100"
@@ -424,37 +488,14 @@ export default function CityPage() {
                 </h1>
                 <div className="w-10"></div> {/* Spacer for centering */}
               </div>
+              
+              {/* Swipe indicator */}
+              {isSwipingDown && swipeOffset > 20 && (
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 bg-gray-600 text-white px-3 py-1 rounded-full text-xs">
+                  {swipeOffset > 100 ? 'Release to close' : 'Swipe down to close'}
+                </div>
+              )}
             </div>
-
-            {/* Swipe down detector */}
-            <div 
-              className="absolute top-16 left-0 right-0 h-12 z-20"
-              onTouchStart={(e) => {
-                const touch = e.touches[0]
-                setStartY(touch.clientY)
-                setIsDragging(true)
-              }}
-              onTouchMove={(e) => {
-                if (!isDragging) return
-                const touch = e.touches[0]
-                const deltaY = touch.clientY - startY
-                
-                // Only allow swipe down
-                if (deltaY > 50 && window.scrollY === 0) {
-                  e.preventDefault()
-                  setIsTransitioning(true)
-                  setShowAffiliateDetail(false)
-                  setTimeout(() => {
-                    setDetailAffiliate(null)
-                    setIsTransitioning(false)
-                    setIsDragging(false)
-                  }, 300)
-                }
-              }}
-              onTouchEnd={() => {
-                setIsDragging(false)
-              }}
-            />
 
             {/* Main Content */}
             <div className="pb-20">
