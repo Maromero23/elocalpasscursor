@@ -24,6 +24,7 @@ export default function ExplorePage() {
   const [affiliates, setAffiliates] = useState<Affiliate[]>([])
   const [loading, setLoading] = useState(true)
   const [currentUserCity, setCurrentUserCity] = useState('playa-del-carmen')
+  const [selectedCity, setSelectedCity] = useState<string | null>(null)
 
   // Available cities
   const cities = [
@@ -40,11 +41,12 @@ export default function ExplorePage() {
 
   useEffect(() => {
     fetchAffiliates()
-  }, [])
+  }, [selectedCity])
 
   const fetchAffiliates = async () => {
     try {
-      const response = await fetch('/api/locations/affiliates?city=all-cities')
+      const cityParam = selectedCity || 'all-cities'
+      const response = await fetch(`/api/locations/affiliates?city=${cityParam}`)
       const data = await response.json()
       setAffiliates(data.affiliates || [])
     } catch (error) {
@@ -70,12 +72,14 @@ export default function ExplorePage() {
   }
 
   const goToMap = () => {
-    router.push(`/locations/${currentUserCity}`)
+    const cityToUse = selectedCity || currentUserCity
+    router.push(`/locations/${cityToUse}`)
   }
 
   const goToCity = (citySlug: string) => {
+    setSelectedCity(citySlug)
     setCurrentUserCity(citySlug)
-    router.push(`/locations/${citySlug}`)
+    setLoading(true)
   }
 
   const HorizontalScrollSection = ({ 
@@ -182,20 +186,54 @@ export default function ExplorePage() {
       <div className="py-4">
         <div className="overflow-x-auto scrollbar-hide">
           <div className="flex space-x-6 px-4 pb-2">
+            {/* All Cities Option */}
+            <div
+              onClick={() => {
+                setSelectedCity(null)
+                setLoading(true)
+              }}
+              className="flex-shrink-0 text-center cursor-pointer"
+            >
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-2 overflow-hidden border-2 ${
+                selectedCity === null 
+                  ? 'bg-orange-100 border-orange-500' 
+                  : 'bg-gray-100 border-transparent'
+              }`}>
+                <MapPin className="w-8 h-8 text-gray-600" />
+              </div>
+              <span className={`text-xs font-medium ${
+                selectedCity === null 
+                  ? 'text-orange-600' 
+                  : 'text-gray-700'
+              }`}>
+                {language === 'es' ? 'Todas' : 'All'}
+              </span>
+            </div>
+            
             {cities.map((city) => (
               <div
                 key={city.slug}
                 onClick={() => goToCity(city.slug)}
                 className="flex-shrink-0 text-center cursor-pointer"
               >
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-2 overflow-hidden">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-2 overflow-hidden border-2 ${
+                  selectedCity === city.slug 
+                    ? 'bg-orange-100 border-orange-500' 
+                    : 'bg-gray-100 border-transparent'
+                }`}>
                   <img
                     src={city.image}
                     alt={city.name}
                     className="w-12 h-12 object-contain"
                   />
                 </div>
-                <span className="text-xs text-gray-700 font-medium">{city.name}</span>
+                <span className={`text-xs font-medium ${
+                  selectedCity === city.slug 
+                    ? 'text-orange-600' 
+                    : 'text-gray-700'
+                }`}>
+                  {city.name}
+                </span>
               </div>
             ))}
           </div>
@@ -212,11 +250,21 @@ export default function ExplorePage() {
             <div className="flex-1">
               <h3 className="text-lg font-semibold mb-1">
                 {language === 'es' ? 'Ir al mapa' : 'Go to map'}
+                {selectedCity && (
+                  <span className="text-orange-100 font-normal">
+                    {' '}- {cities.find(c => c.slug === selectedCity)?.name}
+                  </span>
+                )}
               </h3>
               <p className="text-orange-100 text-sm">
-                {language === 'es' 
-                  ? 'Buscar ubicaciones cerca de ti' 
-                  : 'Search locations near you'}
+                {selectedCity 
+                  ? (language === 'es' 
+                      ? `Buscar ubicaciones en ${cities.find(c => c.slug === selectedCity)?.name}` 
+                      : `Search locations in ${cities.find(c => c.slug === selectedCity)?.name}`)
+                  : (language === 'es' 
+                      ? 'Buscar ubicaciones cerca de ti' 
+                      : 'Search locations near you')
+                }
               </p>
             </div>
             <MapPin className="w-8 h-8 text-white" />
@@ -228,20 +276,35 @@ export default function ExplorePage() {
       <div className="pb-20">
         {/* Recently Viewed Affiliates (smaller) */}
         <HorizontalScrollSection
-          title={language === 'es' ? 'Vistos recientemente' : 'Recently viewed'}
+          title={selectedCity 
+            ? (language === 'es' 
+                ? `Vistos recientemente en ${cities.find(c => c.slug === selectedCity)?.name}` 
+                : `Recently viewed in ${cities.find(c => c.slug === selectedCity)?.name}`)
+            : (language === 'es' ? 'Vistos recientemente' : 'Recently viewed')
+          }
           items={getRandomAffiliates(8)}
           isSmall={true}
         />
 
         {/* Recommended Affiliates */}
         <HorizontalScrollSection
-          title={language === 'es' ? 'Afiliados recomendados' : 'Recommended affiliates'}
+          title={selectedCity 
+            ? (language === 'es' 
+                ? `Afiliados recomendados en ${cities.find(c => c.slug === selectedCity)?.name}` 
+                : `Recommended affiliates in ${cities.find(c => c.slug === selectedCity)?.name}`)
+            : (language === 'es' ? 'Afiliados recomendados' : 'Recommended affiliates')
+          }
           items={getRandomAffiliates(8, (affiliate) => affiliate.recommended === true)}
         />
 
         {/* Recommended Restaurants */}
         <HorizontalScrollSection
-          title={language === 'es' ? 'Restaurantes recomendados' : 'Recommended restaurants'}
+          title={selectedCity 
+            ? (language === 'es' 
+                ? `Restaurantes en ${cities.find(c => c.slug === selectedCity)?.name}` 
+                : `Restaurants in ${cities.find(c => c.slug === selectedCity)?.name}`)
+            : (language === 'es' ? 'Restaurantes recomendados' : 'Recommended restaurants')
+          }
           items={getRandomAffiliates(8, (affiliate) => 
             Boolean(affiliate.type?.toLowerCase().includes('restaurant') || 
             affiliate.category?.toLowerCase().includes('restaurant'))
@@ -250,7 +313,12 @@ export default function ExplorePage() {
 
         {/* Recommended Stores */}
         <HorizontalScrollSection
-          title={language === 'es' ? 'Tiendas recomendadas' : 'Recommended stores'}
+          title={selectedCity 
+            ? (language === 'es' 
+                ? `Tiendas en ${cities.find(c => c.slug === selectedCity)?.name}` 
+                : `Stores in ${cities.find(c => c.slug === selectedCity)?.name}`)
+            : (language === 'es' ? 'Tiendas recomendadas' : 'Recommended stores')
+          }
           items={getRandomAffiliates(8, (affiliate) => 
             Boolean(affiliate.type?.toLowerCase().includes('store') || 
             affiliate.category?.toLowerCase().includes('store') ||
@@ -260,7 +328,12 @@ export default function ExplorePage() {
 
         {/* Recommended Services */}
         <HorizontalScrollSection
-          title={language === 'es' ? 'Servicios recomendados' : 'Recommended services'}
+          title={selectedCity 
+            ? (language === 'es' 
+                ? `Servicios en ${cities.find(c => c.slug === selectedCity)?.name}` 
+                : `Services in ${cities.find(c => c.slug === selectedCity)?.name}`)
+            : (language === 'es' ? 'Servicios recomendados' : 'Recommended services')
+          }
           items={getRandomAffiliates(8, (affiliate) => 
             Boolean(affiliate.type?.toLowerCase().includes('service') || 
             affiliate.category?.toLowerCase().includes('service') ||
