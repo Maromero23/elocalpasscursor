@@ -70,6 +70,12 @@ export default function CityPage() {
   const [retryCount, setRetryCount] = useState(0)
   const [hoveredAffiliate, setHoveredAffiliate] = useState<string | null>(null)
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
+  
+  // Drag sheet state
+  const [sheetPosition, setSheetPosition] = useState(40) // Percentage from bottom (40vh = 40%)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startY, setStartY] = useState(0)
+  const [startPosition, setStartPosition] = useState(0)
 
 
   const cityId = params.city as string
@@ -277,6 +283,41 @@ export default function CityPage() {
     setCurrentPage(1)
   }, [searchTerm, typeFilter, categoryFilter, ratingFilter, recommendedFilter])
 
+  // Drag handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true)
+    setStartY(e.touches[0].clientY)
+    setStartPosition(sheetPosition)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return
+    
+    const currentY = e.touches[0].clientY
+    const deltaY = startY - currentY // Inverted: up = positive, down = negative
+    const deltaPercent = (deltaY / window.innerHeight) * 100
+    
+    let newPosition = startPosition + deltaPercent
+    
+    // Constrain between 5% (almost bottom) and 85% (almost top)
+    newPosition = Math.max(5, Math.min(85, newPosition))
+    
+    setSheetPosition(newPosition)
+  }
+
+  const handleTouchEnd = () => {
+    setIsDragging(false)
+    
+    // Snap to nearest position
+    if (sheetPosition < 20) {
+      setSheetPosition(5) // Collapsed (hide bottom menu)
+    } else if (sheetPosition < 60) {
+      setSheetPosition(40) // Default middle position
+    } else {
+      setSheetPosition(85) // Expanded
+    }
+  }
+
 
 
 
@@ -334,7 +375,9 @@ export default function CityPage() {
       {/* Mobile Airbnb-Style Layout */}
       <div className="block md:hidden">
         {/* Fixed Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 transition-opacity duration-300 ${
+          sheetPosition <= 10 ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}>
           <div className="flex items-center justify-around px-4 py-2">
             <button className="flex flex-col items-center py-2 px-3 text-red-600">
               <svg className="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
@@ -373,10 +416,21 @@ export default function CityPage() {
         </div>
 
         {/* Draggable Affiliate Sheet */}
-        <div className="fixed inset-x-0 bottom-20 bg-white rounded-t-2xl shadow-2xl z-40 transition-transform duration-300" 
-             style={{ height: '60vh', transform: 'translateY(40vh)' }}>
+        <div 
+          className="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-40 transition-transform duration-300 select-none" 
+          style={{ 
+            height: '90vh', 
+            transform: `translateY(${90 - sheetPosition}vh)`,
+            transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+          }}
+        >
           {/* Drag Handle */}
-          <div className="flex justify-center py-2">
+          <div 
+            className="flex justify-center py-3 cursor-grab active:cursor-grabbing"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
             <div className="w-10 h-1.5 bg-gray-300 rounded-full"></div>
           </div>
           
