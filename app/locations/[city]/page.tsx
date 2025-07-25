@@ -283,8 +283,25 @@ export default function CityPage() {
     setCurrentPage(1)
   }, [searchTerm, typeFilter, categoryFilter, ratingFilter, recommendedFilter])
 
+  // Prevent body scroll when dragging
+  useEffect(() => {
+    if (isDragging) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.touchAction = 'none'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.touchAction = ''
+    }
+    
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.touchAction = ''
+    }
+  }, [isDragging])
+
   // Drag handlers
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault() // Prevent pull-to-refresh
     setIsDragging(true)
     setStartY(e.touches[0].clientY)
     setStartPosition(sheetPosition)
@@ -292,6 +309,9 @@ export default function CityPage() {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return
+    
+    e.preventDefault() // Prevent scroll/pull-to-refresh
+    e.stopPropagation() // Stop event bubbling
     
     const currentY = e.touches[0].clientY
     const deltaY = startY - currentY // Inverted: up = positive, down = negative
@@ -305,7 +325,8 @@ export default function CityPage() {
     setSheetPosition(newPosition)
   }
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault() // Prevent any default behavior
     setIsDragging(false)
     
     // Snap to nearest position
@@ -426,12 +447,13 @@ export default function CityPage() {
         >
           {/* Drag Handle */}
           <div 
-            className="flex justify-center py-3 cursor-grab active:cursor-grabbing"
+            className="flex justify-center py-4 cursor-grab active:cursor-grabbing touch-none"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            style={{ touchAction: 'none' }}
           >
-            <div className="w-10 h-1.5 bg-gray-300 rounded-full"></div>
+            <div className="w-12 h-1.5 bg-gray-400 rounded-full"></div>
           </div>
           
           {/* Sheet Header */}
