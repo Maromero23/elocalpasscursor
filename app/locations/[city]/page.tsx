@@ -74,6 +74,21 @@ export default function CityPage() {
   // Add state for bottom sheet open/height
   const [sheetOpen, setSheetOpen] = useState(true)
   const [showBottomNav, setShowBottomNav] = useState(true)
+  
+  // Simple function to check if sheet is at bottom position
+  const checkSheetAtBottom = () => {
+    const sheetElement = document.querySelector('[data-rsbs-overlay]')
+    if (sheetElement) {
+      const transform = window.getComputedStyle(sheetElement).transform
+      const matrix = new DOMMatrix(transform)
+      const translateY = matrix.m42
+      const windowHeight = window.innerHeight
+      
+      // If sheet is very close to bottom (at 95% snap point), hide bottom nav
+      const isAtBottom = translateY <= windowHeight * 0.1
+      setShowBottomNav(!isAtBottom)
+    }
+  }
 
   const cityId = params.city as string
   const cityInfo = cityId === 'all-cities' ? { name: 'all-cities', displayName: 'All Cities' } : cityMap[cityId as keyof typeof cityMap]
@@ -279,6 +294,12 @@ export default function CityPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, typeFilter, categoryFilter, ratingFilter, recommendedFilter])
+
+  // Monitor sheet position and hide/show bottom navigation
+  useEffect(() => {
+    const interval = setInterval(checkSheetAtBottom, 200)
+    return () => clearInterval(interval)
+  }, [])
 
 
 
@@ -735,7 +756,9 @@ export default function CityPage() {
       </div>
 
       {/* Mobile Bottom Navigation Bar - Airbnb Style */}
-      <div className="block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <div className={`block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 transition-all duration-300 ${
+        showBottomNav ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}>
         <div className="flex items-center justify-around px-4 py-2">
           {/* Explore/Filter Button */}
           <button className="flex flex-col items-center py-2 px-3 text-red-600">
