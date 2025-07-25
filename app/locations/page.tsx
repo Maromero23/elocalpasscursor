@@ -74,8 +74,34 @@ export default function ExplorePage() {
 
   const convertGoogleDriveUrl = (url: string) => {
     if (!url) return ''
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/)
-    return match ? `https://drive.google.com/uc?id=${match[1]}` : url
+    
+    // Handle different Google Drive URL formats
+    let fileId = ''
+    
+    // Format 1: https://drive.google.com/file/d/FILE_ID/view
+    let match = url.match(/\/d\/([a-zA-Z0-9-_]+)/)
+    if (match) {
+      fileId = match[1]
+    }
+    
+    // Format 2: https://drive.google.com/open?id=FILE_ID
+    if (!fileId) {
+      match = url.match(/[?&]id=([a-zA-Z0-9-_]+)/)
+      if (match) {
+        fileId = match[1]
+      }
+    }
+    
+    // If we found a file ID, convert to direct download URL
+    if (fileId) {
+      const convertedUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+      console.log('Converted URL:', url, '->', convertedUrl)
+      return convertedUrl
+    }
+    
+    // Return original URL if it's not a Google Drive URL
+    console.log('Non-Google Drive URL:', url)
+    return url
   }
 
   const getRandomAffiliates = (count: number, filterFn?: (affiliate: Affiliate) => boolean) => {
@@ -122,14 +148,28 @@ export default function ExplorePage() {
                 isSmall ? 'h-32' : 'h-40'
               }`}>
                 {item.logo ? (
-                  <img
-                    src={convertGoogleDriveUrl(item.logo)}
-                    alt={item.name}
-                    className={`object-contain rounded-lg ${
-                      isSmall ? 'w-24 h-24' : 'w-32 h-32'
-                    }`}
-                    style={{ borderRadius: '8px' }}
-                  />
+                  <>
+                    <img
+                      src={convertGoogleDriveUrl(item.logo)}
+                      alt={item.name}
+                      className={`object-contain rounded-lg ${
+                        isSmall ? 'w-24 h-24' : 'w-32 h-32'
+                      }`}
+                      style={{ borderRadius: '8px' }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                        const fallback = target.nextElementSibling as HTMLElement
+                        if (fallback) fallback.style.display = 'flex'
+                      }}
+                    />
+                    <div 
+                      className={`items-center justify-center text-gray-400 ${isSmall ? 'w-8 h-8' : 'w-10 h-10'}`}
+                      style={{ display: 'none' }}
+                    >
+                      <MapPin className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'}`} />
+                    </div>
+                  </>
                 ) : (
                   <MapPin className={`text-gray-400 ${isSmall ? 'w-8 h-8' : 'w-10 h-10'}`} />
                 )}
