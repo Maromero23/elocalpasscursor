@@ -72,36 +72,63 @@ export default function ExplorePage() {
     }
   }
 
-  const convertGoogleDriveUrl = (url: string) => {
-    if (!url) return ''
+  const convertGoogleDriveUrl = (url: string): string => {
+    if (!url) return url
     
-    // Handle different Google Drive URL formats
-    let fileId = ''
-    
-    // Format 1: https://drive.google.com/file/d/FILE_ID/view
-    let match = url.match(/\/d\/([a-zA-Z0-9-_]+)/)
-    if (match) {
-      fileId = match[1]
+    // If it's not a Google Drive URL, return as-is
+    if (!url.includes('drive.google.com')) {
+      return url
     }
     
-    // Format 2: https://drive.google.com/open?id=FILE_ID
-    if (!fileId) {
-      match = url.match(/[?&]id=([a-zA-Z0-9-_]+)/)
-      if (match) {
-        fileId = match[1]
+    // If it's a search URL or folder URL, it's not a file URL
+    if (url.includes('/search?') || url.includes('/drive/folders/') || url.includes('/drive/search?')) {
+      console.warn('❌ Cannot convert Google Drive search/folder URL to direct image URL:', url)
+      return url // Return original URL, will be handled as invalid by isActualUrl check
+    }
+    
+    // Check if it's already a thumbnail URL (preferred format)
+    if (url.includes('drive.google.com/thumbnail?')) {
+      return url
+    }
+    
+    // Check if it's already a direct Google Drive URL
+    if (url.includes('drive.google.com/uc?')) {
+      // Extract file ID and convert to thumbnail format
+      const fileIdMatch = url.match(/[?&]id=([a-zA-Z0-9-_]+)/)
+      if (fileIdMatch) {
+        const fileId = fileIdMatch[1]
+        const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w200-h200`
+        console.log('🔄 Converting Google Drive URL to thumbnail format:', { original: url, converted: thumbnailUrl })
+        return thumbnailUrl
       }
     }
     
-    // If we found a file ID, convert to direct download URL
-    if (fileId) {
-      const convertedUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
-      console.log('Converted URL:', url, '->', convertedUrl)
-      return convertedUrl
+    // Convert sharing URL to thumbnail URL (PREFERRED FORMAT - WORKS FOR EMBEDDING!)
+    let fileId = ''
+    
+    // Try to extract file ID from different URL formats
+    const patterns = [
+      /\/d\/([a-zA-Z0-9-_]+)/,  // /d/ID format
+      /[?&]id=([a-zA-Z0-9-_]+)/, // ?id=ID format
+    ]
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match) {
+        fileId = match[1]
+        break
+      }
     }
     
-    // Return original URL if it's not a Google Drive URL
-    console.log('Non-Google Drive URL:', url)
-    return url
+    if (fileId) {
+      // Use thumbnail format instead of standard format (thumbnail format works for embedding!)
+      const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w200-h200`
+      console.log('🔄 Converting Google Drive URL to thumbnail format:', { original: url, converted: thumbnailUrl })
+      return thumbnailUrl
+    } else {
+      console.warn('❌ Could not extract file ID from Google Drive URL:', url)
+      return url // Return original URL, will be handled as invalid by isActualUrl check
+    }
   }
 
   const getRandomAffiliates = (count: number, filterFn?: (affiliate: Affiliate) => boolean) => {
@@ -148,31 +175,23 @@ export default function ExplorePage() {
                 isSmall ? 'h-32' : 'h-40'
               }`}>
                 {item.logo ? (
-                  <>
-                    <img
-                      src={convertGoogleDriveUrl(item.logo)}
-                      alt={item.name}
-                      className={`object-contain rounded-lg ${
-                        isSmall ? 'w-24 h-24' : 'w-32 h-32'
-                      }`}
-                      style={{ borderRadius: '8px' }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = 'none'
-                        const fallback = target.nextElementSibling as HTMLElement
-                        if (fallback) fallback.style.display = 'flex'
-                      }}
-                    />
-                    <div 
-                      className={`items-center justify-center text-gray-400 ${isSmall ? 'w-8 h-8' : 'w-10 h-10'}`}
-                      style={{ display: 'none' }}
-                    >
-                      <MapPin className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'}`} />
-                    </div>
-                  </>
-                ) : (
-                  <MapPin className={`text-gray-400 ${isSmall ? 'w-8 h-8' : 'w-10 h-10'}`} />
-                )}
+                  <img
+                    src={convertGoogleDriveUrl(item.logo)}
+                    alt={item.name}
+                    className={`object-contain rounded-lg ${
+                      isSmall ? 'w-24 h-24' : 'w-32 h-32'
+                    }`}
+                    style={{ borderRadius: '8px' }}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                      target.nextElementSibling?.classList.remove('hidden')
+                    }}
+                  />
+                ) : null}
+                <div className={`absolute inset-0 flex items-center justify-center text-gray-400 ${item.logo ? 'hidden' : ''}`}>
+                  <MapPin className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'}`} />
+                </div>
                 <div className="absolute top-2 right-2">
                   <Heart className="w-5 h-5 text-gray-400" />
                 </div>
