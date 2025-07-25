@@ -438,7 +438,7 @@ export default function CityPage() {
 
         {/* Draggable Affiliate Sheet */}
         <div 
-          className="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-40 transition-transform duration-300 select-none" 
+          className="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-40 transition-transform duration-300 select-none flex flex-col" 
           style={{ 
             height: '90vh', 
             transform: `translateY(${90 - sheetPosition}vh)`,
@@ -457,57 +457,148 @@ export default function CityPage() {
           </div>
           
           {/* Sheet Header */}
-          <div className="px-4 pb-2">
+          <div className="px-4 pb-2 text-center">
             <div className="text-lg font-semibold text-gray-900">
               {filteredAffiliates.length} {language === 'es' ? 'Afiliados' : 'Affiliates'}
             </div>
           </div>
 
-          {/* Affiliate Preview Card */}
-          <div className="px-4">
-            {currentAffiliates.length > 0 && (
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="relative h-48 bg-gray-100 flex items-center justify-center">
-                  {currentAffiliates[0].logo ? (
-                    <img
-                      src={convertGoogleDriveUrl(currentAffiliates[0].logo)}
-                      alt={currentAffiliates[0].name}
-                      className="w-40 h-40 object-contain rounded-xl"
-                      style={{ borderRadius: '12px', minWidth: '160px', minHeight: '160px', maxWidth: '160px', maxHeight: '160px' }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = 'none'
-                        target.nextElementSibling?.classList.remove('hidden')
+          {/* Content based on position */}
+          <div className="flex-1 overflow-hidden">
+            {sheetPosition >= 70 ? (
+              // Expanded view - Full scrollable list
+              <div className="h-full overflow-y-auto px-4 pb-4">
+                <div className="grid grid-cols-1 gap-4">
+                  {currentAffiliates.map((affiliate) => (
+                    <div
+                      key={affiliate.id}
+                      className={`bg-white rounded-lg shadow-sm border overflow-hidden transition-all cursor-pointer ${
+                        selectedAffiliate?.id === affiliate.id
+                          ? 'border-orange-500 shadow-lg'
+                          : 'border-gray-200 hover:border-orange-400 hover:shadow-md'
+                      }`}
+                      onClick={() => {
+                        setSelectedAffiliate(affiliate)
+                        setModalAffiliate(affiliate)
+                        setIsModalOpen(true)
                       }}
-                    />
-                  ) : null}
-                  <div className={`absolute inset-0 flex items-center justify-center text-gray-400 ${currentAffiliates[0].logo ? 'hidden' : ''}`}>
-                    <MapPin className="w-12 h-12" />
-                  </div>
+                    >
+                      <div className="relative h-40 bg-gray-100 flex items-center justify-center">
+                        {affiliate.logo ? (
+                          <img
+                            src={convertGoogleDriveUrl(affiliate.logo)}
+                            alt={affiliate.name}
+                            className="w-32 h-32 object-contain rounded-xl"
+                            style={{ borderRadius: '12px', minWidth: '128px', minHeight: '128px', maxWidth: '128px', maxHeight: '128px' }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.style.display = 'none'
+                              target.nextElementSibling?.classList.remove('hidden')
+                            }}
+                          />
+                        ) : null}
+                        <div className={`absolute inset-0 flex items-center justify-center text-gray-400 ${affiliate.logo ? 'hidden' : ''}`}>
+                          <MapPin className="w-10 h-10" />
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <div className="flex items-start justify-between mb-1">
+                          <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">
+                            {affiliate.name}
+                          </h3>
+                          <div className="flex items-center ml-2">
+                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                            <span className="text-sm text-gray-600 ml-1">
+                              {affiliate.rating || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                        {affiliate.description && (
+                          <div className="text-xs text-gray-600 mb-2 line-clamp-2">
+                            {affiliate.description}
+                          </div>
+                        )}
+                        {affiliate.discount && (
+                          <div className="mb-2">
+                            <div className="text-base font-bold text-orange-600">
+                              {affiliate.discount}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900 text-base">
-                      {currentAffiliates[0].name}
-                    </h3>
-                    <div className="flex items-center ml-2">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-gray-600 ml-1">
-                        {currentAffiliates[0].rating || 'N/A'}
-                      </span>
+                
+                {/* Pagination for expanded view */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center space-x-2 mt-4 mb-2">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-xs border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700"
+                    >
+                      {language === 'es' ? 'Anterior' : 'Previous'}
+                    </button>
+                    <span className="text-xs text-gray-500">{currentPage} / {totalPages}</span>
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-xs border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700"
+                    >
+                      {language === 'es' ? 'Siguiente' : 'Next'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Default/Collapsed view - Single preview card
+              <div className="px-4">
+                {currentAffiliates.length > 0 && (
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="relative h-48 bg-gray-100 flex items-center justify-center">
+                      {currentAffiliates[0].logo ? (
+                        <img
+                          src={convertGoogleDriveUrl(currentAffiliates[0].logo)}
+                          alt={currentAffiliates[0].name}
+                          className="w-40 h-40 object-contain rounded-xl"
+                          style={{ borderRadius: '12px', minWidth: '160px', minHeight: '160px', maxWidth: '160px', maxHeight: '160px' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                            target.nextElementSibling?.classList.remove('hidden')
+                          }}
+                        />
+                      ) : null}
+                      <div className={`absolute inset-0 flex items-center justify-center text-gray-400 ${currentAffiliates[0].logo ? 'hidden' : ''}`}>
+                        <MapPin className="w-12 h-12" />
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-gray-900 text-base">
+                          {currentAffiliates[0].name}
+                        </h3>
+                        <div className="flex items-center ml-2">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                          <span className="text-sm text-gray-600 ml-1">
+                            {currentAffiliates[0].rating || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                      {currentAffiliates[0].description && (
+                        <div className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          {currentAffiliates[0].description}
+                        </div>
+                      )}
+                      {currentAffiliates[0].discount && (
+                        <div className="text-lg font-bold text-orange-600">
+                          {currentAffiliates[0].discount}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  {currentAffiliates[0].description && (
-                    <div className="text-sm text-gray-600 mb-3 line-clamp-2">
-                      {currentAffiliates[0].description}
-                    </div>
-                  )}
-                  {currentAffiliates[0].discount && (
-                    <div className="text-lg font-bold text-orange-600">
-                      {currentAffiliates[0].discount}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             )}
           </div>
