@@ -291,10 +291,10 @@ export default function CityPage() {
         const translateY = matrix.m42
         const windowHeight = window.innerHeight
         
-        // Only hide bottom nav when sheet is at absolute bottom (95% snap point)
-        // This ensures the drag handle remains visible and accessible
-        const isAtAbsoluteBottom = translateY <= windowHeight * 0.05 // Very close to bottom
-        setShowBottomNav(!isAtAbsoluteBottom)
+        // Hide bottom nav when sheet is at the bottom snap point (85% height)
+        // This allows the sheet to be fully visible and accessible
+        const isAtBottom = translateY <= windowHeight * 0.15 // At or near bottom snap point
+        setShowBottomNav(!isAtBottom)
       }
     }
 
@@ -354,7 +354,7 @@ export default function CityPage() {
       </div>
 
       {/* Draggable Bottom Sheet for Mobile */}
-      <div className="block md:hidden fixed inset-x-0 bottom-0 z-10">
+      <div className="block md:hidden fixed inset-x-0 bottom-0 z-40">
         <BottomSheet
           open={sheetOpen}
           onDismiss={() => setSheetOpen(false)}
@@ -756,8 +756,8 @@ export default function CityPage() {
       </div>
 
       {/* Mobile Bottom Navigation Bar - Airbnb Style */}
-      <div className={`block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 transition-transform duration-300 ${
-        showBottomNav ? 'translate-y-0' : 'translate-y-full'
+      <div className={`block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 transition-all duration-300 ${
+        showBottomNav ? 'opacity-100 pointer-events-auto z-50' : 'opacity-0 pointer-events-none z-10'
       }`}>
         <div className="flex items-center justify-around px-4 py-2">
           {/* Explore/Filter Button */}
