@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
         .replace(/\{guests\}/g, qrCode.guests.toString())
         .replace(/\{days\}/g, qrCode.days.toString())
         .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+        .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
         .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
         .replace(/\{rebuyUrl\}/g, customerPortalUrl)
       
