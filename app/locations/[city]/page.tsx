@@ -467,7 +467,7 @@ export default function CityPage() {
           <div className="flex-1 overflow-hidden">
             {sheetPosition >= 70 ? (
               // Expanded view - Full scrollable list
-              <div className="h-full overflow-y-auto px-4 pb-4">
+              <div className="h-full overflow-y-auto px-4 pb-24">
                 <div className="grid grid-cols-1 gap-4">
                   {currentAffiliates.map((affiliate) => (
                     <div
@@ -532,19 +532,19 @@ export default function CityPage() {
                 
                 {/* Pagination for expanded view */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center items-center space-x-2 mt-4 mb-2">
+                  <div className="flex justify-center items-center space-x-2 mt-4 mb-6 bg-white py-3 rounded-lg border border-gray-100">
                     <button
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
-                      className="px-3 py-2 text-xs border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700"
+                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700 font-medium"
                     >
                       {language === 'es' ? 'Anterior' : 'Previous'}
                     </button>
-                    <span className="text-xs text-gray-500">{currentPage} / {totalPages}</span>
+                    <span className="text-sm text-gray-600 font-medium px-2">{currentPage} / {totalPages}</span>
                     <button
                       onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
-                      className="px-3 py-2 text-xs border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700"
+                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700 font-medium"
                     >
                       {language === 'es' ? 'Siguiente' : 'Next'}
                     </button>
