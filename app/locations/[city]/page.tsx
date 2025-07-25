@@ -73,7 +73,7 @@ export default function CityPage() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   // Add state for bottom sheet open/height
   const [sheetOpen, setSheetOpen] = useState(true)
-  const [showBottomNav, setShowBottomNav] = useState(true)
+  const [showBottomNav, setShowBottomNav] = useState(true) // Start with nav visible
   
   // Simple function to check if sheet is at bottom position
   const checkSheetAtBottom = () => {
@@ -86,7 +86,7 @@ export default function CityPage() {
       
       // If sheet is very close to bottom (at 95% snap point), hide bottom nav
       const isAtBottom = translateY <= windowHeight * 0.1
-      setShowBottomNav(!isAtBottom)
+      setShowBottomNav(!isAtBottom) // This is correct - show nav when NOT at bottom
     }
   }
 
