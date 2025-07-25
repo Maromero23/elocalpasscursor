@@ -379,8 +379,8 @@ export default function CityPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 relative">
-      {/* Map always in the background */}
-      <div className="fixed inset-0 z-0">
+      {/* Map background for mobile only */}
+      <div className="fixed inset-0 z-0 block md:hidden">
         <GoogleMap
           affiliates={filteredAffiliates}
           userLocation={userLocation}
