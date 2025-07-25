@@ -1,0 +1,231 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your eLocalPass expires soon - Get 15% off renewal!</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #ffffff; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .header { background-color: #f59a19; padding: 24px; text-align: center; }
+        .header h1 { color: white; font-family: Arial, sans-serif; font-size: 28px; font-weight: bold; margin: 0; }
+        .content { padding: 24px; }
+        .message { text-align: center; margin-bottom: 24px; }
+        .message p { color: #165dd0; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5; margin: 0; }
+        .highlight-box { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 4px; }
+        .highlight-box p { color: #92400e; font-weight: 500; margin: 0; }
+        .cta-button { text-align: center; margin: 24px 0; }
+        .cta-button a { background-color: #0674ea; color: #ffffff; font-family: Arial, sans-serif; font-size: 18px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
+        .details { background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 24px 0; }
+        .details h3 { color: #374151; font-weight: 600; margin: 0 0 12px 0; }
+        .detail-item { display: flex; justify-content: space-between; margin: 8px 0; }
+        .detail-label { color: #6b7280; font-weight: 500; }
+        .detail-value { color: #374151; font-weight: 600; }
+        .discount-banner { background: linear-gradient(135deg, #2bff0f, #151df9); color: white; padding: 16px; text-align: center; margin: 24px 0; border-radius: 8px; }
+        .discount-banner h2 { margin: 0 0 8px 0; font-size: 20px; }
+        .discount-banner p { margin: 0; font-size: 14px; opacity: 0.9; }
+        .countdown-timer { background-color: #f8fafc; border: 2px solid #e2e8f0; padding: 16px; margin: 24px 0; border-radius: 8px; text-align: center; }
+        .countdown-timer p { color: #4a5568; font-weight: 500; margin: 0 0 8px 0; font-size: 14px; }
+        .countdown-display { font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold; color: #2d3748; margin: 8px 0; }
+        .countdown-label { font-size: 12px; color: #718096; margin: 0; }
+        .banner-images { margin: 20px 0; }
+        .banner-image { width: 100%; max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0; display: block; }
+        .featured-partners { background-color: #fff7ed; padding: 16px; margin: 24px 0; border-radius: 8px; border-left: 4px solid #f97316; }
+        .featured-partners h3 { color: #c2410c; font-weight: 600; margin: 0 0 12px 0; }
+        .partners-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+        .partner-item { background-color: white; padding: 8px; border-radius: 4px; text-align: center; border: 1px solid #fed7aa; }
+        .partner-placeholder { width: 100%; height: 32px; background-color: #f3f4f6; border-radius: 4px; margin-bottom: 4px; }
+        .partner-name { font-size: 11px; color: #9a3412; font-weight: 500; }
+        .partners-message { color: #c2410c; font-size: 14px; margin: 12px 0 0 0; }
+        .footer-message { text-align: center; border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px; }
+        .footer-message p { color: #2958c7; font-family: Arial, sans-serif; font-size: 14px; margin: 0; }
+        .email-footer { background-color: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280; }
+        @media only screen and (max-width: 600px) {
+            .container { margin: 0; border-radius: 0; }
+            .content { padding: 16px; }
+            .partners-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            
+            <h1>Don't Miss Out! </h1>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <!-- Main Message -->
+            <div class="message">
+                <p>Hello petert pereset futuro,</p>
+                <p style="margin-top: 16px;">Your eLocalPass expires soon. Renew now with an exclusive discount!</p>
+            </div>
+            
+            <!-- Banner Images Section -->
+            
+            
+            <!-- Video Section -->
+            
+            
+            <!-- Countdown Timer (if enabled) -->
+            
+            <div class="countdown-timer">
+                <p>⏰ Time Remaining Until Expiration:</p>
+                <div class="countdown-display" id="countdown-timer">12:00:00</div>
+                <p class="countdown-label">hrs:min:sec</p>
+            </div>
+            <script>
+                (function() {
+                    function updateCountdown() {
+                        try {
+                            const now = new Date();
+                            // Use the actual expiration timestamp passed from the rebuy email system
+                            const expirationTime = new Date('2025-07-26T18:14:01.143Z');
+                            
+                            const remainingMs = expirationTime.getTime() - now.getTime();
+                            const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+                            
+                            const hours = Math.floor(remainingSeconds / 3600);
+                            const minutes = Math.floor((remainingSeconds % 3600) / 60);
+                            const seconds = remainingSeconds % 60;
+                            
+                            const timeString = hours.toString().padStart(2, '0') + ':' + 
+                                             minutes.toString().padStart(2, '0') + ':' + 
+                                             seconds.toString().padStart(2, '0');
+                            
+                            const timerElement = document.getElementById('countdown-timer');
+                            if (timerElement) {
+                                timerElement.innerHTML = timeString;
+                                
+                                if (remainingSeconds === 0) {
+                                    timerElement.innerHTML = '🚨 EXPIRED';
+                                    timerElement.style.color = '#dc2626';
+                                    timerElement.style.fontWeight = 'bold';
+                                }
+                            }
+                        } catch (error) {
+                            // Fallback to static display if JavaScript fails
+                            const timerElement = document.getElementById('countdown-timer');
+                            if (timerElement) {
+                                timerElement.innerHTML = '23:00:00';
+                            }
+                        }
+                    }
+                    
+                    // Start countdown immediately
+                    updateCountdown();
+                    
+                    // Update every second
+                    setInterval(updateCountdown, 1000);
+                })();
+            </script>
+            
+            
+            <!-- Urgency Notice with Dynamic Countdown -->
+            <div class="highlight-box">
+                <p>⏰ Your ELocalPass expires in <span id="countdown" style="font-weight: bold; color: #dc2626;"></span> - Don't miss out on amazing local experiences!</p>
+                <script>
+                    // Dynamic countdown timer
+                    function updateCountdown() {
+                        const now = new Date();
+                        const expirationTime = new Date('2025-07-26T18:14:01.143Z');
+                        const timeLeft = expirationTime - now;
+                        
+                        if (timeLeft > 0) {
+                            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                            
+                            document.getElementById('countdown').innerHTML = 
+                                hours + 'h ' + minutes + 'm ' + seconds + 's';
+                        } else {
+                            document.getElementById('countdown').innerHTML = 'EXPIRED';
+                        }
+                    }
+                    
+                    // Update countdown every second
+                    updateCountdown();
+                    setInterval(updateCountdown, 1000);
+                </script>
+            </div>
+            
+            <!-- Current Pass Details -->
+            <div class="details">
+                <h3>Your Current ELocalPass Details:</h3>
+                <div class="detail-item">
+                    <span class="detail-label">Guests:</span>
+                    <span class="detail-value">1 people</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Duration:</span>
+                    <span class="detail-value">1 days</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Expires:</span>
+                    <span class="detail-value">In 23 hours</span>
+                </div>
+            </div>
+            
+            
+            <!-- Discount Offer -->
+            <div class="discount-banner">
+                <h2>🎉 Special 50% OFF!</h2>
+                <p>Get another ELocalPass now and save 50% on your next adventure</p>
+            </div>
+            
+            
+            <!-- CTA Button -->
+            <div class="cta-button">
+                <a href="https://elocalpasscursor.vercel.app/passes?seller_id=cmc4ha801000e6a96fwvdcdhm&discount=REBUY15">Get Another ELocalPass</a>
+            </div>
+            
+            <!-- Featured Partners (if enabled) -->
+            
+            <div class="featured-partners">
+                <h3>Featured Partners in Playa del Carmen</h3>
+                <div class="partners-grid">
+                    <div class="partner-item">
+                        <div class="partner-placeholder"></div>
+                        <div class="partner-name">Local Restaurant</div>
+                    </div>
+                    <div class="partner-item">
+                        <div class="partner-placeholder"></div>
+                        <div class="partner-name">Adventure Tours</div>
+                    </div>
+                </div>
+                <p class="partners-message">Don't forget these amazing discounts are waiting for you:</p>
+            </div>
+            
+            
+            <!-- Seller Tracking Message -->
+            
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 24px 0; border-radius: 4px;">
+                <p style="color: #1e40af; font-weight: 500; margin: 0;">
+                    💼 Supporting Local Business: Your purchase helps support the local seller who provided your original pass.
+                </p>
+            </div>
+            
+            
+            <!-- Footer Message -->
+            <div class="footer-message">
+                <p>Thank you for choosing ELocalPass for your local adventures!</p>
+                <p style="margin-top: 8px; font-size: 12px;">
+                    Need help? Visit your <a href="https://elocalpasscursor.vercel.app/passes?seller_id=cmc4ha801000e6a96fwvdcdhm&discount=REBUY15" style="color: #3b82f6;">customer portal</a> or contact support.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Email Footer -->
+        <div class="email-footer">
+            <p>© 2025 eLocalPass. All rights reserved.</p>
+            <p style="margin-top: 4px;">
+                You received this email because your ELocalPass is expiring soon.
+                <a href="#" style="color: #3b82f6;">Unsubscribe</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

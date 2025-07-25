@@ -1563,6 +1563,80 @@ function RebuyEmailConfigPageContent() {
                 </div>
               </div>
 
+              {/* NEW: Enhanced Email Components Configuration */}
+              <div className="bg-indigo-50 p-3 rounded-lg border-2 border-indigo-200">
+                <h2 className="text-lg font-bold text-indigo-900 mb-2">Enhanced Email Components</h2>
+                <p className="text-indigo-700 text-sm mb-3">Configure additional email components to match the actual email design</p>
+                
+                <div className="space-y-3">
+                  {/* Current Pass Details Section */}
+                  <div className="bg-white p-3 rounded border border-indigo-200">
+                    <h3 className="text-sm font-semibold text-indigo-800 mb-2">📋 Current Pass Details Section</h3>
+                    <p className="text-xs text-indigo-600 mb-2">Shows customer's current QR code details (guests, days, expiration)</p>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={true} // Always enabled for rebuy emails
+                        disabled={true}
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 opacity-50"
+                      />
+                      <span className="text-xs font-medium text-gray-500">
+                        Always enabled for rebuy emails
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Seller Tracking Section */}
+                  <div className="bg-white p-3 rounded border border-indigo-200">
+                    <h3 className="text-sm font-semibold text-indigo-800 mb-2">💼 Seller Tracking Message</h3>
+                    <p className="text-xs text-indigo-600 mb-2">Shows a message about supporting the original seller</p>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={rebuyConfig.enableSellerTracking}
+                        onChange={(e) => setRebuyConfig({...rebuyConfig, enableSellerTracking: e.target.checked})}
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                      />
+                      <span className="text-xs font-medium text-indigo-900">
+                        Enable Seller Tracking Message
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Urgency Notice Section */}
+                  <div className="bg-white p-3 rounded border border-indigo-200">
+                    <h3 className="text-sm font-semibold text-indigo-800 mb-2">⏰ Urgency Notice</h3>
+                    <p className="text-xs text-indigo-600 mb-2">Yellow warning box with expiration countdown</p>
+                    <label className="flex items-center space-x-2 mb-2">
+                      <input
+                        type="checkbox"
+                        checked={true} // Always enabled for rebuy emails
+                        disabled={true}
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 opacity-50"
+                      />
+                      <span className="text-xs font-medium text-gray-500">
+                        Always enabled for rebuy emails
+                      </span>
+                    </label>
+                    <div>
+                      <label className="block text-xs font-medium text-indigo-700 mb-1">
+                        Urgency Message Template
+                      </label>
+                      <input
+                        type="text"
+                        value={rebuyConfig.urgencyMessage}
+                        onChange={(e) => setRebuyConfig({...rebuyConfig, urgencyMessage: e.target.value})}
+                        placeholder="Use {hours_left} for dynamic hours"
+                        className="w-full px-2 py-1 text-sm border border-indigo-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                      <p className="text-xs text-indigo-500 mt-1">
+                        Use {"{hours_left}"} to show dynamic hours remaining
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Submit Button */}
               <div className="text-center py-4">
                 <button
@@ -1637,7 +1711,20 @@ function RebuyEmailConfigPageContent() {
                   enableLocationBasedAffiliates: rebuyConfig.enableFeaturedPartners,
                   emailAccountCreationUrl: "https://elocalpass.com/register",
                   showExpirationTimer: rebuyConfig.showExpirationTimer,
-                  sentTimestamp: new Date(Date.now() - (2 * 60 * 60 * 1000)) // Mock: email sent 2 hours ago for demo
+                  sentTimestamp: new Date(Date.now() - (2 * 60 * 60 * 1000)), // Mock: email sent 2 hours ago for demo
+                  // NEW: Enhanced configuration options to match actual email
+                  enableDiscountCode: rebuyConfig.enableDiscountCode,
+                  discountValue: rebuyConfig.discountValue,
+                  discountType: rebuyConfig.discountType as 'percentage' | 'fixed',
+                  enableFeaturedPartners: rebuyConfig.enableFeaturedPartners,
+                  enableSellerTracking: rebuyConfig.enableSellerTracking,
+                  urgencyMessage: rebuyConfig.urgencyMessage,
+                  showCurrentPassDetails: true, // Always show for preview
+                  customerName: 'peter pereset futuro', // Mock customer name
+                  qrCode: 'EL-1234567890-abc123', // Mock QR code
+                  guests: 2, // Mock guests
+                  days: 3, // Mock days
+                  hoursLeft: rebuyConfig.triggerHoursBefore || 12 // Use configured trigger hours
                 }}
               />
             </div>
