@@ -354,7 +354,7 @@ export default function CityPage() {
       </div>
 
       {/* Draggable Bottom Sheet for Mobile */}
-      <div className="block md:hidden fixed inset-x-0 bottom-0 z-40">
+      <div className="block md:hidden fixed inset-x-0 bottom-0 z-30">
         <BottomSheet
           open={sheetOpen}
           onDismiss={() => setSheetOpen(false)}
@@ -758,7 +758,7 @@ export default function CityPage() {
       {/* Mobile Bottom Navigation Bar - Airbnb Style */}
       <div className={`block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 transition-all duration-300 ${
         showBottomNav ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}>
+      }`} style={{ zIndex: 9999 }}>
         <div className="flex items-center justify-around px-4 py-2">
           {/* Explore/Filter Button */}
           <button className="flex flex-col items-center py-2 px-3 text-red-600">
