@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
         customerEmail: scheduledQR.clientEmail,
         guests: scheduledQR.guests,
         days: scheduledQR.days,
-        cost: scheduledQR.configurationId === 'default' ? scheduledQR.amount : calculatedPrice,
+        cost: scheduledQR.configurationId === 'default' ? (scheduledQR as any).amount : calculatedPrice,
         expiresAt: expiresAt,
         isActive: true,
         landingUrl: scheduledQR.deliveryMethod === 'DIRECT' ? null : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/landing/${qrCodeId}`
@@ -266,8 +266,8 @@ export async function POST(request: NextRequest) {
         customerEmail: scheduledQR.clientEmail,
         guests: scheduledQR.guests,
         days: scheduledQR.days,
-        cost: scheduledQR.configurationId === 'default' ? scheduledQR.amount : calculatedPrice,
-        discountAmount: scheduledQR.configurationId === 'default' ? scheduledQR.discountAmount : 0,
+        cost: scheduledQR.configurationId === 'default' ? (scheduledQR as any).amount : calculatedPrice,
+        discountAmount: scheduledQR.configurationId === 'default' ? (scheduledQR as any).discountAmount : 0,
         expiresAt: expiresAt,
         isActive: true,
         deliveryMethod: scheduledQR.deliveryMethod,
@@ -304,73 +304,116 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Send welcome email using PayPal template (same logic as immediate PayPal creation)
+    // Send welcome email based on QR type (PayPal vs Seller)
     let emailSent = false
     try {
       // Import email service and translations
       const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
       const { formatDate } = await import('@/lib/translations')
       
-      const customerLanguage = 'en' // Default language for PayPal orders
+      const customerLanguage = 'en' // Default language
       const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
-      
-      console.log('📧 SCHEDULED QR: Looking for PayPal welcome email template...')
-      
-      // Get PayPal-specific template from database (same search as immediate creation)
-      const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
-        where: { 
-          name: {
-            contains: 'Paypal welcome email template'
-          }
-        },
-        orderBy: { createdAt: 'desc' } // Get the newest one
-      })
-      
-      console.log('📧 SCHEDULED QR: PayPal template search result:', {
-        found: !!paypalTemplate,
-        name: paypalTemplate?.name,
-        id: paypalTemplate?.id,
-        hasCustomHTML: !!paypalTemplate?.customHTML,
-        htmlLength: paypalTemplate?.customHTML?.length || 0
-      })
       
       let emailHtml = ''
       let emailSubject = 'Your ELocalPass is Ready - Scheduled Delivery'
       
-      if (paypalTemplate && paypalTemplate.customHTML) {
-        console.log('📧 SCHEDULED QR: Using PayPal-specific branded template')
+      // Check if this is a PayPal QR or Seller QR
+      if (scheduledQR.configurationId === 'default' || !seller?.savedConfigId) {
+        // PayPal QR - use PayPal template
+        console.log('📧 SCHEDULED QR: This is a PayPal QR - using PayPal welcome email template...')
         
-        // Replace variables in PayPal template (same as immediate creation)
-        emailHtml = paypalTemplate.customHTML
-          .replace(/\{customerName\}/g, scheduledQR.clientName)
-          .replace(/\{qrCode\}/g, qrCodeId)
-          .replace(/\{guests\}/g, scheduledQR.guests.toString())
-          .replace(/\{days\}/g, scheduledQR.days.toString())
-          .replace(/\{expirationDate\}/g, formattedExpirationDate)
-          .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
-          .replace(/\{magicLink\}/g, magicLinkUrl)
+        const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
+          where: { 
+            name: {
+              contains: 'Paypal welcome email template'
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
         
-        if (paypalTemplate.subject) {
-          emailSubject = paypalTemplate.subject
+        console.log('📧 SCHEDULED QR: PayPal template search result:', {
+          found: !!paypalTemplate,
+          name: paypalTemplate?.name,
+          hasCustomHTML: !!paypalTemplate?.customHTML,
+          htmlLength: paypalTemplate?.customHTML?.length || 0
+        })
+        
+        if (paypalTemplate && paypalTemplate.customHTML) {
+          console.log('📧 SCHEDULED QR: Using PayPal-specific branded template')
+          
+          emailHtml = paypalTemplate.customHTML
             .replace(/\{customerName\}/g, scheduledQR.clientName)
             .replace(/\{qrCode\}/g, qrCodeId)
+            .replace(/\{guests\}/g, scheduledQR.guests.toString())
+            .replace(/\{days\}/g, scheduledQR.days.toString())
+            .replace(/\{expirationDate\}/g, formattedExpirationDate)
+            .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
+            .replace(/\{magicLink\}/g, magicLinkUrl)
+          
+          if (paypalTemplate.subject) {
+            emailSubject = paypalTemplate.subject
+              .replace(/\{customerName\}/g, scheduledQR.clientName)
+              .replace(/\{qrCode\}/g, qrCodeId)
+          }
+        } else {
+          console.log('⚠️ SCHEDULED QR: PayPal template not found - using fallback template')
+          emailHtml = createWelcomeEmailHtml({
+            customerName: scheduledQR.clientName,
+            qrCode: qrCodeId,
+            guests: scheduledQR.guests,
+            days: scheduledQR.days,
+            expiresAt: formattedExpirationDate,
+            customerPortalUrl: magicLinkUrl,
+            language: customerLanguage,
+            deliveryMethod: 'DIRECT'
+          })
         }
-        
-        console.log('📧 SCHEDULED QR: PayPal template variables replaced successfully')
       } else {
-        console.log('⚠️ SCHEDULED QR: PayPal template not found - using fallback template')
+        // Seller QR - use seller's custom template from their configuration
+        console.log('📧 SCHEDULED QR: This is a Seller QR - using seller\'s custom email template...')
         
-        // Fallback to generic template
-        emailHtml = createWelcomeEmailHtml({
-          customerName: scheduledQR.clientName,
-          qrCode: qrCodeId,
-          guests: scheduledQR.guests,
-          days: scheduledQR.days,
-          expiresAt: formattedExpirationDate,
-          customerPortalUrl: magicLinkUrl,
-          language: customerLanguage,
-          deliveryMethod: 'DIRECT'
+        // Get seller's email templates from their saved configuration
+        const emailTemplates = savedConfig?.emailTemplates ? JSON.parse(savedConfig.emailTemplates) : null
+        
+        console.log('📧 SCHEDULED QR: Seller email templates:', {
+          hasEmailTemplates: !!emailTemplates,
+          hasWelcomeEmail: !!emailTemplates?.welcomeEmail,
+          hasCustomHTML: !!emailTemplates?.welcomeEmail?.customHTML,
+          htmlLength: emailTemplates?.welcomeEmail?.customHTML?.length || 0
         })
+        
+        if (emailTemplates?.welcomeEmail?.customHTML) {
+          console.log('📧 SCHEDULED QR: Using seller\'s custom welcome email template')
+          
+          emailHtml = emailTemplates.welcomeEmail.customHTML
+            .replace(/\{customerName\}/g, scheduledQR.clientName)
+            .replace(/\{qrCode\}/g, qrCodeId)
+            .replace(/\{guests\}/g, scheduledQR.guests.toString())
+            .replace(/\{days\}/g, scheduledQR.days.toString())
+            .replace(/\{expirationDate\}/g, formattedExpirationDate)
+            .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
+            .replace(/\{magicLink\}/g, magicLinkUrl)
+          
+          if (emailTemplates.welcomeEmail.subject) {
+            emailSubject = emailTemplates.welcomeEmail.subject
+              .replace(/\{customerName\}/g, scheduledQR.clientName)
+              .replace(/\{qrCode\}/g, qrCodeId)
+          }
+          
+          console.log('📧 SCHEDULED QR: Seller template variables replaced successfully')
+        } else {
+          console.log('⚠️ SCHEDULED QR: Seller has no custom template - using fallback template')
+          emailHtml = createWelcomeEmailHtml({
+            customerName: scheduledQR.clientName,
+            qrCode: qrCodeId,
+            guests: scheduledQR.guests,
+            days: scheduledQR.days,
+            expiresAt: formattedExpirationDate,
+            customerPortalUrl: magicLinkUrl,
+            language: customerLanguage,
+            deliveryMethod: 'DIRECT'
+          })
+        }
       }
       
       console.log(`📧 SCHEDULED QR: Generated welcome email HTML - Length: ${emailHtml.length} chars`)
