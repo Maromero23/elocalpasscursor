@@ -73,7 +73,6 @@ export default function CityPage() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   // Add state for bottom sheet open/height
   const [sheetOpen, setSheetOpen] = useState(true)
-  const [sheetPosition, setSheetPosition] = useState(0.6) // Track current position (0.25, 0.6, or 0.95)
   const [showBottomNav, setShowBottomNav] = useState(true)
 
   const cityId = params.city as string
@@ -281,27 +280,7 @@ export default function CityPage() {
     setCurrentPage(1)
   }, [searchTerm, typeFilter, categoryFilter, ratingFilter, recommendedFilter])
 
-  // Monitor bottom sheet position and hide/show bottom navigation
-  useEffect(() => {
-    const checkSheetPosition = () => {
-      const sheetElement = document.querySelector('[data-rsbs-overlay]')
-      if (sheetElement) {
-        const transform = window.getComputedStyle(sheetElement).transform
-        const matrix = new DOMMatrix(transform)
-        const translateY = matrix.m42
-        const windowHeight = window.innerHeight
-        
-        // When sheet is at its lowest position (95% snap point), hide bottom nav
-        // This allows the sheet to completely replace the bottom navigation
-        const isAtLowestPosition = translateY <= windowHeight * 0.05 // Very close to bottom
-        setShowBottomNav(!isAtLowestPosition)
-      }
-    }
 
-    // Check position periodically
-    const interval = setInterval(checkSheetPosition, 100)
-    return () => clearInterval(interval)
-  }, [])
 
   const categories = Array.from(new Set(
     affiliates
@@ -756,9 +735,7 @@ export default function CityPage() {
       </div>
 
       {/* Mobile Bottom Navigation Bar - Airbnb Style */}
-      <div className={`block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 transition-all duration-300 ${
-        showBottomNav ? 'opacity-100 pointer-events-auto z-50' : 'opacity-0 pointer-events-none z-10 transform translate-y-full'
-      }`}>
+      <div className="block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="flex items-center justify-around px-4 py-2">
           {/* Explore/Filter Button */}
           <button className="flex flex-col items-center py-2 px-3 text-red-600">
