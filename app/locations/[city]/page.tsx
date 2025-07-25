@@ -358,19 +358,52 @@ export default function CityPage() {
         <BottomSheet
           open={sheetOpen}
           onDismiss={() => setSheetOpen(false)}
-          snapPoints={({ maxHeight }) => [maxHeight * 0.25, maxHeight * 0.6, maxHeight * 0.95]}
+          snapPoints={({ maxHeight }) => [80, maxHeight * 0.6, maxHeight * 0.95]}
           defaultSnap={({ maxHeight }) => maxHeight * 0.6}
-
           header={
             <div className="flex flex-col items-center py-2">
               <div className="w-10 h-1.5 bg-gray-300 rounded-full mb-2" />
-              <div className="text-base font-semibold text-gray-900">
-                {filteredAffiliates.length} {language === 'es' ? 'Afiliados' : 'Affiliates'}
+              {/* Bottom menu as collapsed content */}
+              <div className="flex items-center justify-around w-full px-4 pb-2">
+                <button className="flex flex-col items-center py-2 px-3 text-red-600">
+                  <svg className="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                  </svg>
+                  <span className="text-xs font-medium">Explore</span>
+                </button>
+                <button className="flex flex-col items-center py-2 px-3 text-gray-600">
+                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
+                  </svg>
+                  <span className="text-xs font-medium">Filters</span>
+                </button>
+                <button className="flex flex-col items-center py-2 px-3 text-gray-600">
+                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                  </svg>
+                  <span className="text-xs font-medium">Map</span>
+                </button>
+                <button className="flex flex-col items-center py-2 px-3 text-gray-600">
+                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                  </svg>
+                  <span className="text-xs font-medium">Saved</span>
+                </button>
+                <button className="flex flex-col items-center py-2 px-3 text-gray-600">
+                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                  <span className="text-xs font-medium">Profile</span>
+                </button>
               </div>
             </div>
           }
         >
+          {/* Expanded content: affiliate list, etc. */}
           <div className="px-2 pb-16">
+            <div className="text-base font-semibold text-gray-900 mb-2">
+              {filteredAffiliates.length} {language === 'es' ? 'Afiliados' : 'Affiliates'}
+            </div>
             <div className="grid grid-cols-1 gap-4">
               {currentAffiliates.map((affiliate) => (
                 <div
@@ -752,54 +785,6 @@ export default function CityPage() {
               setIsModalOpen(true)
             }}
           />
-        </div>
-      </div>
-
-      {/* Mobile Bottom Navigation Bar - Airbnb Style */}
-      <div className="block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="flex items-center justify-around px-4 py-2">
-          {/* Explore/Filter Button */}
-          <button className="flex flex-col items-center py-2 px-3 text-red-600">
-            <svg className="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-            <span className="text-xs font-medium">Explore</span>
-          </button>
-
-          {/* Filters Button */}
-          <button 
-            onClick={() => setIsFilterModalOpen(true)}
-            className="flex flex-col items-center py-2 px-3 text-gray-600"
-          >
-            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
-            </svg>
-            <span className="text-xs font-medium">Filters</span>
-          </button>
-
-          {/* Map View Button */}
-          <button className="flex flex-col items-center py-2 px-3 text-gray-600">
-            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-            </svg>
-            <span className="text-xs font-medium">Map</span>
-          </button>
-
-          {/* Saved/Wishlist Button */}
-          <button className="flex flex-col items-center py-2 px-3 text-gray-600">
-            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-            </svg>
-            <span className="text-xs font-medium">Saved</span>
-          </button>
-
-          {/* Profile Button */}
-          <button className="flex flex-col items-center py-2 px-3 text-gray-600">
-            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
-            <span className="text-xs font-medium">Profile</span>
-          </button>
         </div>
       </div>
 
