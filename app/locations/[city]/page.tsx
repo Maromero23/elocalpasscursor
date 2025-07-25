@@ -7,8 +7,7 @@ import { useTranslation } from '../../../contexts/LanguageContext'
 import GoogleMap from '../../../components/GoogleMap'
 import AffiliateModal from '../../../components/AffiliateModal'
 import { Affiliate } from '../../../types/affiliate'
-import { BottomSheet } from 'react-spring-bottom-sheet'
-import 'react-spring-bottom-sheet/dist/style.css'
+
 
 const cityMap = {
   'bacalar': { name: 'Bacalar', displayName: 'Bacalar' },
@@ -71,24 +70,7 @@ export default function CityPage() {
   const [retryCount, setRetryCount] = useState(0)
   const [hoveredAffiliate, setHoveredAffiliate] = useState<string | null>(null)
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
-  // Add state for bottom sheet open/height
-  const [sheetOpen, setSheetOpen] = useState(true)
-  // Remove showBottomNav state and all related logic
-  
-  // Simple function to check if sheet is at bottom position
-  const checkSheetAtBottom = () => {
-    const sheetElement = document.querySelector('[data-rsbs-overlay]')
-    if (sheetElement) {
-      const transform = window.getComputedStyle(sheetElement).transform
-      const matrix = new DOMMatrix(transform)
-      const translateY = matrix.m42
-      const windowHeight = window.innerHeight
-      
-      // If sheet is very close to bottom (at 95% snap point), hide bottom nav
-      const isAtBottom = translateY <= windowHeight * 0.1
-      // setShowBottomNav(!isAtBottom) // This is correct - show nav when NOT at bottom
-    }
-  }
+
 
   const cityId = params.city as string
   const cityInfo = cityId === 'all-cities' ? { name: 'all-cities', displayName: 'All Cities' } : cityMap[cityId as keyof typeof cityMap]
@@ -295,11 +277,7 @@ export default function CityPage() {
     setCurrentPage(1)
   }, [searchTerm, typeFilter, categoryFilter, ratingFilter, recommendedFilter])
 
-  // Monitor sheet position and hide/show bottom navigation
-  useEffect(() => {
-    const interval = setInterval(checkSheetAtBottom, 200)
-    return () => clearInterval(interval)
-  }, [])
+
 
 
 
@@ -353,151 +331,9 @@ export default function CityPage() {
         />
       </div>
 
-      {/* Draggable Bottom Sheet for Mobile */}
-      <div className="block md:hidden fixed inset-x-0 bottom-0 z-30">
-        {/* Floating button to bring back sheet if hidden */}
-        {!sheetOpen && (
-          <button
-            onClick={() => setSheetOpen(true)}
-            className="fixed bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg z-50"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
-            </svg>
-          </button>
-        )}
-        <BottomSheet
-          open={sheetOpen}
-          onDismiss={() => setSheetOpen(true)} // Prevent dismissal - always keep it open
-          snapPoints={({ maxHeight }) => [80, maxHeight * 0.6, maxHeight * 0.95]}
-          defaultSnap={({ maxHeight }) => 80} // Start collapsed (showing menu)
-          header={
-            <div className="flex flex-col items-center py-2">
-              <div className="w-10 h-1.5 bg-gray-300 rounded-full mb-2" />
-              {/* Bottom menu as collapsed content */}
-              <div className="flex items-center justify-around w-full px-4 pb-2">
-                <button className="flex flex-col items-center py-2 px-3 text-red-600">
-                  <svg className="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                  </svg>
-                  <span className="text-xs font-medium">Explore</span>
-                </button>
-                <button className="flex flex-col items-center py-2 px-3 text-gray-600">
-                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
-                  </svg>
-                  <span className="text-xs font-medium">Filters</span>
-                </button>
-                <button className="flex flex-col items-center py-2 px-3 text-gray-600">
-                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                  </svg>
-                  <span className="text-xs font-medium">Map</span>
-                </button>
-                <button className="flex flex-col items-center py-2 px-3 text-gray-600">
-                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                  </svg>
-                  <span className="text-xs font-medium">Saved</span>
-                </button>
-                <button className="flex flex-col items-center py-2 px-3 text-gray-600">
-                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                  </svg>
-                  <span className="text-xs font-medium">Profile</span>
-                </button>
-              </div>
-            </div>
-          }
-        >
-          {/* Expanded content: affiliate list, etc. */}
-          <div className="px-2 pb-16">
-            <div className="text-base font-semibold text-gray-900 mb-2">
-              {filteredAffiliates.length} {language === 'es' ? 'Afiliados' : 'Affiliates'}
-            </div>
-            <div className="grid grid-cols-1 gap-4">
-              {currentAffiliates.map((affiliate) => (
-                <div
-                  key={affiliate.id}
-                  className={`bg-white rounded-lg shadow-sm border overflow-hidden transition-all cursor-pointer ${
-                    selectedAffiliate?.id === affiliate.id
-                      ? 'border-orange-500 shadow-lg'
-                      : 'border-gray-200 hover:border-orange-400 hover:shadow-md'
-                  }`}
-                  onClick={() => {
-                    setSelectedAffiliate(affiliate)
-                    setModalAffiliate(affiliate)
-                    setIsModalOpen(true)
-                  }}
-                >
-                  <div className="relative h-40 bg-gray-100 flex items-center justify-center">
-                    {affiliate.logo ? (
-                      <img
-                        src={convertGoogleDriveUrl(affiliate.logo)}
-                        alt={affiliate.name}
-                        className="w-32 h-32 object-contain rounded-xl"
-                        style={{ borderRadius: '12px', minWidth: '128px', minHeight: '128px', maxWidth: '128px', maxHeight: '128px' }}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
-                          target.nextElementSibling?.classList.remove('hidden')
-                        }}
-                      />
-                    ) : null}
-                    <div className={`absolute inset-0 flex items-center justify-center text-gray-400 ${affiliate.logo ? 'hidden' : ''}`}>
-                      <MapPin className="w-10 h-10" />
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">
-                        {affiliate.name}
-                      </h3>
-                      <div className="flex items-center ml-2">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm text-gray-600 ml-1">
-                          {affiliate.rating || 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                    {affiliate.description && (
-                      <div className="text-xs text-gray-600 mb-2 line-clamp-2">
-                        {affiliate.description}
-                      </div>
-                    )}
-                    {affiliate.discount && (
-                      <div className="mb-2">
-                        <div className="text-base font-bold text-orange-600">
-                          {affiliate.discount}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Pagination (if needed) */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center space-x-2 mt-4 mb-2">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-2 text-xs border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700"
-                >
-                  {language === 'es' ? 'Anterior' : 'Previous'}
-                </button>
-                <span className="text-xs text-gray-500">{currentPage} / {totalPages}</span>
-                <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-2 text-xs border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700"
-                >
-                  {language === 'es' ? 'Siguiente' : 'Next'}
-                </button>
-              </div>
-            )}
-          </div>
-        </BottomSheet>
+      {/* Clean Mobile Layout - Starting Fresh */}
+      <div className="block md:hidden">
+        {/* We'll build a new, simple mobile interface here */}
       </div>
 
       {/* Desktop/Tablet Layout (unchanged) */}
