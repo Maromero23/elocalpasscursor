@@ -291,10 +291,14 @@ export default function CityPage() {
         const translateY = matrix.m42
         const windowHeight = window.innerHeight
         
-        // Hide bottom nav when sheet is at the bottom snap point (85% height)
-        // This allows the sheet to be fully visible and accessible
-        const isAtBottom = translateY <= windowHeight * 0.15 // At or near bottom snap point
-        setShowBottomNav(!isAtBottom)
+        // Bottom navigation height is approximately 80px (py-2 + icons + text)
+        const bottomNavHeight = 80
+        const bottomNavTop = windowHeight - bottomNavHeight
+        
+        // Hide bottom nav when sheet reaches the bottom nav's position
+        // Show it again when sheet moves above the bottom nav
+        const isSheetAtBottomNav = translateY <= bottomNavTop
+        setShowBottomNav(!isSheetAtBottomNav)
       }
     }
 
@@ -358,7 +362,7 @@ export default function CityPage() {
         <BottomSheet
           open={sheetOpen}
           onDismiss={() => setSheetOpen(false)}
-          snapPoints={({ maxHeight }) => [maxHeight * 0.25, maxHeight * 0.6, maxHeight * 0.85]}
+          snapPoints={({ maxHeight }) => [maxHeight * 0.25, maxHeight * 0.6, maxHeight * 0.95]}
           defaultSnap={({ maxHeight }) => maxHeight * 0.6}
 
           header={
