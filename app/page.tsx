@@ -305,42 +305,42 @@ export default function HomePage() {
             {/* 3x3 Grid of Cities - Full Width */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
               {/* Row 1 */}
-              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
-                <img src="/images/cancun_large.png" alt="Cancún" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer bg-gray-100 flex items-center justify-center">
+                <img src="/images/cancun_large.png" alt="Cancún" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
               </div>
               
-              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
-                <img src="/images/tulum_large.png" alt="Tulum" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer bg-gray-100 flex items-center justify-center">
+                <img src="/images/tulum_large.png" alt="Tulum" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
               </div>
               
-              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
-                <img src="/images/cozumel_large.png" alt="Cozumel" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer bg-gray-100 flex items-center justify-center">
+                <img src="/images/cozumel_large.png" alt="Cozumel" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
               </div>
               
               {/* Row 2 */}
-              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
-                <img src="/images/playa_carmen_large.png" alt="Playa del Carmen" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer bg-gray-100 flex items-center justify-center">
+                <img src="/images/playa_carmen_large.png" alt="Playa del Carmen" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
               </div>
               
-              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
-                <img src="/images/isla_mujeres_large.png" alt="Isla Mujeres" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer bg-gray-100 flex items-center justify-center">
+                <img src="/images/isla_mujeres_large.png" alt="Isla Mujeres" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
               </div>
               
-              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
-                <img src="/images/puerto_morelos_large.png" alt="Puerto Morelos" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer bg-gray-100 flex items-center justify-center">
+                <img src="/images/puerto_morelos_large.png" alt="Puerto Morelos" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
               </div>
               
               {/* Row 3 */}
-              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
-                <img src="/images/bacalar_large.png" alt="Bacalar" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer bg-gray-100 flex items-center justify-center">
+                <img src="/images/bacalar_large.png" alt="Bacalar" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
               </div>
               
-              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
-                <img src="/images/puerto_aventuras_large.png" alt="Puerto Aventuras" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer bg-gray-100 flex items-center justify-center">
+                <img src="/images/puerto_aventuras_large.png" alt="Puerto Aventuras" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
               </div>
               
-              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer">
-                <img src="/images/holbox_large.png" alt="Holbox" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="relative rounded-2xl overflow-hidden h-64 group cursor-pointer bg-gray-100 flex items-center justify-center">
+                <img src="/images/holbox_large.png" alt="Holbox" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
               </div>
             </div>
           </div>
