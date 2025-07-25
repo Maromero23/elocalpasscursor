@@ -45,7 +45,23 @@ export default function ExplorePage() {
 
   const fetchAffiliates = async () => {
     try {
-      const cityParam = selectedCity || 'all-cities'
+      // Convert city slug to proper city name for API
+      const slugToCityName = {
+        'bacalar': 'Bacalar',
+        'cancun': 'Cancun',
+        'cozumel': 'Cozumel',
+        'holbox': 'Holbox',
+        'isla-mujeres': 'Isla Mujeres',
+        'playa-del-carmen': 'Playa del Carmen',
+        'puerto-aventuras': 'Puerto Aventuras',
+        'puerto-morelos': 'Puerto Morelos',
+        'tulum': 'Tulum'
+      }
+      
+      const cityParam = selectedCity 
+        ? (slugToCityName[selectedCity as keyof typeof slugToCityName] || selectedCity)
+        : 'all-cities'
+      
       const response = await fetch(`/api/locations/affiliates?city=${cityParam}`)
       const data = await response.json()
       setAffiliates(data.affiliates || [])
