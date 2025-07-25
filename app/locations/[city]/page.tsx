@@ -73,7 +73,7 @@ export default function CityPage() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   // Add state for bottom sheet open/height
   const [sheetOpen, setSheetOpen] = useState(true)
-  const [showBottomNav, setShowBottomNav] = useState(true) // Start with nav visible
+  // Remove showBottomNav state and all related logic
   
   // Simple function to check if sheet is at bottom position
   const checkSheetAtBottom = () => {
@@ -86,7 +86,7 @@ export default function CityPage() {
       
       // If sheet is very close to bottom (at 95% snap point), hide bottom nav
       const isAtBottom = translateY <= windowHeight * 0.1
-      setShowBottomNav(!isAtBottom) // This is correct - show nav when NOT at bottom
+      // setShowBottomNav(!isAtBottom) // This is correct - show nav when NOT at bottom
     }
   }
 
@@ -756,9 +756,7 @@ export default function CityPage() {
       </div>
 
       {/* Mobile Bottom Navigation Bar - Airbnb Style */}
-      <div className={`block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 transition-all duration-300 ${
-        showBottomNav ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`} style={{ zIndex: 9999 }}>
+      <div className="block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="flex items-center justify-around px-4 py-2">
           {/* Explore/Filter Button */}
           <button className="flex flex-col items-center py-2 px-3 text-red-600">
