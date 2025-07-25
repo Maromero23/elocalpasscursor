@@ -169,6 +169,25 @@ export async function POST(request: NextRequest) {
       
       emailHtml = processedTemplate
 
+      // Debug: Log the actual HTML being sent
+      console.log(`📧 DEBUG: Final HTML length: ${emailHtml.length} characters`)
+      console.log(`📧 DEBUG: Contains countdown-timer: ${emailHtml.includes('countdown-timer')}`)
+      console.log(`📧 DEBUG: Contains updateCountdown: ${emailHtml.includes('updateCountdown')}`)
+      console.log(`📧 DEBUG: Contains qrExpirationTimestamp: ${emailHtml.includes('qrExpirationTimestamp')}`)
+      console.log(`📧 DEBUG: QR expiration ISO: ${qrCode.expiresAt.toISOString()}`)
+      
+      // Check if the timestamp replacement worked
+      const timestampPattern = /new Date\(['"`]([^'"`]+)['"`]\)/g
+      const timestampMatches = emailHtml.match(timestampPattern)
+      if (timestampMatches) {
+        console.log(`📧 DEBUG: Found timestamp patterns: ${timestampMatches.length}`)
+        timestampMatches.forEach((match, index) => {
+          console.log(`  ${index + 1}: ${match}`)
+        })
+      } else {
+        console.log(`📧 DEBUG: No timestamp patterns found in HTML`)
+      }
+
       // Get subject from rebuy config if available
       if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
         const originalSubject = emailTemplates.rebuyEmail.rebuyConfig.emailSubject
