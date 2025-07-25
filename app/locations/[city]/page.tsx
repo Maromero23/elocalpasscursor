@@ -73,6 +73,8 @@ export default function CityPage() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   // Add state for bottom sheet open/height
   const [sheetOpen, setSheetOpen] = useState(true)
+  const [sheetPosition, setSheetPosition] = useState(0.6) // Track current position (0.25, 0.6, or 0.95)
+  const [showBottomNav, setShowBottomNav] = useState(true)
 
   const cityId = params.city as string
   const cityInfo = cityId === 'all-cities' ? { name: 'all-cities', displayName: 'All Cities' } : cityMap[cityId as keyof typeof cityMap]
@@ -279,6 +281,25 @@ export default function CityPage() {
     setCurrentPage(1)
   }, [searchTerm, typeFilter, categoryFilter, ratingFilter, recommendedFilter])
 
+  // Monitor bottom sheet position and hide/show bottom navigation
+  useEffect(() => {
+    const checkSheetPosition = () => {
+      const sheetElement = document.querySelector('[data-rsbs-overlay]')
+      if (sheetElement) {
+        const transform = window.getComputedStyle(sheetElement).transform
+        const matrix = new DOMMatrix(transform)
+        const translateY = matrix.m42
+        const windowHeight = window.innerHeight
+        const isAtBottom = translateY <= windowHeight * 0.1 // Close to bottom
+        setShowBottomNav(!isAtBottom)
+      }
+    }
+
+    // Check position periodically
+    const interval = setInterval(checkSheetPosition, 100)
+    return () => clearInterval(interval)
+  }, [])
+
   const categories = Array.from(new Set(
     affiliates
       .map(a => a.category)
@@ -336,6 +357,7 @@ export default function CityPage() {
           onDismiss={() => setSheetOpen(false)}
           snapPoints={({ maxHeight }) => [maxHeight * 0.25, maxHeight * 0.6, maxHeight * 0.95]}
           defaultSnap={({ maxHeight }) => maxHeight * 0.6}
+
           header={
             <div className="flex flex-col items-center py-2">
               <div className="w-10 h-1.5 bg-gray-300 rounded-full mb-2" />
@@ -731,7 +753,9 @@ export default function CityPage() {
       </div>
 
       {/* Mobile Bottom Navigation Bar - Airbnb Style */}
-      <div className="block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <div className={`block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 transition-transform duration-300 ${
+        showBottomNav ? 'translate-y-0' : 'translate-y-full'
+      }`}>
         <div className="flex items-center justify-around px-4 py-2">
           {/* Explore/Filter Button */}
           <button className="flex flex-col items-center py-2 px-3 text-red-600">
