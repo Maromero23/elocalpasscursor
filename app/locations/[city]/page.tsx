@@ -355,11 +355,22 @@ export default function CityPage() {
 
       {/* Draggable Bottom Sheet for Mobile */}
       <div className="block md:hidden fixed inset-x-0 bottom-0 z-30">
+        {/* Floating button to bring back sheet if hidden */}
+        {!sheetOpen && (
+          <button
+            onClick={() => setSheetOpen(true)}
+            className="fixed bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg z-50"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+            </svg>
+          </button>
+        )}
         <BottomSheet
           open={sheetOpen}
-          onDismiss={() => setSheetOpen(false)}
+          onDismiss={() => setSheetOpen(true)} // Prevent dismissal - always keep it open
           snapPoints={({ maxHeight }) => [80, maxHeight * 0.6, maxHeight * 0.95]}
-          defaultSnap={({ maxHeight }) => maxHeight * 0.6}
+          defaultSnap={({ maxHeight }) => 80} // Start collapsed (showing menu)
           header={
             <div className="flex flex-col items-center py-2">
               <div className="w-10 h-1.5 bg-gray-300 rounded-full mb-2" />
