@@ -166,6 +166,61 @@ export default function CityPage() {
     }
   }, [cityId]) // Use cityId instead of cityInfo for more stable dependency
 
+  // Prevent pull-to-refresh globally when detail view is open
+  useEffect(() => {
+    if (showAffiliateDetail) {
+      // Store original values
+      const originalBodyOverscroll = document.body.style.overscrollBehavior
+      const originalBodyTouchAction = document.body.style.touchAction
+      const originalHtmlOverscroll = document.documentElement.style.overscrollBehavior
+      const originalHtmlTouchAction = document.documentElement.style.touchAction
+      
+      // Apply prevention styles
+      document.body.style.overscrollBehavior = 'none'
+      document.body.style.touchAction = 'pan-x pan-down pinch-zoom'
+      document.documentElement.style.overscrollBehavior = 'none'
+      document.documentElement.style.touchAction = 'pan-x pan-down pinch-zoom'
+      
+      // Global touchstart prevention
+      const preventPullToRefresh = (e: TouchEvent) => {
+        // Only prevent if we're at the top of the page and swiping down
+        if (window.scrollY === 0 && e.touches.length === 1) {
+          const touch = e.touches[0]
+          const startY = touch.clientY
+          
+          const handleTouchMove = (moveEvent: TouchEvent) => {
+            const moveTouch = moveEvent.touches[0]
+            const deltaY = moveTouch.clientY - startY
+            
+            // If swiping down from top, prevent default
+            if (deltaY > 0) {
+              moveEvent.preventDefault()
+            }
+          }
+          
+          const handleTouchEnd = () => {
+            document.removeEventListener('touchmove', handleTouchMove, { passive: false } as any)
+            document.removeEventListener('touchend', handleTouchEnd)
+          }
+          
+          document.addEventListener('touchmove', handleTouchMove, { passive: false })
+          document.addEventListener('touchend', handleTouchEnd)
+        }
+      }
+      
+      document.addEventListener('touchstart', preventPullToRefresh, { passive: false })
+      
+      return () => {
+        // Restore original values
+        document.body.style.overscrollBehavior = originalBodyOverscroll
+        document.body.style.touchAction = originalBodyTouchAction
+        document.documentElement.style.overscrollBehavior = originalHtmlOverscroll
+        document.documentElement.style.touchAction = originalHtmlTouchAction
+        document.removeEventListener('touchstart', preventPullToRefresh)
+      }
+    }
+  }, [showAffiliateDetail])
+
   const fetchAffiliates = async () => {
     try {
       setLoading(true)
@@ -417,16 +472,10 @@ export default function CityPage() {
                 const touch = e.touches[0]
                 setStartY(touch.clientY)
                 setIsSwipingDown(true)
-                // Prevent pull-to-refresh
-                document.body.style.overscrollBehavior = 'none'
-                document.body.style.touchAction = 'none'
               }
             }}
             onTouchMove={(e) => {
               if (!isSwipingDown || window.scrollY > 0) return
-              
-              e.preventDefault()
-              e.stopPropagation()
               
               const touch = e.touches[0]
               const deltaY = touch.clientY - startY
@@ -440,13 +489,6 @@ export default function CityPage() {
             }}
             onTouchEnd={(e) => {
               if (!isSwipingDown) return
-              
-              e.preventDefault()
-              e.stopPropagation()
-              
-              // Reset body styles
-              document.body.style.overscrollBehavior = 'auto'
-              document.body.style.touchAction = 'auto'
               
               // If swiped down enough, close the detail view
               if (swipeOffset > 100) {
