@@ -7,6 +7,8 @@ import { useTranslation } from '../../../contexts/LanguageContext'
 import GoogleMap from '../../../components/GoogleMap'
 import AffiliateModal from '../../../components/AffiliateModal'
 import { Affiliate } from '../../../types/affiliate'
+import { BottomSheet } from 'react-spring-bottom-sheet'
+import 'react-spring-bottom-sheet/dist/style.css'
 
 const cityMap = {
   'bacalar': { name: 'Bacalar', displayName: 'Bacalar' },
@@ -69,6 +71,8 @@ export default function CityPage() {
   const [retryCount, setRetryCount] = useState(0)
   const [hoveredAffiliate, setHoveredAffiliate] = useState<string | null>(null)
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
+  // Add state for bottom sheet open/height
+  const [sheetOpen, setSheetOpen] = useState(true)
 
   const cityId = params.city as string
   const cityInfo = cityId === 'all-cities' ? { name: 'all-cities', displayName: 'All Cities' } : cityMap[cityId as keyof typeof cityMap]
@@ -309,223 +313,126 @@ export default function CityPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Desktop Top Bar - Hidden on Mobile */}
-      <div className="hidden lg:block bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-center">
-          {/* Back Arrow with Home Text */}
-          <a 
-            href="/" 
-            className="absolute left-4 flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            <span className="font-medium">Home</span>
-          </a>
-
-          {/* Centered Filter Menu */}
-          <div className="flex items-center space-x-2">
-            {/* Search Filter */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder={language === 'es' ? 'Buscar...' : 'Search...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-32 sm:w-40"
-              />
-            </div>
-
-            {/* City Filter */}
-            <select
-              value={cityId || ''}
-              onChange={e => {
-                if (loading) return // Prevent switching while loading
-                
-                if (e.target.value === 'all-cities') {
-                  // For all cities, update URL and fetch all affiliates
-                  window.history.pushState({}, '', '/locations/all-cities')
-                  // Force a page reload to update the component state
-                  window.location.reload()
-                } else {
-                  window.location.href = `/locations/${e.target.value}`
-                }
-              }}
-              disabled={loading}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="all-cities">
-                {language === 'es' ? 'Todas las ciudades' : 'All cities'} 
-                {stats?.totalStats ? ` (${stats.totalStats.total})` : ''}
-              </option>
-              {Object.entries(cityMap).map(([slug, info]) => (
-                <option key={slug} value={slug}>
-                  {info.displayName}
-                  {stats?.cityStats?.[slug] ? ` (${stats.cityStats[slug].total})` : ''}
-                </option>
-              ))}
-            </select>
-
-            {/* Type Filter - Restored Original Options */}
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-            >
-              <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
-              {normalizedTypes.map(type => {
-                const displayType = getDisplayType(type)
-                // Use total stats if we're on "all cities", otherwise use city stats
-                const currentCityStats = cityId === 'all-cities' 
-                  ? stats?.totalStats 
-                  : stats?.cityStats?.[cityId]
-                const typeCount = currentCityStats?.types?.[type.toLowerCase()] || 0
-                return (
-                  <option key={type} value={type}>
-                    {displayType} ({typeCount})
-                  </option>
-                )
-              })}
-            </select>
-
-            {/* Category Filter - Restored Original Options with Alphabetical Order */}
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-            >
-              <option value="">{language === 'es' ? 'Todas las categorías' : 'All categories'}</option>
-              {categories.sort().map((category) => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-
-            {/* Rating Filter - Restored Original Options */}
-            <select
-              value={ratingFilter}
-              onChange={(e) => setRatingFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-            >
-              <option value="">{language === 'es' ? 'Cualquier calificación' : 'Any rating'}</option>
-              <option value="4.5">4.5+ ⭐</option>
-              <option value="4.0">4.0+ ⭐</option>
-              <option value="3.5">3.5+ ⭐</option>
-              <option value="3.0">3.0+ ⭐</option>
-            </select>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Map always in the background */}
+      <div className="fixed inset-0 z-0">
+        <GoogleMap
+          affiliates={filteredAffiliates}
+          userLocation={userLocation}
+          selectedAffiliate={selectedAffiliate}
+          hoveredAffiliate={hoveredAffiliate}
+          onAffiliateClick={(affiliate) => {
+            setSelectedAffiliate(affiliate)
+            setModalAffiliate(affiliate)
+            setIsModalOpen(true)
+          }}
+        />
       </div>
 
-      {/* Mobile Top Bar - Removed for Airbnb-style layout */}
-
-      {/* Tablet/Medium Screen Top Bar - Hidden on Mobile and Desktop */}
-      <div className="hidden md:block lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-center">
-          {/* Back Arrow with Home Text */}
-          <a 
-            href="/" 
-            className="absolute left-4 flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            <span className="font-medium">Home</span>
-          </a>
-
-          {/* Centered Filter Menu */}
-          <div className="flex items-center space-x-2">
-            {/* Search Filter */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder={language === 'es' ? 'Buscar...' : 'Search...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-32 sm:w-40"
-              />
+      {/* Draggable Bottom Sheet for Mobile */}
+      <div className="block md:hidden fixed inset-x-0 bottom-0 z-10">
+        <BottomSheet
+          open={sheetOpen}
+          onDismiss={() => setSheetOpen(false)}
+          snapPoints={({ maxHeight }) => [maxHeight * 0.25, maxHeight * 0.6, maxHeight * 0.95]}
+          defaultSnap={({ maxHeight }) => maxHeight * 0.6}
+          header={
+            <div className="flex flex-col items-center py-2">
+              <div className="w-10 h-1.5 bg-gray-300 rounded-full mb-2" />
+              <div className="text-base font-semibold text-gray-900">
+                {filteredAffiliates.length} {language === 'es' ? 'Afiliados' : 'Affiliates'}
+              </div>
             </div>
-
-            {/* City Filter */}
-            <select
-              value={cityId || ''}
-              onChange={e => {
-                if (loading) return // Prevent switching while loading
-                
-                if (e.target.value === 'all-cities') {
-                  // For all cities, update URL and fetch all affiliates
-                  window.history.pushState({}, '', '/locations/all-cities')
-                  // Force a page reload to update the component state
-                  window.location.reload()
-                } else {
-                  window.location.href = `/locations/${e.target.value}`
-                }
-              }}
-              disabled={loading}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="all-cities">
-                {language === 'es' ? 'Todas las ciudades' : 'All cities'} 
-                {stats?.totalStats ? ` (${stats.totalStats.total})` : ''}
-              </option>
-              {Object.entries(cityMap).map(([slug, info]) => (
-                <option key={slug} value={slug}>
-                  {info.displayName}
-                  {stats?.cityStats?.[slug] ? ` (${stats.cityStats[slug].total})` : ''}
-                </option>
+          }
+        >
+          <div className="px-2 pb-8">
+            <div className="grid grid-cols-1 gap-4">
+              {currentAffiliates.map((affiliate) => (
+                <div
+                  key={affiliate.id}
+                  className={`bg-white rounded-lg shadow-sm border overflow-hidden transition-all cursor-pointer ${
+                    selectedAffiliate?.id === affiliate.id
+                      ? 'border-orange-500 shadow-lg'
+                      : 'border-gray-200 hover:border-orange-400 hover:shadow-md'
+                  }`}
+                  onClick={() => {
+                    setSelectedAffiliate(affiliate)
+                    setModalAffiliate(affiliate)
+                    setIsModalOpen(true)
+                  }}
+                >
+                  <div className="relative h-40 bg-gray-100 flex items-center justify-center">
+                    {affiliate.logo ? (
+                      <img
+                        src={convertGoogleDriveUrl(affiliate.logo)}
+                        alt={affiliate.name}
+                        className="w-32 h-32 object-contain rounded-xl"
+                        style={{ borderRadius: '12px', minWidth: '128px', minHeight: '128px', maxWidth: '128px', maxHeight: '128px' }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          target.nextElementSibling?.classList.remove('hidden')
+                        }}
+                      />
+                    ) : null}
+                    <div className={`absolute inset-0 flex items-center justify-center text-gray-400 ${affiliate.logo ? 'hidden' : ''}`}>
+                      <MapPin className="w-10 h-10" />
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <div className="flex items-start justify-between mb-1">
+                      <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">
+                        {affiliate.name}
+                      </h3>
+                      <div className="flex items-center ml-2">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="text-sm text-gray-600 ml-1">
+                          {affiliate.rating || 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                    {affiliate.description && (
+                      <div className="text-xs text-gray-600 mb-2 line-clamp-2">
+                        {affiliate.description}
+                      </div>
+                    )}
+                    {affiliate.discount && (
+                      <div className="mb-2">
+                        <div className="text-base font-bold text-orange-600">
+                          {affiliate.discount}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               ))}
-            </select>
-
-            {/* Type Filter - Restored Original Options */}
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-            >
-              <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
-              {normalizedTypes.map(type => {
-                const displayType = getDisplayType(type)
-                // Use total stats if we're on "all cities", otherwise use city stats
-                const currentCityStats = cityId === 'all-cities' 
-                  ? stats?.totalStats 
-                  : stats?.cityStats?.[cityId]
-                const typeCount = currentCityStats?.types?.[type.toLowerCase()] || 0
-                return (
-                  <option key={type} value={type}>
-                    {displayType} ({typeCount})
-                  </option>
-                )
-              })}
-            </select>
-
-            {/* Category Filter - Restored Original Options with Alphabetical Order */}
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-            >
-              <option value="">{language === 'es' ? 'Todas las categorías' : 'All categories'}</option>
-              {categories.sort().map((category) => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-
-            {/* Rating Filter - Restored Original Options */}
-            <select
-              value={ratingFilter}
-              onChange={(e) => setRatingFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-            >
-              <option value="">{language === 'es' ? 'Cualquier calificación' : 'Any rating'}</option>
-              <option value="4.5">4.5+ ⭐</option>
-              <option value="4.0">4.0+ ⭐</option>
-              <option value="3.5">3.5+ ⭐</option>
-              <option value="3.0">3.0+ ⭐</option>
-            </select>
+            </div>
+            {/* Pagination (if needed) */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center space-x-2 mt-4 mb-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-xs border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700"
+                >
+                  {language === 'es' ? 'Anterior' : 'Previous'}
+                </button>
+                <span className="text-xs text-gray-500">{currentPage} / {totalPages}</span>
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-xs border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-gray-700"
+                >
+                  {language === 'es' ? 'Siguiente' : 'Next'}
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+        </BottomSheet>
       </div>
 
-      {/* Main Content - Shifted Up */}
-      <div className="flex flex-col lg:flex-row h-screen bg-gray-50 pb-20 md:pb-0 lg:pb-0">
+      {/* Desktop/Tablet Layout (unchanged) */}
+      <div className="hidden md:flex flex-col lg:flex-row h-screen bg-gray-50 pb-20 md:pb-0 lg:pb-0">
         {/* Left Side - Affiliate Grid (Responsive Layout) */}
         <div className="w-full lg:w-[65%] pl-4 sm:pl-6 lg:pl-8 order-2 lg:order-1 bg-gray-50 overflow-y-auto">
           <div className="flex justify-between items-center mb-4">

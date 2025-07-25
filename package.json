@@ -1,6 +1,6 @@
 {
   "name": "elocalpass",
-  "version": "3.39.96",
+  "version": "3.39.97",
   "description": "ELocalPass - Local Business QR Code Management System",
   "private": true,
   "scripts": {
@@ -42,6 +42,7 @@
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.53.2",
+    "react-spring-bottom-sheet": "^3.4.1",
     "sqlite3": "^5.1.7",
     "uuid": "^10.0.0",
     "zod": "^3.23.8"
