@@ -77,6 +77,11 @@ export default function CityPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [startY, setStartY] = useState(0)
   const [startPosition, setStartPosition] = useState(0)
+  
+  // Smooth page transition state
+  const [showAffiliateDetail, setShowAffiliateDetail] = useState(false)
+  const [detailAffiliate, setDetailAffiliate] = useState<Affiliate | null>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
 
   const cityId = params.city as string
@@ -394,8 +399,254 @@ export default function CityPage() {
         />
       </div>
 
+      {/* Affiliate Detail View - Full Screen */}
+      {showAffiliateDetail && detailAffiliate && (
+        <div className="fixed inset-0 bg-white z-50 block md:hidden">
+          <div className="h-full overflow-y-auto">
+            {/* Header with back functionality */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
+              <div className="flex items-center justify-between p-4">
+                <button
+                  onClick={() => {
+                    setIsTransitioning(true)
+                    setShowAffiliateDetail(false)
+                    setTimeout(() => {
+                      setDetailAffiliate(null)
+                      setIsTransitioning(false)
+                    }, 300)
+                  }}
+                  className="p-2 -ml-2 rounded-full hover:bg-gray-100"
+                >
+                  <ArrowLeft className="w-6 h-6 text-gray-700" />
+                </button>
+                <h1 className="text-lg font-semibold text-gray-900 truncate mx-4">
+                  {detailAffiliate.name}
+                </h1>
+                <div className="w-10"></div> {/* Spacer for centering */}
+              </div>
+            </div>
+
+            {/* Swipe down detector */}
+            <div 
+              className="absolute top-16 left-0 right-0 h-12 z-20"
+              onTouchStart={(e) => {
+                const touch = e.touches[0]
+                setStartY(touch.clientY)
+                setIsDragging(true)
+              }}
+              onTouchMove={(e) => {
+                if (!isDragging) return
+                const touch = e.touches[0]
+                const deltaY = touch.clientY - startY
+                
+                // Only allow swipe down
+                if (deltaY > 50 && window.scrollY === 0) {
+                  e.preventDefault()
+                  setIsTransitioning(true)
+                  setShowAffiliateDetail(false)
+                  setTimeout(() => {
+                    setDetailAffiliate(null)
+                    setIsTransitioning(false)
+                    setIsDragging(false)
+                  }, 300)
+                }
+              }}
+              onTouchEnd={() => {
+                setIsDragging(false)
+              }}
+            />
+
+            {/* Main Content */}
+            <div className="pb-20">
+              {/* Hero Image */}
+              <div className="relative h-64 bg-gray-100 flex items-center justify-center">
+                {detailAffiliate.logo ? (
+                  <img
+                    src={convertGoogleDriveUrl(detailAffiliate.logo)}
+                    alt={detailAffiliate.name}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <MapPin className="w-16 h-16 text-gray-400" />
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {/* Title and Rating */}
+                <div className="flex items-start justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-gray-900 flex-1">
+                    {detailAffiliate.name}
+                  </h2>
+                  {detailAffiliate.rating && (
+                    <div className="flex items-center ml-4 bg-gray-100 px-3 py-1 rounded-full">
+                      <Star className="w-4 h-4 text-yellow-400 fill-current mr-1" />
+                      <span className="text-sm font-medium text-gray-700">
+                        {detailAffiliate.rating}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Category and Type */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {detailAffiliate.type && (
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                      {detailAffiliate.type}
+                    </span>
+                  )}
+                  {detailAffiliate.category && (
+                    <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                      {detailAffiliate.category}
+                    </span>
+                  )}
+                  {detailAffiliate.recommended && (
+                    <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full flex items-center">
+                      <Heart className="w-3 h-3 mr-1" />
+                      {language === 'es' ? 'Recomendado' : 'Recommended'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Discount */}
+                {detailAffiliate.discount && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-white text-sm font-bold">%</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-orange-900">
+                          {language === 'es' ? 'Oferta Especial' : 'Special Offer'}
+                        </h3>
+                        <p className="text-orange-800 font-medium">
+                          {detailAffiliate.discount}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Description */}
+                {detailAffiliate.description && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                      {language === 'es' ? 'Descripción' : 'Description'}
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">
+                      {detailAffiliate.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Contact Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {language === 'es' ? 'Información de Contacto' : 'Contact Information'}
+                  </h3>
+                  
+                  {detailAffiliate.address && (
+                    <div className="flex items-start">
+                      <MapPin className="w-5 h-5 text-gray-400 mt-0.5 mr-3" />
+                      <div>
+                        <p className="text-gray-700">{detailAffiliate.address}</p>
+                        {detailAffiliate.city && (
+                          <p className="text-gray-500 text-sm">{detailAffiliate.city}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {detailAffiliate.workPhone && (
+                    <div className="flex items-center">
+                      <Phone className="w-5 h-5 text-gray-400 mr-3" />
+                      <a 
+                        href={`tel:${detailAffiliate.workPhone}`}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        {detailAffiliate.workPhone}
+                      </a>
+                    </div>
+                  )}
+
+                  {detailAffiliate.whatsApp && (
+                    <div className="flex items-center">
+                      <Phone className="w-5 h-5 text-gray-400 mr-3" />
+                      <a 
+                        href={`https://wa.me/${detailAffiliate.whatsApp.replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-800"
+                      >
+                        WhatsApp: {detailAffiliate.whatsApp}
+                      </a>
+                    </div>
+                  )}
+
+                  {detailAffiliate.web && (
+                    <div className="flex items-center">
+                      <Globe className="w-5 h-5 text-gray-400 mr-3" />
+                      <a 
+                        href={detailAffiliate.web}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 truncate"
+                      >
+                        {detailAffiliate.web}
+                      </a>
+                    </div>
+                  )}
+
+                  {detailAffiliate.facebook && (
+                    <div className="flex items-center">
+                      <Globe className="w-5 h-5 text-gray-400 mr-3" />
+                      <a 
+                        href={detailAffiliate.facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        Facebook
+                      </a>
+                    </div>
+                  )}
+
+                  {detailAffiliate.instagram && (
+                    <div className="flex items-center">
+                      <Globe className="w-5 h-5 text-gray-400 mr-3" />
+                      <a 
+                        href={detailAffiliate.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-pink-600 hover:text-pink-800"
+                      >
+                        Instagram
+                      </a>
+                    </div>
+                  )}
+
+                  {detailAffiliate.maps && (
+                    <div className="flex items-center">
+                      <Map className="w-5 h-5 text-gray-400 mr-3" />
+                      <a 
+                        href={detailAffiliate.maps}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        {language === 'es' ? 'Ver en Google Maps' : 'View on Google Maps'}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Airbnb-Style Layout */}
-      <div className="block md:hidden">
+      <div className={`block md:hidden transition-opacity duration-300 ${showAffiliateDetail ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {/* Fixed Bottom Navigation */}
         <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 transition-opacity duration-300 ${
           sheetPosition <= 10 ? 'opacity-0 pointer-events-none' : 'opacity-100'
@@ -483,8 +734,12 @@ export default function CityPage() {
                       }`}
                       onClick={() => {
                         setSelectedAffiliate(affiliate)
-                        setModalAffiliate(affiliate)
-                        setIsModalOpen(true)
+                        setDetailAffiliate(affiliate)
+                        setIsTransitioning(true)
+                        setTimeout(() => {
+                          setShowAffiliateDetail(true)
+                          setIsTransitioning(false)
+                        }, 300)
                       }}
                     >
                       <div className="relative h-40 bg-gray-100 flex items-center justify-center">
@@ -559,7 +814,18 @@ export default function CityPage() {
               // Default/Collapsed view - Single preview card
               <div className="px-4">
                 {currentAffiliates.length > 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <div 
+                    className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer"
+                    onClick={() => {
+                      setSelectedAffiliate(currentAffiliates[0])
+                      setDetailAffiliate(currentAffiliates[0])
+                      setIsTransitioning(true)
+                      setTimeout(() => {
+                        setShowAffiliateDetail(true)
+                        setIsTransitioning(false)
+                      }, 300)
+                    }}
+                  >
                     <div className="relative h-48 bg-gray-100 flex items-center justify-center">
                       {currentAffiliates[0].logo ? (
                         <img
