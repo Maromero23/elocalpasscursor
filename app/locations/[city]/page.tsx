@@ -331,9 +331,111 @@ export default function CityPage() {
         />
       </div>
 
-      {/* Clean Mobile Layout - Starting Fresh */}
+      {/* Mobile Airbnb-Style Layout */}
       <div className="block md:hidden">
-        {/* We'll build a new, simple mobile interface here */}
+        {/* Fixed Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+          <div className="flex items-center justify-around px-4 py-2">
+            <button className="flex flex-col items-center py-2 px-3 text-red-600">
+              <svg className="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+              </svg>
+              <span className="text-xs font-medium">Explore</span>
+            </button>
+            <button 
+              onClick={() => setIsFilterModalOpen(true)}
+              className="flex flex-col items-center py-2 px-3 text-gray-600"
+            >
+              <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              <span className="text-xs font-medium">Wishlists</span>
+            </button>
+            <button className="flex flex-col items-center py-2 px-3 text-gray-600">
+              <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+              </svg>
+              <span className="text-xs font-medium">Trips</span>
+            </button>
+            <button className="flex flex-col items-center py-2 px-3 text-gray-600">
+              <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+              <span className="text-xs font-medium">Messages</span>
+            </button>
+            <button className="flex flex-col items-center py-2 px-3 text-gray-600">
+              <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+              <span className="text-xs font-medium">Profile</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Draggable Affiliate Sheet */}
+        <div className="fixed inset-x-0 bottom-20 bg-white rounded-t-2xl shadow-2xl z-40 transition-transform duration-300" 
+             style={{ height: '60vh', transform: 'translateY(40vh)' }}>
+          {/* Drag Handle */}
+          <div className="flex justify-center py-2">
+            <div className="w-10 h-1.5 bg-gray-300 rounded-full"></div>
+          </div>
+          
+          {/* Sheet Header */}
+          <div className="px-4 pb-2">
+            <div className="text-lg font-semibold text-gray-900">
+              {filteredAffiliates.length} {language === 'es' ? 'Afiliados' : 'Affiliates'}
+            </div>
+          </div>
+
+          {/* Affiliate Preview Card */}
+          <div className="px-4">
+            {currentAffiliates.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="relative h-48 bg-gray-100 flex items-center justify-center">
+                  {currentAffiliates[0].logo ? (
+                    <img
+                      src={convertGoogleDriveUrl(currentAffiliates[0].logo)}
+                      alt={currentAffiliates[0].name}
+                      className="w-40 h-40 object-contain rounded-xl"
+                      style={{ borderRadius: '12px', minWidth: '160px', minHeight: '160px', maxWidth: '160px', maxHeight: '160px' }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                        target.nextElementSibling?.classList.remove('hidden')
+                      }}
+                    />
+                  ) : null}
+                  <div className={`absolute inset-0 flex items-center justify-center text-gray-400 ${currentAffiliates[0].logo ? 'hidden' : ''}`}>
+                    <MapPin className="w-12 h-12" />
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-semibold text-gray-900 text-base">
+                      {currentAffiliates[0].name}
+                    </h3>
+                    <div className="flex items-center ml-2">
+                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                      <span className="text-sm text-gray-600 ml-1">
+                        {currentAffiliates[0].rating || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  {currentAffiliates[0].description && (
+                    <div className="text-sm text-gray-600 mb-3 line-clamp-2">
+                      {currentAffiliates[0].description}
+                    </div>
+                  )}
+                  {currentAffiliates[0].discount && (
+                    <div className="text-lg font-bold text-orange-600">
+                      {currentAffiliates[0].discount}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Desktop/Tablet Layout (unchanged) */}
