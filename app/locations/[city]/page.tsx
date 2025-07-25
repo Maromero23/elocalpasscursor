@@ -291,14 +291,10 @@ export default function CityPage() {
         const translateY = matrix.m42
         const windowHeight = window.innerHeight
         
-        // Bottom navigation height is approximately 80px (py-2 + icons + text)
-        const bottomNavHeight = 80
-        const bottomNavTop = windowHeight - bottomNavHeight
-        
-        // Hide bottom nav when sheet reaches the bottom nav's position
-        // Show it again when sheet moves above the bottom nav
-        const isSheetAtBottomNav = translateY <= bottomNavTop
-        setShowBottomNav(!isSheetAtBottomNav)
+        // When sheet is at its lowest position (95% snap point), hide bottom nav
+        // This allows the sheet to completely replace the bottom navigation
+        const isAtLowestPosition = translateY <= windowHeight * 0.05 // Very close to bottom
+        setShowBottomNav(!isAtLowestPosition)
       }
     }
 
@@ -761,7 +757,7 @@ export default function CityPage() {
 
       {/* Mobile Bottom Navigation Bar - Airbnb Style */}
       <div className={`block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 transition-all duration-300 ${
-        showBottomNav ? 'opacity-100 pointer-events-auto z-50' : 'opacity-0 pointer-events-none z-10'
+        showBottomNav ? 'opacity-100 pointer-events-auto z-50' : 'opacity-0 pointer-events-none z-10 transform translate-y-full'
       }`}>
         <div className="flex items-center justify-around px-4 py-2">
           {/* Explore/Filter Button */}
