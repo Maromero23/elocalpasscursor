@@ -4,6 +4,14 @@ import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../components/auth/protected-route"
 import Link from "next/link"
 import { Building2, Users, MapPin, QrCode, TrendingUp, Eye, Clock, DollarSign } from "lucide-react"
+import { useState, useEffect } from "react"
+
+interface DashboardStats {
+  totalDistributors: number
+  activeLocations: number
+  qrCodesIssued: number
+  monthlyRevenue: number
+}
 
 const getNavItems = (userRole: string) => {
   if (userRole === "ADMIN") {
@@ -25,6 +33,36 @@ const getNavItems = (userRole: string) => {
 export default function AdminPage() {
   const { data: session } = useSession()
   const navItems = getNavItems(session?.user?.role || "")
+  const [stats, setStats] = useState<DashboardStats>({
+    totalDistributors: 0,
+    activeLocations: 0,
+    qrCodesIssued: 0,
+    monthlyRevenue: 0
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchDashboardStats()
+  }, [])
+
+  const fetchDashboardStats = async () => {
+    try {
+      const response = await fetch('/api/admin/dashboard-stats')
+      const data = await response.json()
+      setStats(data)
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount)
+  }
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
@@ -85,7 +123,7 @@ export default function AdminPage() {
                           Total Distributors
                         </dt>
                         <dd className="text-lg font-medium text-gray-900">
-                          -
+                          {loading ? '-' : stats.totalDistributors.toLocaleString()}
                         </dd>
                       </dl>
                     </div>
@@ -103,7 +141,7 @@ export default function AdminPage() {
                           Active Locations
                         </dt>
                         <dd className="text-lg font-medium text-gray-900">
-                          -
+                          {loading ? '-' : stats.activeLocations.toLocaleString()}
                         </dd>
                       </dl>
                     </div>
@@ -121,7 +159,7 @@ export default function AdminPage() {
                           QR Codes Issued
                         </dt>
                         <dd className="text-lg font-medium text-gray-900">
-                          -
+                          {loading ? '-' : stats.qrCodesIssued.toLocaleString()}
                         </dd>
                       </dl>
                     </div>
@@ -139,7 +177,7 @@ export default function AdminPage() {
                           Monthly Revenue
                         </dt>
                         <dd className="text-lg font-medium text-gray-900">
-                          -
+                          {loading ? '-' : formatCurrency(stats.monthlyRevenue)}
                         </dd>
                       </dl>
                     </div>
