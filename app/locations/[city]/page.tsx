@@ -613,7 +613,11 @@ export default function CityPage() {
       <div className="hidden md:flex flex-col lg:flex-row h-screen bg-gray-50 pb-20 md:pb-0 lg:pb-0">
         {/* Left Side - Affiliate Grid (Responsive Layout) */}
         <div className="w-full lg:w-[65%] pl-4 sm:pl-6 lg:pl-8 order-2 lg:order-1 bg-gray-50 overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
+          {/* Header with location info */}
+          <div className="flex justify-between items-center mb-4 pt-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {cityInfo.displayName}
+            </h1>
             {userLocation && (
               <div className="flex items-center text-sm text-gray-600">
                 <MapPin className="w-4 h-4 mr-1" />
@@ -623,19 +627,123 @@ export default function CityPage() {
                 </span>
               </div>
             )}
-            
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setRecommendedFilter(!recommendedFilter)}
-                className={`flex items-center px-3 py-1 text-sm rounded-full transition-colors ${
-                  recommendedFilter
-                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                    : 'bg-gray-100 text-gray-600 border border-gray-300'
-                }`}
-              >
-                <Heart className="w-4 h-4 mr-1" />
-                {language === 'es' ? 'Recomendados' : 'Recommended'}
-              </button>
+          </div>
+
+          {/* Desktop Filter Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {language === 'es' ? 'Buscar' : 'Search'}
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder={language === 'es' ? 'Buscar negocios...' : 'Search businesses...'}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Filter Row */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Type Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {language === 'es' ? 'Tipo' : 'Type'}
+                  </label>
+                  <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  >
+                    <option value="">{language === 'es' ? 'Todos los tipos' : 'All types'}</option>
+                    {normalizedTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Category Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {language === 'es' ? 'Categoría' : 'Category'}
+                  </label>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  >
+                    <option value="">{language === 'es' ? 'Todas las categorías' : 'All categories'}</option>
+                    {categories.map((category: string) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Rating Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {language === 'es' ? 'Calificación mínima' : 'Minimum rating'}
+                  </label>
+                  <select
+                    value={ratingFilter}
+                    onChange={(e) => setRatingFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  >
+                    <option value="">{language === 'es' ? 'Cualquier calificación' : 'Any rating'}</option>
+                    <option value="4">4+ ⭐</option>
+                    <option value="3">3+ ⭐</option>
+                    <option value="2">2+ ⭐</option>
+                  </select>
+                </div>
+
+                {/* Recommended Toggle */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {language === 'es' ? 'Filtros especiales' : 'Special filters'}
+                  </label>
+                  <button
+                    onClick={() => setRecommendedFilter(!recommendedFilter)}
+                    className={`w-full flex items-center justify-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      recommendedFilter
+                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                        : 'bg-gray-100 text-gray-600 border border-gray-300'
+                    }`}
+                  >
+                    <Heart className="w-4 h-4 mr-2" />
+                    {language === 'es' ? 'Recomendados' : 'Recommended'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Results count and clear filters */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                <div className="text-sm text-gray-600">
+                  {language === 'es' 
+                    ? `${filteredAffiliates.length} resultados encontrados`
+                    : `${filteredAffiliates.length} results found`
+                  }
+                </div>
+                {(searchTerm || typeFilter || categoryFilter || ratingFilter || recommendedFilter) && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('')
+                      setTypeFilter('')
+                      setCategoryFilter('')
+                      setRatingFilter('')
+                      setRecommendedFilter(false)
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    {language === 'es' ? 'Limpiar filtros' : 'Clear filters'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
