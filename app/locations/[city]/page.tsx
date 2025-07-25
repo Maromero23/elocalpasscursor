@@ -290,8 +290,11 @@ export default function CityPage() {
         const matrix = new DOMMatrix(transform)
         const translateY = matrix.m42
         const windowHeight = window.innerHeight
-        const isAtBottom = translateY <= windowHeight * 0.1 // Close to bottom
-        setShowBottomNav(!isAtBottom)
+        
+        // Only hide bottom nav when sheet is at absolute bottom (95% snap point)
+        // This ensures the drag handle remains visible and accessible
+        const isAtAbsoluteBottom = translateY <= windowHeight * 0.05 // Very close to bottom
+        setShowBottomNav(!isAtAbsoluteBottom)
       }
     }
 
@@ -355,7 +358,7 @@ export default function CityPage() {
         <BottomSheet
           open={sheetOpen}
           onDismiss={() => setSheetOpen(false)}
-          snapPoints={({ maxHeight }) => [maxHeight * 0.25, maxHeight * 0.6, maxHeight * 0.95]}
+          snapPoints={({ maxHeight }) => [maxHeight * 0.25, maxHeight * 0.6, maxHeight * 0.85]}
           defaultSnap={({ maxHeight }) => maxHeight * 0.6}
 
           header={
@@ -367,7 +370,7 @@ export default function CityPage() {
             </div>
           }
         >
-          <div className="px-2 pb-8">
+          <div className="px-2 pb-16">
             <div className="grid grid-cols-1 gap-4">
               {currentAffiliates.map((affiliate) => (
                 <div
