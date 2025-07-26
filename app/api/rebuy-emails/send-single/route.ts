@@ -259,44 +259,13 @@ export async function POST(request: NextRequest) {
             </div>
             ` : ''}
             
-            <!-- Countdown Timer (if enabled) - REAL JAVASCRIPT COUNTDOWN -->
+            <!-- Countdown Timer (if enabled) - EMAIL CLIENT COMPATIBLE STATIC -->
             ${config.showExpirationTimer !== false ? `
             <div class="countdown-timer">
                 <p>⏰ Time Remaining Until Expiration:</p>
-                <div class="countdown-display" id="countdown-display">{hoursLeft}:00:00</div>
-                <p class="countdown-label">hrs:min:sec</p>
+                <div class="countdown-display">{hoursLeft}:00:00</div>
+                <p class="countdown-label">hrs:min:sec (approximate)</p>
             </div>
-            <script>
-                // Real-time countdown timer
-                const expirationTime = new Date('{qrExpirationTimestamp}').getTime();
-                
-                function updateCountdown() {
-                    const now = new Date().getTime();
-                    const timeLeft = expirationTime - now;
-                    
-                    if (timeLeft <= 0) {
-                        document.getElementById('countdown-display').innerHTML = '00:00:00';
-                        return;
-                    }
-                    
-                    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                    
-                    const display = String(hours).padStart(2, '0') + ':' + 
-                                   String(minutes).padStart(2, '0') + ':' + 
-                                   String(seconds).padStart(2, '0');
-                    
-                    const countdownElement = document.getElementById('countdown-display');
-                    if (countdownElement) {
-                        countdownElement.innerHTML = display;
-                    }
-                }
-                
-                // Update immediately and then every second
-                updateCountdown();
-                setInterval(updateCountdown, 1000);
-            </script>
             ` : ''}
             
             <!-- Urgency Notice with Dynamic Countdown -->
