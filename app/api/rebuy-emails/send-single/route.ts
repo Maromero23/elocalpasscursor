@@ -88,7 +88,10 @@ export async function POST(request: NextRequest) {
       customerLanguage = 'en'
     }
     
-    // Generate customer portal URL for renewal
+    // Generate passes page URL for renewal (not customer portal)
+    let rebuyUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/passes`
+    
+    // Generate customer portal URL for customer support
     let customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCode.customerEmail}`
 
     // Calculate hours left until expiration
@@ -105,23 +108,24 @@ export async function POST(request: NextRequest) {
     console.log(`  - Has emailTemplates: ${!!emailTemplates}`)
     console.log(`  - Has rebuyEmail: ${!!emailTemplates?.rebuyEmail}`)
     
-    // Add seller tracking to customer portal URL if enabled
+    // Add seller tracking to rebuy URL if enabled
     if (emailTemplates?.rebuyEmail?.rebuyConfig?.enableSellerTracking) {
       const rebuyConfig = emailTemplates.rebuyEmail.rebuyConfig
       const trackingMethod = rebuyConfig.trackingMethod || 'url_param'
       
       if (trackingMethod === 'url_param' || trackingMethod === 'both') {
         // Add seller_id parameter to track which seller the customer came from
-        customerPortalUrl += `&seller_id=${qrCode.sellerId}`
-        console.log(`🔗 SINGLE REBUY EMAIL: Added seller tracking to URL: seller_id=${qrCode.sellerId}`)
+        rebuyUrl += `?seller_id=${qrCode.sellerId}`
+        console.log(`🔗 SINGLE REBUY EMAIL: Added seller tracking to rebuy URL: seller_id=${qrCode.sellerId}`)
       }
       
       if (trackingMethod === 'discount_code' || trackingMethod === 'both') {
         // Add discount code parameter if discount is enabled
         if (rebuyConfig.enableDiscountCode) {
           const discountCode = `${rebuyConfig.codePrefix || 'REBUY'}${rebuyConfig.discountValue || 15}`
-          customerPortalUrl += `&discount=${discountCode}`
-          console.log(`🎫 SINGLE REBUY EMAIL: Added discount code to URL: discount=${discountCode}`)
+          const separator = rebuyUrl.includes('?') ? '&' : '?'
+          rebuyUrl += `${separator}discount=${discountCode}`
+          console.log(`🎫 SINGLE REBUY EMAIL: Added discount code to rebuy URL: discount=${discountCode}`)
         }
       }
     }
@@ -255,13 +259,44 @@ export async function POST(request: NextRequest) {
             </div>
             ` : ''}
             
-            <!-- Countdown Timer (if enabled) - EMAIL CLIENT COMPATIBLE -->
+            <!-- Countdown Timer (if enabled) - REAL JAVASCRIPT COUNTDOWN -->
             ${config.showExpirationTimer !== false ? `
             <div class="countdown-timer">
                 <p>⏰ Time Remaining Until Expiration:</p>
-                <div class="countdown-display">{hoursLeft}:00:00</div>
-                <p class="countdown-label">hrs:min:sec (approximate)</p>
+                <div class="countdown-display" id="countdown-display">{hoursLeft}:00:00</div>
+                <p class="countdown-label">hrs:min:sec</p>
             </div>
+            <script>
+                // Real-time countdown timer
+                const expirationTime = new Date('{qrExpirationTimestamp}').getTime();
+                
+                function updateCountdown() {
+                    const now = new Date().getTime();
+                    const timeLeft = expirationTime - now;
+                    
+                    if (timeLeft <= 0) {
+                        document.getElementById('countdown-display').innerHTML = '00:00:00';
+                        return;
+                    }
+                    
+                    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                    
+                    const display = String(hours).padStart(2, '0') + ':' + 
+                                   String(minutes).padStart(2, '0') + ':' + 
+                                   String(seconds).padStart(2, '0');
+                    
+                    const countdownElement = document.getElementById('countdown-display');
+                    if (countdownElement) {
+                        countdownElement.innerHTML = display;
+                    }
+                }
+                
+                // Update immediately and then every second
+                updateCountdown();
+                setInterval(updateCountdown, 1000);
+            </script>
             ` : ''}
             
             <!-- Urgency Notice with Dynamic Countdown -->
@@ -363,7 +398,7 @@ export async function POST(request: NextRequest) {
           .replace(/\{hoursLeft\}/g, hoursLeft.toString())
           .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
           .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
-          .replace(/\{rebuyUrl\}/g, customerPortalUrl)
+          .replace(/\{rebuyUrl\}/g, rebuyUrl)
         
         console.log(`📧 ENHANCED: Fresh HTML generated with all components (length: ${emailHtml.length})`)
         console.log(`📧 ENHANCED: Contains banner images: ${emailHtml.includes('banner-images')}`)
@@ -392,7 +427,7 @@ export async function POST(request: NextRequest) {
         .replace(/\{hoursLeft\}/g, hoursLeft.toString())
         .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
         .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
-        .replace(/\{rebuyUrl\}/g, customerPortalUrl)
+        .replace(/\{rebuyUrl\}/g, rebuyUrl)
       
       emailHtml = processedTemplate
 
@@ -416,8 +451,8 @@ export async function POST(request: NextRequest) {
           <p>Your ELocalPass (${qrCode.code}) expires in <strong>${hoursLeft} hours</strong>.</p>
           <p>Don't miss out! Renew your pass to continue enjoying the benefits.</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${customerPortalUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Renew Your Pass
+            <a href="${rebuyUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              Get Another ELocalPass
             </a>
           </div>
           <p>Details:</p>
