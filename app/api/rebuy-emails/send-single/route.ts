@@ -259,12 +259,20 @@ export async function POST(request: NextRequest) {
             </div>
             ` : ''}
             
-            <!-- Countdown Timer (if enabled) - EMAIL CLIENT COMPATIBLE STATIC -->
+            <!-- Dynamic Countdown Timer (if enabled) - LIVE UPDATING IMAGE -->
             ${config.showExpirationTimer !== false ? `
             <div class="countdown-timer">
                 <p>⏰ Time Remaining Until Expiration:</p>
-                <div class="countdown-display">{hoursLeft}:00:00</div>
-                <p class="countdown-label">hrs:min:sec (approximate)</p>
+                <div style="text-align: center; margin: 16px 0;">
+                    <img src="${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/api/countdown-image?expires={qrExpirationTimestamp}" 
+                         alt="Countdown Timer: {hoursLeft} hours remaining" 
+                         style="display: block; margin: 0 auto; border-radius: 8px;"
+                         width="200" 
+                         height="60" />
+                </div>
+                <p class="countdown-label" style="text-align: center; font-size: 12px; color: #6b7280;">
+                    This timer updates each time you open the email
+                </p>
             </div>
             ` : ''}
             
@@ -358,6 +366,17 @@ export async function POST(request: NextRequest) {
       if (freshHtml) {
         console.log(`✅ REBUY EMAIL: Generated fresh HTML with enhanced components`)
         
+        // Format expiration date for display
+        const expirationDate = qrCode.expiresAt.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric', 
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZoneName: 'short'
+        })
+
         // Replace placeholders with actual data
         emailHtml = freshHtml
           .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
@@ -365,6 +384,7 @@ export async function POST(request: NextRequest) {
           .replace(/\{guests\}/g, qrCode.guests.toString())
           .replace(/\{days\}/g, qrCode.days.toString())
           .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+          .replace(/\{expirationDate\}/g, expirationDate)
           .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
           .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
           .replace(/\{rebuyUrl\}/g, rebuyUrl)
