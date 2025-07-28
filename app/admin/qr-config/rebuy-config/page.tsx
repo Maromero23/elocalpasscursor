@@ -211,6 +211,9 @@ function RebuyEmailConfigPageContent() {
     // Load saved templates (which includes loading custom templates in edit/preview mode)
     loadSavedTemplates()
     
+    // Load all templates from database
+    loadAllTemplates()
+    
     // Only load default template if NOT in edit or preview mode
     if (mode !== 'edit' && mode !== 'preview') {
       loadDefaultTemplate()
@@ -438,29 +441,130 @@ function RebuyEmailConfigPageContent() {
     }
   }
 
-  const saveTemplate = () => {
+  const saveTemplate = async () => {
     if (!currentTemplateName.trim()) {
       toast.warning('Missing Template Name', 'Please enter a template name')
       return
     }
 
-    const newTemplate = {
-      id: Date.now().toString(),
-      name: currentTemplateName,
-      data: rebuyConfig,
-      createdAt: new Date()
-    }
+    try {
+      // Save to database first
+      const response = await fetch('/api/admin/rebuy-templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          rebuyConfig: rebuyConfig,
+          action: 'saveTemplate',
+          templateName: currentTemplateName
+        })
+      })
 
-    const updatedTemplates = [...rebuyTemplates, newTemplate]
-    setRebuyTemplates(updatedTemplates)
-    localStorage.setItem('elocalpass-rebuy-templates', JSON.stringify(updatedTemplates))
-    setCurrentTemplateName('')
-    toast.success('Template Saved', `Template "${newTemplate.name}" saved successfully!`)
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Named rebuy template saved to database:', result)
+        
+        // Update local state with database template
+        const newTemplate = {
+          id: result.template.id,
+          name: result.template.name,
+          data: rebuyConfig,
+          createdAt: new Date()
+        }
+
+        const updatedTemplates = [...rebuyTemplates, newTemplate]
+        setRebuyTemplates(updatedTemplates)
+        
+        // Also update localStorage for immediate UI feedback
+        localStorage.setItem('elocalpass-rebuy-templates', JSON.stringify(updatedTemplates))
+        
+        setCurrentTemplateName('')
+        toast.success('Template Saved to Database', `Template "${newTemplate.name}" saved successfully! HTML Length: ${result.template.htmlLength} characters`)
+      } else {
+        const error = await response.json()
+        console.error('❌ Error saving named template:', error)
+        
+        // Fallback to localStorage if database fails
+        const newTemplate = {
+          id: Date.now().toString(),
+          name: currentTemplateName,
+          data: rebuyConfig,
+          createdAt: new Date()
+        }
+
+        const updatedTemplates = [...rebuyTemplates, newTemplate]
+        setRebuyTemplates(updatedTemplates)
+        localStorage.setItem('elocalpass-rebuy-templates', JSON.stringify(updatedTemplates))
+        setCurrentTemplateName('')
+        toast.warning('Saved to localStorage', `Database save failed, template "${newTemplate.name}" saved locally only`)
+      }
+    } catch (error) {
+      console.error('❌ Network error saving named template:', error)
+      
+      // Fallback to localStorage
+      const newTemplate = {
+        id: Date.now().toString(),
+        name: currentTemplateName,
+        data: rebuyConfig,
+        createdAt: new Date()
+      }
+
+      const updatedTemplates = [...rebuyTemplates, newTemplate]
+      setRebuyTemplates(updatedTemplates)
+      localStorage.setItem('elocalpass-rebuy-templates', JSON.stringify(updatedTemplates))
+      setCurrentTemplateName('')
+      toast.warning('Saved to localStorage', `Network error, template "${newTemplate.name}" saved locally only`)
+    }
   }
 
   const loadTemplate = (template: any) => {
     setRebuyConfig(template.data)
     toast.success('Template Loaded', `Template "${template.name}" loaded successfully!`)
+  }
+
+  const loadAllTemplates = async () => {
+    try {
+      console.log('📧 Loading all rebuy templates from database...')
+      const response = await fetch('/api/admin/rebuy-templates?all=true', {
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log(`✅ Loaded ${result.templates.length} templates from database`)
+        
+        // Convert database templates to the format expected by the UI
+        const dbTemplates = result.templates
+          .filter((template: any) => !template.isDefault) // Exclude default template
+          .map((template: any) => ({
+            id: template.id,
+            name: template.name,
+            data: template.data || {},
+            createdAt: new Date(template.createdAt)
+          }))
+        
+        setRebuyTemplates(dbTemplates)
+        
+        // Also update localStorage for offline access
+        localStorage.setItem('elocalpass-rebuy-templates', JSON.stringify(dbTemplates))
+      } else {
+        console.log('⚠️ Failed to load templates from database, falling back to localStorage')
+        // Fallback to localStorage
+        const savedTemplates = localStorage.getItem('elocalpass-rebuy-templates')
+        if (savedTemplates) {
+          setRebuyTemplates(JSON.parse(savedTemplates))
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading templates from database:', error)
+      // Fallback to localStorage
+      const savedTemplates = localStorage.getItem('elocalpass-rebuy-templates')
+      if (savedTemplates) {
+        setRebuyTemplates(JSON.parse(savedTemplates))
+      }
+    }
   }
 
   const saveAsDefault = async () => {

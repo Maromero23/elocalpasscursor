@@ -1,11 +1,114 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+
+
 // POST: Save/Update default rebuy template
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { rebuyConfig, action } = body
+    const { rebuyConfig, action, templateName } = body
+
+    if (action === 'saveTemplate') {
+      console.log('🔧 REBUY TEMPLATE API: Saving named template to database')
+      
+      // Generate HTML from rebuy config
+      const generateRebuyHtml = (config: any) => {
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${config.emailSubject}</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; background-color: ${config.emailBackgroundColor || '#f5f5f5'}; }
+        .container { max-width: 600px; margin: 0 auto; background-color: ${config.emailBackgroundColor || 'white'}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .header { background-color: ${config.emailHeaderColor || '#dc2626'}; padding: 24px; text-align: center; }
+        .header h1 { color: ${config.emailHeaderTextColor || 'white'}; font-family: ${config.emailHeaderFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailHeaderFontSize || '24'}px; font-weight: bold; margin: 0; }
+        .content { padding: 24px; }
+        .message { text-align: center; margin-bottom: 24px; }
+        .message p { color: ${config.emailMessageColor || '#374151'}; font-family: ${config.emailMessageFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailMessageFontSize || '16'}px; line-height: 1.5; margin: 0; }
+        .cta-button { text-align: center; margin: 24px 0; }
+        .cta-button a { background-color: ${config.emailCtaBackgroundColor || config.emailHeaderColor || '#dc2626'}; color: ${config.emailCtaColor || 'white'}; font-family: ${config.emailCtaFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailCtaFontSize || '16'}px; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; }
+        .footer { text-align: center; padding: 16px; font-size: 12px; color: #6b7280; }
+        .countdown-container { text-align: center; margin: 20px 0; padding: 15px; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b; }
+        .countdown-text { font-size: 14px; color: #92400e; margin-bottom: 8px; }
+        .countdown-timer { font-size: 18px; font-weight: bold; color: #92400e; }
+        .special-offer { background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); color: white; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }
+        .special-offer h2 { margin: 0 0 8px 0; font-size: 20px; }
+        .special-offer p { margin: 0; font-size: 14px; opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>${config.emailHeaderText || 'Don\'t Miss Out!'}</h1>
+        </div>
+        
+        <div class="content">
+            <div class="message">
+                <p>Hello {customerName},</p>
+                <br>
+                <p>${config.emailMessageText || 'Your eLocalPass expires soon. Renew now with an exclusive discount!'}</p>
+            </div>
+            
+            <div class="countdown-container">
+                <div class="countdown-text">Only {hoursLeft} hours left!</div>
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0; padding: 15px; background-color: #f3f4f6; border-radius: 8px;">
+                <h3 style="margin: 0 0 10px 0; color: #374151;">Your Current ELocalPass Details:</h3>
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;"><strong>Pass Code:</strong> {qrCode}</p>
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;"><strong>Expires:</strong> In {hoursLeft} hours</p>
+            </div>
+            
+            <div class="special-offer">
+                <h2>🎉 Special 50% OFF!</h2>
+                <p>Get another ELocalPass now and save!</p>
+            </div>
+            
+            <div class="cta-button">
+                <a href="{rebuyUrl}">Get Another ELocalPass</a>
+            </div>
+            
+            <div class="footer">
+                <p>Thank you for choosing ELocalPass for your local adventures!</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`
+      }
+
+      const customHTML = generateRebuyHtml(rebuyConfig)
+
+      // Create named template
+      const namedTemplate = await prisma.rebuyEmailTemplate.create({
+        data: {
+          name: templateName || `Rebuy Template - ${new Date().toLocaleDateString()}`,
+          subject: rebuyConfig.emailSubject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!',
+          customHTML: customHTML,
+          headerText: JSON.stringify(rebuyConfig),
+          isDefault: false
+        }
+      })
+
+      console.log('✅ REBUY TEMPLATE API: Named template saved to database')
+      console.log(`   Template ID: ${namedTemplate.id}`)
+      console.log(`   Template Name: ${namedTemplate.name}`)
+      console.log(`   HTML Length: ${customHTML.length} characters`)
+
+      return NextResponse.json({
+        success: true,
+        message: 'Named rebuy template saved successfully',
+        template: {
+          id: namedTemplate.id,
+          name: namedTemplate.name,
+          subject: namedTemplate.subject,
+          htmlLength: customHTML.length
+        }
+      })
+    }
 
     if (action === 'saveAsDefault') {
       console.log('🔧 REBUY TEMPLATE API: Saving as default template to database')
@@ -153,27 +256,54 @@ export async function POST(request: NextRequest) {
 }
 
 // GET: Load default rebuy template
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const defaultTemplate = await prisma.rebuyEmailTemplate.findFirst({
-      where: { isDefault: true }
-    })
+    const url = new URL(request.url)
+    const loadAll = url.searchParams.get('all') === 'true'
 
-    if (!defaultTemplate) {
-      return NextResponse.json({ 
-        error: 'No default rebuy template found' 
-      }, { status: 404 })
+    if (loadAll) {
+      console.log('🔧 REBUY TEMPLATE API: Loading all templates from database')
+      
+      const templates = await prisma.rebuyEmailTemplate.findMany({
+        orderBy: { createdAt: 'desc' }
+      })
+
+      console.log(`✅ REBUY TEMPLATE API: Found ${templates.length} templates`)
+
+      return NextResponse.json({
+        success: true,
+        templates: templates.map(template => ({
+          id: template.id,
+          name: template.name,
+          subject: template.subject,
+          isDefault: template.isDefault,
+          createdAt: template.createdAt,
+          data: template.headerText ? JSON.parse(template.headerText) : null,
+          htmlLength: template.customHTML?.length || 0
+        }))
+      })
+    } else {
+      // Default behavior - load only default template
+      const defaultTemplate = await prisma.rebuyEmailTemplate.findFirst({
+        where: { isDefault: true }
+      })
+
+      if (!defaultTemplate) {
+        return NextResponse.json({ 
+          error: 'No default rebuy template found' 
+        }, { status: 404 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        template: defaultTemplate
+      })
     }
-
-    return NextResponse.json({
-      success: true,
-      template: defaultTemplate
-    })
 
   } catch (error) {
     console.error('❌ REBUY TEMPLATE API Error:', error)
     return NextResponse.json({ 
-      error: 'Failed to load default rebuy template' 
+      error: 'Failed to load rebuy template(s)' 
     }, { status: 500 })
   }
 } 
