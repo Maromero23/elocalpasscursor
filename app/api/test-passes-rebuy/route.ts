@@ -45,21 +45,53 @@ export async function POST(request: NextRequest) {
       console.log(`✅ Found default rebuy template: ${defaultRebuyTemplate.name}`)
       console.log(`📧 Template HTML length: ${defaultRebuyTemplate.customHTML.length} characters`)
       
-      // Use the default rebuy template and replace placeholders
+      // Create comprehensive placeholder replacements
+      const customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCodeData.customerEmail}`
+      const rebuyUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/passes`
+      const qrExpirationTimestamp = qrCodeData.expiresAt.toISOString()
+      
+      console.log(`📧 Replacing placeholders:`)
+      console.log(`- customerName: ${customerName}`)
+      console.log(`- qrCode: ${qrCodeData.code}`)
+      console.log(`- guests: ${qrCodeData.guests}`)
+      console.log(`- days: ${qrCodeData.days}`)
+      console.log(`- hoursLeft: ${hoursLeft}`)
+      console.log(`- qrExpirationTimestamp: ${qrExpirationTimestamp}`)
+      console.log(`- customerPortalUrl: ${customerPortalUrl}`)
+      console.log(`- rebuyUrl: ${rebuyUrl}`)
+      
+      // Use the default rebuy template and replace ALL possible placeholders
       emailHtml = defaultRebuyTemplate.customHTML
         .replace(/\{customerName\}/g, customerName)
         .replace(/\{qrCode\}/g, qrCodeData.code)
         .replace(/\{guests\}/g, qrCodeData.guests.toString())
         .replace(/\{days\}/g, qrCodeData.days.toString())
         .replace(/\{hoursLeft\}/g, hoursLeft.toString())
-        .replace(/\{qrExpirationTimestamp\}/g, qrCodeData.expiresAt.toISOString())
-        .replace(/\{customerPortalUrl\}/g, `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCodeData.customerEmail}`)
-        .replace(/\{rebuyUrl\}/g, `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/passes`)
+        .replace(/\{qrExpirationTimestamp\}/g, qrExpirationTimestamp)
+        .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+        .replace(/\{rebuyUrl\}/g, rebuyUrl)
+        .replace(/\{magicLink\}/g, customerPortalUrl)
+        .replace(/\{expirationDate\}/g, qrCodeData.expiresAt.toLocaleDateString())
+        .replace(/\{expiresAt\}/g, qrCodeData.expiresAt.toLocaleDateString())
+        // Add any other common placeholders that might be in the template
+        .replace(/\{passType\}/g, 'day')
+        .replace(/\{cost\}/g, qrCodeData.cost?.toString() || '0')
+        .replace(/\{deliveryMethod\}/g, 'now')
 
       emailSubject = defaultRebuyTemplate.subject || `Your ELocalPass expires in ${hoursLeft} hours - Get another one!`
       
+      // Also replace placeholders in subject
+      emailSubject = emailSubject
+        .replace(/\{customerName\}/g, customerName)
+        .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+        .replace(/\{qrCode\}/g, qrCodeData.code)
+      
       console.log(`📧 Using default rebuy template: ${defaultRebuyTemplate.name}`)
       console.log(`📧 Subject: ${emailSubject}`)
+      console.log(`📧 Final HTML length: ${emailHtml.length} characters`)
+      
+      // Log first 500 characters to verify content
+      console.log(`📧 HTML preview: ${emailHtml.substring(0, 500)}...`)
       
     } else {
       console.log('❌ No default rebuy template found in database')
@@ -94,7 +126,9 @@ export async function POST(request: NextRequest) {
         email: qrCodeData.customerEmail,
         hoursLeft: hoursLeft,
         template: defaultRebuyTemplate?.name || 'Default rebuy template',
-        templateSource: 'Database default rebuy template'
+        templateSource: 'Database default rebuy template',
+        htmlLength: emailHtml.length,
+        subjectUsed: emailSubject
       })
     } else {
       console.log(`❌ Failed to send rebuy email to ${qrCodeData.customerEmail}`)
