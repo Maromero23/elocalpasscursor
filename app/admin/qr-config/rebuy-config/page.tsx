@@ -201,6 +201,7 @@ function RebuyEmailConfigPageContent() {
   const [currentTemplateName, setCurrentTemplateName] = useState('')
   const [defaultTemplate, setDefaultTemplate] = useState<any>(null)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [showTemplateManager, setShowTemplateManager] = useState(false)
 
   useEffect(() => {
     // Check for preview mode first
@@ -1112,50 +1113,81 @@ function RebuyEmailConfigPageContent() {
             <div className="grid grid-cols-3 gap-4">
               {/* Load Existing Template */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-900 mb-1">
                   Load Saved Template
                 </label>
-                <select
-                  onChange={(e) => {
-                    const template = rebuyTemplates.find(t => t.id === e.target.value)
-                    if (template) loadTemplate(template)
-                  }}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
-                >
-                  <option value="">Select a saved template...</option>
-                  {rebuyTemplates.map(template => (
-                    <option key={template.id} value={template.id}>
-                      {template.name} (saved {new Date(template.createdAt).toLocaleDateString()})
-                    </option>
-                  ))}
-                </select>
-                
-                {/* Template Management */}
-                {rebuyTemplates.length > 0 && (
-                  <div className="space-y-1">
-                    <div className="text-xs text-gray-600 mb-1">Manage Templates:</div>
+                <div className="relative">
+                  <select
+                    onChange={(e) => {
+                      const template = rebuyTemplates.find(t => t.id === e.target.value)
+                      if (template) loadTemplate(template)
+                    }}
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
+                  >
+                    <option value="">Select a saved template...</option>
                     {rebuyTemplates.map(template => (
-                      <div key={template.id} className="flex items-center justify-between bg-gray-50 px-2 py-1 rounded text-xs">
-                        <span className="truncate flex-1 mr-2">
-                          {template.name}
-                        </span>
+                      <option key={template.id} value={template.id}>
+                        {template.name} (saved {new Date(template.createdAt).toLocaleDateString()})
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {/* Template Management - Compact Scrollable List */}
+                  {rebuyTemplates.length > 0 && (
+                    <div className="mt-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-gray-900">Manage Templates ({rebuyTemplates.length})</span>
                         <button
                           type="button"
-                          onClick={() => deleteTemplate(template.id, template.name)}
-                          className="text-red-600 hover:text-red-800 px-1 py-0.5 rounded hover:bg-red-100"
-                          title={`Delete ${template.name}`}
+                          onClick={() => setShowTemplateManager(!showTemplateManager)}
+                          className="text-xs text-blue-600 hover:text-blue-800 underline"
                         >
-                          🗑️
+                          {showTemplateManager ? 'Hide' : 'Show'}
                         </button>
                       </div>
-                    ))}
-                  </div>
-                )}
+                      
+                      {showTemplateManager && (
+                        <div className="border border-gray-200 rounded bg-white max-h-32 overflow-y-auto">
+                          {rebuyTemplates.map(template => (
+                            <div key={template.id} className="flex items-center justify-between px-2 py-1.5 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-medium text-gray-900 truncate">
+                                  {template.name}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {new Date(template.createdAt).toLocaleDateString()}
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-1 ml-2">
+                                <button
+                                  type="button"
+                                  onClick={() => loadTemplate(template)}
+                                  className="text-blue-600 hover:text-blue-800 px-1 py-0.5 rounded hover:bg-blue-100"
+                                  title={`Load ${template.name}`}
+                                >
+                                  📂
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteTemplate(template.id, template.name)}
+                                  className="text-red-600 hover:text-red-800 px-1 py-0.5 rounded hover:bg-red-100"
+                                  title={`Delete ${template.name}`}
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Save Current Template */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-900 mb-1">
                   Save Current Configuration
                 </label>
                 <div className="flex space-x-2">
@@ -1178,7 +1210,7 @@ function RebuyEmailConfigPageContent() {
 
               {/* Default Template Actions */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-900 mb-1">
                   Default Template {defaultTemplate ? '✅' : ''}
                 </label>
                 <div className="flex flex-col space-y-1">
