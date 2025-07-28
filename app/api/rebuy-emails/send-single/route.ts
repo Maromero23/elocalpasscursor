@@ -485,17 +485,71 @@ export async function POST(request: NextRequest) {
             if (defaultRebuyTemplate && defaultRebuyTemplate.customHTML) {
               console.log(`✅ REBUY EMAIL: Found default rebuy template in database`)
               
-              let processedTemplate = defaultRebuyTemplate.customHTML
-                .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
-                .replace(/\{qrCode\}/g, qrCode.code)
-                .replace(/\{guests\}/g, qrCode.guests.toString())
-                .replace(/\{days\}/g, qrCode.days.toString())
-                .replace(/\{hoursLeft\}/g, hoursLeft.toString())
-                .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
-                .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
-                .replace(/\{rebuyUrl\}/g, rebuyUrl)
+              // Parse the default template's configuration
+              let defaultConfig: any = {}
+              if (defaultRebuyTemplate.headerText) {
+                try {
+                  defaultConfig = JSON.parse(defaultRebuyTemplate.headerText)
+                  console.log(`✅ REBUY EMAIL: Loaded default template configuration`)
+                } catch (error) {
+                  console.log(`⚠️ REBUY EMAIL: Could not parse default template config, using stored HTML`)
+                }
+              }
               
-              emailHtml = processedTemplate
+              // Try to generate fresh HTML using the default template's configuration
+              if (defaultConfig.enableRebuyEmail) {
+                console.log(`📧 REBUY EMAIL: Generating fresh HTML with default template configuration`)
+                const freshHtml = generateCustomRebuyEmailHtml(defaultConfig, "Playa del Carmen")
+                
+                if (freshHtml) {
+                  console.log(`✅ REBUY EMAIL: Generated fresh HTML with default template configuration`)
+                  
+                  // Replace placeholders with actual data
+                  emailHtml = freshHtml
+                    .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+                    .replace(/\{qrCode\}/g, qrCode.code)
+                    .replace(/\{guests\}/g, qrCode.guests.toString())
+                    .replace(/\{days\}/g, qrCode.days.toString())
+                    .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                    .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
+                    .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+                    .replace(/\{rebuyUrl\}/g, rebuyUrl)
+                  
+                  console.log(`📧 ENHANCED: Fresh HTML generated with default config (length: ${emailHtml.length})`)
+                  console.log(`📧 ENHANCED: Contains banner images: ${emailHtml.includes('banner-images')}`)
+                  console.log(`📧 ENHANCED: Contains video section: ${emailHtml.includes('Promotional Video')}`)
+                  console.log(`📧 ENHANCED: Contains featured partners: ${emailHtml.includes('Featured Partners')}`)
+                  console.log(`📧 ENHANCED: Contains countdown timer: ${emailHtml.includes('Time Remaining')}`)
+                } else {
+                  console.log(`❌ REBUY EMAIL: Fresh HTML generation failed with default config, using stored HTML`)
+                  // Fallback to stored HTML
+                  let processedTemplate = defaultRebuyTemplate.customHTML
+                    .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+                    .replace(/\{qrCode\}/g, qrCode.code)
+                    .replace(/\{guests\}/g, qrCode.guests.toString())
+                    .replace(/\{days\}/g, qrCode.days.toString())
+                    .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                    .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
+                    .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+                    .replace(/\{rebuyUrl\}/g, rebuyUrl)
+                  
+                  emailHtml = processedTemplate
+                }
+              } else {
+                console.log(`📧 REBUY EMAIL: Using stored HTML from default template`)
+                // Use stored HTML
+                let processedTemplate = defaultRebuyTemplate.customHTML
+                  .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+                  .replace(/\{qrCode\}/g, qrCode.code)
+                  .replace(/\{guests\}/g, qrCode.guests.toString())
+                  .replace(/\{days\}/g, qrCode.days.toString())
+                  .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                  .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
+                  .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+                  .replace(/\{rebuyUrl\}/g, rebuyUrl)
+                
+                emailHtml = processedTemplate
+              }
               
               // Get subject from saved config if available
               try {
