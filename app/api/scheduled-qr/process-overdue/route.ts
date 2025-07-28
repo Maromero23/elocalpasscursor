@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
           button2PricingType: 'FIXED',
           button2FixedPrice: 0,
           button5SendRebuyEmail: false,
-          button1SendWelcomeEmail: true // Default to true for PayPal orders (can be changed if needed)
+          // Welcome emails always enabled (can be changed if needed)
         }
         
         // Calculate pricing (should be 0 for PayPal orders)
@@ -128,20 +128,8 @@ export async function POST(request: NextRequest) {
         // Send welcome email based on configuration setting
         let emailSent = false
         
-        // Check if welcome email is enabled in configuration
-        const shouldSendWelcomeEmail = config.button1SendWelcomeEmail === true
-        
-        console.log(`📧 OVERDUE SCHEDULED QR: Welcome email configuration check:`, {
-          button1SendWelcomeEmail: config.button1SendWelcomeEmail,
-          shouldSendWelcomeEmail: shouldSendWelcomeEmail,
-          configurationId: scheduledQR.configurationId,
-          isPayPalQR: scheduledQR.configurationId === 'default'
-        })
-        
-        if (!shouldSendWelcomeEmail) {
-          console.log(`🚫 OVERDUE SCHEDULED QR: Welcome email disabled in configuration - skipping email send`)
-          emailSent = false
-        } else {
+        // Welcome emails are always enabled (no toggle needed)
+    console.log(`📧 SCHEDULED QR: Welcome emails are ENABLED - proceeding to send email`)
           try {
             // Use English for PayPal orders (same as immediate creation)
             const customerLanguage = 'en'

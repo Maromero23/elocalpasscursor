@@ -418,12 +418,8 @@ ${t('email.welcome.signature', customerLanguage)}
     // 🚀 SEND ACTUAL WELCOME EMAIL (only if not scheduled and if enabled)
     let emailSent = false
     
-    // Check if welcome emails are enabled in configuration
-    if (config.button1SendWelcomeEmail !== true) {
-      console.log(`📧 Welcome emails are DISABLED in configuration (button1SendWelcomeEmail: ${config.button1SendWelcomeEmail})`)
-      emailSent = false
-    } else {
-      console.log(`📧 Welcome emails are ENABLED - proceeding to send email`)
+    // Welcome emails are always enabled (no toggle needed)
+    console.log(`📧 Welcome emails are ENABLED - proceeding to send email`)
       
       try {
         // Import email service
@@ -715,7 +711,6 @@ ${t('email.welcome.signature', customerLanguage)}
         console.error('❌ Error sending welcome email:', emailError)
         emailSent = false
       }
-    } // End of welcome email enabled check
     
     console.log(`📧 WELCOME EMAIL SUMMARY:
 To: ${clientEmail}

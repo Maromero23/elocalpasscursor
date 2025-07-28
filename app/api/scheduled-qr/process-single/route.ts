@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
         button2PricingType: 'FIXED',
         button2FixedPrice: 0,
         button5SendRebuyEmail: false,
-        button1SendWelcomeEmail: true // Default to true for PayPal orders
+        // Welcome emails always enabled
       }
     } else {
       // This is a seller dashboard QR with saved configuration
@@ -311,20 +311,8 @@ export async function POST(request: NextRequest) {
     // Send welcome email based on configuration setting and QR type
     let emailSent = false
     
-    // Check if welcome email is enabled in configuration
-    const shouldSendWelcomeEmail = config.button1SendWelcomeEmail === true
-    
-    console.log(`📧 SCHEDULED QR: Welcome email configuration check:`, {
-      button1SendWelcomeEmail: config.button1SendWelcomeEmail,
-      shouldSendWelcomeEmail: shouldSendWelcomeEmail,
-      configurationId: scheduledQR.configurationId,
-      isPayPalQR: scheduledQR.configurationId === 'default'
-    })
-    
-    if (!shouldSendWelcomeEmail) {
-      console.log(`🚫 SCHEDULED QR: Welcome email disabled in configuration - skipping email send`)
-      emailSent = false
-    } else {
+    // Welcome emails are always enabled (no toggle needed)
+    console.log(`📧 SCHEDULED QR: Welcome emails are ENABLED - proceeding to send email`)
       try {
         // Import email service and translations
         const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
