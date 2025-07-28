@@ -74,7 +74,8 @@ export async function POST(request: NextRequest) {
           config = {
             button2PricingType: 'FIXED',
             button2FixedPrice: 0,
-            button5SendRebuyEmail: false
+            button5SendRebuyEmail: false,
+            button1SendWelcomeEmail: true // Default to true for PayPal orders
           }
         } else {
           // This is a seller dashboard QR with saved configuration
@@ -236,15 +237,30 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        // Send welcome email using PayPal template (same logic as immediate PayPal creation)
+        // Send welcome email based on configuration setting
         let emailSent = false
-        try {
-          // Import email service and translations
-          const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
-          const { formatDate } = await import('@/lib/translations')
-          
-          const customerLanguage = 'en' // Default language for PayPal orders
-          const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
+        
+        // Check if welcome email is enabled in configuration
+        const shouldSendWelcomeEmail = config.button1SendWelcomeEmail === true
+        
+        console.log(`📧 BATCH SCHEDULED QR: Welcome email configuration check:`, {
+          button1SendWelcomeEmail: config.button1SendWelcomeEmail,
+          shouldSendWelcomeEmail: shouldSendWelcomeEmail,
+          configurationId: scheduledQR.configurationId,
+          isPayPalQR: scheduledQR.configurationId === 'default'
+        })
+        
+        if (!shouldSendWelcomeEmail) {
+          console.log(`🚫 BATCH SCHEDULED QR: Welcome email disabled in configuration - skipping email send`)
+          emailSent = false
+        } else {
+          try {
+            // Import email service and translations
+            const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
+            const { formatDate } = await import('@/lib/translations')
+            
+            const customerLanguage = 'en' // Default language for PayPal orders
+            const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
           
           console.log('📧 BATCH SCHEDULED QR: Looking for PayPal welcome email template...')
           
@@ -321,9 +337,10 @@ export async function POST(request: NextRequest) {
           } else {
             console.error(`❌ BATCH SCHEDULED QR: Failed to send welcome email to ${scheduledQR.clientEmail}`)
           }
-        } catch (emailError) {
-          console.error('❌ BATCH SCHEDULED QR: Error sending welcome email:', emailError)
-          emailSent = false
+          } catch (emailError) {
+            console.error('❌ BATCH SCHEDULED QR: Error sending welcome email:', emailError)
+            emailSent = false
+          }
         }
 
         if (emailSent) {

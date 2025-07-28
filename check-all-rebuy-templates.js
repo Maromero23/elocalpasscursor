@@ -5,55 +5,77 @@ async function checkAllRebuyTemplates() {
   try {
     console.log('🔍 CHECKING ALL REBUY EMAIL TEMPLATES IN DATABASE\n');
     
-    // Get ALL rebuy email templates
+    // Get all rebuy templates
     const allTemplates = await prisma.rebuyEmailTemplate.findMany({
       orderBy: { createdAt: 'desc' }
     });
-    
-    console.log(`📧 FOUND ${allTemplates.length} REBUY EMAIL TEMPLATES:\n`);
-    
+
+    console.log(`📊 Found ${allTemplates.length} rebuy email templates:\n`);
+
     allTemplates.forEach((template, index) => {
-      console.log(`${index + 1}. "${template.name}"`);
-      console.log(`   ID: ${template.id}`);
-      console.log(`   Subject: ${template.subject}`);
-      console.log(`   Is Default: ${template.isDefault ? '✅ YES' : '❌ NO'}`);
-      console.log(`   Has customHTML: ${!!template.customHTML}`);
-      console.log(`   HTML Length: ${template.customHTML?.length || 0} characters`);
-      console.log(`   Created: ${template.createdAt.toLocaleDateString()} ${template.createdAt.toLocaleTimeString()}`);
-      console.log(`   Updated: ${template.updatedAt.toLocaleDateString()} ${template.updatedAt.toLocaleTimeString()}`);
+      console.log(`${index + 1}. TEMPLATE: ${template.name}`);
+      console.log(`   - ID: ${template.id}`);
+      console.log(`   - Subject: ${template.subject}`);
+      console.log(`   - HTML Length: ${template.customHTML?.length || 0} characters`);
+      console.log(`   - Is Default: ${template.isDefault ? '✅ YES' : '❌ NO'}`);
+      console.log(`   - Created: ${template.createdAt}`);
       
-      if (template.customHTML && template.customHTML.length > 0) {
-        console.log(`   HTML Preview: ${template.customHTML.substring(0, 100)}...`);
-      } else {
-        console.log(`   ❌ HTML is empty or null`);
+      if (template.customHTML) {
+        const html = template.customHTML;
+        console.log(`   - Contains promotional video: ${html.includes('promotional') || html.includes('video') || html.includes('Watch') ? '✅ YES' : '❌ NO'}`);
+        console.log(`   - Contains countdown timer: ${html.includes('countdown') || html.includes('timer') || html.includes('Time Remaining') ? '✅ YES' : '❌ NO'}`);
+        console.log(`   - Contains featured partners: ${html.includes('Featured Partners') || html.includes('partners') ? '✅ YES' : '❌ NO'}`);
+        console.log(`   - Contains GRAND OPENING: ${html.includes('GRAND OPENING') ? '✅ YES' : '❌ NO'}`);
       }
       console.log('');
     });
+
+    // Look for the template that matches screenshot 2
+    console.log('🎯 LOOKING FOR COMPLETE TEMPLATE (with video, countdown, partners):');
     
-    // Find which one is marked as default
-    const defaultTemplate = allTemplates.find(t => t.isDefault);
-    if (defaultTemplate) {
-      console.log(`🎯 DEFAULT TEMPLATE: "${defaultTemplate.name}"`);
-      console.log(`   HTML Length: ${defaultTemplate.customHTML?.length || 0} characters`);
-      console.log(`   Has Content: ${defaultTemplate.customHTML && defaultTemplate.customHTML.length > 0 ? '✅ YES' : '❌ NO'}`);
+    const completeTemplate = allTemplates.find(template => {
+      if (!template.customHTML) return false;
+      const html = template.customHTML;
+      return (html.includes('promotional') || html.includes('video') || html.includes('Watch')) &&
+             (html.includes('countdown') || html.includes('timer') || html.includes('Time Remaining')) &&
+             (html.includes('Featured Partners') || html.includes('partners'));
+    });
+
+    if (completeTemplate) {
+      console.log(`✅ FOUND COMPLETE TEMPLATE: ${completeTemplate.name}`);
+      console.log(`   - ID: ${completeTemplate.id}`);
+      console.log(`   - Is Default: ${completeTemplate.isDefault ? '✅ YES' : '❌ NO'}`);
+      console.log(`   - HTML Length: ${completeTemplate.customHTML.length} characters`);
+      
+      if (!completeTemplate.isDefault) {
+        console.log('\n💡 SOLUTION: This complete template should be set as default!');
+        console.log('The current default template is incomplete.');
+      }
     } else {
-      console.log('❌ NO TEMPLATE MARKED AS DEFAULT');
+      console.log('❌ No complete template found with video, countdown, and partners');
+      console.log('💡 The template in screenshot 2 might be from a different source');
     }
-    
-    // Check if we need to update the default flag
-    const latestTemplate = allTemplates.find(t => t.name.includes('default Rebuy Email (saved'));
-    if (latestTemplate && !latestTemplate.isDefault) {
-      console.log(`\n🔧 FOUND YOUR NEW TEMPLATE: "${latestTemplate.name}"`);
-      console.log(`   This template is NOT marked as default`);
-      console.log(`   HTML Length: ${latestTemplate.customHTML?.length || 0} characters`);
-      console.log(`   Would you like to mark this as the default template?`);
+
+    // Look for templates with GRAND OPENING (from screenshot 2)
+    const grandOpeningTemplate = allTemplates.find(template => {
+      return template.customHTML && template.customHTML.includes('GRAND OPENING');
+    });
+
+    if (grandOpeningTemplate) {
+      console.log(`\n🎪 FOUND GRAND OPENING TEMPLATE: ${grandOpeningTemplate.name}`);
+      console.log(`   - ID: ${grandOpeningTemplate.id}`);
+      console.log(`   - Is Default: ${grandOpeningTemplate.isDefault ? '✅ YES' : '❌ NO'}`);
+      console.log(`   - This matches screenshot 2!`);
+      
+      if (!grandOpeningTemplate.isDefault) {
+        console.log('\n🔧 RECOMMENDATION: Set this as the default template');
+        console.log('This template contains all the components from screenshot 2');
+      }
     }
-    
-    await prisma.$disconnect();
-    console.log('\n✅ Check complete');
-    
+
   } catch (error) {
     console.error('❌ Error:', error);
+  } finally {
     await prisma.$disconnect();
   }
 }

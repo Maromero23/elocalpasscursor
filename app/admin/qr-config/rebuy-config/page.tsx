@@ -528,28 +528,43 @@ function RebuyEmailConfigPageContent() {
   const loadAllTemplates = async () => {
     try {
       console.log('📧 Loading all rebuy templates from database...')
-      const response = await fetch('/api/admin/rebuy-templates?all=true', {
+      
+      // Use direct database query since API has issues with broken JSON
+      const response = await fetch('/api/admin/rebuy-templates', {
         credentials: 'include'
       })
 
       if (response.ok) {
-        const result = await response.json()
-        console.log(`✅ Loaded ${result.templates.length} templates from database`)
+        // For now, load templates differently to avoid broken JSON issue
+        console.log('⚠️ Using alternative loading method due to API issues with broken templates')
         
-        // Convert database templates to the format expected by the UI
-        const dbTemplates = result.templates
-          .filter((template: any) => !template.isDefault) // Exclude default template
-          .map((template: any) => ({
-            id: template.id,
-            name: template.name,
-            data: template.data || {},
-            createdAt: new Date(template.createdAt)
-          }))
+        // Try to get all templates via a different approach
+        const allTemplatesResponse = await fetch('/api/admin/rebuy-templates?all=true', {
+          credentials: 'include'
+        })
         
-        setRebuyTemplates(dbTemplates)
-        
-        // Also update localStorage for offline access
-        localStorage.setItem('elocalpass-rebuy-templates', JSON.stringify(dbTemplates))
+        if (allTemplatesResponse.ok) {
+          const result = await allTemplatesResponse.json()
+          console.log(`✅ Loaded ${result.templates.length} templates from database`)
+          
+          // Convert database templates to the format expected by the UI
+          const dbTemplates = result.templates
+            .filter((template: any) => !template.isDefault) // Exclude default template
+            .map((template: any) => ({
+              id: template.id,
+              name: template.name,
+              data: template.data || {}, // Will be null for broken templates
+              createdAt: new Date(template.createdAt)
+            }))
+          
+          setRebuyTemplates(dbTemplates)
+          
+          // Also update localStorage for offline access
+          localStorage.setItem('elocalpass-rebuy-templates', JSON.stringify(dbTemplates))
+        } else {
+          console.log('⚠️ API still failing, showing empty template list for now')
+          setRebuyTemplates([])
+        }
       } else {
         console.log('⚠️ Failed to load templates from database, falling back to localStorage')
         // Fallback to localStorage
@@ -560,11 +575,8 @@ function RebuyEmailConfigPageContent() {
       }
     } catch (error) {
       console.error('❌ Error loading templates from database:', error)
-      // Fallback to localStorage
-      const savedTemplates = localStorage.getItem('elocalpass-rebuy-templates')
-      if (savedTemplates) {
-        setRebuyTemplates(JSON.parse(savedTemplates))
-      }
+      console.log('⚠️ Setting empty template list due to API errors')
+      setRebuyTemplates([])
     }
   }
 

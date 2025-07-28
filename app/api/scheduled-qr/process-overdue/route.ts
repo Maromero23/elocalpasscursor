@@ -45,7 +45,8 @@ export async function POST(request: NextRequest) {
         const config = {
           button2PricingType: 'FIXED',
           button2FixedPrice: 0,
-          button5SendRebuyEmail: false
+          button5SendRebuyEmail: false,
+          button1SendWelcomeEmail: true // Default to true for PayPal orders (can be changed if needed)
         }
         
         // Calculate pricing (should be 0 for PayPal orders)
@@ -124,14 +125,29 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        // Send welcome email using PayPal template (same logic as immediate PayPal creation)
+        // Send welcome email based on configuration setting
         let emailSent = false
-        try {
-          // Use English for PayPal orders (same as immediate creation)
-          const customerLanguage = 'en'
-          
-          // Format expiration date
-          const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
+        
+        // Check if welcome email is enabled in configuration
+        const shouldSendWelcomeEmail = config.button1SendWelcomeEmail === true
+        
+        console.log(`📧 OVERDUE SCHEDULED QR: Welcome email configuration check:`, {
+          button1SendWelcomeEmail: config.button1SendWelcomeEmail,
+          shouldSendWelcomeEmail: shouldSendWelcomeEmail,
+          configurationId: scheduledQR.configurationId,
+          isPayPalQR: scheduledQR.configurationId === 'default'
+        })
+        
+        if (!shouldSendWelcomeEmail) {
+          console.log(`🚫 OVERDUE SCHEDULED QR: Welcome email disabled in configuration - skipping email send`)
+          emailSent = false
+        } else {
+          try {
+            // Use English for PayPal orders (same as immediate creation)
+            const customerLanguage = 'en'
+            
+            // Format expiration date
+            const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
           
           console.log('📧 OVERDUE SCHEDULED QR: Looking for PayPal welcome email template...')
           
@@ -219,9 +235,10 @@ export async function POST(request: NextRequest) {
             data: { welcomeEmailSent: true }
           })
 
-        } catch (emailError) {
-          console.error(`❌ Failed to send welcome email to ${scheduledQR.clientEmail}:`, emailError)
-          emailSent = false
+          } catch (emailError) {
+            console.error(`❌ Failed to send welcome email to ${scheduledQR.clientEmail}:`, emailError)
+            emailSent = false
+          }
         }
 
         // Mark as processed

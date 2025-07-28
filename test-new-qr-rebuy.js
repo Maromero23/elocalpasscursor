@@ -3,12 +3,12 @@ const prisma = new PrismaClient();
 
 async function testNewQRRebuy() {
   try {
-    console.log('🧪 TESTING ENHANCED REBUY EMAIL FOR QR: EL-1753667401281-a0poiedfa\n');
+    console.log('🧪 TESTING ENHANCED REBUY EMAIL FOR QR: EL-1753668721361-7n65cbbat\n');
     
     // Get the QR code details
     const qrCode = await prisma.qRCode.findFirst({
       where: {
-        code: 'EL-1753667401281-a0poiedfa'
+        code: 'EL-1753668721361-7n65cbbat'
       },
       include: {
         analytics: true,
@@ -21,7 +21,7 @@ async function testNewQRRebuy() {
     });
 
     if (!qrCode) {
-      console.log('❌ QR Code not found with code: EL-1753667401281-a0poiedfa');
+      console.log('❌ QR Code not found with code: EL-1753668721361-7n65cbbat');
       return;
     }
 
@@ -67,7 +67,7 @@ async function testNewQRRebuy() {
       
       const result = await prisma.qRCodeAnalytics.updateMany({
         where: {
-          qrCode: 'EL-1753667401281-a0poiedfa'
+          qrCode: 'EL-1753668721361-7n65cbbat'
         },
         data: {
           rebuyEmailScheduled: true
