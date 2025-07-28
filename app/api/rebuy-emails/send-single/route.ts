@@ -455,6 +455,113 @@ export async function POST(request: NextRequest) {
         console.log(`📧 ENHANCED: Contains video section: ${emailHtml.includes('Promotional Video')}`)
         console.log(`📧 ENHANCED: Contains current pass details: ${emailHtml.includes('Your Current ELocalPass Details')}`)
         console.log(`📧 ENHANCED: Static countdown timer: ${emailHtml.includes('hrs:min:sec (approximate)')}`)
+      } else {
+        console.log(`❌ REBUY EMAIL: Fresh HTML generation failed, falling back to stored template`)
+        
+        // Fallback to stored template if fresh HTML generation failed
+        if (emailTemplates?.rebuyEmail?.customHTML && emailTemplates.rebuyEmail.customHTML !== 'USE_DEFAULT_TEMPLATE') {
+          console.log(`📧 REBUY EMAIL: Using stored custom template as fallback`)
+          
+          let processedTemplate = emailTemplates.rebuyEmail.customHTML
+            .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+            .replace(/\{qrCode\}/g, qrCode.code)
+            .replace(/\{guests\}/g, qrCode.guests.toString())
+            .replace(/\{days\}/g, qrCode.days.toString())
+            .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+            .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
+            .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+            .replace(/\{rebuyUrl\}/g, rebuyUrl)
+          
+          emailHtml = processedTemplate
+        } else if (emailTemplates?.rebuyEmail?.customHTML === 'USE_DEFAULT_TEMPLATE') {
+          console.log(`📧 REBUY EMAIL: Loading default template from RebuyEmailTemplate database`)
+          
+          try {
+            // Load default rebuy template from database
+            const defaultRebuyTemplate = await prisma.rebuyEmailTemplate.findFirst({
+              where: { isDefault: true }
+            })
+            
+            if (defaultRebuyTemplate && defaultRebuyTemplate.customHTML) {
+              console.log(`✅ REBUY EMAIL: Found default rebuy template in database`)
+              
+              let processedTemplate = defaultRebuyTemplate.customHTML
+                .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+                .replace(/\{qrCode\}/g, qrCode.code)
+                .replace(/\{guests\}/g, qrCode.guests.toString())
+                .replace(/\{days\}/g, qrCode.days.toString())
+                .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+                .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
+                .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+                .replace(/\{rebuyUrl\}/g, rebuyUrl)
+              
+              emailHtml = processedTemplate
+              
+              // Get subject from saved config if available
+              try {
+                const savedRebuyConfig = JSON.parse(defaultRebuyTemplate.headerText || '{}')
+                const originalSubject = savedRebuyConfig.emailSubject || defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'
+                emailSubject = await translateSubject(originalSubject, customerLanguage)
+              } catch (error) {
+                const originalSubject = defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'
+                emailSubject = await translateSubject(originalSubject, customerLanguage)
+              }
+              
+            } else {
+              console.log(`⚠️ REBUY EMAIL: Default rebuy template in database is empty, using generic template`)
+              throw new Error('Default template not found')
+            }
+            
+          } catch (error) {
+            console.error(`❌ REBUY EMAIL: Error loading default template from database:`, error)
+            // Fallback to generic template on database error
+            emailHtml = `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Your ELocalPass is Expiring Soon!</h2>
+                <p>Hello ${qrCode.customerName || 'Valued Customer'},</p>
+                <p>Your ELocalPass (${qrCode.code}) expires in <strong>${hoursLeft} hours</strong>.</p>
+                <p>Don't miss out! Renew your pass to continue enjoying the benefits.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${rebuyUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    Get Another ELocalPass
+                  </a>
+                </div>
+                <p>Details:</p>
+                <ul>
+                  <li>Guests: ${qrCode.guests}</li>
+                  <li>Days: ${qrCode.days}</li>
+                  <li>Expires: ${qrCode.expiresAt.toLocaleString()}</li>
+                </ul>
+                <p>Thank you for choosing ELocalPass!</p>
+              </div>
+            `
+            emailSubject = await translateSubject(`Your ELocalPass expires in ${hoursLeft} hours - Renew now!`, customerLanguage)
+          }
+        } else {
+          console.log(`📧 REBUY EMAIL: Using default template as fallback`)
+          
+          // Use default rebuy template
+          emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2>Your ELocalPass is Expiring Soon!</h2>
+              <p>Hello ${qrCode.customerName || 'Valued Customer'},</p>
+              <p>Your ELocalPass (${qrCode.code}) expires in <strong>${hoursLeft} hours</strong>.</p>
+              <p>Don't miss out! Renew your pass to continue enjoying the benefits.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${rebuyUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                  Get Another ELocalPass
+                </a>
+              </div>
+              <p>Details:</p>
+              <ul>
+                <li>Guests: ${qrCode.guests}</li>
+                <li>Days: ${qrCode.days}</li>
+                <li>Expires: ${qrCode.expiresAt.toLocaleString()}</li>
+              </ul>
+              <p>Thank you for choosing ELocalPass!</p>
+            </div>
+          `
+        }
       }
 
       // Get subject from rebuy config
@@ -469,25 +576,92 @@ export async function POST(request: NextRequest) {
       // FALLBACK: Use stored template if no rebuy config (for backwards compatibility)
       console.log(`📧 REBUY EMAIL: Fallback to stored template for QR ${qrCode.code}`)
       
-      let processedTemplate = emailTemplates.rebuyEmail.customHTML
-        .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
-        .replace(/\{qrCode\}/g, qrCode.code)
-        .replace(/\{guests\}/g, qrCode.guests.toString())
-        .replace(/\{days\}/g, qrCode.days.toString())
-        .replace(/\{hoursLeft\}/g, hoursLeft.toString())
-        .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
-        .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
-        .replace(/\{rebuyUrl\}/g, rebuyUrl)
-      
-      emailHtml = processedTemplate
-
-      // Get subject from rebuy config if available
-      if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
-        const originalSubject = emailTemplates.rebuyEmail.rebuyConfig.emailSubject
-        emailSubject = await translateSubject(originalSubject, customerLanguage)
+      if (emailTemplates.rebuyEmail.customHTML === 'USE_DEFAULT_TEMPLATE') {
+        console.log(`📧 REBUY EMAIL: Loading default template from RebuyEmailTemplate database`)
+        
+        try {
+          // Load default rebuy template from database
+          const defaultRebuyTemplate = await prisma.rebuyEmailTemplate.findFirst({
+            where: { isDefault: true }
+          })
+          
+          if (defaultRebuyTemplate && defaultRebuyTemplate.customHTML) {
+            console.log(`✅ REBUY EMAIL: Found default rebuy template in database`)
+            
+            let processedTemplate = defaultRebuyTemplate.customHTML
+              .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+              .replace(/\{qrCode\}/g, qrCode.code)
+              .replace(/\{guests\}/g, qrCode.guests.toString())
+              .replace(/\{days\}/g, qrCode.days.toString())
+              .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+              .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
+              .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+              .replace(/\{rebuyUrl\}/g, rebuyUrl)
+            
+            emailHtml = processedTemplate
+            
+            // Get subject from saved config if available
+            try {
+              const savedRebuyConfig = JSON.parse(defaultRebuyTemplate.headerText || '{}')
+              const originalSubject = savedRebuyConfig.emailSubject || defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'
+              emailSubject = await translateSubject(originalSubject, customerLanguage)
+            } catch (error) {
+              const originalSubject = defaultRebuyTemplate.subject || 'Your ELocalPass Expires Soon - Don\'t Miss Out!'
+              emailSubject = await translateSubject(originalSubject, customerLanguage)
+            }
+            
+          } else {
+            console.log(`⚠️ REBUY EMAIL: Default rebuy template in database is empty, using generic template`)
+            throw new Error('Default template not found')
+          }
+          
+        } catch (error) {
+          console.error(`❌ REBUY EMAIL: Error loading default template from database:`, error)
+          // Fallback to generic template on database error
+          emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2>Your ELocalPass is Expiring Soon!</h2>
+              <p>Hello ${qrCode.customerName || 'Valued Customer'},</p>
+              <p>Your ELocalPass (${qrCode.code}) expires in <strong>${hoursLeft} hours</strong>.</p>
+              <p>Don't miss out! Renew your pass to continue enjoying the benefits.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${rebuyUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                  Get Another ELocalPass
+                </a>
+              </div>
+              <p>Details:</p>
+              <ul>
+                <li>Guests: ${qrCode.guests}</li>
+                <li>Days: ${qrCode.days}</li>
+                <li>Expires: ${qrCode.expiresAt.toLocaleString()}</li>
+              </ul>
+              <p>Thank you for choosing ELocalPass!</p>
+            </div>
+          `
+          emailSubject = await translateSubject(`Your ELocalPass expires in ${hoursLeft} hours - Renew now!`, customerLanguage)
+        }
       } else {
-        const originalSubject = `Your ELocalPass expires in ${hoursLeft} hours - Renew now!`
-        emailSubject = await translateSubject(originalSubject, customerLanguage)
+        // Use custom template
+        let processedTemplate = emailTemplates.rebuyEmail.customHTML
+          .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+          .replace(/\{qrCode\}/g, qrCode.code)
+          .replace(/\{guests\}/g, qrCode.guests.toString())
+          .replace(/\{days\}/g, qrCode.days.toString())
+          .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+          .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
+          .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+          .replace(/\{rebuyUrl\}/g, rebuyUrl)
+        
+        emailHtml = processedTemplate
+
+        // Get subject from rebuy config if available
+        if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
+          const originalSubject = emailTemplates.rebuyEmail.rebuyConfig.emailSubject
+          emailSubject = await translateSubject(originalSubject, customerLanguage)
+        } else {
+          const originalSubject = `Your ELocalPass expires in ${hoursLeft} hours - Renew now!`
+          emailSubject = await translateSubject(originalSubject, customerLanguage)
+        }
       }
       
     } else {
