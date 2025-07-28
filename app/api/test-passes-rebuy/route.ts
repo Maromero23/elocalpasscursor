@@ -45,6 +45,23 @@ export async function POST(request: NextRequest) {
       console.log(`✅ Found default rebuy template: ${defaultRebuyTemplate.name}`)
       console.log(`📧 Template HTML length: ${defaultRebuyTemplate.customHTML.length} characters`)
       
+      // EXTENSIVE DEBUGGING - Check what's in the template
+      const originalHtml = defaultRebuyTemplate.customHTML
+      console.log(`🔍 TEMPLATE CONTENT CHECK:`)
+      console.log(`- Contains GRAND OPENING: ${originalHtml.includes('GRAND OPENING') ? '✅ YES' : '❌ NO'}`)
+      console.log(`- Contains promotional video: ${originalHtml.includes('Promotional Video') || originalHtml.includes('promotional') || originalHtml.includes('Watch Video') ? '✅ YES' : '❌ NO'}`)
+      console.log(`- Contains Time Remaining: ${originalHtml.includes('Time Remaining') || originalHtml.includes('countdown') || originalHtml.includes('timer') ? '✅ YES' : '❌ NO'}`)
+      console.log(`- Contains Featured Partners: ${originalHtml.includes('Featured Partners') || originalHtml.includes('partners') ? '✅ YES' : '❌ NO'}`)
+      console.log(`- Contains Supporting Local Business: ${originalHtml.includes('Supporting Local Business') ? '✅ YES' : '❌ NO'}`)
+      
+      // Show template sections
+      console.log(`📄 TEMPLATE SECTIONS:`)
+      const sections = originalHtml.split('</div>').length
+      console.log(`- Number of </div> tags: ${sections}`)
+      console.log(`- First 500 chars: ${originalHtml.substring(0, 500)}`)
+      console.log(`- Middle 500 chars: ${originalHtml.substring(Math.floor(originalHtml.length/2) - 250, Math.floor(originalHtml.length/2) + 250)}`)
+      console.log(`- Last 500 chars: ${originalHtml.substring(originalHtml.length - 500)}`)
+      
       // Create comprehensive placeholder replacements
       const customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCodeData.customerEmail}`
       const rebuyUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/passes`
@@ -61,7 +78,7 @@ export async function POST(request: NextRequest) {
       console.log(`- rebuyUrl: ${rebuyUrl}`)
       
       // Use the default rebuy template and replace ALL possible placeholders
-      emailHtml = defaultRebuyTemplate.customHTML
+      emailHtml = originalHtml
         .replace(/\{customerName\}/g, customerName)
         .replace(/\{qrCode\}/g, qrCodeData.code)
         .replace(/\{guests\}/g, qrCodeData.guests.toString())
@@ -78,6 +95,21 @@ export async function POST(request: NextRequest) {
         .replace(/\{cost\}/g, qrCodeData.cost?.toString() || '0')
         .replace(/\{deliveryMethod\}/g, 'now')
 
+      console.log(`📧 AFTER PLACEHOLDER REPLACEMENT:`)
+      console.log(`- Final HTML length: ${emailHtml.length} characters`)
+      console.log(`- Length difference: ${emailHtml.length - originalHtml.length} chars`)
+      console.log(`- Still contains GRAND OPENING: ${emailHtml.includes('GRAND OPENING') ? '✅ YES' : '❌ NO'}`)
+      console.log(`- Still contains promotional video: ${emailHtml.includes('Promotional Video') || emailHtml.includes('promotional') || emailHtml.includes('Watch Video') ? '✅ YES' : '❌ NO'}`)
+      console.log(`- Still contains Time Remaining: ${emailHtml.includes('Time Remaining') || emailHtml.includes('countdown') || emailHtml.includes('timer') ? '✅ YES' : '❌ NO'}`)
+      console.log(`- Still contains Featured Partners: ${emailHtml.includes('Featured Partners') || emailHtml.includes('partners') ? '✅ YES' : '❌ NO'}`)
+      
+      // Check for any remaining unreplaced placeholders
+      const remainingPlaceholders = (emailHtml.match(/\{[^}]+\}/g) || []).filter(p => !p.includes('margin') && !p.includes('padding') && !p.includes('color'))
+      console.log(`- Remaining placeholders: ${remainingPlaceholders.length}`)
+      if (remainingPlaceholders.length > 0) {
+        console.log(`- Unreplaced placeholders: ${remainingPlaceholders.slice(0, 5).join(', ')}`)
+      }
+
       emailSubject = defaultRebuyTemplate.subject || `Your ELocalPass expires in ${hoursLeft} hours - Get another one!`
       
       // Also replace placeholders in subject
@@ -88,10 +120,12 @@ export async function POST(request: NextRequest) {
       
       console.log(`📧 Using default rebuy template: ${defaultRebuyTemplate.name}`)
       console.log(`📧 Subject: ${emailSubject}`)
-      console.log(`📧 Final HTML length: ${emailHtml.length} characters`)
       
-      // Log first 500 characters to verify content
-      console.log(`📧 HTML preview: ${emailHtml.substring(0, 500)}...`)
+      // CRITICAL: Log the exact HTML being sent
+      console.log(`📧 EXACT HTML BEING SENT (first 1000 chars):`)
+      console.log(emailHtml.substring(0, 1000))
+      console.log(`📧 EXACT HTML BEING SENT (last 1000 chars):`)
+      console.log(emailHtml.substring(emailHtml.length - 1000))
       
     } else {
       console.log('❌ No default rebuy template found in database')
@@ -102,6 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send the email
+    console.log(`📧 SENDING EMAIL WITH ${emailHtml.length} CHARACTERS`)
     const emailSent = await sendEmail({
       to: qrCodeData.customerEmail || '',
       subject: emailSubject,
@@ -127,8 +162,12 @@ export async function POST(request: NextRequest) {
         hoursLeft: hoursLeft,
         template: defaultRebuyTemplate?.name || 'Default rebuy template',
         templateSource: 'Database default rebuy template',
-        htmlLength: emailHtml.length,
-        subjectUsed: emailSubject
+        originalHtmlLength: defaultRebuyTemplate?.customHTML?.length || 0,
+        finalHtmlLength: emailHtml.length,
+        subjectUsed: emailSubject,
+        containsVideo: emailHtml.includes('Promotional Video') || emailHtml.includes('promotional') || emailHtml.includes('Watch Video'),
+        containsTimer: emailHtml.includes('Time Remaining') || emailHtml.includes('countdown') || emailHtml.includes('timer'),
+        containsPartners: emailHtml.includes('Featured Partners') || emailHtml.includes('partners')
       })
     } else {
       console.log(`❌ Failed to send rebuy email to ${qrCodeData.customerEmail}`)
