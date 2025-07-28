@@ -189,7 +189,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique QR code (NOW is activation time!)
-    const qrCodeId = `EL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    // Use PASS_ prefix for PayPal orders (default configurationId) to maintain consistency
+    const qrCodeId = scheduledQR.configurationId === 'default' 
+      ? `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      : `EL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + scheduledQR.days)
 
