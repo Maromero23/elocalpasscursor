@@ -129,14 +129,15 @@ export async function POST(request: NextRequest) {
         let emailSent = false
         
         // Welcome emails are always enabled (no toggle needed)
-    console.log(`📧 SCHEDULED QR: Welcome emails are ENABLED - proceeding to send email`)
-          try {
-            // Use English for PayPal orders (same as immediate creation)
-            const customerLanguage = 'en'
-            
-            // Format expiration date
-            const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
+        console.log(`📧 OVERDUE SCHEDULED QR: Welcome emails are ENABLED - proceeding to send email`)
+        
+        try {
+          // Use English for PayPal orders (same as immediate creation)
+          const customerLanguage = 'en'
           
+          // Format expiration date
+          const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
+        
           console.log('📧 OVERDUE SCHEDULED QR: Looking for PayPal welcome email template...')
           
           // Get PayPal-specific template from database (same search as immediate creation)
@@ -223,10 +224,9 @@ export async function POST(request: NextRequest) {
             data: { welcomeEmailSent: true }
           })
 
-          } catch (emailError) {
-            console.error(`❌ Failed to send welcome email to ${scheduledQR.clientEmail}:`, emailError)
-            emailSent = false
-          }
+        } catch (emailError) {
+          console.error(`❌ Failed to send welcome email to ${scheduledQR.clientEmail}:`, emailError)
+          emailSent = false
         }
 
         // Mark as processed

@@ -313,17 +313,18 @@ export async function POST(request: NextRequest) {
     
     // Welcome emails are always enabled (no toggle needed)
     console.log(`📧 SCHEDULED QR: Welcome emails are ENABLED - proceeding to send email`)
-      try {
-        // Import email service and translations
-        const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
-        const { formatDate } = await import('@/lib/translations')
-        
-        const customerLanguage = 'en' // Default language
-        const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
-        
-        let emailHtml = ''
-        let emailSubject = 'Your ELocalPass is Ready - Scheduled Delivery'
+    
+    try {
+      // Import email service and translations
+      const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
+      const { formatDate } = await import('@/lib/translations')
       
+      const customerLanguage = 'en' // Default language
+      const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
+      
+      let emailHtml = ''
+      let emailSubject = 'Your ELocalPass is Ready - Scheduled Delivery'
+    
       // Check if this is a PayPal QR or Seller QR
       if (scheduledQR.configurationId === 'default' || !seller?.savedConfigId) {
         // PayPal QR - use PayPal template
@@ -439,10 +440,9 @@ export async function POST(request: NextRequest) {
       } else {
         console.error(`❌ SCHEDULED QR: Failed to send welcome email to ${scheduledQR.clientEmail}`)
       }
-      } catch (emailError) {
-        console.error('❌ SCHEDULED QR: Error sending welcome email:', emailError)
-        emailSent = false
-      }
+    } catch (emailError) {
+      console.error('❌ SCHEDULED QR: Error sending welcome email:', emailError)
+      emailSent = false
     }
 
     if (emailSent) {
