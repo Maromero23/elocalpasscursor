@@ -259,40 +259,80 @@ export async function POST(request: NextRequest) {
             </div>
             ` : ''}
             
-            <!-- Static Countdown Timer (if enabled) - EMAIL CLIENT COMPATIBLE -->
+            <!-- Enhanced Static Countdown Timer (if enabled) - EMAIL CLIENT COMPATIBLE -->
             ${config.showExpirationTimer !== false ? `
             <div class="countdown-timer">
-                <p>⏰ Time Remaining Until Expiration:</p>
-                <div style="
-                    width: 200px; 
-                    height: 60px; 
-                    background: linear-gradient(to right, #f8fafc, #e2e8f0);
-                    border: 2px solid #cbd5e1;
-                    border-radius: 8px;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    font-family: Arial, sans-serif;
-                    text-align: center;
-                    margin: 16px auto;
-                    box-sizing: border-box;
-                ">
-                    <div style="
-                        font-size: 12px;
-                        font-weight: 500;
-                        color: #4a5568;
-                        margin-bottom: 4px;
-                    ">Time Remaining:</div>
-                    <div style="
-                        font-family: 'Courier New', monospace;
-                        font-size: 18px;
-                        font-weight: bold;
-                        color: #2d3748;
-                    ">{hoursLeft}:00:00</div>
-                </div>
-                <p class="countdown-label" style="text-align: center; font-size: 12px; color: #6b7280;">
-                    Hours remaining (approximate)
+                <p style="text-align: center; color: #dc2626; font-weight: 600; margin: 16px 0 8px 0;">⏰ Time Remaining Until Expiration:</p>
+                <table style="margin: 0 auto; border-collapse: collapse;">
+                    <tr>
+                        <td style="
+                            background: linear-gradient(135deg, #dc2626, #ef4444);
+                            color: white;
+                            padding: 12px 16px;
+                            border-radius: 8px 0 0 8px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            min-width: 50px;
+                            border: 2px solid #dc2626;
+                        ">{hoursLeft}</td>
+                        <td style="
+                            background: #1f2937;
+                            color: white;
+                            padding: 12px 8px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            border-top: 2px solid #dc2626;
+                            border-bottom: 2px solid #dc2626;
+                        ">:</td>
+                        <td style="
+                            background: linear-gradient(135deg, #374151, #4b5563);
+                            color: white;
+                            padding: 12px 16px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            min-width: 50px;
+                            border: 2px solid #dc2626;
+                        ">00</td>
+                        <td style="
+                            background: #1f2937;
+                            color: white;
+                            padding: 12px 8px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            border-top: 2px solid #dc2626;
+                            border-bottom: 2px solid #dc2626;
+                        ">:</td>
+                        <td style="
+                            background: linear-gradient(135deg, #374151, #4b5563);
+                            color: white;
+                            padding: 12px 16px;
+                            border-radius: 0 8px 8px 0;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            min-width: 50px;
+                            border: 2px solid #dc2626;
+                        ">00</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: center; font-size: 10px; color: #6b7280; padding-top: 4px; font-weight: 500;">HOURS</td>
+                        <td></td>
+                        <td style="text-align: center; font-size: 10px; color: #6b7280; padding-top: 4px; font-weight: 500;">MIN</td>
+                        <td></td>
+                        <td style="text-align: center; font-size: 10px; color: #6b7280; padding-top: 4px; font-weight: 500;">SEC</td>
+                    </tr>
+                </table>
+                <p style="text-align: center; font-size: 12px; color: #6b7280; margin: 8px 0; font-style: italic;">
+                    🚨 Don't wait - your pass expires soon!
                 </p>
             </div>
             ` : ''}
