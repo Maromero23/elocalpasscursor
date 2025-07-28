@@ -272,15 +272,25 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        templates: templates.map(template => ({
-          id: template.id,
-          name: template.name,
-          subject: template.subject,
-          isDefault: template.isDefault,
-          createdAt: template.createdAt,
-          data: template.headerText ? JSON.parse(template.headerText) : null,
-          htmlLength: template.customHTML?.length || 0
-        }))
+        templates: templates.map(template => {
+          let data = null
+          try {
+            data = template.headerText ? JSON.parse(template.headerText) : null
+          } catch (error) {
+            console.error(`❌ Error parsing headerText for template ${template.id}:`, error)
+            data = null
+          }
+          
+          return {
+            id: template.id,
+            name: template.name,
+            subject: template.subject,
+            isDefault: template.isDefault,
+            createdAt: template.createdAt,
+            data: data,
+            htmlLength: template.customHTML?.length || 0
+          }
+        })
       })
     } else {
       // Default behavior - load only default template
