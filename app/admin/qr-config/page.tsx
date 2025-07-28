@@ -72,7 +72,7 @@ function QRConfigPageContent() {
   const toast = useToast()
   const navItems = getNavItems(session?.user?.role || "")
 
-  // DEPLOYMENT TIMESTAMP - Version deployed at specific time
+  // DEPLOYMENT TIMESTAMP - Version 4.45.34 deployed at specific time
   
 
   // State for global configuration
