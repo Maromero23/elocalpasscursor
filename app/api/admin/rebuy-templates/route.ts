@@ -306,4 +306,54 @@ export async function GET(request: NextRequest) {
       error: 'Failed to load rebuy template(s)' 
     }, { status: 500 })
   }
-} 
+}
+
+// DELETE: Delete a rebuy template
+export async function DELETE(request: NextRequest) {
+  try {
+    const url = new URL(request.url)
+    const templateId = url.searchParams.get('id')
+
+    if (!templateId) {
+      return NextResponse.json({ error: 'Template ID is required' }, { status: 400 })
+    }
+
+    console.log('🗑️ REBUY TEMPLATE API: Deleting template:', templateId)
+
+    // Check if template exists and is not default
+    const template = await prisma.rebuyEmailTemplate.findUnique({
+      where: { id: templateId }
+    })
+
+    if (!template) {
+      return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+    }
+
+    if (template.isDefault) {
+      return NextResponse.json({ error: 'Cannot delete default template' }, { status: 400 })
+    }
+
+    // Delete the template
+    await prisma.rebuyEmailTemplate.delete({
+      where: { id: templateId }
+    })
+
+    console.log('✅ REBUY TEMPLATE API: Template deleted successfully')
+
+    return NextResponse.json({
+      success: true,
+      message: 'Template deleted successfully',
+      deletedTemplate: {
+        id: template.id,
+        name: template.name
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Error deleting rebuy template:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete template' },
+      { status: 500 }
+    )
+  }
+}

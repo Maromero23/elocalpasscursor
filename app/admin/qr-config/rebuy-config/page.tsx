@@ -567,6 +567,47 @@ function RebuyEmailConfigPageContent() {
     }
   }
 
+  const deleteTemplate = async (templateId: string, templateName: string) => {
+    if (!confirm(`Are you sure you want to delete the template "${templateName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      console.log('🗑️ Deleting rebuy template:', templateId)
+      
+      const response = await fetch(`/api/admin/rebuy-templates?id=${templateId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Template deleted from database:', result)
+        
+        // Remove from local state
+        const updatedTemplates = rebuyTemplates.filter(template => template.id !== templateId)
+        setRebuyTemplates(updatedTemplates)
+        
+        // Update localStorage
+        localStorage.setItem('elocalpass-rebuy-templates', JSON.stringify(updatedTemplates))
+        
+        toast.success('Template Deleted', `Template "${templateName}" deleted successfully!`)
+      } else {
+        const error = await response.json()
+        console.error('❌ Error deleting template:', error)
+        
+        if (error.error === 'Cannot delete default template') {
+          toast.error('Cannot Delete', 'Default templates cannot be deleted')
+        } else {
+          toast.error('Delete Failed', error.error || 'Failed to delete template from database')
+        }
+      }
+    } catch (error) {
+      console.error('❌ Network error deleting template:', error)
+      toast.error('Network Error', 'Failed to delete template due to network error')
+    }
+  }
+
   const saveAsDefault = async () => {
     try {
       const response = await fetch('/api/admin/rebuy-templates', {
@@ -1079,7 +1120,7 @@ function RebuyEmailConfigPageContent() {
                     const template = rebuyTemplates.find(t => t.id === e.target.value)
                     if (template) loadTemplate(template)
                   }}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
                 >
                   <option value="">Select a saved template...</option>
                   {rebuyTemplates.map(template => (
@@ -1088,6 +1129,28 @@ function RebuyEmailConfigPageContent() {
                     </option>
                   ))}
                 </select>
+                
+                {/* Template Management */}
+                {rebuyTemplates.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="text-xs text-gray-600 mb-1">Manage Templates:</div>
+                    {rebuyTemplates.map(template => (
+                      <div key={template.id} className="flex items-center justify-between bg-gray-50 px-2 py-1 rounded text-xs">
+                        <span className="truncate flex-1 mr-2">
+                          {template.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => deleteTemplate(template.id, template.name)}
+                          className="text-red-600 hover:text-red-800 px-1 py-0.5 rounded hover:bg-red-100"
+                          title={`Delete ${template.name}`}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Save Current Template */}
