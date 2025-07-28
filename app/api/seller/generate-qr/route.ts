@@ -415,11 +415,19 @@ ${t('email.welcome.signature', customerLanguage)}
       })
     }
     
-    // 🚀 SEND ACTUAL WELCOME EMAIL (only if not scheduled)
+    // 🚀 SEND ACTUAL WELCOME EMAIL (only if not scheduled and if enabled)
     let emailSent = false
-    try {
-      // Import email service
-      const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
+    
+    // Check if welcome emails are enabled in configuration
+    if (config.button1SendWelcomeEmail !== true) {
+      console.log(`📧 Welcome emails are DISABLED in configuration (button1SendWelcomeEmail: ${config.button1SendWelcomeEmail})`)
+      emailSent = false
+    } else {
+      console.log(`📧 Welcome emails are ENABLED - proceeding to send email`)
+      
+      try {
+        // Import email service
+        const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
       
       // Get email templates from saved configuration
       let emailTemplates = null
@@ -703,10 +711,11 @@ ${t('email.welcome.signature', customerLanguage)}
       } else {
         console.error(`❌ Failed to send welcome email to ${clientEmail}`)
       }
-    } catch (emailError) {
-      console.error('❌ Error sending welcome email:', emailError)
-      emailSent = false
-    }
+      } catch (emailError) {
+        console.error('❌ Error sending welcome email:', emailError)
+        emailSent = false
+      }
+    } // End of welcome email enabled check
     
     console.log(`📧 WELCOME EMAIL SUMMARY:
 To: ${clientEmail}
