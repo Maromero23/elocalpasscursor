@@ -259,19 +259,40 @@ export async function POST(request: NextRequest) {
             </div>
             ` : ''}
             
-            <!-- Dynamic Countdown Timer (if enabled) - LIVE UPDATING IMAGE -->
+            <!-- Static Countdown Timer (if enabled) - EMAIL CLIENT COMPATIBLE -->
             ${config.showExpirationTimer !== false ? `
             <div class="countdown-timer">
                 <p>⏰ Time Remaining Until Expiration:</p>
-                <div style="text-align: center; margin: 16px 0;">
-                    <img src="${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/api/countdown-image?expires={qrExpirationTimestamp}" 
-                         alt="Countdown Timer: {hoursLeft} hours remaining" 
-                         style="display: block; margin: 0 auto; border-radius: 8px;"
-                         width="200" 
-                         height="60" />
+                <div style="
+                    width: 200px; 
+                    height: 60px; 
+                    background: linear-gradient(to right, #f8fafc, #e2e8f0);
+                    border: 2px solid #cbd5e1;
+                    border-radius: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    font-family: Arial, sans-serif;
+                    text-align: center;
+                    margin: 16px auto;
+                    box-sizing: border-box;
+                ">
+                    <div style="
+                        font-size: 12px;
+                        font-weight: 500;
+                        color: #4a5568;
+                        margin-bottom: 4px;
+                    ">Time Remaining:</div>
+                    <div style="
+                        font-family: 'Courier New', monospace;
+                        font-size: 18px;
+                        font-weight: bold;
+                        color: #2d3748;
+                    ">{hoursLeft}:00:00</div>
                 </div>
                 <p class="countdown-label" style="text-align: center; font-size: 12px; color: #6b7280;">
-                    This timer updates each time you open the email
+                    Hours remaining (approximate)
                 </p>
             </div>
             ` : ''}

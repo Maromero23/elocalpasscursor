@@ -25,28 +25,40 @@ export async function GET(request: NextRequest) {
     
     const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
     
-    // Generate SVG countdown image
-    const svg = `
-      <svg width="200" height="60" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#f8fafc;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#e2e8f0;stop-opacity:1" />
-          </linearGradient>
-        </defs>
-        <rect width="200" height="60" fill="url(#bg)" stroke="#cbd5e1" stroke-width="2" rx="8"/>
-        <text x="100" y="25" font-family="Arial, sans-serif" font-size="12" font-weight="500" text-anchor="middle" fill="#4a5568">
-          Time Remaining:
-        </text>
-        <text x="100" y="45" font-family="Courier New, monospace" font-size="18" font-weight="bold" text-anchor="middle" fill="${timeLeft <= 0 ? '#dc2626' : '#2d3748'}">
-          ${timeLeft <= 0 ? 'EXPIRED' : timeString}
-        </text>
-      </svg>
+    // Generate HTML-based countdown image (more email client compatible)
+    const htmlImage = `
+      <div style="
+        width: 200px; 
+        height: 60px; 
+        background: linear-gradient(to right, #f8fafc, #e2e8f0);
+        border: 2px solid #cbd5e1;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        box-sizing: border-box;
+      ">
+        <div style="
+          font-size: 12px;
+          font-weight: 500;
+          color: #4a5568;
+          margin-bottom: 4px;
+        ">Time Remaining:</div>
+        <div style="
+          font-family: 'Courier New', monospace;
+          font-size: 18px;
+          font-weight: bold;
+          color: ${timeLeft <= 0 ? '#dc2626' : '#2d3748'};
+        ">${timeLeft <= 0 ? 'EXPIRED' : timeString}</div>
+      </div>
     `
     
-    return new NextResponse(svg, {
+    return new NextResponse(htmlImage, {
       headers: {
-        'Content-Type': 'image/svg+xml',
+        'Content-Type': 'text/html',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0'
