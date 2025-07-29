@@ -436,49 +436,53 @@ export default function CreateEnhancedLandingPage() {
   }
 
   const saveAsDefaultTemplate = async () => {
-    if (confirm('This will replace the current default landing page template. Are you sure?')) {
-      try {
-        console.log('💾 Saving current design as default template...')
-        
-        // Save to database as default template
-        const response = await fetch('/api/admin/landing-page-templates', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            name: 'DEFAULT LANDING PAGE 1',
-            logoUrl: formData.logoUrl,
-            primaryColor: formData.primaryColor,
-            secondaryColor: formData.secondaryColor,
-            backgroundColor: formData.backgroundColor,
-            headerText: formData.headerText,
-            descriptionText: formData.descriptionText,
-            ctaButtonText: formData.ctaButtonText,
-            showPayPal: true,
-            showContactForm: true,
-            customCSS: null,
-            isDefault: true // This is the key - marks it as the default template
+    const templateName = prompt('Enter name for the default template:', 'MASTER DEFAULT LANDING PAGE')
+    
+    if (templateName && templateName.trim()) {
+      if (confirm(`This will replace the current default landing page template with "${templateName.trim()}". Are you sure?`)) {
+        try {
+          console.log('💾 Saving current design as default template...')
+          
+          // Save to database as default template
+          const response = await fetch('/api/admin/landing-page-templates', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              name: templateName.trim(),
+              logoUrl: formData.logoUrl,
+              primaryColor: formData.primaryColor,
+              secondaryColor: formData.secondaryColor,
+              backgroundColor: formData.backgroundColor,
+              headerText: formData.headerText,
+              descriptionText: formData.descriptionText,
+              ctaButtonText: formData.ctaButtonText,
+              showPayPal: true,
+              showContactForm: true,
+              customCSS: null,
+              isDefault: true // This is the key - marks it as the default template
+            })
           })
-        })
 
-        if (response.ok) {
-          const result = await response.json()
-          console.log('✅ Default template saved to database:', result)
-          
-          // Reload templates to reflect changes
-          await loadSavedTemplates()
-          
-          toast.success('Default Template Saved!', 'Current design saved as the default landing page template')
-        } else {
-          const errorData = await response.json()
-          console.error('❌ Failed to save default template:', errorData)
-          toast.error('Save Failed', errorData.error || 'Failed to save default template')
+          if (response.ok) {
+            const result = await response.json()
+            console.log('✅ Default template saved to database:', result)
+            
+            // Reload templates to reflect changes
+            await loadSavedTemplates()
+            
+            toast.success('Default Template Saved!', `"${templateName.trim()}" saved as the default landing page template`)
+          } else {
+            const errorData = await response.json()
+            console.error('❌ Failed to save default template:', errorData)
+            toast.error('Save Failed', errorData.error || 'Failed to save default template')
+          }
+        } catch (error) {
+          console.error('❌ Error saving default template:', error)
+          toast.error('Save Failed', 'Failed to save default template')
         }
-      } catch (error) {
-        console.error('❌ Error saving default template:', error)
-        toast.error('Save Failed', 'Failed to save default template')
       }
     }
   }
