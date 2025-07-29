@@ -199,7 +199,7 @@ export default function CreateEnhancedLandingPage() {
   const loadDefaultTemplateAsInitial = async () => {
     try {
       console.log('🔧 Loading DEFAULT template from database for form initialization...')
-      const response = await fetch('/api/landing/default-template')
+      const response = await fetch(`/api/landing/default-template?t=${Date.now()}`)
       if (response.ok) {
         const result = await response.json()
         if (result.success && result.template) {

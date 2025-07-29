@@ -23,10 +23,17 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ PUBLIC API: Default template found:', defaultTemplate.name)
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       template: defaultTemplate
     })
+    
+    // Add no-cache headers to prevent stale data
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
     
   } catch (error) {
     console.error('❌ Error fetching default template:', error)
