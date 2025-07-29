@@ -63,25 +63,46 @@ export async function GET(request: NextRequest) {
       if (config.button3LandingPageChoice === 'DEFAULT' && (config.button3DeliveryMethod === 'URLS' || config.button3DeliveryMethod === 'BOTH')) {
         console.log('🔍 SELLER CONFIG: Using default landing page template')
         
-        // Get the default landing page template from database
-        const defaultTemplate = await prisma.landingPageTemplate.findFirst({
-          where: { isDefault: true }
-        })
-        
-        if (defaultTemplate) {
-          console.log('✅ SELLER CONFIG: Found default template:', defaultTemplate.name)
+        // First, check if there are saved temporaryUrls for default template
+        if (selectedUrlIds.length > 0 && landingPageConfig?.temporaryUrls) {
+          console.log('🔍 SELLER CONFIG: Found saved default template URLs in temporaryUrls')
+          const temporaryUrls = landingPageConfig.temporaryUrls || []
           
-          // Create a default landing page URL entry
-          landingPageUrls = [{
-            id: 'default-template',
-            name: defaultTemplate.name,
-            url: '/landing/default',
-            description: 'Default landing page template',
-            // Generate the full landing page URL for default template
-            fullLandingUrl: `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/landing/default/${savedConfig.id}`
-          }]
+          landingPageUrls = temporaryUrls
+            .filter((url: any) => selectedUrlIds.includes(url.id))
+            .map((url: any) => {
+              return {
+                id: url.id,
+                name: url.name,
+                url: url.url,
+                description: url.description,
+                // Generate the full landing page URL for default template
+                fullLandingUrl: url.url.startsWith('/landing/default/') ? 
+                  `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}${url.url}` :
+                  url.url
+              }
+            })
         } else {
-          console.log('⚠️ SELLER CONFIG: No default template found in database')
+          // Fallback: Get the default landing page template from database
+          const defaultTemplate = await prisma.landingPageTemplate.findFirst({
+            where: { isDefault: true }
+          })
+          
+          if (defaultTemplate) {
+            console.log('✅ SELLER CONFIG: Found default template:', defaultTemplate.name)
+            
+            // Create a default landing page URL entry
+            landingPageUrls = [{
+              id: 'default-template',
+              name: defaultTemplate.name,
+              url: '/landing/default',
+              description: 'Default landing page template',
+              // Generate the full landing page URL for default template
+              fullLandingUrl: `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/landing/default/${savedConfig.id}`
+            }]
+          } else {
+            console.log('⚠️ SELLER CONFIG: No default template found in database')
+          }
         }
       } else if (selectedUrlIds.length > 0 && landingPageConfig) {
         // Get URLs from the configuration's temporaryUrls (custom landing pages)
