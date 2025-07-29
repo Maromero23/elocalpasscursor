@@ -134,51 +134,45 @@ export default function CreateEnhancedLandingPage() {
     logoUrl: '',
     configurationName: '',
     
-    // Header Text
-    headerText: 'WELCOME TO......',
-    headerTextColor: '#f97316', // Orange (as shown in screenshot)
+    // These will be loaded from the DEFAULT template in database
+    // Temporary fallback values until loaded
+    headerText: 'Loading...',
+    headerTextColor: '#f97316',
     headerFontFamily: 'Arial, sans-serif',
     headerFontSize: '32',
     
-    // Description Text  
-    descriptionText: 'Thanks you very much for giving yourself the opportunity to discover the benefits of the club. To receive your 7-day full access gift to eLocalPass, simply fill out the fields below and you will receive your free eLocalPass via email.',
-    descriptionTextColor: '#1e40af', // Blue (as shown in screenshot)
+    descriptionText: 'Loading...',
+    descriptionTextColor: '#1e40af',
     descriptionFontFamily: 'Arial, sans-serif',
     descriptionFontSize: '18',
     
-    // CTA Button Text
-    ctaButtonText: 'GET YOUR ELOCALPASS NOW',
-    ctaButtonTextColor: '#ffffff', // White (as shown in screenshot)
+    ctaButtonText: 'Loading...',
+    ctaButtonTextColor: '#ffffff',
     ctaButtonFontFamily: 'Arial, sans-serif',
     ctaButtonFontSize: '18',
     
-    // Form Title Text
-    formTitleText: 'SIGN UP FOR YOUR ELOCALPASS',
-    formTitleTextColor: '#ffffff', // White (as shown in screenshot)
+    formTitleText: 'Loading...',
+    formTitleTextColor: '#ffffff',
     formTitleFontFamily: 'Arial, sans-serif',
     formTitleFontSize: '24',
     
-    // Form Instructions Text
-    formInstructionsText: 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
-    formInstructionsTextColor: '#ffffff', // White (as shown in screenshot)
+    formInstructionsText: 'Loading...',
+    formInstructionsTextColor: '#ffffff',
     formInstructionsFontFamily: 'Arial, sans-serif',
     formInstructionsFontSize: '16',
     
-    // Footer Disclaimer Text
-    footerDisclaimerText: 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
-    footerDisclaimerTextColor: '#ffffff', // White (as shown in screenshot)
+    footerDisclaimerText: 'Loading...',
+    footerDisclaimerTextColor: '#ffffff',
     footerDisclaimerFontFamily: 'Arial, sans-serif',
     footerDisclaimerFontSize: '14',
     
-    // Brand Colors
-    primaryColor: '#1e40af', // Darker blue (correct as confirmed)
+    primaryColor: '#1e40af',
     secondaryColor: '#f97316',
     backgroundColor: '#ffffff',
     
-    // Individual Box Colors
-    guestSelectionBoxColor: '#3b82f6', // Blue box for guest selection
-    daySelectionBoxColor: '#3b82f6', // Blue box for day selection  
-    footerDisclaimerBoxColor: '#1e40af' // Darker blue for footer disclaimer
+    guestSelectionBoxColor: '#3b82f6',
+    daySelectionBoxColor: '#3b82f6',
+    footerDisclaimerBoxColor: '#1e40af'
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [generatedUrl, setGeneratedUrl] = useState('')
@@ -200,6 +194,51 @@ export default function CreateEnhancedLandingPage() {
     socialMediaText: 'Check out this amazing local experience!',
     distributionNotes: ''
   })
+
+  // Function to load default template from database
+  const loadDefaultTemplateAsInitial = async () => {
+    try {
+      console.log('🔧 Loading DEFAULT template from database for form initialization...')
+      const response = await fetch('/api/landing/default-template')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.template) {
+          console.log('✅ Loading DEFAULT template:', result.template.name)
+          
+          // Parse additional styling from customCSS if available
+          let additionalStyling = {}
+          if (result.template.customCSS) {
+            try {
+              additionalStyling = JSON.parse(result.template.customCSS)
+            } catch (error) {
+              console.warn('Could not parse default template customCSS:', error)
+            }
+          }
+          
+          // Update form data with default template values
+          setFormData(prevData => ({
+            ...prevData,
+            // Apply template data
+            headerText: result.template.headerText,
+            descriptionText: result.template.descriptionText,
+            ctaButtonText: result.template.ctaButtonText,
+            primaryColor: result.template.primaryColor,
+            secondaryColor: result.template.secondaryColor,
+            backgroundColor: result.template.backgroundColor,
+            logoUrl: result.template.logoUrl || '',
+            // Apply additional styling
+            ...additionalStyling
+          }))
+          
+          console.log('✅ Form initialized with DEFAULT template from database')
+        }
+      } else {
+        console.warn('⚠️ Could not load default template, using fallback values')
+      }
+    } catch (error) {
+      console.error('❌ Error loading default template for initialization:', error)
+    }
+  }
 
   // Fetch global configuration on component mount
   useEffect(() => {
@@ -240,6 +279,10 @@ export default function CreateEnhancedLandingPage() {
           // For fresh/new configurations, also load saved templates
           console.log('✅ Starting fresh configuration - loading saved templates')
           await loadSavedTemplates()
+          
+          // Load DEFAULT template from database to initialize form
+          console.log('✅ Loading DEFAULT template for form initialization')
+          await loadDefaultTemplateAsInitial()
         }
       } catch (error) {
         console.error('❌ Error initializing page:', error)
