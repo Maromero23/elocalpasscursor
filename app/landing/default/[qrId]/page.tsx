@@ -9,6 +9,7 @@ export default function DefaultLandingPage() {
   const { success, error } = useToast()
   const [template, setTemplate] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     clientName: '',
     clientEmail: '',
@@ -27,6 +28,7 @@ export default function DefaultLandingPage() {
   const loadDefaultTemplate = async () => {
     try {
       console.log('🔍 Loading default landing page for qrId:', params.qrId)
+      setErrorMessage(null) // Clear any previous errors
       
       // First, try to load the saved configuration from database
       const configResponse = await fetch(`/api/landing/config/${params.qrId}`)
@@ -108,11 +110,25 @@ export default function DefaultLandingPage() {
               
               setLoading(false)
               return
+            } else {
+              const errorMsg = result.error || 'Default template not found'
+              console.error('❌ Template API error:', errorMsg)
+              setErrorMessage(errorMsg)
             }
+          } else {
+            const errorMsg = `Failed to load default template (HTTP ${templateResponse.status})`
+            console.error('❌ Template API HTTP error:', errorMsg)
+            setErrorMessage(errorMsg)
           }
         } else {
+          const errorMsg = 'This configuration does not use the default landing page template'
           console.log('⚠️ Configuration does not use default template')
+          setErrorMessage(errorMsg)
         }
+      } else {
+        const errorMsg = `Failed to load configuration (HTTP ${configResponse.status})`
+        console.error('❌ Config API HTTP error:', errorMsg)
+        setErrorMessage(errorMsg)
       }
       
       // Fallback: load just the default template
@@ -129,14 +145,19 @@ export default function DefaultLandingPage() {
             footerDisclaimerText: 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.'
           })
         } else {
-          error('Template Error', 'Default template not found')
+          const errorMsg = result.error || 'Default template not found'
+          console.error('❌ Fallback template API error:', errorMsg)
+          setErrorMessage(errorMsg)
         }
       } else {
-        error('Template Error', 'Failed to load default template')
+        const errorMsg = `Failed to load default template (HTTP ${response.status})`
+        console.error('❌ Fallback template API HTTP error:', errorMsg)
+        setErrorMessage(errorMsg)
       }
     } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load default template'
       console.error('❌ Error loading default template:', err)
-      error('Template Error', 'Failed to load default template')
+      setErrorMessage(errorMsg)
     } finally {
       setLoading(false)
     }
@@ -193,12 +214,26 @@ export default function DefaultLandingPage() {
     )
   }
 
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error: {errorMessage}</h1>
+          <p className="text-gray-600">The default landing page could not be loaded due to an error.</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!template) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Template Not Found</h1>
           <p className="text-gray-600">The default landing page template could not be loaded.</p>
+          {errorMessage && (
+            <p className="text-sm text-red-500 mt-2">Error: {errorMessage}</p>
+          )}
         </div>
       </div>
     )
