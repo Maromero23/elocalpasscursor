@@ -303,7 +303,7 @@ export default function CreateEnhancedLandingPage() {
           id: template.id,
           name: template.name,
           data: {
-            businessName: template.name,
+            businessName: '', // Don't populate business name from template name
             logoUrl: template.logoUrl,
             headerText: template.headerText,
             descriptionText: template.descriptionText,
