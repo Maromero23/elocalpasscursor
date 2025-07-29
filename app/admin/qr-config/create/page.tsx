@@ -243,6 +243,10 @@ export default function CreateEnhancedLandingPage() {
             console.log('    Primary:', newFormData.primaryColor)
             console.log('    Secondary:', newFormData.secondaryColor)
             console.log('    Background:', newFormData.backgroundColor)
+            console.log('    Box colors:')
+            console.log('      Guest Selection:', newFormData.guestSelectionBoxColor)
+            console.log('      Day Selection:', newFormData.daySelectionBoxColor)
+            console.log('      Footer Disclaimer:', newFormData.footerDisclaimerBoxColor)
             
             return newFormData
           })
@@ -256,6 +260,14 @@ export default function CreateEnhancedLandingPage() {
       console.error('❌ Error loading default template for initialization:', error)
     }
   }
+
+  // Log when formData changes to confirm state updates
+  useEffect(() => {
+    console.log('🔄 FORM DATA CHANGED:')
+    console.log('  Primary Color:', formData.primaryColor)
+    console.log('  Secondary Color:', formData.secondaryColor)
+    console.log('  Background Color:', formData.backgroundColor)
+  }, [formData.primaryColor, formData.secondaryColor, formData.backgroundColor])
 
   // Fetch global configuration on component mount
   useEffect(() => {
