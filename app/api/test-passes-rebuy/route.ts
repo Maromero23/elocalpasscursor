@@ -35,12 +35,16 @@ export async function POST(request: NextRequest) {
     console.log('📧 Loading SPECIFIC PayPal rebuy email template from database...')
     const paypalRebuyTemplate = await prisma.rebuyEmailTemplate.findFirst({
       where: { 
-        name: {
-          contains: "Paypal Rebuy Email"
-        }
+        OR: [
+          { name: { contains: "Paypal Rebuy Email", mode: 'insensitive' } },
+          { name: { contains: "Paypal Rebuy", mode: 'insensitive' } },
+          { name: { contains: "PayPal", mode: 'insensitive' } }
+        ]
       },
       orderBy: { createdAt: 'desc' }
     })
+
+    console.log(`🔍 PayPal template search result: ${paypalRebuyTemplate ? `Found "${paypalRebuyTemplate.name}"` : 'Not found'}`)
 
     // Fallback to default if PayPal template not found
     const rebuyTemplate = paypalRebuyTemplate || await prisma.rebuyEmailTemplate.findFirst({
