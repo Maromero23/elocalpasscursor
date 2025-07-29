@@ -186,7 +186,7 @@ export default function CreateEnhancedLandingPage() {
   
   // Template Management State
   const [templateType, setTemplateType] = useState<'landing' | 'email'>('landing')
-  const [landingTemplates, setLandingTemplates] = useState<Array<{id: string, name: string, data: any}>>([])
+  const [landingTemplates, setLandingTemplates] = useState<Array<{id: string, name: string, data: any, createdAt: Date, isDefault: boolean}>>([])
   const [currentTemplateName, setCurrentTemplateName] = useState('')
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   
@@ -227,7 +227,7 @@ export default function CreateEnhancedLandingPage() {
           setCameFromLibrary(true) // We came from the library if in edit mode
           
           // Only load saved templates when editing existing configurations
-          loadSavedTemplates()
+          await loadSavedTemplates()
           
           // Load configuration from database instead of localStorage
           if (qrId) {
@@ -237,8 +237,9 @@ export default function CreateEnhancedLandingPage() {
             console.log('❌ Missing qrId for edit mode!')
           }
         } else {
-          // For fresh/new configurations, start with empty templates
-          console.log('✅ Starting fresh configuration - not loading saved templates')
+          // For fresh/new configurations, also load saved templates
+          console.log('✅ Starting fresh configuration - loading saved templates')
+          await loadSavedTemplates()
         }
       } catch (error) {
         console.error('❌ Error initializing page:', error)
@@ -284,35 +285,118 @@ export default function CreateEnhancedLandingPage() {
     }
   }
 
-  const loadSavedTemplates = () => {
-    const savedLandingTemplates = localStorage.getItem('elocalpass-landing-templates')
-    if (savedLandingTemplates) {
-      setLandingTemplates(JSON.parse(savedLandingTemplates))
+  const loadSavedTemplates = async () => {
+    try {
+      console.log('🔧 Loading landing page templates from database...')
+      const response = await fetch('/api/admin/landing-page-templates')
+      console.log('🔧 API Response status:', response.status)
+      
+      const result = await response.json()
+      console.log('🔧 API Response result:', result)
+      
+      if (response.ok && result.success && result.templates) {
+        console.log('🔧 Found templates in response:', result.templates.length)
+        console.log('🔧 Template names:', result.templates.map((t: any) => t.name))
+        
+        // Convert database templates to the format expected by the UI
+        const templates = result.templates.map((template: any) => ({
+          id: template.id,
+          name: template.name,
+          data: {
+            businessName: template.name,
+            logoUrl: template.logoUrl,
+            headerText: template.headerText,
+            descriptionText: template.descriptionText,
+            ctaButtonText: template.ctaButtonText,
+            formTitleText: 'Complete Your Details',
+            formInstructionsText: 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+            footerDisclaimerText: 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
+            primaryColor: template.primaryColor,
+            secondaryColor: template.secondaryColor,
+            backgroundColor: template.backgroundColor,
+            showPayPal: template.showPayPal,
+            showContactForm: template.showContactForm,
+            customCSS: template.customCSS
+          },
+          createdAt: new Date(template.createdAt),
+          isDefault: template.isDefault
+        }))
+        console.log('🔧 Converted templates:', templates)
+        setLandingTemplates(templates)
+        console.log('✅ Loaded', templates.length, 'landing page templates from database')
+      } else {
+        console.log('❌ No landing page templates found in database')
+        console.log('❌ Response not ok or no templates:', { ok: response.ok, success: result.success, templates: result.templates })
+        setLandingTemplates([])
+      }
+    } catch (error) {
+      console.error('❌ Error loading landing page templates from database:', error)
+      setLandingTemplates([])
     }
   }
 
-  const saveTemplate = () => {
+  const saveTemplate = async () => {
     if (!currentTemplateName.trim()) {
       toast.warning('Missing Template Name', 'Please enter a template name')
       return
     }
     
-    const newTemplate = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: currentTemplateName,
-      data: { ...formData }
-    }
-    
-    const updatedTemplates = [...landingTemplates, newTemplate]
-    setLandingTemplates(updatedTemplates)
-    localStorage.setItem('elocalpass-landing-templates', JSON.stringify(updatedTemplates))
-    setShowSaveDialog(false)
-    setCurrentTemplateName('')
-    toast.success('Template Saved', `Template "${newTemplate.name}" saved successfully!`)
-    
-    // Also save to QR configuration if in edit mode
-    if (editMode && editQrId) {
-      saveToQRConfiguration()
+    try {
+      // Save to database first
+      const response = await fetch('/api/admin/landing-page-templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: currentTemplateName,
+          logoUrl: formData.logoUrl,
+          primaryColor: formData.primaryColor,
+          secondaryColor: formData.secondaryColor,
+          backgroundColor: formData.backgroundColor,
+          headerText: formData.headerText,
+          descriptionText: formData.descriptionText,
+          ctaButtonText: formData.ctaButtonText,
+          showPayPal: true, // Default value
+          showContactForm: true, // Default value
+          customCSS: null, // Default value
+          isDefault: false
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Named landing page template saved to database:', result)
+        
+        // Update local state with database template
+        const newTemplate = {
+          id: result.template.id,
+          name: result.template.name,
+          data: { ...formData },
+          createdAt: new Date(),
+          isDefault: false
+        }
+
+        const updatedTemplates = [...landingTemplates, newTemplate]
+        setLandingTemplates(updatedTemplates)
+        
+        setShowSaveDialog(false)
+        setCurrentTemplateName('')
+        toast.success('Template Saved to Database', `Template "${newTemplate.name}" saved successfully!`)
+        
+        // Also save to QR configuration if in edit mode
+        if (editMode && editQrId) {
+          saveToQRConfiguration()
+        }
+      } else {
+        const errorData = await response.json()
+        console.error('❌ Failed to save template to database:', errorData)
+        toast.error('Save Failed', 'Failed to save template to database')
+      }
+    } catch (error) {
+      console.error('❌ Error saving template to database:', error)
+      toast.error('Save Failed', 'Failed to save template to database')
     }
   }
 
@@ -321,13 +405,33 @@ export default function CreateEnhancedLandingPage() {
     toast.success('Template Loaded', `Template "${template.name}" loaded successfully!`)
   }
 
-  const deleteLandingTemplate = (index: number) => {
-    if (confirm(`Are you sure you want to delete template "${landingTemplates[index].name}"?`)) {
-      const updatedTemplates = landingTemplates.filter((template, i) => i !== index)
-      setLandingTemplates(updatedTemplates)
-      localStorage.setItem('elocalpass-landing-templates', JSON.stringify(updatedTemplates))
-      setCurrentTemplateName('')
-      toast.success('Template Deleted', `Template "${landingTemplates[index].name}" deleted successfully!`)
+  const deleteLandingTemplate = async (index: number) => {
+    const template = landingTemplates[index]
+    if (!template) return
+    
+    if (confirm(`Are you sure you want to delete template "${template.name}"?`)) {
+      try {
+        // Delete from database
+        const response = await fetch(`/api/admin/landing-page-templates?id=${template.id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        })
+
+        if (response.ok) {
+          // Update local state
+          const updatedTemplates = landingTemplates.filter((_, i) => i !== index)
+          setLandingTemplates(updatedTemplates)
+          setCurrentTemplateName('')
+          toast.success('Template Deleted', `Template "${template.name}" deleted successfully!`)
+        } else {
+          const errorData = await response.json()
+          console.error('❌ Failed to delete template from database:', errorData)
+          toast.error('Delete Failed', errorData.error || 'Failed to delete template from database')
+        }
+      } catch (error) {
+        console.error('❌ Error deleting template from database:', error)
+        toast.error('Delete Failed', 'Failed to delete template from database')
+      }
     }
   }
 
@@ -1198,7 +1302,14 @@ export default function CreateEnhancedLandingPage() {
                       <div className="grid gap-2">
                         {landingTemplates.map((template, index) => (
                           <div key={index} className="flex items-center justify-between bg-white p-3 rounded border border-green-200">
-                            <span className="text-sm text-green-800">{template.name}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-green-800">{template.name}</span>
+                              {template.isDefault && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                                  Default
+                                </span>
+                              )}
+                            </div>
                             <div className="space-x-2">
                               <button
                                 type="button"
@@ -1207,13 +1318,15 @@ export default function CreateEnhancedLandingPage() {
                               >
                                 Load
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => deleteLandingTemplate(index)}
-                                className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
-                              >
-                                Delete
-                              </button>
+                              {!template.isDefault && (
+                                <button
+                                  type="button"
+                                  onClick={() => deleteLandingTemplate(index)}
+                                  className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}
