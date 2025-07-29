@@ -4,11 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 
-interface DefaultLandingPageProps {
-  qrId: string
-}
-
-export default function DefaultLandingPage({ qrId }: DefaultLandingPageProps) {
+export default function DefaultLandingPage() {
   const params = useParams()
   const { success, error } = useToast()
   const [template, setTemplate] = useState<any>(null)
@@ -23,8 +19,10 @@ export default function DefaultLandingPage({ qrId }: DefaultLandingPageProps) {
   })
 
   useEffect(() => {
-    loadDefaultTemplate()
-  }, [])
+    if (params.qrId) {
+      loadDefaultTemplate()
+    }
+  }, [params.qrId])
 
   const loadDefaultTemplate = async () => {
     try {
