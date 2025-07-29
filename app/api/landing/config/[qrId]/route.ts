@@ -25,10 +25,10 @@ export async function GET(
       id: savedConfig.id,
       name: savedConfig.name,
       description: savedConfig.description,
-      config: JSON.parse(savedConfig.config),
-      emailTemplates: savedConfig.emailTemplates ? JSON.parse(savedConfig.emailTemplates) : null,
-      landingPageConfig: savedConfig.landingPageConfig ? JSON.parse(savedConfig.landingPageConfig) : null,
-      selectedUrlIds: savedConfig.selectedUrlIds ? JSON.parse(savedConfig.selectedUrlIds) : null,
+      config: typeof savedConfig.config === 'string' ? JSON.parse(savedConfig.config) : savedConfig.config,
+      emailTemplates: savedConfig.emailTemplates ? (typeof savedConfig.emailTemplates === 'string' ? JSON.parse(savedConfig.emailTemplates) : savedConfig.emailTemplates) : null,
+      landingPageConfig: savedConfig.landingPageConfig ? (typeof savedConfig.landingPageConfig === 'string' ? JSON.parse(savedConfig.landingPageConfig) : savedConfig.landingPageConfig) : null,
+      selectedUrlIds: savedConfig.selectedUrlIds ? (typeof savedConfig.selectedUrlIds === 'string' ? JSON.parse(savedConfig.selectedUrlIds) : savedConfig.selectedUrlIds) : null,
       createdAt: savedConfig.createdAt,
       updatedAt: savedConfig.updatedAt
     }
