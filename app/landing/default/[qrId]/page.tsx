@@ -28,11 +28,11 @@ export default function DefaultLandingPage({ qrId }: DefaultLandingPageProps) {
 
   const loadDefaultTemplate = async () => {
     try {
-      const response = await fetch('/api/admin/landing-page-templates?isDefault=true')
+      const response = await fetch('/api/landing/default-template')
       if (response.ok) {
         const result = await response.json()
-        if (result.success && result.templates.length > 0) {
-          setTemplate(result.templates[0])
+        if (result.success && result.template) {
+          setTemplate(result.template)
         } else {
           error('Template Error', 'Default template not found')
         }
