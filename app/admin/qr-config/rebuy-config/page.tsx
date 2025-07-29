@@ -449,7 +449,20 @@ function RebuyEmailConfigPageContent() {
     }
 
     try {
-      // Save to database first
+      // Generate the HTML using the UI function (with all enhanced components)
+      const generatedHTML = generateCustomRebuyEmailHtml(rebuyConfig)
+      
+      if (!generatedHTML) {
+        toast.error('Cannot Save Template', 'Rebuy email is disabled or HTML generation failed')
+        return
+      }
+
+      console.log('🎯 SAVING TEMPLATE: Generated HTML length:', generatedHTML.length)
+      console.log('🎯 SAVING TEMPLATE: Contains video:', generatedHTML.includes('🎥 Promotional Video'))
+      console.log('🎯 SAVING TEMPLATE: Contains partners:', generatedHTML.includes('featured-partners'))
+      console.log('🎯 SAVING TEMPLATE: Contains banners:', generatedHTML.includes('banner-images'))
+
+      // Save to database with the UI-generated HTML
       const response = await fetch('/api/admin/rebuy-templates', {
         method: 'POST',
         headers: {
@@ -458,6 +471,7 @@ function RebuyEmailConfigPageContent() {
         credentials: 'include',
         body: JSON.stringify({
           rebuyConfig: rebuyConfig,
+          generatedHTML: generatedHTML, // Send the UI-generated HTML
           action: 'saveTemplate',
           templateName: currentTemplateName
         })
@@ -485,38 +499,12 @@ function RebuyEmailConfigPageContent() {
         toast.success('Template Saved to Database', `Template "${newTemplate.name}" saved successfully! HTML Length: ${result.template.htmlLength} characters`)
       } else {
         const error = await response.json()
-        console.error('❌ Error saving named template:', error)
-        
-        // Fallback to localStorage if database fails
-        const newTemplate = {
-          id: Date.now().toString(),
-          name: currentTemplateName,
-          data: rebuyConfig,
-          createdAt: new Date()
-        }
-
-        const updatedTemplates = [...rebuyTemplates, newTemplate]
-        setRebuyTemplates(updatedTemplates)
-        localStorage.setItem('elocalpass-rebuy-templates', JSON.stringify(updatedTemplates))
-        setCurrentTemplateName('')
-        toast.warning('Saved to localStorage', `Database save failed, template "${newTemplate.name}" saved locally only`)
+        toast.error('Failed to Save Template', error.details || 'Error saving template to database')
+        console.error('❌ Error saving template:', error)
       }
     } catch (error) {
-      console.error('❌ Network error saving named template:', error)
-      
-      // Fallback to localStorage
-      const newTemplate = {
-        id: Date.now().toString(),
-        name: currentTemplateName,
-        data: rebuyConfig,
-        createdAt: new Date()
-      }
-
-      const updatedTemplates = [...rebuyTemplates, newTemplate]
-      setRebuyTemplates(updatedTemplates)
-      localStorage.setItem('elocalpass-rebuy-templates', JSON.stringify(updatedTemplates))
-      setCurrentTemplateName('')
-      toast.warning('Saved to localStorage', `Network error, template "${newTemplate.name}" saved locally only`)
+      console.error('❌ Error saving template:', error)
+      toast.error('Network Error', 'Failed to save template')
     }
   }
 
@@ -623,6 +611,19 @@ function RebuyEmailConfigPageContent() {
 
   const saveAsDefault = async () => {
     try {
+      // Generate the HTML using the UI function (with all enhanced components)
+      const generatedHTML = generateCustomRebuyEmailHtml(rebuyConfig)
+      
+      if (!generatedHTML) {
+        toast.error('Cannot Save Default', 'Rebuy email is disabled or HTML generation failed')
+        return
+      }
+
+      console.log('🎯 SAVING DEFAULT: Generated HTML length:', generatedHTML.length)
+      console.log('🎯 SAVING DEFAULT: Contains video:', generatedHTML.includes('🎥 Promotional Video'))
+      console.log('🎯 SAVING DEFAULT: Contains partners:', generatedHTML.includes('featured-partners'))
+      console.log('🎯 SAVING DEFAULT: Contains banners:', generatedHTML.includes('banner-images'))
+
       const response = await fetch('/api/admin/rebuy-templates', {
         method: 'POST',
         headers: {
@@ -631,6 +632,7 @@ function RebuyEmailConfigPageContent() {
         credentials: 'include',
         body: JSON.stringify({
           rebuyConfig: rebuyConfig,
+          generatedHTML: generatedHTML, // Send the UI-generated HTML
           action: 'saveAsDefault'
         })
       })
@@ -675,19 +677,15 @@ function RebuyEmailConfigPageContent() {
     })
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+  // Generate the actual HTML template from the rebuy configuration
+  const generateCustomRebuyEmailHtml = (config: any, sellerLocation: string = "Playa del Carmen") => {
+    if (!config.enableRebuyEmail) {
+      // Return null for disabled rebuy email - system will not send rebuy emails
+      return null
+    }
     
-    // Generate the actual HTML template from the rebuy configuration
-    const generateCustomRebuyEmailHtml = (config: any, sellerLocation: string = "Playa del Carmen") => {
-      if (!config.enableRebuyEmail) {
-        // Return null for disabled rebuy email - system will not send rebuy emails
-        return null
-      }
-      
-      // Generate advanced custom rebuy HTML template with countdown timer and featured partners
-      return `
+    // Generate advanced custom rebuy HTML template with countdown timer and featured partners
+    return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -935,156 +933,14 @@ function RebuyEmailConfigPageContent() {
     </div>
 </body>
 </html>`
-    }
+  }
 
-    const saveToLocalStorage = () => {
-      setTimeout(() => {
-        // CRITICAL FIX: Generate HTML with CURRENT colors every time we save
-        const customHTML = generateCustomRebuyEmailHtml(rebuyConfig)
-        
-        // Create the rebuy email configuration object with customHTML
-        const rebuyEmailConfig = {
-          id: qrId || Math.random().toString(36).substr(2, 9),
-          name: `Rebuy Email Template - ${new Date().toLocaleDateString()}`,
-          rebuyConfig: { ...rebuyConfig },
-          customHTML: customHTML, // Add the freshly generated HTML
-          createdAt: new Date(),
-          isActive: true
-        }
-        
-        // Save to localStorage so main QR config page knows Button 5 is configured
-        localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(rebuyEmailConfig))
-        
-        // CRITICAL: Also update the saved configurations library if this template belongs to a saved config
-        const savedConfigurations = JSON.parse(localStorage.getItem('elocalpass-saved-configurations') || '[]')
-        const updatedConfigurations = savedConfigurations.map((config: any) => {
-          // If this config has email templates, update the rebuy email template
-          if (config.emailTemplates?.rebuyEmail) {
-            return {
-              ...config,
-              emailTemplates: {
-                ...config.emailTemplates,
-                rebuyEmail: rebuyEmailConfig
-              }
-            }
-          }
-          return config
-        })
-        localStorage.setItem('elocalpass-saved-configurations', JSON.stringify(updatedConfigurations))
-        
-        // Set the generated config ID to display success message with ID
-        setGeneratedConfig(rebuyEmailConfig.id)
-        
-        console.log('Rebuy email configuration saved:', rebuyConfig)
-        toast.success('Rebuy Email Template Created', `Template "${rebuyEmailConfig.name}" created successfully! ID: ${rebuyEmailConfig.id}`)
-        
-        // Optional: Redirect back to QR config after 2 seconds
-        setTimeout(() => {
-          console.log('Rebuy Config - qrId for redirect:', qrId)
-          if (qrId) {
-            // Redirect back to specific QR config and expand it
-            console.log('Redirecting to:', `/admin/qr-config?expand=${qrId}`)
-            router.push(`/admin/qr-config?expand=${qrId}`)
-          } else {
-            // Redirect to main QR config page
-            console.log('Redirecting to main QR config page')
-            router.push('/admin/qr-config')
-          }
-        }, 2000)
-        
-        setIsSubmitting(false)
-      }, 1000)
-    }
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsSubmitting(true)
     
-    try {
-      const urlParams = new URLSearchParams(window.location.search)
-      const qrId = urlParams.get('qrId')
-      
-      // CRITICAL FIX: Generate HTML with CURRENT colors every time we save
-      const customHTML = generateCustomRebuyEmailHtml(rebuyConfig)
-      
-      // Create the rebuy email configuration object
-      const rebuyEmailConfig = {
-        id: qrId || Math.random().toString(36).substr(2, 9),
-        name: `Rebuy Email Template - ${new Date().toLocaleDateString()}`,
-        rebuyConfig: { ...rebuyConfig },
-        customHTML: customHTML,
-        createdAt: new Date(),
-        isActive: true
-      }
-      
-      if (qrId) {
-        // NEW: Save to database (prioritize database)
-        console.log('✅ REBUY SAVE DEBUG: Saving to database for QR ID:', qrId)
-        
-        // Load existing configuration from database and update it
-        fetch(`/api/admin/saved-configs/${qrId}`, {
-          credentials: 'include'
-        })
-        .then(response => {
-          if (response.ok) {
-            return response.json()
-          } else {
-            throw new Error(`Failed to load config from database. Status: ${response.status}`)
-          }
-        })
-        .then(existingConfig => {
-          console.log('✅ REBUY SAVE DEBUG: Loaded existing config from database:', existingConfig)
-          
-          // Update the configuration with the new rebuy email template
-          const updatedConfig = {
-            ...existingConfig,
-            emailTemplates: {
-              ...existingConfig.emailTemplates,
-              rebuyEmail: rebuyEmailConfig
-            }
-          }
-          
-          // Save updated configuration back to database
-          return fetch(`/api/admin/saved-configs/${qrId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(updatedConfig)
-          })
-        })
-        .then(updateResponse => {
-          if (updateResponse.ok) {
-            console.log('✅ REBUY SAVE DEBUG: Successfully saved to database')
-            setGeneratedConfig(qrId)
-            toast.success('Rebuy Email Configuration Saved', `Rebuy Email Template saved to database successfully! Returning to QR Config...`)
-            
-            // Redirect back to QR config after 2 seconds
-            setTimeout(() => {
-              console.log('Rebuy Config - qrId for redirect:', qrId)
-              router.push(`/admin/qr-config?expand=${qrId}`)
-            }, 2000)
-            
-            setIsSubmitting(false)
-            return // Successfully saved to database
-          } else {
-            throw new Error(`Failed to update config in database. Status: ${updateResponse.status}`)
-          }
-        })
-        .catch(error => {
-          console.error('❌ REBUY SAVE DEBUG: Error saving to database:', error)
-          
-          // Database save failed - fallback to localStorage
-          console.log('❌ REBUY SAVE DEBUG: Database save failed, falling back to localStorage')
-          saveToLocalStorage()
-        })
-      } else {
-        // No qrId - save to localStorage
-        saveToLocalStorage()
-      }
-      
-    } catch (error) {
-      console.error('Error creating rebuy email configuration:', error)
-      toast.error('Error Creating Rebuy Email Template', 'Error creating rebuy email configuration')
-      setIsSubmitting(false)
-    }
+    // Generate the actual HTML template from the rebuy configuration
+    const customHTML = generateCustomRebuyEmailHtml(rebuyConfig)
   }
 
   return (
