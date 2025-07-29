@@ -307,11 +307,20 @@ export default function CreateEnhancedLandingPage() {
         } else {
           // For fresh/new configurations, also load saved templates
           console.log('✅ Starting fresh configuration - loading saved templates')
-          await loadSavedTemplates()
+          const loadedTemplates = await loadSavedTemplates()
           
-          // Load DEFAULT template from database to initialize form
-          console.log('✅ Loading DEFAULT template for form initialization')
-          await loadDefaultTemplateAsInitial()
+          // Load DEFAULT template from the loaded templates (same source as Load button)
+          console.log('✅ Loading DEFAULT template for form initialization from loaded templates')
+          
+          // Find the default template from the loaded templates
+          const defaultTemplate = loadedTemplates?.find((template: any) => template.isDefault)
+          if (defaultTemplate) {
+            console.log('✅ Found default template in loaded templates:', defaultTemplate.name)
+            loadLandingTemplate(defaultTemplate)
+          } else {
+            console.warn('⚠️ No default template found in loaded templates, using fallback API')
+            await loadDefaultTemplateAsInitial()
+          }
         }
       } catch (error) {
         console.error('❌ Error initializing page:', error)
@@ -409,14 +418,17 @@ export default function CreateEnhancedLandingPage() {
         console.log('🔧 Converted templates:', templates)
         setLandingTemplates(templates)
         console.log('✅ Loaded', templates.length, 'landing page templates from database')
+        return templates // Return templates for use in initializePage
       } else {
         console.log('❌ No landing page templates found in database')
         console.log('❌ Response not ok or no templates:', { ok: response.ok, success: result.success, templates: result.templates })
         setLandingTemplates([])
+        return [] // Return empty array if no templates found
       }
     } catch (error) {
       console.error('❌ Error loading landing page templates from database:', error)
       setLandingTemplates([])
+      return [] // Return empty array on error
     }
   }
 
