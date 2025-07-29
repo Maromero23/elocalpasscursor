@@ -359,51 +359,15 @@ export default function CreateEnhancedLandingPage() {
               }
             })() : {}),
             
-            // Header Text
+            // Basic template fields (these exist as direct database fields)
             headerText: template.headerText,
-            headerTextColor: template.headerTextColor || '#f97316',
-            headerFontFamily: template.headerFontFamily || 'Arial, sans-serif',
-            headerFontSize: template.headerFontSize || '32',
-            
-            // Description Text
             descriptionText: template.descriptionText,
-            descriptionTextColor: template.descriptionTextColor || '#1e40af',
-            descriptionFontFamily: template.descriptionFontFamily || 'Arial, sans-serif',
-            descriptionFontSize: template.descriptionFontSize || '18',
-            
-            // CTA Button Text
             ctaButtonText: template.ctaButtonText,
-            ctaButtonTextColor: template.ctaButtonTextColor || '#ffffff',
-            ctaButtonFontFamily: template.ctaButtonFontFamily || 'Arial, sans-serif',
-            ctaButtonFontSize: template.ctaButtonFontSize || '18',
             
-            // Form Title Text
-            formTitleText: template.formTitleText || 'Complete Your Details',
-            formTitleTextColor: template.formTitleTextColor || '#ffffff',
-            formTitleFontFamily: template.formTitleFontFamily || 'Arial, sans-serif',
-            formTitleFontSize: template.formTitleFontSize || '24',
-            
-            // Form Instructions Text
-            formInstructionsText: template.formInstructionsText || 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
-            formInstructionsTextColor: template.formInstructionsTextColor || '#ffffff',
-            formInstructionsFontFamily: template.formInstructionsFontFamily || 'Arial, sans-serif',
-            formInstructionsFontSize: template.formInstructionsFontSize || '16',
-            
-            // Footer Disclaimer Text
-            footerDisclaimerText: template.footerDisclaimerText || 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
-            footerDisclaimerTextColor: template.footerDisclaimerTextColor || '#ffffff',
-            footerDisclaimerFontFamily: template.footerDisclaimerFontFamily || 'Arial, sans-serif',
-            footerDisclaimerFontSize: template.footerDisclaimerFontSize || '14',
-            
-            // Brand Colors
+            // Brand Colors (these exist as direct database fields)
             primaryColor: template.primaryColor,
             secondaryColor: template.secondaryColor,
             backgroundColor: template.backgroundColor,
-            
-            // Individual Box Colors
-            guestSelectionBoxColor: template.guestSelectionBoxColor || '#3b82f6',
-            daySelectionBoxColor: template.daySelectionBoxColor || '#3b82f6',
-            footerDisclaimerBoxColor: template.footerDisclaimerBoxColor || '#1e40af',
             
             // Other settings
             showPayPal: template.showPayPal,
