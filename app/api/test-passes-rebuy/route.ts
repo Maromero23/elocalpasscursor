@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const paypalRebuyTemplate = await prisma.rebuyEmailTemplate.findFirst({
       where: { 
         name: {
-          contains: "Paypal Rebuy Demal"
+          contains: "Paypal Rebuy Email"
         }
       },
       orderBy: { createdAt: 'desc' }
