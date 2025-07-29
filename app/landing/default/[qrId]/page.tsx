@@ -28,6 +28,66 @@ export default function DefaultLandingPage({ qrId }: DefaultLandingPageProps) {
 
   const loadDefaultTemplate = async () => {
     try {
+      console.log('🔍 Loading default landing page for qrId:', params.qrId)
+      
+      // First, try to load the saved configuration from database
+      const configResponse = await fetch(`/api/landing/config/${params.qrId}`)
+      
+      if (configResponse.ok) {
+        const savedConfig = await configResponse.json()
+        console.log('✅ Loaded saved configuration:', savedConfig.name)
+        
+        // Check if this configuration uses default landing page template
+        const config = JSON.parse(savedConfig.config)
+        if (config.button3LandingPageChoice === 'DEFAULT') {
+          console.log('✅ Configuration uses default landing page template')
+          
+          // Get the default template from database
+          const templateResponse = await fetch('/api/landing/default-template')
+          if (templateResponse.ok) {
+            const result = await templateResponse.json()
+            if (result.success && result.template) {
+              console.log('✅ Loaded default template:', result.template.name)
+              
+              // Use the saved configuration's data but with the default template's styling
+              const configData = savedConfig.landingPageConfig ? JSON.parse(savedConfig.landingPageConfig) : {}
+              
+              // Merge default template with saved configuration data
+              setTemplate({
+                ...result.template,
+                // Use saved configuration data if available, otherwise use template defaults
+                headerText: configData.headerText || result.template.headerText,
+                descriptionText: configData.descriptionText || result.template.descriptionText,
+                ctaButtonText: configData.ctaButtonText || result.template.ctaButtonText,
+                primaryColor: configData.primaryColor || result.template.primaryColor,
+                secondaryColor: configData.secondaryColor || result.template.secondaryColor,
+                backgroundColor: configData.backgroundColor || result.template.backgroundColor,
+                logoUrl: configData.logoUrl || result.template.logoUrl,
+                // Use saved configuration for form fields
+                formTitleText: configData.formTitleText || 'Complete Your Details',
+                formInstructionsText: configData.formInstructionsText || 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+                footerDisclaimerText: configData.footerDisclaimerText || 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.'
+              })
+              
+              // Set form defaults from saved configuration
+              if (configData.defaultGuests) {
+                setFormData(prev => ({ ...prev, guests: configData.defaultGuests }))
+              }
+              if (configData.defaultDays) {
+                setFormData(prev => ({ ...prev, days: configData.defaultDays }))
+              }
+              
+              setLoading(false)
+              return
+            }
+          }
+        } else {
+          console.log('⚠️ Configuration does not use default template')
+        }
+      }
+      
+      // Fallback: load just the default template
+      console.log('🔄 Falling back to default template only')
       const response = await fetch('/api/landing/default-template')
       if (response.ok) {
         const result = await response.json()
@@ -40,6 +100,7 @@ export default function DefaultLandingPage({ qrId }: DefaultLandingPageProps) {
         error('Template Error', 'Failed to load default template')
       }
     } catch (err) {
+      console.error('❌ Error loading default template:', err)
       error('Template Error', 'Failed to load default template')
     } finally {
       setLoading(false)
