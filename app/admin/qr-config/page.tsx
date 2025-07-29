@@ -1536,7 +1536,7 @@ function QRConfigPageContent() {
     // Replace DEFAULT_TEMPLATE_PLACEHOLDER URLs with actual default template URLs
     if (newConfig.landingPageConfig?.temporaryUrls) {
       newConfig.landingPageConfig.temporaryUrls = newConfig.landingPageConfig.temporaryUrls.map((url: any) => {
-        if (url.url === 'DEFAULT_TEMPLATE_PLACEHOLDER') {
+        if (url.url === '/landing/default/[QR_ID]' || url.url === 'DEFAULT_TEMPLATE_PLACEHOLDER') {
           return {
             ...url,
             url: `/landing/default/${newConfig.id}` // Replace with actual default template URL
@@ -2241,7 +2241,7 @@ function QRConfigPageContent() {
           const defaultTempUrl = {
             id: `default-template-${Date.now()}`,
             name: 'Default Landing Page Template',
-            url: 'DEFAULT_TEMPLATE_PLACEHOLDER', // This will be replaced with /landing/default/[QR_ID] when saved
+            url: '/landing/default/[QR_ID]', // This will be replaced with actual QR ID when saved
             description: 'System default landing page template with professional branding',
             createdAt: new Date().toISOString(),
             isTemp: true,
