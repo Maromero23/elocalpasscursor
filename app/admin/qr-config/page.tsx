@@ -1571,7 +1571,7 @@ function QRConfigPageContent() {
             if (url.url === '/landing/default/[QR_ID]' || url.url === 'DEFAULT_TEMPLATE_PLACEHOLDER') {
               return {
                 ...url,
-                url: `/landing/default/${savedConfig.id}` // Use the actual database ID
+                url: `/landing-enhanced/${savedConfig.id}?urlId=${url.id}` // Use enhanced format with urlId
               }
             }
             return url
