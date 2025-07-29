@@ -195,3 +195,45 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
+
+// PATCH - Update specific fields of a saved configuration
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+    
+    const body = await request.json()
+    const { id, landingPageConfig } = body
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Configuration ID is required' }, { status: 400 })
+    }
+    
+    // Update only the landingPageConfig field
+    const updatedConfig = await prisma.savedQRConfiguration.update({
+      where: { id },
+      data: {
+        landingPageConfig: landingPageConfig ? JSON.stringify(landingPageConfig) : null
+      }
+    })
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Configuration updated successfully'
+    })
+    
+  } catch (error) {
+    console.error('Error updating saved configuration:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

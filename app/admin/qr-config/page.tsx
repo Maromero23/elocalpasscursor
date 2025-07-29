@@ -1533,19 +1533,6 @@ function QRConfigPageContent() {
       createdAt: new Date()
     }
     
-    // Replace DEFAULT_TEMPLATE_PLACEHOLDER URLs with actual default template URLs
-    if (newConfig.landingPageConfig?.temporaryUrls) {
-      newConfig.landingPageConfig.temporaryUrls = newConfig.landingPageConfig.temporaryUrls.map((url: any) => {
-        if (url.url === '/landing/default/[QR_ID]' || url.url === 'DEFAULT_TEMPLATE_PLACEHOLDER') {
-          return {
-            ...url,
-            url: `/landing/default/${newConfig.id}` // Replace with actual default template URL
-          }
-        }
-        return url
-      })
-    }
-    
     console.log('🐛 DEBUG: Saving configuration with selectedUrlIds:', selectedUrlIds)
     console.log('🐛 DEBUG: newConfig being saved:', newConfig)
     
@@ -1577,6 +1564,50 @@ function QRConfigPageContent() {
       if (response.ok) {
         const savedConfig = await response.json()
         console.log('✅ Configuration saved to database successfully:', savedConfig)
+        
+        // Replace DEFAULT_TEMPLATE_PLACEHOLDER URLs with actual default template URLs using the real database ID
+        if (savedConfig.landingPageConfig?.temporaryUrls) {
+          const updatedUrls = savedConfig.landingPageConfig.temporaryUrls.map((url: any) => {
+            if (url.url === '/landing/default/[QR_ID]' || url.url === 'DEFAULT_TEMPLATE_PLACEHOLDER') {
+              return {
+                ...url,
+                url: `/landing/default/${savedConfig.id}` // Use the actual database ID
+              }
+            }
+            return url
+          })
+          
+          // Update the configuration in the database with the corrected URLs
+          if (updatedUrls.some((url: any) => url.url.includes(savedConfig.id))) {
+            console.log('🔧 Updating URLs with actual database ID:', savedConfig.id)
+            
+            try {
+              const updateResponse = await fetch('/api/admin/saved-configs', {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                  id: savedConfig.id,
+                  landingPageConfig: {
+                    ...savedConfig.landingPageConfig,
+                    temporaryUrls: updatedUrls
+                  }
+                })
+              })
+              
+              if (updateResponse.ok) {
+                console.log('✅ URLs updated with actual database ID')
+                savedConfig.landingPageConfig.temporaryUrls = updatedUrls
+              } else {
+                console.warn('⚠️ Failed to update URLs, but configuration was saved')
+              }
+            } catch (error) {
+              console.warn('⚠️ Error updating URLs:', error)
+            }
+          }
+        }
         
         // Update local state with the saved configuration
         const updatedConfigs = [...savedConfigurations, savedConfig]
