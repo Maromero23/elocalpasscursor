@@ -31,9 +31,19 @@ export async function POST(request: NextRequest) {
 
     const customerName = qrCodeData.customerName || 'Valued Customer'
     
-    // Get the DEFAULT rebuy email template from database
-    console.log('📧 Loading default rebuy email template from database...')
-    const defaultRebuyTemplate = await prisma.rebuyEmailTemplate.findFirst({
+    // Get the SPECIFIC PayPal rebuy email template from database
+    console.log('📧 Loading SPECIFIC PayPal rebuy email template from database...')
+    const paypalRebuyTemplate = await prisma.rebuyEmailTemplate.findFirst({
+      where: { 
+        name: {
+          contains: "Paypal Rebuy Demal"
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    // Fallback to default if PayPal template not found
+    const rebuyTemplate = paypalRebuyTemplate || await prisma.rebuyEmailTemplate.findFirst({
       where: { isDefault: true },
       orderBy: { createdAt: 'desc' }
     })
@@ -41,13 +51,18 @@ export async function POST(request: NextRequest) {
     let emailHtml: string
     let emailSubject: string
 
-    if (defaultRebuyTemplate && defaultRebuyTemplate.customHTML) {
-      console.log(`✅ Found default rebuy template: ${defaultRebuyTemplate.name}`)
-      console.log(`📧 Template HTML length: ${defaultRebuyTemplate.customHTML.length} characters`)
+    if (rebuyTemplate && rebuyTemplate.customHTML) {
+      if (paypalRebuyTemplate) {
+        console.log(`✅ Found SPECIFIC PayPal rebuy template: ${paypalRebuyTemplate.name}`)
+        console.log(`📧 PayPal template created: ${paypalRebuyTemplate.createdAt}`)
+      } else {
+        console.log(`⚠️ PayPal rebuy template not found, using default: ${rebuyTemplate.name}`)
+      }
+      console.log(`📧 Template HTML length: ${rebuyTemplate.customHTML.length} characters`)
       
       // Use the SAME logic as working seller rebuy emails
       // Check if we should use the enhanced template (same as regular rebuy emails)
-      if (defaultRebuyTemplate.customHTML === 'USE_DEFAULT_TEMPLATE' || defaultRebuyTemplate.customHTML.includes('USE_DEFAULT_TEMPLATE')) {
+      if (rebuyTemplate.customHTML === 'USE_DEFAULT_TEMPLATE' || rebuyTemplate.customHTML.includes('USE_DEFAULT_TEMPLATE')) {
         console.log(`📧 REBUY EMAIL: Loading default template from RebuyEmailTemplate database (same as working seller emails)`)
         
         // Load the full enhanced template (same logic as working seller rebuy emails)
@@ -90,7 +105,7 @@ export async function POST(request: NextRequest) {
         } else {
           console.log(`❌ No enhanced default template found, falling back to basic template`)
           // Fallback to basic template logic (existing code)
-          emailHtml = defaultRebuyTemplate.customHTML
+          emailHtml = rebuyTemplate.customHTML
             .replace(/\{customerName\}/g, customerName)
             .replace(/\{qrCode\}/g, qrCodeData.code)
             .replace(/\{guests\}/g, qrCodeData.guests.toString())
@@ -110,7 +125,7 @@ export async function POST(request: NextRequest) {
         const qrExpirationTimestamp = qrCodeData.expiresAt.toISOString()
         
         // Use the EXACT same replacement logic as working seller rebuy emails
-        emailHtml = defaultRebuyTemplate.customHTML
+        emailHtml = rebuyTemplate.customHTML
           .replace(/\{customerName\}/g, customerName)
           .replace(/\{qrCode\}/g, qrCodeData.code)
           .replace(/\{guests\}/g, qrCodeData.guests.toString())
@@ -132,7 +147,7 @@ export async function POST(request: NextRequest) {
         console.log(`📧 Full template contains partners: ${emailHtml.includes('Featured Partners') || emailHtml.includes('partners')}`)
       }
       
-      emailSubject = defaultRebuyTemplate.subject || `Your ELocalPass expires in ${hoursLeft} hours - Get another one!`
+      emailSubject = rebuyTemplate.subject || `Your ELocalPass expires in ${hoursLeft} hours - Get another one!`
       
       // Also replace placeholders in subject
       emailSubject = emailSubject
@@ -140,7 +155,7 @@ export async function POST(request: NextRequest) {
         .replace(/\{hoursLeft\}/g, hoursLeft.toString())
         .replace(/\{qrCode\}/g, qrCodeData.code)
       
-      console.log(`📧 Using default rebuy template: ${defaultRebuyTemplate.name}`)
+      console.log(`📧 Using default rebuy template: ${rebuyTemplate.name}`)
       console.log(`📧 Subject: ${emailSubject}`)
       
       // CRITICAL: Log the exact HTML being sent
@@ -182,9 +197,9 @@ export async function POST(request: NextRequest) {
         qrCode: qrCode,
         email: qrCodeData.customerEmail,
         hoursLeft: hoursLeft,
-        template: defaultRebuyTemplate?.name || 'Default rebuy template',
+        template: rebuyTemplate?.name || 'Default rebuy template',
         templateSource: 'Database default rebuy template',
-        originalHtmlLength: defaultRebuyTemplate?.customHTML?.length || 0,
+        originalHtmlLength: rebuyTemplate?.customHTML?.length || 0,
         finalHtmlLength: emailHtml.length,
         subjectUsed: emailSubject,
         containsVideo: emailHtml.includes('Promotional Video') || emailHtml.includes('promotional') || emailHtml.includes('Watch Video'),
