@@ -2261,12 +2261,35 @@ function QRConfigPageContent() {
   // Function to fetch and save default landing page template
   const fetchAndSaveDefaultTemplate = async () => {
     try {
-      console.log('🔍 Fetching default landing page template...')
-      const response = await fetch('/api/landing/default-template')
+      console.log('🔍 Fetching default landing page template from admin API...')
+      
+      // Use the same API as the page initialization fix
+      const response = await fetch('/api/admin/landing-page-templates', {
+        credentials: 'include'
+      })
+      
       if (response.ok) {
         const result = await response.json()
-        if (result.success && result.template) {
-          console.log('✅ Default template fetched:', result.template.name)
+        if (result.success && result.templates) {
+          // Find the default template (same logic as page initialization)
+          const defaultTemplate = result.templates.find((template: any) => template.isDefault)
+          
+          if (!defaultTemplate) {
+            console.error('❌ No default template found in admin API')
+            return
+          }
+          
+          console.log('✅ Default template fetched from admin API:', defaultTemplate.name)
+          
+          // Parse additional styling from customCSS if available (same as page initialization)
+          let additionalStyling: any = {}
+          if (defaultTemplate.customCSS) {
+            try {
+              additionalStyling = JSON.parse(defaultTemplate.customCSS)
+            } catch (error) {
+              console.warn('Could not parse default template customCSS:', error)
+            }
+          }
           
           // Create a temporary URL entry for the default template
           const defaultTempUrl = {
@@ -2278,16 +2301,20 @@ function QRConfigPageContent() {
             isTemp: true,
             isDefault: true,
             templateData: {
-              headerText: result.template.headerText,
-              descriptionText: result.template.descriptionText,
-              ctaButtonText: result.template.ctaButtonText,
-              primaryColor: result.template.primaryColor,
-              secondaryColor: result.template.secondaryColor,
-              backgroundColor: result.template.backgroundColor,
-              logoUrl: result.template.logoUrl,
-              formTitleText: 'Complete Your Details',
-              formInstructionsText: 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
-              footerDisclaimerText: 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
+              // Use the same data structure as page initialization
+              headerText: defaultTemplate.headerText,
+              descriptionText: defaultTemplate.descriptionText,
+              ctaButtonText: defaultTemplate.ctaButtonText,
+              primaryColor: defaultTemplate.primaryColor,
+              secondaryColor: defaultTemplate.secondaryColor,
+              backgroundColor: defaultTemplate.backgroundColor,
+              logoUrl: defaultTemplate.logoUrl,
+              // Include all additional styling from customCSS
+              ...additionalStyling,
+              // Keep these defaults for form fields
+              formTitleText: additionalStyling.formTitleText || 'Complete Your Details',
+              formInstructionsText: additionalStyling.formInstructionsText || 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+              footerDisclaimerText: additionalStyling.footerDisclaimerText || 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
               defaultGuests: globalConfig.button1GuestsDefault || 2,
               defaultDays: globalConfig.button1DaysDefault || 2
             }
@@ -2303,7 +2330,7 @@ function QRConfigPageContent() {
           // Auto-select the default template
           setSelectedUrlIds([defaultTempUrl.id])
           
-          // Create landing page config with default template data
+          // Create landing page config with default template data (including all styling)
           const defaultLandingConfig = {
             temporaryUrls: [defaultTempUrl],
             selectedUrlIds: [defaultTempUrl.id],
@@ -2317,17 +2344,20 @@ function QRConfigPageContent() {
                 isDefault: defaultTempUrl.isDefault
               }
             },
-            // Include the default template data
-            headerText: result.template.headerText,
-            descriptionText: result.template.descriptionText,
-            ctaButtonText: result.template.ctaButtonText,
-            primaryColor: result.template.primaryColor,
-            secondaryColor: result.template.secondaryColor,
-            backgroundColor: result.template.backgroundColor,
-            logoUrl: result.template.logoUrl,
-            formTitleText: 'Complete Your Details',
-            formInstructionsText: 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
-            footerDisclaimerText: 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
+            // Include all the template data with additional styling
+            headerText: defaultTemplate.headerText,
+            descriptionText: defaultTemplate.descriptionText,
+            ctaButtonText: defaultTemplate.ctaButtonText,
+            primaryColor: defaultTemplate.primaryColor,
+            secondaryColor: defaultTemplate.secondaryColor,
+            backgroundColor: defaultTemplate.backgroundColor,
+            logoUrl: defaultTemplate.logoUrl,
+            // Include all additional styling from customCSS
+            ...additionalStyling,
+            // Keep these defaults
+            formTitleText: additionalStyling.formTitleText || 'Complete Your Details',
+            formInstructionsText: additionalStyling.formInstructionsText || 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+            footerDisclaimerText: additionalStyling.footerDisclaimerText || 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
             defaultGuests: globalConfig.button1GuestsDefault || 2,
             defaultDays: globalConfig.button1DaysDefault || 2
           }
