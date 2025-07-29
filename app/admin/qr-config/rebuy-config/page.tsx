@@ -449,6 +449,12 @@ function RebuyEmailConfigPageContent() {
     }
 
     try {
+      console.log('🚨 DEBUG: Current rebuyConfig when saving:')
+      console.log('  emailHeader:', rebuyConfig.emailHeader)
+      console.log('  emailSubject:', rebuyConfig.emailSubject)
+      console.log('  emailMessage:', rebuyConfig.emailMessage)
+      console.log('  Full rebuyConfig:', rebuyConfig)
+      
       // Generate the HTML using the UI function (with all enhanced components)
       const generatedHTML = generateCustomRebuyEmailHtml(rebuyConfig)
       
@@ -458,6 +464,7 @@ function RebuyEmailConfigPageContent() {
       }
 
       console.log('🎯 SAVING TEMPLATE: Generated HTML length:', generatedHTML.length)
+      console.log('🎯 SAVING TEMPLATE: Contains Don\'t Miss Out:', generatedHTML.includes('Don\'t Miss Out'))
       console.log('🎯 SAVING TEMPLATE: Contains video:', generatedHTML.includes('🎥 Promotional Video'))
       console.log('🎯 SAVING TEMPLATE: Contains partners:', generatedHTML.includes('featured-partners'))
       console.log('🎯 SAVING TEMPLATE: Contains banners:', generatedHTML.includes('banner-images'))
