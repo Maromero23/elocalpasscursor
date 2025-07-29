@@ -46,6 +46,7 @@ interface QRGlobalConfig {
   button2IncludeTax: boolean
   button2TaxPercentage: number
   button3DeliveryMethod: 'DIRECT' | 'URLS' | 'BOTH'
+  button3LandingPageChoice: 'DEFAULT' | 'CUSTOM' | null  // NEW: Track landing page choice
   button4LandingPageRequired: boolean | undefined
   button5SendRebuyEmail: boolean | undefined
   button6AllowFutureQR: boolean | undefined
@@ -97,6 +98,7 @@ function QRConfigPageContent() {
     button2IncludeTax: false,
     button2TaxPercentage: 0,
     button3DeliveryMethod: 'DIRECT',
+    button3LandingPageChoice: null,
     button4LandingPageRequired: false,
     button5SendRebuyEmail: false,
     button6AllowFutureQR: false,
@@ -308,6 +310,26 @@ function QRConfigPageContent() {
 
   // Helper function to check if a button configuration has been actively modified
   const isButtonConfigured = (buttonNum: number): boolean => {
+    // Special logic for Button 3 - check landing page choice when URLs or BOTH is selected
+    if (buttonNum === 3) {
+      const hasDeliveryMethod = globalConfig.button3DeliveryMethod !== 'DIRECT'
+      const hasLandingPageChoice = globalConfig.button3LandingPageChoice !== null
+      
+      // If URLs or BOTH is selected, require landing page choice
+      if (hasDeliveryMethod && !hasLandingPageChoice) {
+        return false
+      }
+      
+      // For DIRECT method, just check if it's in configured buttons
+      if (!hasDeliveryMethod) {
+        return Array.from(configuredButtons).includes(buttonNum)
+      }
+      
+      // For URLs or BOTH, require both delivery method and landing page choice
+      return Array.from(configuredButtons).includes(buttonNum) && hasLandingPageChoice
+    }
+    
+    // For other buttons, use the existing logic
     return Array.from(configuredButtons).includes(buttonNum)
   }
 
@@ -402,6 +424,7 @@ function QRConfigPageContent() {
         
         // Button 3 defaults
         button3DeliveryMethod: 'DIRECT' as const,
+        button3LandingPageChoice: null,
         
         // Button 4 defaults
         button4LandingPageRequired: undefined,
@@ -778,7 +801,7 @@ function QRConfigPageContent() {
           timestamp: new Date().toISOString(),
           loadedCount: dbConfigs.length,
           forceRefresh,
-          configDetails: dbConfigs.map(config => ({
+                      configDetails: dbConfigs.map((config: any) => ({
             id: config.id,
             name: config.name,
             updatedAt: config.updatedAt,
@@ -787,8 +810,8 @@ function QRConfigPageContent() {
             newStructureUrlCount: config.landingPageConfig?.temporaryUrls?.length || 0,
             legacyStructureUrlCount: (config as any).button3UrlsConfig?.temporaryUrls?.length || 0,
             urlIds: [
-              ...(config.landingPageConfig?.temporaryUrls?.map(u => `NEW:${u.id}:${u.name}:${u.url}`) || []),
-              ...((config as any).button3UrlsConfig?.temporaryUrls?.map(u => `LEGACY:${u.id}:${u.name}:${u.url}`) || [])
+              ...(config.landingPageConfig?.temporaryUrls?.map((u: any) => `NEW:${u.id}:${u.name}:${u.url}`) || []),
+              ...((config as any).button3UrlsConfig?.temporaryUrls?.map((u: any) => `LEGACY:${u.id}:${u.name}:${u.url}`) || [])
             ]
           }))
         })
@@ -890,7 +913,8 @@ function QRConfigPageContent() {
 
   // Check if all 6 buttons are configured
   const areAllButtonsConfigured = (): boolean => {
-    return configuredButtons.size === 6
+    // Use the enhanced isButtonConfigured function for each button
+    return [1, 2, 3, 4, 5, 6].every(buttonNum => isButtonConfigured(buttonNum))
   }
 
   // BUTTON 3: Save URL data to localStorage
@@ -1597,6 +1621,7 @@ function QRConfigPageContent() {
           button2IncludeTax: false,
           button2TaxPercentage: 0,
           button3DeliveryMethod: 'DIRECT' as const,
+          button3LandingPageChoice: null,
           button4LandingPageRequired: undefined,
           button5SendRebuyEmail: undefined,
           button6AllowFutureQR: undefined,
@@ -3195,6 +3220,102 @@ function QRConfigPageContent() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Landing Page Choice - Required when URLs or BOTH is selected */}
+                  {(globalConfig.button3DeliveryMethod === 'URLS' || globalConfig.button3DeliveryMethod === 'BOTH') && (
+                    <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <h4 className="font-medium text-yellow-900 mb-3">Landing Page Template Choice</h4>
+                      <p className="text-sm text-yellow-800 mb-4">
+                        You must choose a landing page template before proceeding to the next step.
+                      </p>
+                      
+                      <div className="space-y-3">
+                        {/* Default Template Option */}
+                        <div className="flex items-center space-x-3 p-3 bg-white rounded border-2 hover:border-blue-300 transition-colors">
+                          <input
+                            type="radio"
+                            id="default-landing"
+                            name="landing-page-choice"
+                            checked={globalConfig.button3LandingPageChoice === 'DEFAULT'}
+                            onChange={() => {
+                              updateConfig({ button3LandingPageChoice: 'DEFAULT' })
+                              setConfiguredButtons((prev) => new Set(prev).add(3))
+                            }}
+                            className="h-4 w-4 text-blue-600"
+                          />
+                          <label htmlFor="default-landing" className="flex-1 cursor-pointer">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="font-medium text-gray-900">Use Default Landing Page Template</span>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  Use the system's default landing page template with professional branding
+                                </p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-green-600 font-medium">✓ Ready to use</span>
+                                <span className="text-blue-600 text-lg">
+                                  {globalConfig.button3LandingPageChoice === 'DEFAULT' ? '✓' : ''}
+                                </span>
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Custom Template Option */}
+                        <div className="flex items-center space-x-3 p-3 bg-white rounded border-2 hover:border-blue-300 transition-colors">
+                          <input
+                            type="radio"
+                            id="custom-landing"
+                            name="landing-page-choice"
+                            checked={globalConfig.button3LandingPageChoice === 'CUSTOM'}
+                            onChange={() => {
+                              updateConfig({ button3LandingPageChoice: 'CUSTOM' })
+                              setConfiguredButtons((prev) => new Set(prev).add(3))
+                            }}
+                            className="h-4 w-4 text-blue-600"
+                          />
+                          <label htmlFor="custom-landing" className="flex-1 cursor-pointer">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="font-medium text-gray-900">Create Custom Landing Page</span>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  Design your own landing page with custom branding and content
+                                </p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-blue-600 font-medium">Custom design</span>
+                                <span className="text-blue-600 text-lg">
+                                  {globalConfig.button3LandingPageChoice === 'CUSTOM' ? '✓' : ''}
+                                </span>
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Warning if no choice made */}
+                      {!globalConfig.button3LandingPageChoice && (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                          <p className="text-sm text-red-800">
+                            <strong>⚠️ Required:</strong> Please select a landing page template to continue.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Success message when choice is made */}
+                      {globalConfig.button3LandingPageChoice && (
+                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                          <p className="text-sm text-green-800">
+                            <strong>✅ Selected:</strong> {
+                              globalConfig.button3LandingPageChoice === 'DEFAULT' 
+                                ? 'Default landing page template' 
+                                : 'Custom landing page template'
+                            }
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {globalConfig.button3DeliveryMethod === 'URLS' && (
                     <div className="mt-6 p-4 bg-blue-50 rounded-lg">
