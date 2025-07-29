@@ -84,31 +84,74 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Template name is required' }, { status: 400 })
     }
 
-    // If this is a default template, unset any existing default
+    let template
+
+    // If this is a default template, update/replace the existing default
     if (isDefault) {
-      await prisma.landingPageTemplate.updateMany({
-        where: { isDefault: true },
-        data: { isDefault: false }
+      // First, find the existing default template
+      const existingDefault = await prisma.landingPageTemplate.findFirst({
+        where: { isDefault: true }
+      })
+
+      if (existingDefault) {
+        // Update the existing default template with new data
+        template = await prisma.landingPageTemplate.update({
+          where: { id: existingDefault.id },
+          data: {
+            name: name,
+            logoUrl: logoUrl || null,
+            primaryColor: primaryColor || '#3b82f6',
+            secondaryColor: secondaryColor || '#6366f1',
+            backgroundColor: backgroundColor || '#f8fafc',
+            headerText: headerText || 'Welcome to Your ELocalPass Experience!',
+            descriptionText: descriptionText || 'Enter your details below to receive your personalized ELocalPass.',
+            ctaButtonText: ctaButtonText || 'Get Your ELocalPass',
+            showPayPal: showPayPal !== undefined ? showPayPal : true,
+            showContactForm: showContactForm !== undefined ? showContactForm : true,
+            customCSS: customCSS || null,
+            isDefault: true
+          }
+        })
+        console.log('✅ Updated existing default template:', template.id)
+      } else {
+        // No existing default, create a new one
+        template = await prisma.landingPageTemplate.create({
+          data: {
+            name: name,
+            logoUrl: logoUrl || null,
+            primaryColor: primaryColor || '#3b82f6',
+            secondaryColor: secondaryColor || '#6366f1',
+            backgroundColor: backgroundColor || '#f8fafc',
+            headerText: headerText || 'Welcome to Your ELocalPass Experience!',
+            descriptionText: descriptionText || 'Enter your details below to receive your personalized ELocalPass.',
+            ctaButtonText: ctaButtonText || 'Get Your ELocalPass',
+            showPayPal: showPayPal !== undefined ? showPayPal : true,
+            showContactForm: showContactForm !== undefined ? showContactForm : true,
+            customCSS: customCSS || null,
+            isDefault: true
+          }
+        })
+        console.log('✅ Created new default template:', template.id)
+      }
+    } else {
+      // Regular template, create normally
+      template = await prisma.landingPageTemplate.create({
+        data: {
+          name: name,
+          logoUrl: logoUrl || null,
+          primaryColor: primaryColor || '#3b82f6',
+          secondaryColor: secondaryColor || '#6366f1',
+          backgroundColor: backgroundColor || '#f8fafc',
+          headerText: headerText || 'Welcome to Your ELocalPass Experience!',
+          descriptionText: descriptionText || 'Enter your details below to receive your personalized ELocalPass.',
+          ctaButtonText: ctaButtonText || 'Get Your ELocalPass',
+          showPayPal: showPayPal !== undefined ? showPayPal : true,
+          showContactForm: showContactForm !== undefined ? showContactForm : true,
+          customCSS: customCSS || null,
+          isDefault: false
+        }
       })
     }
-
-    // Create the template in database
-    const template = await prisma.landingPageTemplate.create({
-      data: {
-        name: name,
-        logoUrl: logoUrl || null,
-        primaryColor: primaryColor || '#3b82f6',
-        secondaryColor: secondaryColor || '#6366f1',
-        backgroundColor: backgroundColor || '#f8fafc',
-        headerText: headerText || 'Welcome to Your ELocalPass Experience!',
-        descriptionText: descriptionText || 'Enter your details below to receive your personalized ELocalPass.',
-        ctaButtonText: ctaButtonText || 'Get Your ELocalPass',
-        showPayPal: showPayPal !== undefined ? showPayPal : true,
-        showContactForm: showContactForm !== undefined ? showContactForm : true,
-        customCSS: customCSS || null,
-        isDefault: isDefault
-      }
-    })
     
     console.log('✅ LANDING PAGE TEMPLATE SAVED TO DATABASE:', template.id, template.name)
     
