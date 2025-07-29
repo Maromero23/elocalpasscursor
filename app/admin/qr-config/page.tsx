@@ -1474,10 +1474,28 @@ function QRConfigPageContent() {
     const temporaryUrls = parsedButton3UrlsConfig?.temporaryUrls || []
     const selectedUrlIdsFromStorage = parsedButton3UrlsConfig?.selectedUrlIds || []
     
-    const landingPageData = {
+    let landingPageData = {
       temporaryUrls: temporaryUrls,
       selectedUrlIds: selectedUrlIdsFromStorage,
       urlMappings: {} as any
+    }
+    
+    // If default template is selected, include the default template data
+    if (globalConfig.button3LandingPageChoice === 'DEFAULT') {
+      const defaultLandingConfig = localStorage.getItem('elocalpass-landing-page-config')
+      if (defaultLandingConfig) {
+        try {
+          const parsedDefaultConfig = JSON.parse(defaultLandingConfig)
+          // Merge default template data with URL data
+          landingPageData = {
+            ...landingPageData,
+            ...parsedDefaultConfig
+          }
+          console.log('💾 SAVE: Default template data included in landing page config')
+        } catch (error) {
+          console.warn('Warning: Could not parse default landing page config:', error)
+        }
+      }
     }
     
     // Create URL mappings for each temporary URL
@@ -2192,6 +2210,55 @@ function QRConfigPageContent() {
       
     } catch (error) {
       console.error('❌ Data consistency check failed:', error)
+    }
+  }
+
+  // Function to fetch and save default landing page template
+  const fetchAndSaveDefaultTemplate = async () => {
+    try {
+      console.log('🔍 Fetching default landing page template...')
+      const response = await fetch('/api/landing/default-template')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.template) {
+          console.log('✅ Default template fetched:', result.template.name)
+          
+          // Create landing page config with default template data
+          const defaultLandingConfig = {
+            temporaryUrls: [],
+            selectedUrlIds: [],
+            urlMappings: {},
+            // Include the default template data
+            headerText: result.template.headerText,
+            descriptionText: result.template.descriptionText,
+            ctaButtonText: result.template.ctaButtonText,
+            primaryColor: result.template.primaryColor,
+            secondaryColor: result.template.secondaryColor,
+            backgroundColor: result.template.backgroundColor,
+            logoUrl: result.template.logoUrl,
+            formTitleText: 'Complete Your Details',
+            formInstructionsText: 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+            footerDisclaimerText: 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
+            defaultGuests: globalConfig.button1GuestsDefault || 2,
+            defaultDays: globalConfig.button1DaysDefault || 2
+          }
+          
+          // Save to localStorage for immediate use
+          localStorage.setItem('elocalpass-landing-page-config', JSON.stringify(defaultLandingConfig))
+          console.log('✅ Default template data saved to localStorage')
+          
+          return defaultLandingConfig
+        } else {
+          console.error('❌ Failed to fetch default template:', result.error)
+          return null
+        }
+      } else {
+        console.error('❌ HTTP error fetching default template:', response.status)
+        return null
+      }
+    } catch (error) {
+      console.error('❌ Error fetching default template:', error)
+      return null
     }
   }
 
@@ -3237,9 +3304,11 @@ function QRConfigPageContent() {
                             id="default-landing"
                             name="landing-page-choice"
                             checked={globalConfig.button3LandingPageChoice === 'DEFAULT'}
-                            onChange={() => {
+                            onChange={async () => {
                               updateConfig({ button3LandingPageChoice: 'DEFAULT' })
                               setConfiguredButtons((prev) => new Set(prev).add(3))
+                              // Fetch and save default template data
+                              await fetchAndSaveDefaultTemplate()
                             }}
                             className="h-4 w-4 text-blue-600"
                           />
