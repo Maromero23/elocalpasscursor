@@ -305,15 +305,64 @@ export default function CreateEnhancedLandingPage() {
           data: {
             businessName: '', // Don't populate business name from template name
             logoUrl: template.logoUrl,
+            
+            // Parse additional styling from customCSS if available
+            ...(template.customCSS ? (() => {
+              try {
+                return JSON.parse(template.customCSS)
+              } catch (error) {
+                console.warn('Could not parse template customCSS:', error)
+                return {}
+              }
+            })() : {}),
+            
+            // Header Text
             headerText: template.headerText,
+            headerTextColor: template.headerTextColor || '#f97316',
+            headerFontFamily: template.headerFontFamily || 'Arial, sans-serif',
+            headerFontSize: template.headerFontSize || '32',
+            
+            // Description Text
             descriptionText: template.descriptionText,
+            descriptionTextColor: template.descriptionTextColor || '#1e40af',
+            descriptionFontFamily: template.descriptionFontFamily || 'Arial, sans-serif',
+            descriptionFontSize: template.descriptionFontSize || '18',
+            
+            // CTA Button Text
             ctaButtonText: template.ctaButtonText,
-            formTitleText: 'Complete Your Details',
-            formInstructionsText: 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
-            footerDisclaimerText: 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
+            ctaButtonTextColor: template.ctaButtonTextColor || '#ffffff',
+            ctaButtonFontFamily: template.ctaButtonFontFamily || 'Arial, sans-serif',
+            ctaButtonFontSize: template.ctaButtonFontSize || '18',
+            
+            // Form Title Text
+            formTitleText: template.formTitleText || 'Complete Your Details',
+            formTitleTextColor: template.formTitleTextColor || '#ffffff',
+            formTitleFontFamily: template.formTitleFontFamily || 'Arial, sans-serif',
+            formTitleFontSize: template.formTitleFontSize || '24',
+            
+            // Form Instructions Text
+            formInstructionsText: template.formInstructionsText || 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+            formInstructionsTextColor: template.formInstructionsTextColor || '#ffffff',
+            formInstructionsFontFamily: template.formInstructionsFontFamily || 'Arial, sans-serif',
+            formInstructionsFontSize: template.formInstructionsFontSize || '16',
+            
+            // Footer Disclaimer Text
+            footerDisclaimerText: template.footerDisclaimerText || 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
+            footerDisclaimerTextColor: template.footerDisclaimerTextColor || '#ffffff',
+            footerDisclaimerFontFamily: template.footerDisclaimerFontFamily || 'Arial, sans-serif',
+            footerDisclaimerFontSize: template.footerDisclaimerFontSize || '14',
+            
+            // Brand Colors
             primaryColor: template.primaryColor,
             secondaryColor: template.secondaryColor,
             backgroundColor: template.backgroundColor,
+            
+            // Individual Box Colors
+            guestSelectionBoxColor: template.guestSelectionBoxColor || '#3b82f6',
+            daySelectionBoxColor: template.daySelectionBoxColor || '#3b82f6',
+            footerDisclaimerBoxColor: template.footerDisclaimerBoxColor || '#1e40af',
+            
+            // Other settings
             showPayPal: template.showPayPal,
             showContactForm: template.showContactForm,
             customCSS: template.customCSS
@@ -352,12 +401,54 @@ export default function CreateEnhancedLandingPage() {
         body: JSON.stringify({
           name: currentTemplateName,
           logoUrl: formData.logoUrl,
+          
+          // Header Text
+          headerText: formData.headerText,
+          headerTextColor: formData.headerTextColor,
+          headerFontFamily: formData.headerFontFamily,
+          headerFontSize: formData.headerFontSize,
+          
+          // Description Text
+          descriptionText: formData.descriptionText,
+          descriptionTextColor: formData.descriptionTextColor,
+          descriptionFontFamily: formData.descriptionFontFamily,
+          descriptionFontSize: formData.descriptionFontSize,
+          
+          // CTA Button Text
+          ctaButtonText: formData.ctaButtonText,
+          ctaButtonTextColor: formData.ctaButtonTextColor,
+          ctaButtonFontFamily: formData.ctaButtonFontFamily,
+          ctaButtonFontSize: formData.ctaButtonFontSize,
+          
+          // Form Title Text
+          formTitleText: formData.formTitleText,
+          formTitleTextColor: formData.formTitleTextColor,
+          formTitleFontFamily: formData.formTitleFontFamily,
+          formTitleFontSize: formData.formTitleFontSize,
+          
+          // Form Instructions Text
+          formInstructionsText: formData.formInstructionsText,
+          formInstructionsTextColor: formData.formInstructionsTextColor,
+          formInstructionsFontFamily: formData.formInstructionsFontFamily,
+          formInstructionsFontSize: formData.formInstructionsFontSize,
+          
+          // Footer Disclaimer Text
+          footerDisclaimerText: formData.footerDisclaimerText,
+          footerDisclaimerTextColor: formData.footerDisclaimerTextColor,
+          footerDisclaimerFontFamily: formData.footerDisclaimerFontFamily,
+          footerDisclaimerFontSize: formData.footerDisclaimerFontSize,
+          
+          // Brand Colors
           primaryColor: formData.primaryColor,
           secondaryColor: formData.secondaryColor,
           backgroundColor: formData.backgroundColor,
-          headerText: formData.headerText,
-          descriptionText: formData.descriptionText,
-          ctaButtonText: formData.ctaButtonText,
+          
+          // Individual Box Colors
+          guestSelectionBoxColor: formData.guestSelectionBoxColor,
+          daySelectionBoxColor: formData.daySelectionBoxColor,
+          footerDisclaimerBoxColor: formData.footerDisclaimerBoxColor,
+          
+          // Other settings
           showPayPal: true, // Default value
           showContactForm: true, // Default value
           customCSS: null, // Default value
@@ -467,12 +558,54 @@ export default function CreateEnhancedLandingPage() {
             body: JSON.stringify({
               name: templateName.trim(),
               logoUrl: formData.logoUrl,
+              
+              // Header Text
+              headerText: formData.headerText,
+              headerTextColor: formData.headerTextColor,
+              headerFontFamily: formData.headerFontFamily,
+              headerFontSize: formData.headerFontSize,
+              
+              // Description Text
+              descriptionText: formData.descriptionText,
+              descriptionTextColor: formData.descriptionTextColor,
+              descriptionFontFamily: formData.descriptionFontFamily,
+              descriptionFontSize: formData.descriptionFontSize,
+              
+              // CTA Button Text
+              ctaButtonText: formData.ctaButtonText,
+              ctaButtonTextColor: formData.ctaButtonTextColor,
+              ctaButtonFontFamily: formData.ctaButtonFontFamily,
+              ctaButtonFontSize: formData.ctaButtonFontSize,
+              
+              // Form Title Text
+              formTitleText: formData.formTitleText,
+              formTitleTextColor: formData.formTitleTextColor,
+              formTitleFontFamily: formData.formTitleFontFamily,
+              formTitleFontSize: formData.formTitleFontSize,
+              
+              // Form Instructions Text
+              formInstructionsText: formData.formInstructionsText,
+              formInstructionsTextColor: formData.formInstructionsTextColor,
+              formInstructionsFontFamily: formData.formInstructionsFontFamily,
+              formInstructionsFontSize: formData.formInstructionsFontSize,
+              
+              // Footer Disclaimer Text
+              footerDisclaimerText: formData.footerDisclaimerText,
+              footerDisclaimerTextColor: formData.footerDisclaimerTextColor,
+              footerDisclaimerFontFamily: formData.footerDisclaimerFontFamily,
+              footerDisclaimerFontSize: formData.footerDisclaimerFontSize,
+              
+              // Brand Colors
               primaryColor: formData.primaryColor,
               secondaryColor: formData.secondaryColor,
               backgroundColor: formData.backgroundColor,
-              headerText: formData.headerText,
-              descriptionText: formData.descriptionText,
-              ctaButtonText: formData.ctaButtonText,
+              
+              // Individual Box Colors
+              guestSelectionBoxColor: formData.guestSelectionBoxColor,
+              daySelectionBoxColor: formData.daySelectionBoxColor,
+              footerDisclaimerBoxColor: formData.footerDisclaimerBoxColor,
+              
+              // Other settings
               showPayPal: true,
               showContactForm: true,
               customCSS: null,

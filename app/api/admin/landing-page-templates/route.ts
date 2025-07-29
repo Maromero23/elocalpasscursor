@@ -77,8 +77,63 @@ export async function POST(request: NextRequest) {
       showPayPal,
       showContactForm,
       customCSS,
-      isDefault = false
+      isDefault = false,
+      // Additional styling fields
+      headerTextColor,
+      headerFontFamily,
+      headerFontSize,
+      descriptionTextColor,
+      descriptionFontFamily,
+      descriptionFontSize,
+      ctaButtonTextColor,
+      ctaButtonFontFamily,
+      ctaButtonFontSize,
+      formTitleText,
+      formTitleTextColor,
+      formTitleFontFamily,
+      formTitleFontSize,
+      formInstructionsText,
+      formInstructionsTextColor,
+      formInstructionsFontFamily,
+      formInstructionsFontSize,
+      footerDisclaimerText,
+      footerDisclaimerTextColor,
+      footerDisclaimerFontFamily,
+      footerDisclaimerFontSize,
+      guestSelectionBoxColor,
+      daySelectionBoxColor,
+      footerDisclaimerBoxColor
     } = body
+    
+    // Store additional styling in customCSS as JSON
+    const additionalStyling = {
+      headerTextColor,
+      headerFontFamily,
+      headerFontSize,
+      descriptionTextColor,
+      descriptionFontFamily,
+      descriptionFontSize,
+      ctaButtonTextColor,
+      ctaButtonFontFamily,
+      ctaButtonFontSize,
+      formTitleText,
+      formTitleTextColor,
+      formTitleFontFamily,
+      formTitleFontSize,
+      formInstructionsText,
+      formInstructionsTextColor,
+      formInstructionsFontFamily,
+      formInstructionsFontSize,
+      footerDisclaimerText,
+      footerDisclaimerTextColor,
+      footerDisclaimerFontFamily,
+      footerDisclaimerFontSize,
+      guestSelectionBoxColor,
+      daySelectionBoxColor,
+      footerDisclaimerBoxColor
+    }
+    
+    const customCSSData = customCSS || JSON.stringify(additionalStyling)
     
     if (!name) {
       return NextResponse.json({ error: 'Template name is required' }, { status: 400 })
@@ -108,7 +163,7 @@ export async function POST(request: NextRequest) {
             ctaButtonText: ctaButtonText || 'Get Your ELocalPass',
             showPayPal: showPayPal !== undefined ? showPayPal : true,
             showContactForm: showContactForm !== undefined ? showContactForm : true,
-            customCSS: customCSS || null,
+            customCSS: customCSSData,
             isDefault: true
           }
         })
@@ -127,7 +182,7 @@ export async function POST(request: NextRequest) {
             ctaButtonText: ctaButtonText || 'Get Your ELocalPass',
             showPayPal: showPayPal !== undefined ? showPayPal : true,
             showContactForm: showContactForm !== undefined ? showContactForm : true,
-            customCSS: customCSS || null,
+            customCSS: customCSSData,
             isDefault: true
           }
         })
@@ -147,7 +202,7 @@ export async function POST(request: NextRequest) {
           ctaButtonText: ctaButtonText || 'Get Your ELocalPass',
           showPayPal: showPayPal !== undefined ? showPayPal : true,
           showContactForm: showContactForm !== undefined ? showContactForm : true,
-          customCSS: customCSS || null,
+          customCSS: customCSSData,
           isDefault: false
         }
       })
