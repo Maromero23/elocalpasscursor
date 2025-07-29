@@ -401,7 +401,11 @@ export default function CreateEnhancedLandingPage() {
   }
 
   const loadLandingTemplate = (template: { name: string, data: any }) => {
-    setFormData({ ...template.data })
+    // Preserve the current configuration name when loading a template
+    setFormData(prevFormData => ({ 
+      ...template.data, 
+      configurationName: prevFormData.configurationName // Keep the existing configuration name
+    }))
     toast.success('Template Loaded', `Template "${template.name}" loaded successfully!`)
   }
 
