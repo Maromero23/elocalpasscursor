@@ -45,71 +45,93 @@ export async function POST(request: NextRequest) {
       console.log(`✅ Found default rebuy template: ${defaultRebuyTemplate.name}`)
       console.log(`📧 Template HTML length: ${defaultRebuyTemplate.customHTML.length} characters`)
       
-      // EXTENSIVE DEBUGGING - Check what's in the template
-      const originalHtml = defaultRebuyTemplate.customHTML
-      console.log(`🔍 TEMPLATE CONTENT CHECK:`)
-      console.log(`- Contains GRAND OPENING: ${originalHtml.includes('GRAND OPENING') ? '✅ YES' : '❌ NO'}`)
-      console.log(`- Contains promotional video: ${originalHtml.includes('Promotional Video') || originalHtml.includes('promotional') || originalHtml.includes('Watch Video') ? '✅ YES' : '❌ NO'}`)
-      console.log(`- Contains Time Remaining: ${originalHtml.includes('Time Remaining') || originalHtml.includes('countdown') || originalHtml.includes('timer') ? '✅ YES' : '❌ NO'}`)
-      console.log(`- Contains Featured Partners: ${originalHtml.includes('Featured Partners') || originalHtml.includes('partners') ? '✅ YES' : '❌ NO'}`)
-      console.log(`- Contains Supporting Local Business: ${originalHtml.includes('Supporting Local Business') ? '✅ YES' : '❌ NO'}`)
-      
-      // Show template sections
-      console.log(`📄 TEMPLATE SECTIONS:`)
-      const sections = originalHtml.split('</div>').length
-      console.log(`- Number of </div> tags: ${sections}`)
-      console.log(`- First 500 chars: ${originalHtml.substring(0, 500)}`)
-      console.log(`- Middle 500 chars: ${originalHtml.substring(Math.floor(originalHtml.length/2) - 250, Math.floor(originalHtml.length/2) + 250)}`)
-      console.log(`- Last 500 chars: ${originalHtml.substring(originalHtml.length - 500)}`)
-      
-      // Create comprehensive placeholder replacements
-      const customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCodeData.customerEmail}`
-      const rebuyUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/passes`
-      const qrExpirationTimestamp = qrCodeData.expiresAt.toISOString()
-      
-      console.log(`📧 Replacing placeholders:`)
-      console.log(`- customerName: ${customerName}`)
-      console.log(`- qrCode: ${qrCodeData.code}`)
-      console.log(`- guests: ${qrCodeData.guests}`)
-      console.log(`- days: ${qrCodeData.days}`)
-      console.log(`- hoursLeft: ${hoursLeft}`)
-      console.log(`- qrExpirationTimestamp: ${qrExpirationTimestamp}`)
-      console.log(`- customerPortalUrl: ${customerPortalUrl}`)
-      console.log(`- rebuyUrl: ${rebuyUrl}`)
-      
-      // Use the default rebuy template and replace ALL possible placeholders
-      emailHtml = originalHtml
-        .replace(/\{customerName\}/g, customerName)
-        .replace(/\{qrCode\}/g, qrCodeData.code)
-        .replace(/\{guests\}/g, qrCodeData.guests.toString())
-        .replace(/\{days\}/g, qrCodeData.days.toString())
-        .replace(/\{hoursLeft\}/g, hoursLeft.toString())
-        .replace(/\{qrExpirationTimestamp\}/g, qrExpirationTimestamp)
-        .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
-        .replace(/\{rebuyUrl\}/g, rebuyUrl)
-        .replace(/\{magicLink\}/g, customerPortalUrl)
-        .replace(/\{expirationDate\}/g, qrCodeData.expiresAt.toLocaleDateString())
-        .replace(/\{expiresAt\}/g, qrCodeData.expiresAt.toLocaleDateString())
-        // Add any other common placeholders that might be in the template
-        .replace(/\{passType\}/g, 'day')
-        .replace(/\{cost\}/g, qrCodeData.cost?.toString() || '0')
-        .replace(/\{deliveryMethod\}/g, 'now')
-
-      console.log(`📧 AFTER PLACEHOLDER REPLACEMENT:`)
-      console.log(`- Final HTML length: ${emailHtml.length} characters`)
-      console.log(`- Length difference: ${emailHtml.length - originalHtml.length} chars`)
-      console.log(`- Still contains GRAND OPENING: ${emailHtml.includes('GRAND OPENING') ? '✅ YES' : '❌ NO'}`)
-      console.log(`- Still contains promotional video: ${emailHtml.includes('Promotional Video') || emailHtml.includes('promotional') || emailHtml.includes('Watch Video') ? '✅ YES' : '❌ NO'}`)
-      console.log(`- Still contains Time Remaining: ${emailHtml.includes('Time Remaining') || emailHtml.includes('countdown') || emailHtml.includes('timer') ? '✅ YES' : '❌ NO'}`)
-      console.log(`- Still contains Featured Partners: ${emailHtml.includes('Featured Partners') || emailHtml.includes('partners') ? '✅ YES' : '❌ NO'}`)
-      
-      // Check for any remaining unreplaced placeholders
-      const remainingPlaceholders = (emailHtml.match(/\{[^}]+\}/g) || []).filter(p => !p.includes('margin') && !p.includes('padding') && !p.includes('color'))
-      console.log(`- Remaining placeholders: ${remainingPlaceholders.length}`)
-      if (remainingPlaceholders.length > 0) {
-        console.log(`- Unreplaced placeholders: ${remainingPlaceholders.slice(0, 5).join(', ')}`)
+      // Use the SAME logic as working seller rebuy emails
+      // Check if we should use the enhanced template (same as regular rebuy emails)
+      if (defaultRebuyTemplate.customHTML === 'USE_DEFAULT_TEMPLATE' || defaultRebuyTemplate.customHTML.includes('USE_DEFAULT_TEMPLATE')) {
+        console.log(`📧 REBUY EMAIL: Loading default template from RebuyEmailTemplate database (same as working seller emails)`)
+        
+        // Load the full enhanced template (same logic as working seller rebuy emails)
+        const enhancedDefaultTemplate = await prisma.rebuyEmailTemplate.findFirst({
+          where: { isDefault: true }
+        })
+        
+        if (enhancedDefaultTemplate && enhancedDefaultTemplate.customHTML) {
+          console.log(`✅ REBUY EMAIL: Found enhanced default rebuy template in database`)
+          
+          // Create comprehensive placeholder replacements (same as seller emails)
+          const customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCodeData.customerEmail}`
+          const rebuyUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/passes`
+          const qrExpirationTimestamp = qrCodeData.expiresAt.toISOString()
+          
+          // Use the EXACT same replacement logic as working seller rebuy emails
+          let processedTemplate = enhancedDefaultTemplate.customHTML
+            .replace(/\{customerName\}/g, customerName)
+            .replace(/\{qrCode\}/g, qrCodeData.code)
+            .replace(/\{guests\}/g, qrCodeData.guests.toString())
+            .replace(/\{days\}/g, qrCodeData.days.toString())
+            .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+            .replace(/\{qrExpirationTimestamp\}/g, qrExpirationTimestamp)
+            .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+            .replace(/\{rebuyUrl\}/g, rebuyUrl)
+            .replace(/\{magicLink\}/g, customerPortalUrl)
+            .replace(/\{expirationDate\}/g, qrCodeData.expiresAt.toLocaleDateString())
+            .replace(/\{expiresAt\}/g, qrCodeData.expiresAt.toLocaleDateString())
+            .replace(/\{passType\}/g, 'day')
+            .replace(/\{cost\}/g, qrCodeData.cost?.toString() || '0')
+            .replace(/\{deliveryMethod\}/g, 'now')
+          
+          emailHtml = processedTemplate
+          
+          console.log(`✅ REBUY EMAIL: Enhanced template processed successfully. Final length: ${emailHtml.length} characters`)
+          console.log(`📧 Enhanced template contains video: ${emailHtml.includes('Promotional Video') || emailHtml.includes('promotional') || emailHtml.includes('Watch Video')}`)
+          console.log(`📧 Enhanced template contains timer: ${emailHtml.includes('Time Remaining') || emailHtml.includes('countdown') || emailHtml.includes('timer')}`)
+          console.log(`📧 Enhanced template contains partners: ${emailHtml.includes('Featured Partners') || emailHtml.includes('partners')}`)
+          
+        } else {
+          console.log(`❌ No enhanced default template found, falling back to basic template`)
+          // Fallback to basic template logic (existing code)
+          emailHtml = defaultRebuyTemplate.customHTML
+            .replace(/\{customerName\}/g, customerName)
+            .replace(/\{qrCode\}/g, qrCodeData.code)
+            .replace(/\{guests\}/g, qrCodeData.guests.toString())
+            .replace(/\{days\}/g, qrCodeData.days.toString())
+            .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+            .replace(/\{qrExpirationTimestamp\}/g, qrCodeData.expiresAt.toISOString())
+            .replace(/\{customerPortalUrl\}/g, `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCodeData.customerEmail}`)
+            .replace(/\{rebuyUrl\}/g, `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/passes`)
+        }
+        
+      } else {
+        console.log(`📧 REBUY EMAIL: Using full template directly (same as working seller emails)`)
+        
+        // Use the full template directly (same as working seller rebuy emails)
+        const customerPortalUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/customer/access?token=${qrCodeData.customerEmail}`
+        const rebuyUrl = `${process.env.NEXTAUTH_URL || 'https://elocalpasscursor.vercel.app'}/passes`
+        const qrExpirationTimestamp = qrCodeData.expiresAt.toISOString()
+        
+        // Use the EXACT same replacement logic as working seller rebuy emails
+        emailHtml = defaultRebuyTemplate.customHTML
+          .replace(/\{customerName\}/g, customerName)
+          .replace(/\{qrCode\}/g, qrCodeData.code)
+          .replace(/\{guests\}/g, qrCodeData.guests.toString())
+          .replace(/\{days\}/g, qrCodeData.days.toString())
+          .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+          .replace(/\{qrExpirationTimestamp\}/g, qrExpirationTimestamp)
+          .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+          .replace(/\{rebuyUrl\}/g, rebuyUrl)
+          .replace(/\{magicLink\}/g, customerPortalUrl)
+          .replace(/\{expirationDate\}/g, qrCodeData.expiresAt.toLocaleDateString())
+          .replace(/\{expiresAt\}/g, qrCodeData.expiresAt.toLocaleDateString())
+          .replace(/\{passType\}/g, 'day')
+          .replace(/\{cost\}/g, qrCodeData.cost?.toString() || '0')
+          .replace(/\{deliveryMethod\}/g, 'now')
+        
+        console.log(`✅ REBUY EMAIL: Full template processed successfully. Final length: ${emailHtml.length} characters`)
+        console.log(`📧 Full template contains video: ${emailHtml.includes('Promotional Video') || emailHtml.includes('promotional') || emailHtml.includes('Watch Video')}`)
+        console.log(`📧 Full template contains timer: ${emailHtml.includes('Time Remaining') || emailHtml.includes('countdown') || emailHtml.includes('timer')}`)
+        console.log(`📧 Full template contains partners: ${emailHtml.includes('Featured Partners') || emailHtml.includes('partners')}`)
       }
-
+      
       emailSubject = defaultRebuyTemplate.subject || `Your ELocalPass expires in ${hoursLeft} hours - Get another one!`
       
       // Also replace placeholders in subject
