@@ -216,19 +216,36 @@ export default function CreateEnhancedLandingPage() {
           }
           
           // Update form data with default template values
-          setFormData(prevData => ({
-            ...prevData,
-            // Apply template data
-            headerText: result.template.headerText,
-            descriptionText: result.template.descriptionText,
-            ctaButtonText: result.template.ctaButtonText,
-            primaryColor: result.template.primaryColor,
-            secondaryColor: result.template.secondaryColor,
-            backgroundColor: result.template.backgroundColor,
-            logoUrl: result.template.logoUrl || '',
-            // Apply additional styling
-            ...additionalStyling
-          }))
+          setFormData(prevData => {
+            console.log('🔧 APPLYING DEFAULT TEMPLATE:')
+            console.log('  Template name:', result.template.name)
+            console.log('  Database colors:')
+            console.log('    Primary:', result.template.primaryColor)
+            console.log('    Secondary:', result.template.secondaryColor)
+            console.log('    Background:', result.template.backgroundColor)
+            console.log('  Additional styling:', additionalStyling)
+            
+            const newFormData = {
+              ...prevData,
+              // Apply template data
+              headerText: result.template.headerText,
+              descriptionText: result.template.descriptionText,
+              ctaButtonText: result.template.ctaButtonText,
+              primaryColor: result.template.primaryColor,
+              secondaryColor: result.template.secondaryColor,
+              backgroundColor: result.template.backgroundColor,
+              logoUrl: result.template.logoUrl || '',
+              // Apply additional styling
+              ...additionalStyling
+            }
+            
+            console.log('  Final form colors:')
+            console.log('    Primary:', newFormData.primaryColor)
+            console.log('    Secondary:', newFormData.secondaryColor)
+            console.log('    Background:', newFormData.backgroundColor)
+            
+            return newFormData
+          })
           
           console.log('✅ Form initialized with DEFAULT template from database')
         }
