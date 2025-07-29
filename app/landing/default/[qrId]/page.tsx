@@ -38,7 +38,7 @@ export default function DefaultLandingPage() {
         console.log('✅ Loaded saved configuration:', savedConfig.name)
         
         // Check if this configuration uses default landing page template
-        const config = JSON.parse(savedConfig.config)
+        const config = typeof savedConfig.config === 'string' ? JSON.parse(savedConfig.config) : savedConfig.config
         if (config.button3LandingPageChoice === 'DEFAULT') {
           console.log('✅ Configuration uses default landing page template')
           
@@ -50,7 +50,7 @@ export default function DefaultLandingPage() {
               console.log('✅ Loaded default template:', result.template.name)
               
               // Use the saved configuration's data but with the default template's styling
-              const configData = savedConfig.landingPageConfig ? JSON.parse(savedConfig.landingPageConfig) : {}
+              const configData = savedConfig.landingPageConfig ? (typeof savedConfig.landingPageConfig === 'string' ? JSON.parse(savedConfig.landingPageConfig) : savedConfig.landingPageConfig) : {}
               
               // Check if we have any saved landing page data
               const hasLandingPageData = configData && (
