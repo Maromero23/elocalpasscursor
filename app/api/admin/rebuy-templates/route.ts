@@ -33,16 +33,25 @@ export async function POST(request: NextRequest) {
         .footer { text-align: center; padding: 16px; font-size: 12px; color: #6b7280; }
         .countdown-container { text-align: center; margin: 20px 0; padding: 15px; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b; }
         .countdown-text { font-size: 14px; color: #92400e; margin-bottom: 8px; }
-        .countdown-timer { font-size: 18px; font-weight: bold; color: #92400e; }
+        .countdown-timer { text-align: center; margin: 24px 0; }
         .special-offer { background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); color: white; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }
         .special-offer h2 { margin: 0 0 8px 0; font-size: 20px; }
         .special-offer p { margin: 0; font-size: 14px; opacity: 0.9; }
+        .featured-partners { background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 24px 0; }
+        .featured-partners h3 { color: #1f2937; margin-bottom: 16px; text-align: center; }
+        .partners-grid { display: flex; justify-content: space-around; margin-bottom: 16px; }
+        .partner-item { text-align: center; }
+        .partner-placeholder { width: 60px; height: 60px; background-color: #e5e7eb; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; font-size: 24px; }
+        .partner-name { font-size: 12px; color: #374151; font-weight: 500; }
+        .partners-message { text-align: center; color: #6b7280; font-size: 14px; margin: 0; }
+        .banner-images { text-align: center; margin: 20px 0; }
+        .banner-image { max-width: 100%; height: auto; margin: 10px 0; border-radius: 8px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>${config.emailHeaderText || 'Don\'t Miss Out!'}</h1>
+            <h1>${config.emailSubject}</h1>
         </div>
         
         <div class="content">
@@ -52,10 +61,108 @@ export async function POST(request: NextRequest) {
                 <p>${config.emailMessageText || 'Your eLocalPass expires soon. Renew now with an exclusive discount!'}</p>
             </div>
             
-            <div class="countdown-container">
-                <div class="countdown-text">Only {hoursLeft} hours left!</div>
+            <!-- Banner Images -->
+            ${config.bannerImages && config.bannerImages.length > 0 ? `
+            <div class="banner-images">
+                ${config.bannerImages.map((imageUrl: string) => `
+                    <img src="${imageUrl}" alt="Promotional Banner" class="banner-image" />
+                `).join('')}
             </div>
+            ` : ''}
             
+            <!-- Video Section -->
+            ${config.videoUrl ? `
+            <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; text-align: center; margin: 24px 0;">
+                <div style="background-color: #e5e7eb; height: 128px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                    <div style="color: #6b7280;">
+                        🎥 Promotional Video<br>
+                        <span style="font-size: 12px;">Click to watch</span>
+                    </div>
+                </div>
+                <p style="font-size: 14px; color: #6b7280; margin: 0;">Watch this special message about your renewal!</p>
+                <a href="${config.videoUrl}" style="color: #3b82f6; text-decoration: none; font-size: 14px;">▶ Watch Video</a>
+            </div>
+            ` : ''}
+            
+            <!-- Enhanced Static Countdown Timer (if enabled) -->
+            ${config.showExpirationTimer !== false ? `
+            <div class="countdown-timer">
+                <p style="text-align: center; color: #dc2626; font-weight: 600; margin: 16px 0 8px 0;">⏰ Time Remaining Until Expiration:</p>
+                <table style="margin: 0 auto; border-collapse: collapse;">
+                    <tr>
+                        <td style="
+                            background: linear-gradient(135deg, #dc2626, #ef4444);
+                            color: white;
+                            padding: 12px 16px;
+                            border-radius: 8px 0 0 8px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            min-width: 50px;
+                            border: 2px solid #dc2626;
+                        ">{hoursLeft}</td>
+                        <td style="
+                            background: #1f2937;
+                            color: white;
+                            padding: 12px 8px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            border-top: 2px solid #dc2626;
+                            border-bottom: 2px solid #dc2626;
+                        ">:</td>
+                        <td style="
+                            background: linear-gradient(135deg, #374151, #4b5563);
+                            color: white;
+                            padding: 12px 16px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            min-width: 50px;
+                            border: 2px solid #dc2626;
+                        ">00</td>
+                        <td style="
+                            background: #1f2937;
+                            color: white;
+                            padding: 12px 8px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            border-top: 2px solid #dc2626;
+                            border-bottom: 2px solid #dc2626;
+                        ">:</td>
+                        <td style="
+                            background: linear-gradient(135deg, #374151, #4b5563);
+                            color: white;
+                            padding: 12px 16px;
+                            border-radius: 0 8px 8px 0;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            min-width: 50px;
+                            border: 2px solid #dc2626;
+                        ">00</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: center; font-size: 10px; color: #6b7280; padding-top: 4px; font-weight: 500;">HOURS</td>
+                        <td></td>
+                        <td style="text-align: center; font-size: 10px; color: #6b7280; padding-top: 4px; font-weight: 500;">MIN</td>
+                        <td></td>
+                        <td style="text-align: center; font-size: 10px; color: #6b7280; padding-top: 4px; font-weight: 500;">SEC</td>
+                    </tr>
+                </table>
+                <p style="text-align: center; font-size: 12px; color: #6b7280; margin: 8px 0; font-style: italic;">
+                    🚨 Don't wait - your pass expires soon!
+                </p>
+            </div>
+            ` : ''}
+            
+            <!-- Current Pass Details -->
             <div style="text-align: center; margin: 20px 0; padding: 15px; background-color: #f3f4f6; border-radius: 8px;">
                 <h3 style="margin: 0 0 10px 0; color: #374151;">Your Current ELocalPass Details:</h3>
                 <p style="margin: 5px 0; color: #6b7280; font-size: 14px;"><strong>Pass Code:</strong> {qrCode}</p>
@@ -68,12 +175,46 @@ export async function POST(request: NextRequest) {
             </div>
             
             <div class="cta-button">
-                <a href="{rebuyUrl}">Get Another ELocalPass</a>
+                <a href="{rebuyUrl}">${config.emailCta || 'Get Another ELocalPass'}</a>
             </div>
             
-            <div class="footer">
-                <p>Thank you for choosing ELocalPass for your local adventures!</p>
+            <!-- Featured Partners (if enabled) -->
+            ${config.enableFeaturedPartners ? `
+            <div class="featured-partners">
+                <h3>Featured Partners in Playa del Carmen</h3>
+                <div class="partners-grid">
+                    <div class="partner-item">
+                        <div class="partner-placeholder">🍽️</div>
+                        <div class="partner-name">Local Restaurant</div>
+                    </div>
+                    <div class="partner-item">
+                        <div class="partner-placeholder">🏖️</div>
+                        <div class="partner-name">Adventure Tours</div>
+                    </div>
+                    <div class="partner-item">
+                        <div class="partner-placeholder">🛍️</div>
+                        <div class="partner-name">Local Shops</div>
+                    </div>
+                </div>
+                <p class="partners-message">${config.customAffiliateMessage || 'Don\'t forget these amazing discounts are waiting for you!'}</p>
             </div>
+            ` : ''}
+            
+            <div class="footer">
+                <p>${config.emailFooter || 'Thank you for choosing ELocalPass for your local adventures!'}</p>
+                <p style="margin-top: 8px; font-size: 12px;">
+                    Need help? Visit your <a href="{customerPortalUrl}" style="color: #3b82f6;">customer portal</a> or contact support.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Email Footer -->
+        <div style="background-color: #f9fafb; padding: 16px; text-align: center; color: #6b7280; font-size: 12px;">
+            <p>© 2025 eLocalPass. All rights reserved.</p>
+            <p style="margin-top: 4px;">
+                You received this email because your ELocalPass is expiring soon.
+                <a href="#" style="color: #3b82f6;">Unsubscribe</a>
+            </p>
         </div>
     </div>
 </body>
@@ -133,54 +274,188 @@ export async function POST(request: NextRequest) {
         .cta-button a { background-color: ${config.emailCtaBackgroundColor || config.emailHeaderColor || '#dc2626'}; color: ${config.emailCtaColor || 'white'}; font-family: ${config.emailCtaFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailCtaFontSize || '16'}px; font-weight: 500; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; }
         .footer-message { text-align: center; border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 24px; }
         .footer-message p { color: ${config.emailFooterColor || '#6b7280'}; font-family: ${config.emailFooterFontFamily || 'Arial, sans-serif'}; font-size: ${config.emailFooterFontSize || '14'}px; margin: 0; }
-        .discount-banner { background: linear-gradient(135deg, ${config.emailPrimaryColor || '#dc2626'}, ${config.emailSecondaryColor || '#ef4444'}); color: white; padding: 16px; text-align: center; margin: 24px 0; border-radius: 8px; }
-        .highlight-box { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 4px; }
-        .details { background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 24px 0; }
+        .countdown-timer { text-align: center; margin: 24px 0; }
+        .special-offer { background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); color: white; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }
+        .special-offer h2 { margin: 0 0 8px 0; font-size: 20px; }
+        .special-offer p { margin: 0; font-size: 14px; opacity: 0.9; }
+        .featured-partners { background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 24px 0; }
+        .featured-partners h3 { color: #1f2937; margin-bottom: 16px; text-align: center; }
+        .partners-grid { display: flex; justify-content: space-around; margin-bottom: 16px; }
+        .partner-item { text-align: center; }
+        .partner-placeholder { width: 60px; height: 60px; background-color: #e5e7eb; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; font-size: 24px; }
+        .partner-name { font-size: 12px; color: #374151; font-weight: 500; }
+        .partners-message { text-align: center; color: #6b7280; font-size: 14px; margin: 0; }
+        .banner-images { text-align: center; margin: 20px 0; }
+        .banner-image { max-width: 100%; height: auto; margin: 10px 0; border-radius: 8px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            ${config.logoUrl ? `<div style="margin-bottom: 16px;"><img src="${config.logoUrl}" alt="Logo" style="height: 40px; width: auto;"></div>` : ''}
-            <h1>${config.emailHeader || 'Don\'t Miss Out!'}</h1>
+            <h1>${config.emailSubject}</h1>
         </div>
         
         <div class="content">
             <div class="message">
                 <p>Hello {customerName},</p>
-                <p style="margin-top: 16px;">${config.emailMessage || 'Your eLocalPass expires soon. Renew now with an exclusive discount!'}</p>
+                <br>
+                <p>${config.emailMessageText || 'Your eLocalPass expires soon. Renew now with an exclusive discount!'}</p>
             </div>
             
-            <div class="highlight-box">
-                <p style="color: #92400e; font-weight: 500; margin: 0;">${config.urgencyMessage ? config.urgencyMessage.replace('{hours_left}', '{hoursLeft}') : '⏰ Your ELocalPass expires in {hoursLeft} hours - Don\'t miss out!'}</p>
-            </div>
-            
-            <div class="details">
-                <h3 style="color: #374151; font-weight: 600; margin: 0 0 12px 0;">Your Current ELocalPass Details:</h3>
-                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
-                    <span style="color: #6b7280; font-weight: 500;">Pass Code:</span>
-                    <span style="color: #374151; font-weight: 600;">{qrCode}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
-                    <span style="color: #6b7280; font-weight: 500;">Expires:</span>
-                    <span style="color: #374151; font-weight: 600;">In {hoursLeft} hours</span>
-                </div>
-            </div>
-            
-            ${config.enableDiscountCode ? `
-            <div class="discount-banner">
-                <h2 style="margin: 0 0 8px 0; font-size: 20px;">🎉 Special ${config.discountValue}${config.discountType === 'percentage' ? '%' : '$'} OFF!</h2>
-                <p style="margin: 0; font-size: 14px; opacity: 0.9;">Get another ELocalPass now and save!</p>
+            <!-- Banner Images -->
+            ${config.bannerImages && config.bannerImages.length > 0 ? `
+            <div class="banner-images">
+                ${config.bannerImages.map((imageUrl: string) => `
+                    <img src="${imageUrl}" alt="Promotional Banner" class="banner-image" />
+                `).join('')}
             </div>
             ` : ''}
+            
+            <!-- Video Section -->
+            ${config.videoUrl ? `
+            <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; text-align: center; margin: 24px 0;">
+                <div style="background-color: #e5e7eb; height: 128px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                    <div style="color: #6b7280;">
+                        🎥 Promotional Video<br>
+                        <span style="font-size: 12px;">Click to watch</span>
+                    </div>
+                </div>
+                <p style="font-size: 14px; color: #6b7280; margin: 0;">Watch this special message about your renewal!</p>
+                <a href="${config.videoUrl}" style="color: #3b82f6; text-decoration: none; font-size: 14px;">▶ Watch Video</a>
+            </div>
+            ` : ''}
+            
+            <!-- Enhanced Static Countdown Timer (if enabled) -->
+            ${config.showExpirationTimer !== false ? `
+            <div class="countdown-timer">
+                <p style="text-align: center; color: #dc2626; font-weight: 600; margin: 16px 0 8px 0;">⏰ Time Remaining Until Expiration:</p>
+                <table style="margin: 0 auto; border-collapse: collapse;">
+                    <tr>
+                        <td style="
+                            background: linear-gradient(135deg, #dc2626, #ef4444);
+                            color: white;
+                            padding: 12px 16px;
+                            border-radius: 8px 0 0 8px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            min-width: 50px;
+                            border: 2px solid #dc2626;
+                        ">{hoursLeft}</td>
+                        <td style="
+                            background: #1f2937;
+                            color: white;
+                            padding: 12px 8px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            border-top: 2px solid #dc2626;
+                            border-bottom: 2px solid #dc2626;
+                        ">:</td>
+                        <td style="
+                            background: linear-gradient(135deg, #374151, #4b5563);
+                            color: white;
+                            padding: 12px 16px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            min-width: 50px;
+                            border: 2px solid #dc2626;
+                        ">00</td>
+                        <td style="
+                            background: #1f2937;
+                            color: white;
+                            padding: 12px 8px;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            border-top: 2px solid #dc2626;
+                            border-bottom: 2px solid #dc2626;
+                        ">:</td>
+                        <td style="
+                            background: linear-gradient(135deg, #374151, #4b5563);
+                            color: white;
+                            padding: 12px 16px;
+                            border-radius: 0 8px 8px 0;
+                            text-align: center;
+                            font-family: 'Courier New', monospace;
+                            font-size: 24px;
+                            font-weight: bold;
+                            min-width: 50px;
+                            border: 2px solid #dc2626;
+                        ">00</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: center; font-size: 10px; color: #6b7280; padding-top: 4px; font-weight: 500;">HOURS</td>
+                        <td></td>
+                        <td style="text-align: center; font-size: 10px; color: #6b7280; padding-top: 4px; font-weight: 500;">MIN</td>
+                        <td></td>
+                        <td style="text-align: center; font-size: 10px; color: #6b7280; padding-top: 4px; font-weight: 500;">SEC</td>
+                    </tr>
+                </table>
+                <p style="text-align: center; font-size: 12px; color: #6b7280; margin: 8px 0; font-style: italic;">
+                    🚨 Don't wait - your pass expires soon!
+                </p>
+            </div>
+            ` : ''}
+            
+            <!-- Current Pass Details -->
+            <div style="text-align: center; margin: 20px 0; padding: 15px; background-color: #f3f4f6; border-radius: 8px;">
+                <h3 style="margin: 0 0 10px 0; color: #374151;">Your Current ELocalPass Details:</h3>
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;"><strong>Pass Code:</strong> {qrCode}</p>
+                <p style="margin: 5px 0; color: #6b7280; font-size: 14px;"><strong>Expires:</strong> In {hoursLeft} hours</p>
+            </div>
+            
+            <div class="special-offer">
+                <h2>🎉 Special 50% OFF!</h2>
+                <p>Get another ELocalPass now and save!</p>
+            </div>
             
             <div class="cta-button">
                 <a href="{rebuyUrl}">${config.emailCta || 'Get Another ELocalPass'}</a>
             </div>
             
+            <!-- Featured Partners (if enabled) -->
+            ${config.enableFeaturedPartners ? `
+            <div class="featured-partners">
+                <h3>Featured Partners in Playa del Carmen</h3>
+                <div class="partners-grid">
+                    <div class="partner-item">
+                        <div class="partner-placeholder">🍽️</div>
+                        <div class="partner-name">Local Restaurant</div>
+                    </div>
+                    <div class="partner-item">
+                        <div class="partner-placeholder">🏖️</div>
+                        <div class="partner-name">Adventure Tours</div>
+                    </div>
+                    <div class="partner-item">
+                        <div class="partner-placeholder">🛍️</div>
+                        <div class="partner-name">Local Shops</div>
+                    </div>
+                </div>
+                <p class="partners-message">${config.customAffiliateMessage || 'Don\'t forget these amazing discounts are waiting for you!'}</p>
+            </div>
+            ` : ''}
+            
             <div class="footer-message">
                 <p>${config.emailFooter || 'Thank you for choosing ELocalPass for your local adventures!'}</p>
+                <p style="margin-top: 8px; font-size: 12px;">
+                    Need help? Visit your <a href="{customerPortalUrl}" style="color: #3b82f6;">customer portal</a> or contact support.
+                </p>
             </div>
+        </div>
+        
+        <!-- Email Footer -->
+        <div style="background-color: #f9fafb; padding: 16px; text-align: center; color: #6b7280; font-size: 12px;">
+            <p>© 2025 eLocalPass. All rights reserved.</p>
+            <p style="margin-top: 4px;">
+                You received this email because your ELocalPass is expiring soon.
+                <a href="#" style="color: #3b82f6;">Unsubscribe</a>
+            </p>
         </div>
     </div>
 </body>
