@@ -52,29 +52,60 @@ export default function DefaultLandingPage({ qrId }: DefaultLandingPageProps) {
               // Use the saved configuration's data but with the default template's styling
               const configData = savedConfig.landingPageConfig ? JSON.parse(savedConfig.landingPageConfig) : {}
               
-              // Merge default template with saved configuration data
-              setTemplate({
-                ...result.template,
-                // Use saved configuration data if available, otherwise use template defaults
-                headerText: configData.headerText || result.template.headerText,
-                descriptionText: configData.descriptionText || result.template.descriptionText,
-                ctaButtonText: configData.ctaButtonText || result.template.ctaButtonText,
-                primaryColor: configData.primaryColor || result.template.primaryColor,
-                secondaryColor: configData.secondaryColor || result.template.secondaryColor,
-                backgroundColor: configData.backgroundColor || result.template.backgroundColor,
-                logoUrl: configData.logoUrl || result.template.logoUrl,
-                // Use saved configuration for form fields
-                formTitleText: configData.formTitleText || 'Complete Your Details',
-                formInstructionsText: configData.formInstructionsText || 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
-                footerDisclaimerText: configData.footerDisclaimerText || 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.'
-              })
+              // Check if we have any saved landing page data
+              const hasLandingPageData = configData && (
+                configData.headerText || 
+                configData.descriptionText || 
+                configData.ctaButtonText ||
+                configData.primaryColor ||
+                configData.secondaryColor ||
+                configData.backgroundColor
+              )
               
-              // Set form defaults from saved configuration
-              if (configData.defaultGuests) {
-                setFormData(prev => ({ ...prev, guests: configData.defaultGuests }))
-              }
-              if (configData.defaultDays) {
-                setFormData(prev => ({ ...prev, days: configData.defaultDays }))
+              if (hasLandingPageData) {
+                console.log('✅ Using saved configuration data with default template')
+                // Merge default template with saved configuration data
+                setTemplate({
+                  ...result.template,
+                  // Use saved configuration data if available, otherwise use template defaults
+                  headerText: configData.headerText || result.template.headerText,
+                  descriptionText: configData.descriptionText || result.template.descriptionText,
+                  ctaButtonText: configData.ctaButtonText || result.template.ctaButtonText,
+                  primaryColor: configData.primaryColor || result.template.primaryColor,
+                  secondaryColor: configData.secondaryColor || result.template.secondaryColor,
+                  backgroundColor: configData.backgroundColor || result.template.backgroundColor,
+                  logoUrl: configData.logoUrl || result.template.logoUrl,
+                  // Use saved configuration for form fields
+                  formTitleText: configData.formTitleText || 'Complete Your Details',
+                  formInstructionsText: configData.formInstructionsText || 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+                  footerDisclaimerText: configData.footerDisclaimerText || 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.'
+                })
+                
+                // Set form defaults from saved configuration
+                if (configData.defaultGuests) {
+                  setFormData(prev => ({ ...prev, guests: configData.defaultGuests }))
+                }
+                if (configData.defaultDays) {
+                  setFormData(prev => ({ ...prev, days: configData.defaultDays }))
+                }
+              } else {
+                console.log('✅ No saved landing page data, using default template directly')
+                // Use the default template directly with some enhancements
+                setTemplate({
+                  ...result.template,
+                  // Add form-specific fields that the template doesn't have
+                  formTitleText: 'Complete Your Details',
+                  formInstructionsText: 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+                  footerDisclaimerText: 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.'
+                })
+                
+                // Set form defaults from the QR configuration
+                if (config.button1GuestsDefault) {
+                  setFormData(prev => ({ ...prev, guests: config.button1GuestsDefault }))
+                }
+                if (config.button1DaysDefault) {
+                  setFormData(prev => ({ ...prev, days: config.button1DaysDefault }))
+                }
               }
               
               setLoading(false)
@@ -92,7 +123,13 @@ export default function DefaultLandingPage({ qrId }: DefaultLandingPageProps) {
       if (response.ok) {
         const result = await response.json()
         if (result.success && result.template) {
-          setTemplate(result.template)
+          setTemplate({
+            ...result.template,
+            // Add form-specific fields that the template doesn't have
+            formTitleText: 'Complete Your Details',
+            formInstructionsText: 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+            footerDisclaimerText: 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.'
+          })
         } else {
           error('Template Error', 'Default template not found')
         }
