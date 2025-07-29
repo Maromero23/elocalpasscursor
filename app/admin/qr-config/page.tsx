@@ -245,6 +245,7 @@ function QRConfigPageContent() {
     isActive?: boolean
     createdAt?: string
     isTemp?: boolean
+    isDefault?: boolean
   }>>([])
   const [showUrlModal, setShowUrlModal] = useState(false)
   const [editingUrl, setEditingUrl] = useState<{
@@ -2223,11 +2224,55 @@ function QRConfigPageContent() {
         if (result.success && result.template) {
           console.log('✅ Default template fetched:', result.template.name)
           
+          // Create a temporary URL entry for the default template
+          const defaultTempUrl = {
+            id: `default-template-${Date.now()}`,
+            name: 'Default Landing Page Template',
+            url: '/landing/default',
+            description: 'System default landing page template with professional branding',
+            createdAt: new Date().toISOString(),
+            isTemp: true,
+            isDefault: true,
+            templateData: {
+              headerText: result.template.headerText,
+              descriptionText: result.template.descriptionText,
+              ctaButtonText: result.template.ctaButtonText,
+              primaryColor: result.template.primaryColor,
+              secondaryColor: result.template.secondaryColor,
+              backgroundColor: result.template.backgroundColor,
+              logoUrl: result.template.logoUrl,
+              formTitleText: 'Complete Your Details',
+              formInstructionsText: 'JUST COMPLETE THE FIELDS BELOW AND RECEIVE YOUR GIFT VIA EMAIL:',
+              footerDisclaimerText: 'FULLY ENJOY THE EXPERIENCE OF PAYING LIKE A LOCAL. ELOCALPASS GUARANTEES THAT YOU WILL NOT RECEIVE ANY KIND OF SPAM AND THAT YOUR DATA IS PROTECTED.',
+              defaultGuests: globalConfig.button1GuestsDefault || 2,
+              defaultDays: globalConfig.button1DaysDefault || 2
+            }
+          }
+          
+          // Add to sellerUrls state so it shows up in the UI
+          setSellerUrls(prev => {
+            // Remove any existing default template entries
+            const filtered = prev.filter(url => !url.isDefault)
+            return [...filtered, defaultTempUrl]
+          })
+          
+          // Auto-select the default template
+          setSelectedUrlIds([defaultTempUrl.id])
+          
           // Create landing page config with default template data
           const defaultLandingConfig = {
-            temporaryUrls: [],
-            selectedUrlIds: [],
-            urlMappings: {},
+            temporaryUrls: [defaultTempUrl],
+            selectedUrlIds: [defaultTempUrl.id],
+            urlMappings: {
+              [defaultTempUrl.id]: {
+                name: defaultTempUrl.name,
+                url: defaultTempUrl.url,
+                description: defaultTempUrl.description,
+                createdAt: defaultTempUrl.createdAt,
+                isTemp: defaultTempUrl.isTemp,
+                isDefault: defaultTempUrl.isDefault
+              }
+            },
             // Include the default template data
             headerText: result.template.headerText,
             descriptionText: result.template.descriptionText,
@@ -2245,7 +2290,7 @@ function QRConfigPageContent() {
           
           // Save to localStorage for immediate use
           localStorage.setItem('elocalpass-landing-page-config', JSON.stringify(defaultLandingConfig))
-          console.log('✅ Default template data saved to localStorage')
+          console.log('✅ Default template data saved to localStorage and added to temporary URLs')
           
           return defaultLandingConfig
         } else {
