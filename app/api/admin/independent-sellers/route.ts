@@ -21,7 +21,11 @@ export async function POST(request: NextRequest) {
       telephone, 
       whatsapp, 
       location,
-      notes 
+      notes,
+      // Additional fields for complete distributor info
+      distributorEmail,
+      distributorPhone,
+      distributorNotes
     } = body
 
     // Validate required fields
@@ -35,91 +39,98 @@ export async function POST(request: NextRequest) {
 
     // Create everything in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Find or create the "Independent Sellers" distributor
-      let independentDistributor = await tx.distributor.findFirst({
-        where: { name: "Independent Sellers" }
+      // 1. Create the distributor user (using distributor email or fallback to main email)
+      const distributorUser = await tx.user.create({
+        data: {
+          name: contactPerson, // Same person managing everything
+          email: distributorEmail || email, // Use separate distributor email if provided
+          password: hashedPassword,
+          role: "DISTRIBUTOR", // This user acts as distributor
+          telephone: distributorPhone || telephone,
+          whatsapp,
+          notes: distributorNotes || `Independent seller distributor: ${businessName}`,
+          isActive: true
+        }
       })
 
-      if (!independentDistributor) {
-        // Create the virtual distributor user first
-        const virtualDistributorUser = await tx.user.create({
-          data: {
-            name: "Independent Sellers System",
-            email: "system+independent@elocalpass.com",
-            password: await bcrypt.hash("system-only", 12),
-            role: "DISTRIBUTOR",
-            isActive: true
-          }
-        })
+      // 2. Create the distributor (using business name)
+      const distributor = await tx.distributor.create({
+        data: {
+          name: businessName, // Business name becomes distributor name
+          contactPerson,
+          email: distributorEmail || email,
+          telephone: distributorPhone || telephone,
+          whatsapp,
+          notes: distributorNotes || `Independent seller: ${contactPerson}`,
+          userId: distributorUser.id,
+          isActive: true
+        }
+      })
 
-        // Create the virtual distributor
-        independentDistributor = await tx.distributor.create({
-          data: {
-            name: "Independent Sellers",
-            contactPerson: "System Generated",
-            email: "system+independent@elocalpass.com",
-            notes: "Virtual distributor for independent sellers who don't belong to a traditional distributor hierarchy",
-            userId: virtualDistributorUser.id,
-            isActive: true
-          }
-        })
-      }
+      // 3. Create the location user (same person, different email if needed)
+      const locationUser = await tx.user.create({
+        data: {
+          name: contactPerson,
+          email: email, // Main email for location
+          password: hashedPassword,
+          role: "LOCATION",
+          telephone,
+          whatsapp,
+          notes: `Location manager for independent seller: ${businessName}`,
+          isActive: true
+        }
+      })
 
-      // 2. Create the independent seller's user account with INDEPENDENT_SELLER role
+      // 4. Create the location
+      const locationRecord = await tx.location.create({
+        data: {
+          name: location || businessName, // Use location/address as location name
+          contactPerson,
+          email: email,
+          telephone,
+          whatsapp,
+          notes: `Independent seller location: ${businessName}${notes ? '\nAdditional notes: ' + notes : ''}`,
+          distributorId: distributor.id,
+          userId: locationUser.id,
+          isActive: true
+        }
+      })
+
+      // 5. Create the seller user (same person with INDEPENDENT_SELLER role for dual access)
       const sellerUser = await tx.user.create({
         data: {
           name: contactPerson,
-          email,
+          email: email, // Same email as location
           password: hashedPassword,
-          role: "INDEPENDENT_SELLER", // New role with dual access
+          role: "INDEPENDENT_SELLER", // Special role for dual dashboard access
           telephone,
           whatsapp,
-          notes,
+          notes: `Independent seller: ${businessName}`,
+          locationId: locationRecord.id,
+          distributorId: distributor.id,
           isActive: true
-        }
-      })
-
-      // 3. Create a virtual location for this independent seller
-      const virtualLocation = await tx.location.create({
-        data: {
-          name: location || businessName, // Use location/address as the location name
-          contactPerson,
-          email,
-          telephone,
-          whatsapp,
-          notes: `Independent seller business: ${businessName}${notes ? '\nAdditional notes: ' + notes : ''}`,
-          distributorId: independentDistributor.id,
-          userId: sellerUser.id, // Link the user as the location manager
-          isActive: true
-        }
-      })
-
-      // 4. Update the user to be linked to this location
-      await tx.user.update({
-        where: { id: sellerUser.id },
-        data: { 
-          locationId: virtualLocation.id,
-          distributorId: independentDistributor.id
         }
       })
 
       return {
-        user: sellerUser,
-        location: virtualLocation,
-        distributor: independentDistributor
+        distributor,
+        location: locationRecord,
+        seller: sellerUser,
+        distributorUser,
+        locationUser
       }
     })
 
     return NextResponse.json({
       success: true,
-      message: `Independent seller "${contactPerson}" created successfully`,
+      message: `Independent seller "${businessName}" created successfully as distributor`,
       data: {
-        userId: result.user.id,
-        email: result.user.email,
-        role: result.user.role,
-        businessName,
+        distributorId: result.distributor.id,
         locationId: result.location.id,
-        distributorId: result.distributor.id
+        sellerId: result.seller.id,
+        businessName,
+        contactPerson,
+        email
       }
     })
 
