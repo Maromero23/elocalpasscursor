@@ -294,6 +294,18 @@ export default function DistributorsPage() {
     fetchDistributors()
   }, [])
 
+  // Auto-load distributor details when filtering by locations or sellers
+  useEffect(() => {
+    if (entityFilter === 'locations' || entityFilter === 'sellers') {
+      // Load details for all distributors to access nested data
+      distributors.forEach(distributor => {
+        if (!distributorDetails[distributor.id] && !loadingDetails[distributor.id]) {
+          fetchDistributorDetails(distributor.id)
+        }
+      })
+    }
+  }, [entityFilter, distributors])
+
   const fetchDistributors = async () => {
     try {
       const response = await fetch("/api/admin/distributors", {
@@ -1308,6 +1320,25 @@ export default function DistributorsPage() {
             </div>
           </div>
         </div>
+
+        {/* Show message for location/seller filters in flat view */}
+        {viewMode === 'flat' && (entityFilter === 'locations' || entityFilter === 'sellers') && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-md">
+            <div className="flex items-center">
+              <div className="text-sm">
+                {entityFilter === 'locations' && (
+                  <>📍 <strong>Locations Only</strong> filter is active. Loading location data...</>
+                )}
+                {entityFilter === 'sellers' && (
+                  <>👤 <strong>Sellers Only</strong> filter is active. Loading seller data...</>
+                )}
+                <div className="mt-1 text-xs text-blue-600">
+                  Enhanced flat view with {entityFilter} display is coming in the next update.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Distributors Table - Full Width with Horizontal Scroll */}
         <div className="w-full px-4 sm:px-6 lg:px-8 pb-6">
