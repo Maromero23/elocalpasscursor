@@ -221,16 +221,26 @@ export default function DistributorsPage() {
   // Scroll synchronization refs
   const topScrollRef = useRef<HTMLDivElement>(null)
   const mainScrollRef = useRef<HTMLDivElement>(null)
+  const fixedScrollRef = useRef<HTMLDivElement>(null)
 
   // Scroll synchronization functions
   const syncScrollFromTop = (e: React.UIEvent<HTMLDivElement>) => {
-    if (mainScrollRef.current) {
+    if (mainScrollRef.current && fixedScrollRef.current) {
       mainScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
+      fixedScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
     }
   }
 
   const syncScrollFromMain = (e: React.UIEvent<HTMLDivElement>) => {
-    if (topScrollRef.current) {
+    if (topScrollRef.current && fixedScrollRef.current) {
+      topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
+      fixedScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
+    }
+  }
+
+  const syncScrollFromFixed = (e: React.UIEvent<HTMLDivElement>) => {
+    if (mainScrollRef.current && topScrollRef.current) {
+      mainScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
       topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
     }
   }
@@ -2458,6 +2468,37 @@ export default function DistributorsPage() {
             </p>
           </div>
         )}
+
+        {/* Fixed bottom scroll bar - always visible */}
+        <div 
+          className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-40"
+          style={{ height: '12px' }}
+        >
+          <div
+            ref={fixedScrollRef}
+            className="w-full h-full overflow-x-auto overflow-y-hidden table-scroll-container"
+            style={{
+              scrollbarWidth: 'auto',
+              msOverflowStyle: 'scrollbar',
+            }}
+            onScroll={syncScrollFromFixed}
+            onWheel={(e) => {
+              if (e.deltaY !== 0) {
+                e.preventDefault()
+                if (fixedScrollRef.current) {
+                  fixedScrollRef.current.scrollLeft += e.deltaY
+                }
+              }
+            }}
+          >
+            <div 
+              style={{ 
+                width: '1500px', // Same width as table
+                height: '1px'
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Add Location Modal */}
