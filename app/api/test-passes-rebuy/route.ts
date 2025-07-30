@@ -32,10 +32,11 @@ export async function POST(request: NextRequest) {
     const customerName = qrCodeData.customerName || 'Valued Customer'
     
     // Get the SPECIFIC PayPal rebuy email template from database
-    console.log('📧 Loading SPECIFIC PayPal rebuy email template from database...')
+    console.log('📧 Loading MASTER PAYPAL DEFAULT REBUY EMAIL template from database...')
     const paypalRebuyTemplate = await prisma.rebuyEmailTemplate.findFirst({
       where: { 
         OR: [
+          { name: { contains: "MASTER PAYPAL DEFAULT REBUY EMAIL", mode: 'insensitive' } },
           { name: { contains: "Paypal Rebuy Email 2", mode: 'insensitive' } },
           { name: { contains: "Paypal Rebuy Email", mode: 'insensitive' } },
           { name: { contains: "Paypal Rebuy", mode: 'insensitive' } },
