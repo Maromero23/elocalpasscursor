@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { ProtectedRoute } from "../../../components/auth/protected-route"
 import Link from "next/link"
-import { MapPin, Building2, Users, ChevronRight, ChevronDown, Edit2, Save, X, Plus, Settings, Trash2, User, Mail, Phone, QrCode, ArrowUpDown, ArrowUp, ArrowDown, Filter, Eye, EyeOff } from "lucide-react"
+import { MapPin, Building2, Users, ChevronRight, ChevronDown, Edit2, Save, X, Plus, Settings, Trash2, User, Mail, Phone, QrCode, ArrowUpDown, ArrowUp, ArrowDown, Filter, Eye, EyeOff, Search } from "lucide-react"
 import { useToast } from '@/hooks/use-toast'
 
 interface Distributor {
@@ -218,7 +218,23 @@ export default function DistributorsPage() {
   // Toast notifications
   const { success: showSuccess, error: showError } = useToast()
 
-  // Filter and sort QR configurations for pairing modal
+  // Scroll synchronization refs
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const mainScrollRef = useRef<HTMLDivElement>(null)
+
+  // Scroll synchronization functions
+  const syncScrollFromTop = (e: React.UIEvent<HTMLDivElement>) => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
+    }
+  }
+
+  const syncScrollFromMain = (e: React.UIEvent<HTMLDivElement>) => {
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
+    }
+  }
+
   const filteredAndSortedQRConfigs = availableQRConfigs
     .filter(config => {
       // Search query filter (name, description)
@@ -1099,21 +1115,45 @@ export default function DistributorsPage() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
-      <div className="min-h-screen bg-gray-100">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .table-scroll-container::-webkit-scrollbar {
+          height: 12px;
+        }
+        .table-scroll-container::-webkit-scrollbar-thumb {
+          background-color: #cbd5e0;
+          border-radius: 8px;
+          border: 2px solid #f7fafc;
+        }
+        .table-scroll-container::-webkit-scrollbar-track {
+          background-color: #f1f1f1;
+          border-radius: 8px;
+        }
+        .table-scroll-container {
+          scrollbar-width: auto !important;
+          overflow-x: scroll !important;
+        }
+      `}} />
+      <div className="min-h-screen bg-gray-100 w-full">
+
         {/* Navigation */}
-        <nav className="bg-orange-400 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav className="bg-orange-400 shadow-sm w-full">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center space-x-8">
                 <h1 className="text-xl font-semibold text-white">Admin Dashboard</h1>
                 <div className="flex space-x-4">
                   {navItems.map((item) => {
                     const Icon = item.icon
+                    const isActive = item.href === '/admin/distributors'
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-orange-100 hover:text-white hover:bg-orange-500"
+                        className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                          isActive
+                            ? "text-white bg-orange-500"
+                            : "text-orange-100 hover:text-white hover:bg-orange-500"
+                        }`}
                       >
                         <Icon className="w-4 h-4 mr-2" />
                         {item.label}
@@ -1127,7 +1167,7 @@ export default function DistributorsPage() {
                 <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                 >
                   Sign Out
                 </button>
@@ -1136,23 +1176,26 @@ export default function DistributorsPage() {
           </div>
         </nav>
 
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
-            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Distributor Management</h2>
+        {/* Main Content - Full Width */}
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
+          <div className="w-full">
+            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 w-full">
+              <div className="mb-8 flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Distributor Management</h2>
+                  <p className="text-gray-600">Manage distributors, locations, and independent sellers</p>
+                </div>
                 <div className="flex space-x-3">
                   <button
                     onClick={() => setShowIndependentSellerModal(true)}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center space-x-2"
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                   >
-                    <User className="w-4 h-4" />
+                    <User className="w-4 h-4 mr-2" />
                     <span>Add Independent Seller</span>
                   </button>
                   <Link
                     href="/admin/distributors/create"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                   >
                     Add New Distributor
                   </Link>
@@ -1160,1137 +1203,1261 @@ export default function DistributorsPage() {
               </div>
 
               {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
                   {error}
                 </div>
               )}
 
-              {/* Distributors Table */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-4 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Distributors</h2>
+              {/* Filters */}
+              <div className="mb-6 bg-white p-4 rounded-lg shadow">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                    <button 
+                      onClick={handleSort}
+                      className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50"
+                    >
+                      <span>Distributor Name</span>
+                      {sortOrder === 'asc' ? (
+                        <ArrowUp className="h-4 w-4" />
+                      ) : (
+                        <ArrowDown className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status Filter</label>
+                    <button 
+                      onClick={handleStatusFilter}
+                      className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50"
+                    >
+                      <span>
+                        {statusFilter === 'all' ? 'All Status' : statusFilter === 'active' ? 'Active Only' : 'Inactive Only'}
+                      </span>
+                      {statusFilter === 'all' ? (
+                        <Filter className="h-4 w-4" />
+                      ) : statusFilter === 'active' ? (
+                        <Eye className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-red-600" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">View Mode</label>
+                    <select
+                      value="hierarchical"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
+                      disabled
+                    >
+                      <option value="hierarchical">Hierarchical View</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      onClick={() => fetchDistributors()}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                    >
+                      Refresh Data
+                    </button>
+                  </div>
                 </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="w-12 px-4 py-3">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <button 
-                            onClick={handleSort}
-                            className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
-                          >
-                            <span>Distributor Name</span>
-                            {sortOrder === 'asc' ? (
-                              <ArrowUp className="h-3 w-3" />
-                            ) : (
-                              <ArrowDown className="h-3 w-3" />
-                            )}
-                          </button>
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Contact Person
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Email
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Sellers
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Locations
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <button 
-                            onClick={handleStatusFilter}
-                            className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
-                          >
-                            <span>Status</span>
-                            {statusFilter === 'all' ? (
-                              <Filter className="h-3 w-3" />
-                            ) : statusFilter === 'active' ? (
-                              <Eye className="h-3 w-3 text-green-600" />
-                            ) : (
-                              <EyeOff className="h-3 w-3 text-red-600" />
-                            )}
-                            <span className="text-xs ml-1">
-                              ({statusFilter === 'all' ? 'All' : statusFilter === 'active' ? 'Active' : 'Inactive'})
-                            </span>
-                          </button>
-                        </th>
-                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {sortedDistributors.filter(distributor => {
-                        if (statusFilter === 'all') return true
-                        if (statusFilter === 'active') return distributor.isActive
-                        if (statusFilter === 'inactive') return !distributor.isActive
-                        return true
-                      }).map((distributor, index) => (
-                        <React.Fragment key={distributor.id}>
-                          <tr 
-                            key={distributor.id} 
-                            className={`hover:bg-gray-50 cursor-pointer ${
-                              expandedDistributor === distributor.id 
-                                ? 'bg-blue-50' 
-                                : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                            }`}
-                            onClick={() => handleDistributorClick(distributor.id)}
-                          >
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <input
-                                type="checkbox"
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                              />
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="flex items-center justify-between w-full">
-                                <div className="text-sm font-medium text-gray-900">{distributor.name}</div>
-                                <div className="text-sm text-gray-500">ID: {distributor.id.slice(-8)}</div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
-                                {distributorDetails[distributor.id]?.contactPerson || '—'}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{distributor.user.email}</div>
-                              <div className="text-sm text-gray-500">
-                                {distributorDetails[distributor.id]?.email && 
-                                  `Alt: ${distributorDetails[distributor.id]?.email}`
-                                }
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className="text-sm font-medium text-gray-900">
-                                {distributorDetails[distributor.id]?.locations?.reduce((total, location) => total + (location.sellers?.length || 0), 0) || 0}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium text-gray-900">
-                                  {distributorDetails[distributor.id]?._count?.locations}
-                                </span>
-                                <div className="text-blue-600 hover:text-blue-800">
-                                  {expandedDistributor === distributor.id ? (
-                                    <ChevronDown className="h-5 w-5" />
-                                  ) : (
-                                    <ChevronRight className="h-5 w-5" />
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <button 
-                                onClick={(e) => toggleDistributorStatus(distributor.id, e)}
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${distributor.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                              >
-                                <div className={`w-1.5 h-1.5 ${distributor.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
-                                {distributor.isActive ? 'Active' : 'Inactive'}
-                              </button>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex items-center justify-end space-x-2">
-                                <button
-                                  onClick={(e) => handleEditClick(distributor, e)}
-                                  className="text-blue-600 hover:text-blue-900 flex items-center space-x-1"
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={(e) => toggleDistributorStatus(distributor.id, e)}
-                                  className="text-gray-400 hover:text-gray-600"
-                                >
-                                  <span className="sr-only">Toggle Status</span>
-                                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
 
-                          {/* Inline Edit Row */}
-                          {editingDistributor === distributor.id && (
-                            <tr>
-                              <td colSpan={8} className="px-0 py-0">
-                                <div className="bg-blue-50 border-l-4 border-blue-400">
-                                  <form onSubmit={handleSaveEdit} className="p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                      <h4 className="text-md font-semibold text-gray-900">Edit Distributor</h4>
-                                      <button
-                                        type="button"
-                                        onClick={handleCancelEdit}
-                                        className="text-gray-400 hover:text-gray-600"
-                                      >
-                                        <X className="w-5 h-5" />
-                                      </button>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                      <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                          Distributor Name *
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={editFormData.name}
-                                          onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                          required
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                          Contact Person
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={editFormData.contactPerson}
-                                          onChange={(e) => setEditFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                          Primary Email *
-                                        </label>
-                                        <input
-                                          type="email"
-                                          value={editFormData.email}
-                                          onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                          required
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                          Alternative Email
-                                        </label>
-                                        <input
-                                          type="email"
-                                          value={editFormData.alternativeEmail}
-                                          onChange={(e) => setEditFormData(prev => ({ ...prev, alternativeEmail: e.target.value }))}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                          Telephone
-                                        </label>
-                                        <input
-                                          type="tel"
-                                          value={editFormData.telephone}
-                                          onChange={(e) => setEditFormData(prev => ({ ...prev, telephone: e.target.value }))}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                          placeholder="Phone number"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                          WhatsApp
-                                        </label>
-                                        <input
-                                          type="tel"
-                                          value={editFormData.whatsapp}
-                                          onChange={(e) => setEditFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                          placeholder="If same as telephone leave blank"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                          Password (optional)
-                                        </label>
-                                        <input
-                                          type="password"
-                                          value={editFormData.password}
-                                          onChange={(e) => setEditFormData(prev => ({ ...prev, password: e.target.value }))}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                          placeholder="New password"
-                                        />
-                                      </div>
-
-                                      <div className="md:col-span-3">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                          Notes
-                                        </label>
-                                        <textarea
-                                          value={editFormData.notes}
-                                          onChange={(e) => setEditFormData(prev => ({ ...prev, notes: e.target.value }))}
-                                          rows={2}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                          placeholder="Additional notes..."
-                                        />
-                                      </div>
-                                    </div>
-
-                                    <div className="flex justify-end space-x-3 mt-4">
-                                      <button
-                                        type="button"
-                                        onClick={handleCancelEdit}
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button
-                                        type="submit"
-                                        disabled={isUpdating}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
-                                      >
-                                        {isUpdating ? (
-                                          <>
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                            <span>Saving...</span>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Save className="w-4 h-4" />
-                                            <span>Save</span>
-                                          </>
-                                        )}
-                                      </button>
-                                    </div>
-                                  </form>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-
-                          {/* Locations Dropdown */}
-                          {expandedDistributor === distributor.id && (
-                            <tr>
-                              <td colSpan={8} className="bg-blue-50 border-t">
-                                <div className="px-4 py-3">
-                                  {loadingDetails[distributor.id] ? (
-                                    <div className="text-center py-6">
-                                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                                      <p className="text-sm text-gray-500 mt-2">Loading locations...</p>
-                                    </div>
-                                  ) : distributorDetails[distributor.id] ? (
-                                    <>
-                                      <div className="flex items-center justify-between mb-3">
-                                        <h4 className="text-sm font-semibold text-gray-900 flex items-center">
-                                          <Building2 className="w-4 h-4 text-blue-600 mr-2" />
-                                          Locations ({distributorDetails[distributor.id]?._count?.locations || 0})
-                                        </h4>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedDistributorId(distributor.id);
-                                            setShowLocationModal(true);
-                                          }}
-                                          className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-orange-600 hover:bg-orange-700"
-                                        >
-                                          <Plus className="w-3 h-3 mr-1" />
-                                          Add Location
-                                        </button>
-                                      </div>
-                                      
-                                      {distributorDetails[distributor.id].locations && distributorDetails[distributor.id].locations.length > 0 ? (
-                                        <div className="bg-white rounded-lg border border-orange-200 overflow-hidden">
-                                          <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-orange-100">
-                                              <tr>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Location Name</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Contact Person</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telephone</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                                  Sellers
-                                                </th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200">
-                                              {distributorDetails[distributor.id].locations.map((location) => (
-                                                <React.Fragment key={location.id}>
-                                                  <tr 
-                                                    className="hover:bg-orange-50 cursor-pointer"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleLocationClick(location.id);
-                                                    }}
-                                                  >
-                                                    <td className="px-4 py-3 whitespace-nowrap">
-                                                      <div className="flex items-center">
-                                                        <div className="text-sm font-medium text-gray-900">{location.name}</div>
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                      {location.contactPerson || location.user?.name || '—'}
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                      {location.email || location.user?.email || '—'}
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                      {location.telephone || '—'}
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap">
-                                                      <div className="flex items-center space-x-2">
-                                                        <span className="text-sm font-medium text-gray-900">
-                                                          {location._count.sellers} seller{location._count.sellers !== 1 ? 's' : ''}
-                                                        </span>
-                                                        <button
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleLocationClick(location.id);
-                                                          }}
-                                                          className="text-orange-600 hover:text-orange-800 p-1"
-                                                          title="View Sellers"
-                                                        >
-                                                          {expandedLocation === location.id ? (
-                                                            <ChevronDown className="h-4 w-4" />
-                                                          ) : (
-                                                            <ChevronRight className="h-4 w-4" />
-                                                          )}
-                                                        </button>
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap">
-                                                      <button 
-                                                        onClick={(e) => toggleLocationStatus(location.id, e)}
-                                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${location.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                                                      >
-                                                        <div className={`w-1.5 h-1.5 ${location.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
-                                                        {location.isActive ? 'Active' : 'Inactive'}
-                                                      </button>
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                                      <div className="flex items-center justify-end space-x-2">
-                                                        <button
-                                                          onClick={(e) => handleEditLocationClick(location, e)}
-                                                          className="text-orange-600 hover:text-orange-800 p-1"
-                                                          title="Edit Location"
-                                                        >
-                                                          <Edit2 className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                          onClick={(e) => toggleLocationStatus(location.id, e)}
-                                                          className="text-gray-400 hover:text-gray-600"
-                                                        >
-                                                          <span className="sr-only">Toggle Status</span>
-                                                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                                          </svg>
-                                                        </button>
-                                                      </div>
-                                                    </td>
-                                                  </tr>
-
-                                                  {/* Location Edit Form */}
-                                                  {editingLocation === location.id && (
-                                                    <tr>
-                                                      <td colSpan={7} className="px-0 py-0">
-                                                        <div className="bg-orange-50 border-l-4 border-orange-400">
-                                                          <form onSubmit={handleSaveLocationEdit} className="p-6">
-                                                            <div className="flex items-center justify-between mb-4">
-                                                              <h4 className="text-md font-semibold text-gray-900">Edit Location</h4>
-                                                              <button
-                                                                type="button"
-                                                                onClick={handleCancelLocationEdit}
-                                                                className="text-gray-400 hover:text-gray-600"
-                                                              >
-                                                                <X className="w-5 h-5" />
-                                                              </button>
-                                                            </div>
-                                                            
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                              <div>
-                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                  Location Name *
-                                                                </label>
-                                                                <input
-                                                                  type="text"
-                                                                  value={locationEditFormData.name}
-                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, name: e.target.value }))}
-                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                                                                  required
-                                                                />
-                                                              </div>
-
-                                                              <div>
-                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                  Contact Person
-                                                                </label>
-                                                                <input
-                                                                  type="text"
-                                                                  value={locationEditFormData.contactPerson}
-                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
-                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                                                                />
-                                                              </div>
-
-                                                              <div>
-                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                  Email
-                                                                </label>
-                                                                <input
-                                                                  type="email"
-                                                                  value={locationEditFormData.email}
-                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, email: e.target.value }))}
-                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                                                                />
-                                                              </div>
-
-                                                              <div>
-                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                  Password
-                                                                </label>
-                                                                <input
-                                                                  type="password"
-                                                                  value={locationEditFormData.password}
-                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, password: e.target.value }))}
-                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                                                                  placeholder="New password"
-                                                                />
-                                                              </div>
-
-                                                              <div>
-                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                  Telephone
-                                                                </label>
-                                                                <input
-                                                                  type="tel"
-                                                                  value={locationEditFormData.telephone}
-                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, telephone: e.target.value }))}
-                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                                                                />
-                                                              </div>
-
-                                                              <div>
-                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                  WhatsApp
-                                                                </label>
-                                                                <input
-                                                                  type="tel"
-                                                                  value={locationEditFormData.whatsapp}
-                                                                  onChange={(e) => setLocationEditFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
-                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                                                                  placeholder="If same as telephone leave blank"
-                                                                />
-                                                              </div>
-                                                            </div>
-
-                                                            <div className="mt-4">
-                                                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                Notes
-                                                              </label>
-                                                              <textarea
-                                                                value={locationEditFormData.notes}
-                                                                onChange={(e) => setLocationEditFormData(prev => ({ ...prev, notes: e.target.value }))}
-                                                                rows={3}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-                                                                placeholder="Additional notes..."
-                                                              />
-                                                            </div>
-
-                                                            <div className="flex justify-end space-x-3 mt-6">
-                                                              <button
-                                                                type="button"
-                                                                onClick={handleCancelLocationEdit}
-                                                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                                                              >
-                                                                Cancel
-                                                              </button>
-                                                              <button
-                                                                type="submit"
-                                                                disabled={isUpdating}
-                                                                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md hover:bg-orange-700 disabled:opacity-50"
-                                                              >
-                                                                {isUpdating ? 'Updating...' : 'Update Location'}
-                                                              </button>
-                                                            </div>
-                                                          </form>
-                                                        </div>
-                                                      </td>
-                                                    </tr>
-                                                  )}
-
-                                                  {/* Sellers Dropdown */}
-                                                  {expandedLocation === location.id && (
-                                                    <tr>
-                                                      <td colSpan={7} className="bg-orange-50 border-t">
-                                                        <div className="px-4 py-3">
-                                                          <div className="flex items-center justify-between mb-3">
-                                                            <h5 className="text-sm font-semibold text-gray-900 flex items-center">
-                                                              <Users className="w-4 h-4 text-green-600 mr-2" />
-                                                              Sellers ({location.sellers.length})
-                                                            </h5>
-                                                            <button
-                                                              onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setSelectedLocationId(location.id);
-                                                                setShowSellerModal(true);
-                                                              }}
-                                                              className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700"
-                                                            >
-                                                              <Plus className="w-3 h-3 mr-1" />
-                                                              Add Seller
-                                                            </button>
-                                                          </div>
-                                                          
-                                                          {location.sellers.length > 0 ? (
-                                                            <div className="bg-white rounded-lg border border-green-200 overflow-hidden">
-                                                              <table className="min-w-full divide-y divide-gray-200">
-                                                                <thead className="bg-green-100">
-                                                                  <tr>
-                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Seller Name</th>
-                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Contact Person</th>
-                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telephone</th>
-                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Config</th>
-                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                                                  </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y divide-gray-200">
-                                                                  {location.sellers.map((seller) => (
-                                                                    <React.Fragment key={seller.id}>
-                                                                      <tr className="hover:bg-green-50">
-                                                                        <td className="px-4 py-3 whitespace-nowrap">
-                                                                          <div className="flex items-center">
-                                                                            <div className="text-sm font-medium text-gray-900">{seller.name || 'Unnamed Seller'}</div>
-                                                                          </div>
-                                                                        </td>
-                                                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                                          {seller.name}
-                                                                        </td>
-                                                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                                          {seller.email}
-                                                                        </td>
-                                                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                                          {(seller as any).telephone || '—'}
-                                                                        </td>
-                                                                        <td className="px-4 py-3 whitespace-nowrap">
-                                                                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                                            seller.sellerConfigs 
-                                                                              ? 'bg-green-100 text-green-800' 
-                                                                              : 'bg-red-100 text-red-800'
-                                                                          }`}>
-                                                                            {seller.sellerConfigs ? 'Paired' : 'Unpaired'}
-                                                                          </span>
-                                                                        </td>
-                                                                        <td className="px-4 py-3 whitespace-nowrap">
-                                                                          <button 
-                                                                            onClick={(e) => toggleSellerStatus(seller.id, e)}
-                                                                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${seller.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                                                                          >
-                                                                            <div className={`w-1.5 h-1.5 ${seller.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
-                                                                            {seller.isActive ? 'Active' : 'Inactive'}
-                                                                          </button>
-                                                                        </td>
-                                                                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                                                          <div className="flex items-center justify-end space-x-2">
-                                                                            <button
-                                                                              onClick={(e) => handleEditSellerClick(seller, e)}
-                                                                              className="text-blue-600 hover:text-blue-800 p-1"
-                                                                              title="Edit Seller"
-                                                                            >
-                                                                              <Edit2 className="w-4 h-4" />
-                                                                            </button>
-                                                                            <button
-                                                                              onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                console.log('Configure seller:', seller.id);
-                                                                              }}
-                                                                              className="text-green-600 hover:text-green-800 p-1"
-                                                                              title="Configure Seller"
-                                                                            >
-                                                                              <Settings className="w-4 h-4" />
-                                                                            </button>
-                                                                          </div>
-                                                                        </td>
-                                                                      </tr>
-                                                                      {editingSeller === seller.id && (
-                                                                        <tr>
-                                                                          <td colSpan={7} className="px-4 py-3 bg-green-50 border-l-4 border-green-400">
-                                                                            <form onSubmit={handleSaveSellerEdit} className="space-y-4">
-                                                                              <div className="flex justify-between items-center mb-4">
-                                                                                <h3 className="text-lg font-semibold text-gray-900">Edit Seller</h3>
-                                                                                <button
-                                                                                  type="button"
-                                                                                  onClick={handleCancelSellerEdit}
-                                                                                  className="text-gray-400 hover:text-gray-600"
-                                                                                >
-                                                                                  <X className="w-5 h-5" />
-                                                                                </button>
-                                                                              </div>
-                                                                              
-                                                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                <div>
-                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                    Seller Name *
-                                                                                  </label>
-                                                                                  <input
-                                                                                    type="text"
-                                                                                    value={sellerEditFormData.name}
-                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, name: e.target.value }))}
-                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                                                                    required
-                                                                                  />
-                                                                                </div>
-
-                                                                                <div>
-                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                    Email *
-                                                                                  </label>
-                                                                                  <input
-                                                                                    type="email"
-                                                                                    value={sellerEditFormData.email}
-                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, email: e.target.value }))}
-                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                                                                    required
-                                                                                  />
-                                                                                </div>
-
-                                                                                <div>
-                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                    Telephone
-                                                                                  </label>
-                                                                                  <input
-                                                                                    type="tel"
-                                                                                    value={sellerEditFormData.telephone}
-                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, telephone: e.target.value }))}
-                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                                                                  />
-                                                                                </div>
-
-                                                                                <div>
-                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                    WhatsApp
-                                                                                  </label>
-                                                                                  <input
-                                                                                    type="tel"
-                                                                                    value={sellerEditFormData.whatsapp}
-                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
-                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                                                                    placeholder="If same as telephone leave blank"
-                                                                                  />
-                                                                                </div>
-
-                                                                                <div>
-                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                    Password
-                                                                                  </label>
-                                                                                  <input
-                                                                                    type="password"
-                                                                                    value={sellerEditFormData.password}
-                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, password: e.target.value }))}
-                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                                                                    placeholder="New password"
-                                                                                  />
-                                                                                </div>
-                                                                              </div>
-
-                                                                              <div className="mt-4">
-                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                  Notes
-                                                                                </label>
-                                                                                <textarea
-                                                                                  value={sellerEditFormData.notes}
-                                                                                  onChange={(e) => setSellerEditFormData(prev => ({ ...prev, notes: e.target.value }))}
-                                                                                  rows={3}
-                                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                                                                  placeholder="Additional notes..."
-                                                                                />
-                                                                              </div>
-
-                                                                              {/* Discount Configuration */}
-                                                                              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                                                                <h4 className="text-sm font-medium text-blue-900 mb-3">Default Rebuy Discount</h4>
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                  <div>
-                                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                      Discount Type
-                                                                                    </label>
-                                                                                    <select
-                                                                                      value={sellerEditFormData.defaultDiscountType}
-                                                                                      onChange={(e) => setSellerEditFormData(prev => ({ ...prev, defaultDiscountType: e.target.value }))}
-                                                                                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                                                                    >
-                                                                                      <option value="percentage">Percentage (%)</option>
-                                                                                      <option value="fixed">Fixed Amount ($)</option>
-                                                                                    </select>
-                                                                                  </div>
-                                                                                  <div>
-                                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                      Discount Value
-                                                                                    </label>
-                                                                                    <input
-                                                                                      type="number"
-                                                                                      min="0"
-                                                                                      max={sellerEditFormData.defaultDiscountType === 'percentage' ? 100 : undefined}
-                                                                                      step={sellerEditFormData.defaultDiscountType === 'percentage' ? 1 : 0.01}
-                                                                                      value={sellerEditFormData.defaultDiscountValue || ""}
-                                                                                      onChange={(e) => {
-                                                                                        const value = e.target.value
-                                                                                        const numValue = value === "" ? 0 : parseFloat(value)
-                                                                                        setSellerEditFormData(prev => ({ ...prev, defaultDiscountValue: numValue }))
-                                                                                      }}
-                                                                                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                                                                      placeholder={sellerEditFormData.defaultDiscountType === 'percentage' ? '10' : '5.00'}
-                                                                                    />
-                                                                                                                                                                      </div>
-                                                                                </div>
-                                                                                
-                                                                                {/* Discount Code Field */}
-                                                                                <div className="mt-4">
-                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                                    Discount Code (5 digits)
-                                                                                  </label>
-                                                                                                                                                                      <div className="flex items-center gap-2">
-                                                                                      <input
-                                                                                        type="text"
-                                                                                        value={sellerEditFormData.discountCode || "Not set"}
-                                                                                        readOnly
-                                                                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono text-center text-gray-600"
-                                                                                        placeholder="Will be auto-generated"
-                                                                                      />
-                                                                                      {sellerEditFormData.discountCode && sellerEditFormData.discountCode !== "Not set" ? (
-                                                                                        <button
-                                                                                          type="button"
-                                                                                          onClick={handleGenerateDiscountCode}
-                                                                                          disabled={!sellerEditFormData.defaultDiscountValue || sellerEditFormData.defaultDiscountValue <= 0}
-                                                                                          className="px-3 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-md transition-colors"
-                                                                                          title="Generate a new discount code (replaces existing)"
-                                                                                        >
-                                                                                          🔄 Regenerate
-                                                                                        </button>
-                                                                                      ) : (
-                                                                                        <button
-                                                                                          type="button"
-                                                                                          onClick={handleGenerateDiscountCode}
-                                                                                          disabled={!sellerEditFormData.defaultDiscountValue || sellerEditFormData.defaultDiscountValue <= 0}
-                                                                                          className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-md transition-colors"
-                                                                                          title="Generate a new discount code"
-                                                                                        >
-                                                                                          🎲 Generate
-                                                                                        </button>
-                                                                                      )}
-                                                                                    </div>
-                                                                                                                                                                      <p className="text-xs text-gray-500 mt-1">
-                                                                                      Customers can enter this code to get the discount above. 
-                                                                                      <span className="font-medium text-blue-600"> Code is auto-generated and can be regenerated if needed.</span>
-                                                                                    </p>
-                                                                                    {!sellerEditFormData.discountCode && sellerEditFormData.defaultDiscountValue > 0 && (
-                                                                                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
-                                                                                        <span className="font-medium">🎲 Auto-generation enabled:</span> A unique 5-digit code will be automatically created when you save.
-                                                                                      </div>
-                                                                                    )}
-                                                                                    {sellerEditFormData.discountCode && (
-                                                                                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
-                                                                                        <span className="font-medium">✅ Code active:</span> {sellerEditFormData.discountCode} - Customers can use this code anytime.
-                                                                                      </div>
-                                                                                    )}
-                                                                                </div>
-                                                                                
-                                                                                <p className="text-xs text-blue-600 mt-2">
-                                                                                  This discount will be applied to rebuy emails when customers purchase again from this seller.
-                                                                                  {sellerEditFormData.defaultDiscountValue > 0 && (
-                                                                                    <span className="font-medium">
-                                                                                      {' '}Preview: {sellerEditFormData.defaultDiscountValue}
-                                                                                      {sellerEditFormData.defaultDiscountType === 'percentage' ? '% off' : '$ off'}
-                                                                                      {sellerEditFormData.discountCode && ` (Code: ${sellerEditFormData.discountCode})`}
-                                                                                    </span>
-                                                                                  )}
-                                                                                </p>
-                                                                                
-                                                                                {/* Reset Button */}
-                                                                                {(sellerEditFormData.defaultDiscountValue > 0 || sellerEditFormData.discountCode) && (
-                                                                                  <div className="mt-3 pt-3 border-t border-blue-200">
-                                                                                    <button
-                                                                                      type="button"
-                                                                                      onClick={handleResetDiscount}
-                                                                                      className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors"
-                                                                                      title="Reset discount and code to start fresh"
-                                                                                    >
-                                                                                      🔄 Reset Discount
-                                                                                    </button>
-                                                                                  </div>
-                                                                                )}
-                                                                              </div>
-
-                                                                              <div className="pt-4 border-t">
-                                                                                <div className="text-sm font-medium text-gray-700 mb-3">QR Configuration Management</div>
-                                                                                
-                                                                                {seller.sellerConfigs && (
-                                                                                  <div className="mb-4 p-3 bg-gray-50 rounded-lg text-xs">
-                                                                                    {/* Load QR configs when opening edit form and try to match by seller config data */}
-                                                                                    {(() => {
-                                                                                      let matchingConfig = null
-                                                                                      
-                                                                                      if ((seller as any).configurationId) {
-                                                                                        // Use stored configuration ID for exact match
-                                                                                        matchingConfig = availableQRConfigs.find(config => config.id === (seller as any).configurationId)
-                                                                                      }
-                                                                                      
-                                                                                      if (!matchingConfig) {
-                                                                                        // Fallback to content comparison for legacy data
-                                                                                        matchingConfig = availableQRConfigs.find(config => {
-                                                                                          const matches = config.config && 
-                                                                                                  (seller as any).sellerConfigs && 
-                                                                                                  config.config.button1GuestsDefault === ((seller as any).sellerConfigs as any).button1GuestsDefault &&
-                                                                                                  config.config.button1DaysDefault === ((seller as any).sellerConfigs as any).button1DaysDefault &&
-                                                                                                  config.config.button2FixedPrice === ((seller as any).sellerConfigs as any).button2FixedPrice
-                                                                                          return matches
-                                                                                        })
-                                                                                      }
-                                                                                      
-                                                                                      if (matchingConfig) {
-                                                                                        // Display full 5-button configuration
-                                                                                        return (
-                                                                                          <div className="grid grid-cols-3 gap-2">
-                                                                                            {/* Button 1: Guest & Day Limits */}
-                                                                                            <div className="space-y-1">
-                                                                                              <div className="flex items-center">
-                                                                                                <div className="w-3 h-3 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs mr-1">1</div>
-                                                                                                <span className="font-semibold text-gray-800 text-xs">Guest & Day Limits</span>
-                                                                                              </div>
-                                                                                              <div className="text-gray-600 ml-4 text-xs">
-                                                                                                <div>Guests: {!matchingConfig.config.button1GuestsLocked ? `1-${matchingConfig.config.button1GuestsRangeMax} Open` : `${matchingConfig.config.button1GuestsDefault} Fixed`}</div>
-                                                                                                <div>Days: {!matchingConfig.config.button1DaysLocked ? `1-${matchingConfig.config.button1DaysRangeMax} Open` : `${matchingConfig.config.button1DaysDefault} Fixed`}</div>
-                                                                                              </div>
-                                                                                            </div>
-                                                                                            
-                                                                                            {/* Button 2: Pricing */}
-                                                                                            <div className="space-y-1">
-                                                                                              <div className="flex items-center">
-                                                                                                <div className="w-3 h-3 bg-green-500 text-white rounded-full flex items-center justify-center text-xs mr-1">2</div>
-                                                                                                <span className="font-semibold text-gray-800 text-xs">Pricing</span>
-                                                                                              </div>
-                                                                                              <div className="text-gray-600 ml-4 text-xs">
-                                                                                                {matchingConfig.config.button2PricingType === 'FIXED' ? (
-                                                                                                  <div>
-                                                                                                    <div>Price: ${matchingConfig.config.button2FixedPrice}{matchingConfig.config.button2IncludeTax ? ` + ${matchingConfig.config.button2TaxPercentage}% tax` : ' (no tax)'}</div>
-                                                                                                  </div>
-                                                                                                ) : matchingConfig.config.button2PricingType === 'VARIABLE' ? (
-                                                                                                  <div>
-                                                                                                    <div>Base: ${matchingConfig.config.button2VariableBasePrice}</div>
-                                                                                                    <div>+${matchingConfig.config.button2VariableGuestIncrease}/guest, +${matchingConfig.config.button2VariableDayIncrease}/day</div>
-                                                                                                    {matchingConfig.config.button2VariableCommission > 0 && <div>+${matchingConfig.config.button2VariableCommission}% commission</div>}
-                                                                                                    {matchingConfig.config.button2IncludeTax ? <div>+${matchingConfig.config.button2TaxPercentage}% tax</div> : <div>(no tax)</div>}
-                                                                                                  </div>
-                                                                                                ) : (
-                                                                                                  <div>Free</div>
-                                                                                                )}
-                                                                                              </div>
-                                                                                            </div>
-                                                                                            
-                                                                                            {/* Button 3: QR Delivery */}
-                                                                                            <div className="space-y-1">
-                                                                                              <div className="flex items-center">
-                                                                                                <div className="w-3 h-3 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs mr-1">3</div>
-                                                                                                <span className="font-semibold text-gray-800 text-xs">QR Delivery</span>
-                                                                                              </div>
-                                                                                              <div className="text-gray-600 ml-4 text-xs">
-                                                                                                <div>Method: {
-                                                                                                  matchingConfig.config.button3DeliveryMethod === 'DIRECT' ? 'Direct Download' :
-                                                                                                  matchingConfig.config.button3DeliveryMethod === 'URLS' ? 'Landing Pages' :
-                                                                                                  'Both Options'
-                                                                                                }</div>
-                                                                                              </div>
-                                                                                            </div>
-                                                                                            
-                                                                                            {/* Button 4: Welcome Email */}
-                                                                                            <div className="space-y-1">
-                                                                                              <div className="flex items-center">
-                                                                                                <div className="w-3 h-3 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs mr-1">4</div>
-                                                                                                <span className="font-semibold text-gray-800 text-xs">Welcome Email</span>
-                                                                                              </div>
-                                                                                              <div className="text-gray-600 ml-4 text-xs">
-                                                                                                <div>{matchingConfig.config.button4LandingPageRequired ? 'Customized' : 'Default'}</div>
-                                                                                              </div>
-                                                                                            </div>
-                                                                                            
-                                                                                            {/* Button 5: Rebuy Email */}
-                                                                                            <div className="space-y-1">
-                                                                                              <div className="flex items-center">
-                                                                                                <div className="w-3 h-3 bg-red-500 text-white rounded-full flex items-center justify-center text-xs mr-1">5</div>
-                                                                                                <span className="font-semibold text-gray-800 text-xs">Rebuy Email</span>
-                                                                                              </div>
-                                                                                              <div className="text-gray-600 ml-4 text-xs">
-                                                                                                {matchingConfig.config.button5SendRebuyEmail ? (
-                                                                                                  (() => {
-                                                                                                    // Check if this configuration has a custom rebuy email template
-                                                                                                    const hasCustomRebuyTemplate = matchingConfig.emailTemplates?.rebuyEmail;
-                                                                                                    return hasCustomRebuyTemplate ? 'Customized' : 'Default';
-                                                                                                  })()
-                                                                                                  ) : 'No'}
-                                                                                              </div>
-                                                                                            </div>
-                                                                                            
-                                                                                            {/* Button 6: Future QR */}
-                                                                                            <div className="space-y-1">
-                                                                                              <div className="flex items-center">
-                                                                                                <div className="w-3 h-3 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs mr-1">6</div>
-                                                                                                <span className="font-semibold text-gray-800 text-xs">Future QR</span>
-                                                                                              </div>
-                                                                                              <div className="text-gray-600 ml-4 text-xs">
-                                                                                                <div>{matchingConfig.config.button6AllowFutureQR ? 'Enabled' : 'Disabled'}</div>
-                                                                                              </div>
-                                                                                            </div>
-                                                                                            
-                                                                                            {/* Status & Actions */}
-                                                                                            <div className="space-y-1">
-                                                                                              <div className="flex items-center">
-                                                                                                <div className="w-3 h-3 bg-gray-500 text-white rounded-full flex items-center justify-center text-xs mr-1">✓</div>
-                                                                                                <span className="font-semibold text-gray-800 text-xs">Status</span>
-                                                                                              </div>
-                                                                                              <div className="text-gray-600 ml-4 text-xs">
-                                                                                                <div className="text-green-600">PAIRED: {matchingConfig.name.toUpperCase()}</div>
-                                                                                                <button 
-                                                                                                  onClick={() => window.open(`/admin/qr-config?openLibrary=true&configId=${matchingConfig.id}`, '_blank')}
-                                                                                                  className="text-blue-600 hover:underline"
-                                                                                                >
-                                                                                                  View Full Config →
-                                                                                                </button>
-                                                                                              </div>
-                                                                                            </div>
-                                                                                          </div>
-                                                                                        )
-                                                                                      } else {
-                                                                                        // Fallback to basic info if no matching config found
-                                                                                        return (
-                                                                                          <div className="text-center text-gray-600 text-xs">
-                                                                                            <div className="text-green-600 mb-2">✓ QR Configuration Paired</div>
-                                                                                            <div>Basic Config: {(seller as any).sellerConfigs?.defaultGuests} guests, {(seller as any).sellerConfigs?.defaultDays} days, ${(seller as any).sellerConfigs?.fixedPrice}</div>
-                                                                                            <button 
-                                                                                              onClick={() => window.open('/admin/qr-config', '_blank')}
-                                                                                              className="text-blue-600 hover:underline mt-1 block"
-                                                                                            >
-                                                                                              View Full Configuration →
-                                                                                            </button>
-                                                                                          </div>
-                                                                                        )
-                                                                                      }
-                                                                                    })()}
-                                                                                  </div>
-                                                                                )}
-                                                                                
-                                                                                <div className="flex space-x-2">
-                                                                                  {!seller.sellerConfigs ? (
-                                                                                    <>
-                                                                                      <button
-                                                                                        type="button"
-                                                                                        className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
-                                                                                        onClick={() => openQRPairingModal(seller)}
-                                                                                      >
-                                                                                        Pair QR Config
-                                                                                      </button>
-                                                                                      <button
-                                                                                        type="button"
-                                                                                        className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
-                                                                                        onClick={() => {
-                                                                                          // Navigate to QR Config page to create new config
-                                                                                          window.open('/admin/qr-config', '_blank')
-                                                                                        }}
-                                                                                      >
-                                                                                        Create QR Config
-                                                                                      </button>
-                                                                                    </>
-                                                                                  ) : (
-                                                                                    <button
-                                                                                      type="button"
-                                                                                      className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
-                                                                                      onClick={() => handleUnpairQRConfig(seller)}
-                                                                                    >
-                                                                                      Unpair QR Config
-                                                                                    </button>
-                                                                                  )}
-                                                                                </div>
-                                                                              </div>
-
-                                                                              <div className="flex justify-end space-x-3 mt-6">
-                                                                                <button
-                                                                                  type="button"
-                                                                                  onClick={handleCancelSellerEdit}
-                                                                                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                                                                >
-                                                                                  Cancel
-                                                                                </button>
-                                                                                <button
-                                                                                  type="submit"
-                                                                                  disabled={isUpdating}
-                                                                                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:opacity-50"
-                                                                                >
-                                                                                  {isUpdating ? 'Saving...' : 'Save Changes'}
-                                                                                </button>
-                                                                              </div>
-                                                                            </form>
-                                                                          </td>
-                                                                        </tr>
-                                                                      )}
-                                                                    </React.Fragment>
-                                                                  ))}
-                                                                </tbody>
-                                                              </table>
-                                                            </div>
-                                                          ) : (
-                                                            <div className="text-center py-4 text-gray-500 text-sm">
-                                                              No sellers found for this location.
-                                                            </div>
-                                                          )}
-                                                        </div>
-                                                      </td>
-                                                    </tr>
-                                                  )}
-                                                </React.Fragment>
-                                              ))}
-                                            </tbody>
-                                          </table>
-                                        </div>
-                                      ) : (
-                                        <div className="text-center py-4 text-gray-500 text-sm">
-                                          No locations found for this distributor.
-                                        </div>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <div className="text-center py-4">
-                                      <p className="text-red-500 text-sm">Failed to load details</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search distributors, locations, or sellers..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
                 </div>
               </div>
-
-              {distributors.length === 0 && (
-                <div className="text-center py-12">
-                  <Building2 className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No distributors</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Get started by creating a new distributor.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>
+
+        {/* Distributors Table - Full Width with Horizontal Scroll */}
+        <div className="w-full px-4 sm:px-6 lg:px-8 pb-6">
+          <div className="bg-white rounded-lg shadow w-full">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">
+                Distributors & Hierarchy
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Complete view of distributors, locations, and sellers with their relationships
+              </p>
+            </div>
+
+            {/* Top scroll bar */}
+            <div 
+              ref={topScrollRef}
+              className="overflow-x-scroll table-scroll-container" 
+              style={{ 
+                scrollBehavior: 'auto',
+                scrollbarWidth: 'auto',
+                msOverflowStyle: 'scrollbar',
+                WebkitOverflowScrolling: 'touch',
+                height: '20px'
+              }}
+              onWheel={(e) => {
+                if (e.shiftKey) {
+                  e.preventDefault()
+                  const container = e.currentTarget
+                  container.scrollLeft += e.deltaY * 3
+                }
+              }}
+              onScroll={syncScrollFromTop}
+            >
+              <div style={{ 
+                width: '1500px', // Wide enough for all distributor columns
+                height: '1px'
+              }}></div>
+            </div>
+
+            {/* Main table container */}
+            <div 
+              ref={mainScrollRef}
+              className="overflow-x-scroll table-scroll-container" 
+              style={{ 
+                scrollBehavior: 'auto',
+                scrollbarWidth: 'auto',
+                msOverflowStyle: 'scrollbar',
+                WebkitOverflowScrolling: 'touch'
+              }}
+              onWheel={(e) => {
+                if (e.shiftKey) {
+                  e.preventDefault()
+                  const container = e.currentTarget
+                  container.scrollLeft += e.deltaY * 3
+                }
+              }}
+              onScroll={syncScrollFromMain}
+            >
+              <div style={{ minWidth: '1500px' }}>
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="w-12 px-4 py-3">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button 
+                          onClick={handleSort}
+                          className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
+                        >
+                          <span>Distributor Name</span>
+                          {sortOrder === 'asc' ? (
+                            <ArrowUp className="h-3 w-3" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3" />
+                          )}
+                        </button>
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Contact Person
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Sellers
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Locations
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button 
+                          onClick={handleStatusFilter}
+                          className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
+                        >
+                          <span>Status</span>
+                          {statusFilter === 'all' ? (
+                            <Filter className="h-3 w-3" />
+                          ) : statusFilter === 'active' ? (
+                            <Eye className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <EyeOff className="h-3 w-3 text-red-600" />
+                          )}
+                          <span className="text-xs ml-1">
+                            ({statusFilter === 'all' ? 'All' : statusFilter === 'active' ? 'Active' : 'Inactive'})
+                          </span>
+                        </button>
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {sortedDistributors.filter(distributor => {
+                      if (statusFilter === 'all') return true
+                      if (statusFilter === 'active') return distributor.isActive
+                      if (statusFilter === 'inactive') return !distributor.isActive
+                      return true
+                    }).map((distributor, index) => (
+                      <React.Fragment key={distributor.id}>
+                        <tr 
+                          key={distributor.id} 
+                          className={`hover:bg-gray-50 cursor-pointer ${
+                            expandedDistributor === distributor.id 
+                              ? 'bg-blue-50' 
+                              : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                          }`}
+                          onClick={() => handleDistributorClick(distributor.id)}
+                        >
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex items-center justify-between w-full">
+                              <div className="text-sm font-medium text-gray-900">{distributor.name}</div>
+                              <div className="text-sm text-gray-500">ID: {distributor.id.slice(-8)}</div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {distributorDetails[distributor.id]?.contactPerson || '—'}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{distributor.user.email}</div>
+                            <div className="text-sm text-gray-500">
+                              {distributorDetails[distributor.id]?.email && 
+                                `Alt: ${distributorDetails[distributor.id]?.email}`
+                              }
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className="text-sm font-medium text-gray-900">
+                              {distributorDetails[distributor.id]?.locations?.reduce((total, location) => total + (location.sellers?.length || 0), 0) || 0}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                {distributorDetails[distributor.id]?._count?.locations}
+                              </span>
+                              <div className="text-blue-600 hover:text-blue-800">
+                                {expandedDistributor === distributor.id ? (
+                                  <ChevronDown className="h-5 w-5" />
+                                ) : (
+                                  <ChevronRight className="h-5 w-5" />
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <button 
+                              onClick={(e) => toggleDistributorStatus(distributor.id, e)}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${distributor.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                            >
+                              <div className={`w-1.5 h-1.5 ${distributor.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
+                              {distributor.isActive ? 'Active' : 'Inactive'}
+                            </button>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex items-center justify-end space-x-2">
+                              <button
+                                onClick={(e) => handleEditClick(distributor, e)}
+                                className="text-blue-600 hover:text-blue-900 flex items-center space-x-1"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={(e) => toggleDistributorStatus(distributor.id, e)}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                <span className="sr-only">Toggle Status</span>
+                                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Inline Edit Row */}
+                        {editingDistributor === distributor.id && (
+                          <tr>
+                            <td colSpan={8} className="px-0 py-0">
+                              <div className="bg-blue-50 border-l-4 border-blue-400">
+                                <form onSubmit={handleSaveEdit} className="p-6">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-md font-semibold text-gray-900">Edit Distributor</h4>
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelEdit}
+                                      className="text-gray-400 hover:text-gray-600"
+                                    >
+                                      <X className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Distributor Name *
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={editFormData.name}
+                                        onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        required
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Contact Person
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={editFormData.contactPerson}
+                                        onChange={(e) => setEditFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Primary Email *
+                                      </label>
+                                      <input
+                                        type="email"
+                                        value={editFormData.email}
+                                        onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        required
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Alternative Email
+                                      </label>
+                                      <input
+                                        type="email"
+                                        value={editFormData.alternativeEmail}
+                                        onChange={(e) => setEditFormData(prev => ({ ...prev, alternativeEmail: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Telephone
+                                      </label>
+                                      <input
+                                        type="tel"
+                                        value={editFormData.telephone}
+                                        onChange={(e) => setEditFormData(prev => ({ ...prev, telephone: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        placeholder="Phone number"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        WhatsApp
+                                      </label>
+                                      <input
+                                        type="tel"
+                                        value={editFormData.whatsapp}
+                                        onChange={(e) => setEditFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        placeholder="If same as telephone leave blank"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Password (optional)
+                                      </label>
+                                      <input
+                                        type="password"
+                                        value={editFormData.password}
+                                        onChange={(e) => setEditFormData(prev => ({ ...prev, password: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        placeholder="New password"
+                                      />
+                                    </div>
+
+                                    <div className="md:col-span-3">
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Notes
+                                      </label>
+                                      <textarea
+                                        value={editFormData.notes}
+                                        onChange={(e) => setEditFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                        rows={2}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        placeholder="Additional notes..."
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="flex justify-end space-x-3 mt-4">
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelEdit}
+                                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      disabled={isUpdating}
+                                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                                    >
+                                      {isUpdating ? (
+                                        <>
+                                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                          <span>Saving...</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Save className="w-4 h-4" />
+                                          <span>Save</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
+                                </form>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+
+                        {/* Locations Dropdown */}
+                        {expandedDistributor === distributor.id && (
+                          <tr>
+                            <td colSpan={8} className="bg-blue-50 border-t">
+                              <div className="px-4 py-3">
+                                {loadingDetails[distributor.id] ? (
+                                  <div className="text-center py-6">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                                    <p className="text-sm text-gray-500 mt-2">Loading locations...</p>
+                                  </div>
+                                ) : distributorDetails[distributor.id] ? (
+                                  <>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                                        <Building2 className="w-4 h-4 text-blue-600 mr-2" />
+                                        Locations ({distributorDetails[distributor.id]?._count?.locations || 0})
+                                      </h4>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedDistributorId(distributor.id);
+                                          setShowLocationModal(true);
+                                        }}
+                                        className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-orange-600 hover:bg-orange-700"
+                                      >
+                                        <Plus className="w-3 h-3 mr-1" />
+                                        Add Location
+                                      </button>
+                                    </div>
+                                    
+                                    {distributorDetails[distributor.id].locations && distributorDetails[distributor.id].locations.length > 0 ? (
+                                      <div className="bg-white rounded-lg border border-orange-200 overflow-hidden">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                          <thead className="bg-orange-100">
+                                            <tr>
+                                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Location Name</th>
+                                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Contact Person</th>
+                                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telephone</th>
+                                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                                Sellers
+                                              </th>
+                                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-gray-200">
+                                            {distributorDetails[distributor.id].locations.map((location) => (
+                                              <React.Fragment key={location.id}>
+                                                <tr 
+                                                  className="hover:bg-orange-50 cursor-pointer"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleLocationClick(location.id);
+                                                  }}
+                                                >
+                                                  <td className="px-4 py-3 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                      <div className="text-sm font-medium text-gray-900">{location.name}</div>
+                                                    </div>
+                                                  </td>
+                                                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                    {location.contactPerson || location.user?.name || '—'}
+                                                  </td>
+                                                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                    {location.email || location.user?.email || '—'}
+                                                  </td>
+                                                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                    {location.telephone || '—'}
+                                                  </td>
+                                                  <td className="px-4 py-3 whitespace-nowrap">
+                                                    <div className="flex items-center space-x-2">
+                                                      <span className="text-sm font-medium text-gray-900">
+                                                        {location._count.sellers} seller{location._count.sellers !== 1 ? 's' : ''}
+                                                      </span>
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleLocationClick(location.id);
+                                                        }}
+                                                        className="text-orange-600 hover:text-orange-800 p-1"
+                                                        title="View Sellers"
+                                                      >
+                                                        {expandedLocation === location.id ? (
+                                                          <ChevronDown className="h-4 w-4" />
+                                                        ) : (
+                                                          <ChevronRight className="h-4 w-4" />
+                                                        )}
+                                                      </button>
+                                                    </div>
+                                                  </td>
+                                                  <td className="px-4 py-3 whitespace-nowrap">
+                                                    <button 
+                                                      onClick={(e) => toggleLocationStatus(location.id, e)}
+                                                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${location.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                                                    >
+                                                      <div className={`w-1.5 h-1.5 ${location.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
+                                                      {location.isActive ? 'Active' : 'Inactive'}
+                                                    </button>
+                                                  </td>
+                                                  <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                                    <div className="flex items-center justify-end space-x-2">
+                                                      <button
+                                                        onClick={(e) => handleEditLocationClick(location, e)}
+                                                        className="text-orange-600 hover:text-orange-800 p-1"
+                                                        title="Edit Location"
+                                                      >
+                                                        <Edit2 className="w-4 h-4" />
+                                                      </button>
+                                                      <button
+                                                        onClick={(e) => toggleLocationStatus(location.id, e)}
+                                                        className="text-gray-400 hover:text-gray-600"
+                                                      >
+                                                        <span className="sr-only">Toggle Status</span>
+                                                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                                        </svg>
+                                                      </button>
+                                                    </div>
+                                                  </td>
+                                                </tr>
+
+                                                {/* Location Edit Form */}
+                                                {editingLocation === location.id && (
+                                                  <tr>
+                                                    <td colSpan={7} className="px-0 py-0">
+                                                      <div className="bg-orange-50 border-l-4 border-orange-400">
+                                                        <form onSubmit={handleSaveLocationEdit} className="p-6">
+                                                          <div className="flex items-center justify-between mb-4">
+                                                            <h4 className="text-md font-semibold text-gray-900">Edit Location</h4>
+                                                            <button
+                                                              type="button"
+                                                              onClick={handleCancelLocationEdit}
+                                                              className="text-gray-400 hover:text-gray-600"
+                                                            >
+                                                              <X className="w-5 h-5" />
+                                                            </button>
+                                                          </div>
+                                                          
+                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div>
+                                                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Location Name *
+                                                              </label>
+                                                              <input
+                                                                type="text"
+                                                                value={locationEditFormData.name}
+                                                                onChange={(e) => setLocationEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                required
+                                                              />
+                                                            </div>
+
+                                                            <div>
+                                                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Contact Person
+                                                              </label>
+                                                              <input
+                                                                type="text"
+                                                                value={locationEditFormData.contactPerson}
+                                                                onChange={(e) => setLocationEditFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                              />
+                                                            </div>
+
+                                                            <div>
+                                                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Email
+                                                              </label>
+                                                              <input
+                                                                type="email"
+                                                                value={locationEditFormData.email}
+                                                                onChange={(e) => setLocationEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                              />
+                                                            </div>
+
+                                                            <div>
+                                                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Password
+                                                              </label>
+                                                              <input
+                                                                type="password"
+                                                                value={locationEditFormData.password}
+                                                                onChange={(e) => setLocationEditFormData(prev => ({ ...prev, password: e.target.value }))}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                placeholder="New password"
+                                                              />
+                                                            </div>
+
+                                                            <div>
+                                                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Telephone
+                                                              </label>
+                                                              <input
+                                                                type="tel"
+                                                                value={locationEditFormData.telephone}
+                                                                onChange={(e) => setLocationEditFormData(prev => ({ ...prev, telephone: e.target.value }))}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                              />
+                                                            </div>
+
+                                                            <div>
+                                                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                WhatsApp
+                                                              </label>
+                                                              <input
+                                                                type="tel"
+                                                                value={locationEditFormData.whatsapp}
+                                                                onChange={(e) => setLocationEditFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                                placeholder="If same as telephone leave blank"
+                                                              />
+                                                            </div>
+                                                          </div>
+
+                                                          <div className="mt-4">
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                              Notes
+                                                            </label>
+                                                            <textarea
+                                                              value={locationEditFormData.notes}
+                                                              onChange={(e) => setLocationEditFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                                              rows={3}
+                                                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                                              placeholder="Additional notes..."
+                                                            />
+                                                          </div>
+
+                                                          <div className="flex justify-end space-x-3 mt-6">
+                                                            <button
+                                                              type="button"
+                                                              onClick={handleCancelLocationEdit}
+                                                              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                                                            >
+                                                              Cancel
+                                                            </button>
+                                                            <button
+                                                              type="submit"
+                                                              disabled={isUpdating}
+                                                              className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md hover:bg-orange-700 disabled:opacity-50"
+                                                            >
+                                                              {isUpdating ? 'Updating...' : 'Update Location'}
+                                                            </button>
+                                                          </div>
+                                                        </form>
+                                                      </div>
+                                                    </td>
+                                                  </tr>
+                                                )}
+
+                                                {/* Sellers Dropdown */}
+                                                {expandedLocation === location.id && (
+                                                  <tr>
+                                                    <td colSpan={7} className="bg-orange-50 border-t">
+                                                      <div className="px-4 py-3">
+                                                        <div className="flex items-center justify-between mb-3">
+                                                          <h5 className="text-sm font-semibold text-gray-900 flex items-center">
+                                                            <Users className="w-4 h-4 text-green-600 mr-2" />
+                                                            Sellers ({location.sellers.length})
+                                                          </h5>
+                                                          <button
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              setSelectedLocationId(location.id);
+                                                              setShowSellerModal(true);
+                                                            }}
+                                                            className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700"
+                                                          >
+                                                            <Plus className="w-3 h-3 mr-1" />
+                                                            Add Seller
+                                                          </button>
+                                                        </div>
+                                                        
+                                                        {location.sellers.length > 0 ? (
+                                                          <div className="bg-white rounded-lg border border-green-200 overflow-hidden">
+                                                            <table className="min-w-full divide-y divide-gray-200">
+                                                              <thead className="bg-green-100">
+                                                                <tr>
+                                                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Seller Name</th>
+                                                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Contact Person</th>
+                                                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telephone</th>
+                                                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Config</th>
+                                                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                                                </tr>
+                                                              </thead>
+                                                              <tbody className="divide-y divide-gray-200">
+                                                                {location.sellers.map((seller) => (
+                                                                  <React.Fragment key={seller.id}>
+                                                                    <tr className="hover:bg-green-50">
+                                                                      <td className="px-4 py-3 whitespace-nowrap">
+                                                                        <div className="flex items-center">
+                                                                          <div className="text-sm font-medium text-gray-900">{seller.name || 'Unnamed Seller'}</div>
+                                                                        </div>
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                                        {seller.name}
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                                        {seller.email}
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                                        {(seller as any).telephone || '—'}
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap">
+                                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                                          seller.sellerConfigs 
+                                                                            ? 'bg-green-100 text-green-800' 
+                                                                            : 'bg-red-100 text-red-800'
+                                                                        }`}>
+                                                                          {seller.sellerConfigs ? 'Paired' : 'Unpaired'}
+                                                                        </span>
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap">
+                                                                        <button 
+                                                                          onClick={(e) => toggleSellerStatus(seller.id, e)}
+                                                                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${seller.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                                                                        >
+                                                                          <div className={`w-1.5 h-1.5 ${seller.isActive ? 'bg-green-600' : 'bg-red-600'} rounded-full mr-1.5`}></div>
+                                                                          {seller.isActive ? 'Active' : 'Inactive'}
+                                                                        </button>
+                                                                      </td>
+                                                                      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                                                        <div className="flex items-center justify-end space-x-2">
+                                                                          <button
+                                                                            onClick={(e) => handleEditSellerClick(seller, e)}
+                                                                            className="text-blue-600 hover:text-blue-800 p-1"
+                                                                            title="Edit Seller"
+                                                                          >
+                                                                            <Edit2 className="w-4 h-4" />
+                                                                          </button>
+                                                                          <button
+                                                                            onClick={(e) => {
+                                                                              e.stopPropagation();
+                                                                              console.log('Configure seller:', seller.id);
+                                                                            }}
+                                                                            className="text-green-600 hover:text-green-800 p-1"
+                                                                            title="Configure Seller"
+                                                                          >
+                                                                            <Settings className="w-4 h-4" />
+                                                                          </button>
+                                                                        </div>
+                                                                      </td>
+                                                                    </tr>
+                                                                    {editingSeller === seller.id && (
+                                                                      <tr>
+                                                                        <td colSpan={7} className="px-4 py-3 bg-green-50 border-l-4 border-green-400">
+                                                                          <form onSubmit={handleSaveSellerEdit} className="space-y-4">
+                                                                            <div className="flex justify-between items-center mb-4">
+                                                                              <h3 className="text-lg font-semibold text-gray-900">Edit Seller</h3>
+                                                                              <button
+                                                                                type="button"
+                                                                                onClick={handleCancelSellerEdit}
+                                                                                className="text-gray-400 hover:text-gray-600"
+                                                                              >
+                                                                                <X className="w-5 h-5" />
+                                                                              </button>
+                                                                            </div>
+                                                                            
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                              <div>
+                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                  Seller Name *
+                                                                                </label>
+                                                                                <input
+                                                                                  type="text"
+                                                                                  value={sellerEditFormData.name}
+                                                                                  onChange={(e) => setSellerEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                  required
+                                                                                />
+                                                                              </div>
+
+                                                                              <div>
+                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                  Email *
+                                                                                </label>
+                                                                                <input
+                                                                                  type="email"
+                                                                                  value={sellerEditFormData.email}
+                                                                                  onChange={(e) => setSellerEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                  required
+                                                                                />
+                                                                              </div>
+
+                                                                              <div>
+                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                  Telephone
+                                                                                </label>
+                                                                                <input
+                                                                                  type="tel"
+                                                                                  value={sellerEditFormData.telephone}
+                                                                                  onChange={(e) => setSellerEditFormData(prev => ({ ...prev, telephone: e.target.value }))}
+                                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                />
+                                                                              </div>
+
+                                                                              <div>
+                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                  WhatsApp
+                                                                                </label>
+                                                                                <input
+                                                                                  type="tel"
+                                                                                  value={sellerEditFormData.whatsapp}
+                                                                                  onChange={(e) => setSellerEditFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                  placeholder="If same as telephone leave blank"
+                                                                                />
+                                                                              </div>
+
+                                                                              <div>
+                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                  Password
+                                                                                </label>
+                                                                                <input
+                                                                                  type="password"
+                                                                                  value={sellerEditFormData.password}
+                                                                                  onChange={(e) => setSellerEditFormData(prev => ({ ...prev, password: e.target.value }))}
+                                                                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                  placeholder="New password"
+                                                                                />
+                                                                              </div>
+                                                                            </div>
+
+                                                                            <div className="mt-4">
+                                                                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                Notes
+                                                                              </label>
+                                                                              <textarea
+                                                                                value={sellerEditFormData.notes}
+                                                                                onChange={(e) => setSellerEditFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                                                                rows={3}
+                                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                                                placeholder="Additional notes..."
+                                                                              />
+                                                                            </div>
+
+                                                                            {/* Discount Configuration */}
+                                                                            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                                                              <h4 className="text-sm font-medium text-blue-900 mb-3">Default Rebuy Discount</h4>
+                                                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                <div>
+                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    Discount Type
+                                                                                  </label>
+                                                                                  <select
+                                                                                    value={sellerEditFormData.defaultDiscountType}
+                                                                                    onChange={(e) => setSellerEditFormData(prev => ({ ...prev, defaultDiscountType: e.target.value }))}
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                                                  >
+                                                                                    <option value="percentage">Percentage (%)</option>
+                                                                                    <option value="fixed">Fixed Amount ($)</option>
+                                                                                  </select>
+                                                                                </div>
+                                                                                <div>
+                                                                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                    Discount Value
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="number"
+                                                                                    min="0"
+                                                                                    max={sellerEditFormData.defaultDiscountType === 'percentage' ? 100 : undefined}
+                                                                                    step={sellerEditFormData.defaultDiscountType === 'percentage' ? 1 : 0.01}
+                                                                                    value={sellerEditFormData.defaultDiscountValue || ""}
+                                                                                    onChange={(e) => {
+                                                                                      const value = e.target.value
+                                                                                      const numValue = value === "" ? 0 : parseFloat(value)
+                                                                                      setSellerEditFormData(prev => ({ ...prev, defaultDiscountValue: numValue }))
+                                                                                    }}
+                                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                                                    placeholder={sellerEditFormData.defaultDiscountType === 'percentage' ? '10' : '5.00'}
+                                                                                  />
+                                                                                                                                                                      </div>
+                                                                              </div>
+                                                                              
+                                                                              {/* Discount Code Field */}
+                                                                              <div className="mt-4">
+                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                                  Discount Code (5 digits)
+                                                                                </label>
+                                                                                                                                                                      <div className="flex items-center gap-2">
+                                                                                    <input
+                                                                                      type="text"
+                                                                                      value={sellerEditFormData.discountCode || "Not set"}
+                                                                                      readOnly
+                                                                                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono text-center text-gray-600"
+                                                                                      placeholder="Will be auto-generated"
+                                                                                    />
+                                                                                    {sellerEditFormData.discountCode && sellerEditFormData.discountCode !== "Not set" ? (
+                                                                                      <button
+                                                                                        type="button"
+                                                                                        onClick={handleGenerateDiscountCode}
+                                                                                        disabled={!sellerEditFormData.defaultDiscountValue || sellerEditFormData.defaultDiscountValue <= 0}
+                                                                                        className="px-3 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-md transition-colors"
+                                                                                        title="Generate a new discount code (replaces existing)"
+                                                                                      >
+                                                                                        🔄 Regenerate
+                                                                                      </button>
+                                                                                    ) : (
+                                                                                      <button
+                                                                                        type="button"
+                                                                                        onClick={handleGenerateDiscountCode}
+                                                                                        disabled={!sellerEditFormData.defaultDiscountValue || sellerEditFormData.defaultDiscountValue <= 0}
+                                                                                        className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-md transition-colors"
+                                                                                        title="Generate a new discount code"
+                                                                                      >
+                                                                                        🎲 Generate
+                                                                                      </button>
+                                                                                    )}
+                                                                                  </div>
+                                                                                                                                                                      <p className="text-xs text-gray-500 mt-1">
+                                                                                    Customers can enter this code to get the discount above. 
+                                                                                    <span className="font-medium text-blue-600"> Code is auto-generated and can be regenerated if needed.</span>
+                                                                                  </p>
+                                                                                  {!sellerEditFormData.discountCode && sellerEditFormData.defaultDiscountValue > 0 && (
+                                                                                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                                                                                      <span className="font-medium">🎲 Auto-generation enabled:</span> A unique 5-digit code will be automatically created when you save.
+                                                                                    </div>
+                                                                                  )}
+                                                                                  {sellerEditFormData.discountCode && (
+                                                                                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
+                                                                                      <span className="font-medium">✅ Code active:</span> {sellerEditFormData.discountCode} - Customers can use this code anytime.
+                                                                                    </div>
+                                                                                  )}
+                                                                              </div>
+                                                                              
+                                                                              <p className="text-xs text-blue-600 mt-2">
+                                                                                This discount will be applied to rebuy emails when customers purchase again from this seller.
+                                                                                {sellerEditFormData.defaultDiscountValue > 0 && (
+                                                                                  <span className="font-medium">
+                                                                                    {' '}Preview: {sellerEditFormData.defaultDiscountValue}
+                                                                                    {sellerEditFormData.defaultDiscountType === 'percentage' ? '% off' : '$ off'}
+                                                                                    {sellerEditFormData.discountCode && ` (Code: ${sellerEditFormData.discountCode})`}
+                                                                                  </span>
+                                                                                )}
+                                                                              </p>
+                                                                              
+                                                                              {/* Reset Button */}
+                                                                              {(sellerEditFormData.defaultDiscountValue > 0 || sellerEditFormData.discountCode) && (
+                                                                                <div className="mt-3 pt-3 border-t border-blue-200">
+                                                                                  <button
+                                                                                    type="button"
+                                                                                    onClick={handleResetDiscount}
+                                                                                    className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors"
+                                                                                    title="Reset discount and code to start fresh"
+                                                                                  >
+                                                                                    🔄 Reset Discount
+                                                                                  </button>
+                                                                                </div>
+                                                                              )}
+                                                                            </div>
+
+                                                                            <div className="pt-4 border-t">
+                                                                              <div className="text-sm font-medium text-gray-700 mb-3">QR Configuration Management</div>
+                                                                              
+                                                                              {seller.sellerConfigs && (
+                                                                                <div className="mb-4 p-3 bg-gray-50 rounded-lg text-xs">
+                                                                                  {/* Load QR configs when opening edit form and try to match by seller config data */}
+                                                                                  {(() => {
+                                                                                    let matchingConfig = null
+                                                                                    
+                                                                                    if ((seller as any).configurationId) {
+                                                                                      // Use stored configuration ID for exact match
+                                                                                      matchingConfig = availableQRConfigs.find(config => config.id === (seller as any).configurationId)
+                                                                                    }
+                                                                                    
+                                                                                    if (!matchingConfig) {
+                                                                                      // Fallback to content comparison for legacy data
+                                                                                      matchingConfig = availableQRConfigs.find(config => {
+                                                                                        const matches = config.config && 
+                                                                                                (seller as any).sellerConfigs && 
+                                                                                                config.config.button1GuestsDefault === ((seller as any).sellerConfigs as any).button1GuestsDefault &&
+                                                                                                config.config.button1DaysDefault === ((seller as any).sellerConfigs as any).button1DaysDefault &&
+                                                                                                config.config.button2FixedPrice === ((seller as any).sellerConfigs as any).button2FixedPrice
+                                                                                        return matches
+                                                                                      })
+                                                                                    }
+                                                                                    
+                                                                                    if (matchingConfig) {
+                                                                                      // Display full 5-button configuration
+                                                                                      return (
+                                                                                        <div className="grid grid-cols-3 gap-2">
+                                                                                          {/* Button 1: Guest & Day Limits */}
+                                                                                          <div className="space-y-1">
+                                                                                            <div className="flex items-center">
+                                                                                              <div className="w-3 h-3 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs mr-1">1</div>
+                                                                                              <span className="font-semibold text-gray-800 text-xs">Guest & Day Limits</span>
+                                                                                            </div>
+                                                                                            <div className="text-gray-600 ml-4 text-xs">
+                                                                                              <div>Guests: {!matchingConfig.config.button1GuestsLocked ? `1-${matchingConfig.config.button1GuestsRangeMax} Open` : `${matchingConfig.config.button1GuestsDefault} Fixed`}</div>
+                                                                                              <div>Days: {!matchingConfig.config.button1DaysLocked ? `1-${matchingConfig.config.button1DaysRangeMax} Open` : `${matchingConfig.config.button1DaysDefault} Fixed`}</div>
+                                                                                            </div>
+                                                                                          </div>
+                                                                                          
+                                                                                          {/* Button 2: Pricing */}
+                                                                                          <div className="space-y-1">
+                                                                                            <div className="flex items-center">
+                                                                                              <div className="w-3 h-3 bg-green-500 text-white rounded-full flex items-center justify-center text-xs mr-1">2</div>
+                                                                                              <span className="font-semibold text-gray-800 text-xs">Pricing</span>
+                                                                                            </div>
+                                                                                            <div className="text-gray-600 ml-4 text-xs">
+                                                                                              {matchingConfig.config.button2PricingType === 'FIXED' ? (
+                                                                                                <div>
+                                                                                                  <div>Price: ${matchingConfig.config.button2FixedPrice}{matchingConfig.config.button2IncludeTax ? ` + ${matchingConfig.config.button2TaxPercentage}% tax` : ' (no tax)'}</div>
+                                                                                                </div>
+                                                                                              ) : matchingConfig.config.button2PricingType === 'VARIABLE' ? (
+                                                                                                <div>
+                                                                                                  <div>Base: ${matchingConfig.config.button2VariableBasePrice}</div>
+                                                                                                  <div>+${matchingConfig.config.button2VariableGuestIncrease}/guest, +${matchingConfig.config.button2VariableDayIncrease}/day</div>
+                                                                                                  {matchingConfig.config.button2VariableCommission > 0 && <div>+${matchingConfig.config.button2VariableCommission}% commission</div>}
+                                                                                                  {matchingConfig.config.button2IncludeTax ? <div>+${matchingConfig.config.button2TaxPercentage}% tax</div> : <div>(no tax)</div>}
+                                                                                                </div>
+                                                                                              ) : (
+                                                                                                <div>Free</div>
+                                                                                              )}
+                                                                                            </div>
+                                                                                          </div>
+                                                                                          
+                                                                                          {/* Button 3: QR Delivery */}
+                                                                                          <div className="space-y-1">
+                                                                                            <div className="flex items-center">
+                                                                                              <div className="w-3 h-3 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs mr-1">3</div>
+                                                                                              <span className="font-semibold text-gray-800 text-xs">QR Delivery</span>
+                                                                                            </div>
+                                                                                            <div className="text-gray-600 ml-4 text-xs">
+                                                                                              <div>Method: {
+                                                                                                matchingConfig.config.button3DeliveryMethod === 'DIRECT' ? 'Direct Download' :
+                                                                                                matchingConfig.config.button3DeliveryMethod === 'URLS' ? 'Landing Pages' :
+                                                                                                'Both Options'
+                                                                                              }</div>
+                                                                                            </div>
+                                                                                          </div>
+                                                                                          
+                                                                                          {/* Button 4: Welcome Email */}
+                                                                                          <div className="space-y-1">
+                                                                                            <div className="flex items-center">
+                                                                                              <div className="w-3 h-3 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs mr-1">4</div>
+                                                                                              <span className="font-semibold text-gray-800 text-xs">Welcome Email</span>
+                                                                                            </div>
+                                                                                            <div className="text-gray-600 ml-4 text-xs">
+                                                                                              <div>{matchingConfig.config.button4LandingPageRequired ? 'Customized' : 'Default'}</div>
+                                                                                            </div>
+                                                                                          </div>
+                                                                                          
+                                                                                          {/* Button 5: Rebuy Email */}
+                                                                                          <div className="space-y-1">
+                                                                                            <div className="flex items-center">
+                                                                                              <div className="w-3 h-3 bg-red-500 text-white rounded-full flex items-center justify-center text-xs mr-1">5</div>
+                                                                                              <span className="font-semibold text-gray-800 text-xs">Rebuy Email</span>
+                                                                                            </div>
+                                                                                            <div className="text-gray-600 ml-4 text-xs">
+                                                                                              {matchingConfig.config.button5SendRebuyEmail ? (
+                                                                                                (() => {
+                                                                                                  // Check if this configuration has a custom rebuy email template
+                                                                                                  const hasCustomRebuyTemplate = matchingConfig.emailTemplates?.rebuyEmail;
+                                                                                                  return hasCustomRebuyTemplate ? 'Customized' : 'Default';
+                                                                                                })()
+                                                                                                ) : 'No'}
+                                                                                            </div>
+                                                                                          </div>
+                                                                                          
+                                                                                          {/* Button 6: Future QR */}
+                                                                                          <div className="space-y-1">
+                                                                                            <div className="flex items-center">
+                                                                                              <div className="w-3 h-3 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs mr-1">6</div>
+                                                                                              <span className="font-semibold text-gray-800 text-xs">Future QR</span>
+                                                                                            </div>
+                                                                                            <div className="text-gray-600 ml-4 text-xs">
+                                                                                              <div>{matchingConfig.config.button6AllowFutureQR ? 'Enabled' : 'Disabled'}</div>
+                                                                                            </div>
+                                                                                          </div>
+                                                                                          
+                                                                                          {/* Status & Actions */}
+                                                                                          <div className="space-y-1">
+                                                                                            <div className="flex items-center">
+                                                                                              <div className="w-3 h-3 bg-gray-500 text-white rounded-full flex items-center justify-center text-xs mr-1">✓</div>
+                                                                                              <span className="font-semibold text-gray-800 text-xs">Status</span>
+                                                                                            </div>
+                                                                                            <div className="text-gray-600 ml-4 text-xs">
+                                                                                              <div className="text-green-600">PAIRED: {matchingConfig.name.toUpperCase()}</div>
+                                                                                              <button 
+                                                                                                onClick={() => window.open(`/admin/qr-config?openLibrary=true&configId=${matchingConfig.id}`, '_blank')}
+                                                                                                className="text-blue-600 hover:underline"
+                                                                                              >
+                                                                                                View Full Config →
+                                                                                              </button>
+                                                                                            </div>
+                                                                                          </div>
+                                                                                        </div>
+                                                                                      )
+                                                                                    } else {
+                                                                                      // Fallback to basic info if no matching config found
+                                                                                      return (
+                                                                                        <div className="text-center text-gray-600 text-xs">
+                                                                                          <div className="text-green-600 mb-2">✓ QR Configuration Paired</div>
+                                                                                          <div>Basic Config: {(seller as any).sellerConfigs?.defaultGuests} guests, {(seller as any).sellerConfigs?.defaultDays} days, ${(seller as any).sellerConfigs?.fixedPrice}</div>
+                                                                                          <button 
+                                                                                            onClick={() => window.open('/admin/qr-config', '_blank')}
+                                                                                            className="text-blue-600 hover:underline mt-1 block"
+                                                                                          >
+                                                                                            View Full Configuration →
+                                                                                          </button>
+                                                                                        </div>
+                                                                                      )
+                                                                                    }
+                                                                                  })()}
+                                                                                </div>
+                                                                              )}
+                                                                              
+                                                                              <div className="flex space-x-2">
+                                                                                {!seller.sellerConfigs ? (
+                                                                                  <>
+                                                                                    <button
+                                                                                      type="button"
+                                                                                      className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                                                                                      onClick={() => openQRPairingModal(seller)}
+                                                                                    >
+                                                                                      Pair QR Config
+                                                                                    </button>
+                                                                                    <button
+                                                                                      type="button"
+                                                                                      className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
+                                                                                      onClick={() => {
+                                                                                        // Navigate to QR Config page to create new config
+                                                                                        window.open('/admin/qr-config', '_blank')
+                                                                                      }}
+                                                                                    >
+                                                                                      Create QR Config
+                                                                                    </button>
+                                                                                  </>
+                                                                                ) : (
+                                                                                  <button
+                                                                                    type="button"
+                                                                                    className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
+                                                                                    onClick={() => handleUnpairQRConfig(seller)}
+                                                                                  >
+                                                                                    Unpair QR Config
+                                                                                  </button>
+                                                                                )}
+                                                                              </div>
+                                                                            </div>
+
+                                                                            <div className="flex justify-end space-x-3 mt-6">
+                                                                              <button
+                                                                                type="button"
+                                                                                onClick={handleCancelSellerEdit}
+                                                                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                                                              >
+                                                                                Cancel
+                                                                              </button>
+                                                                              <button
+                                                                                type="submit"
+                                                                                disabled={isUpdating}
+                                                                                className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:opacity-50"
+                                                                              >
+                                                                                {isUpdating ? 'Saving...' : 'Save Changes'}
+                                                                              </button>
+                                                                            </div>
+                                                                          </form>
+                                                                        </td>
+                                                                      </tr>
+                                                                    )}
+                                                                  </React.Fragment>
+                                                                ))}
+                                                              </tbody>
+                                                            </table>
+                                                          </div>
+                                                        ) : (
+                                                          <div className="text-center py-4 text-gray-500 text-sm">
+                                                            No sellers found for this location.
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    </td>
+                                                  </tr>
+                                                )}
+                                              </React.Fragment>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    ) : (
+                                      <div className="text-center py-4 text-gray-500 text-sm">
+                                        No locations found for this distributor.
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="text-center py-4">
+                                    <p className="text-red-500 text-sm">Failed to load details</p>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {distributors.length === 0 && (
+          <div className="text-center py-12">
+            <Building2 className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No distributors</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Get started by creating a new distributor.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Add Location Modal */}
