@@ -18,28 +18,48 @@ export default function LoginPage() {
     setError("")
 
     try {
+      console.log('🔍 LOGIN DEBUG: Starting login attempt for:', email)
+      
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       })
 
+      console.log('🔍 LOGIN DEBUG: SignIn result:', result)
+
       if (result?.error) {
+        console.log('❌ LOGIN DEBUG: Login failed with error:', result.error)
         setError("Invalid email or password")
       } else {
+        console.log('✅ LOGIN DEBUG: Login successful, getting session...')
+        
         // Get the session to check user role
         const session = await getSession()
+        console.log('🔍 LOGIN DEBUG: Session obtained:', session)
+        console.log('👤 LOGIN DEBUG: User role:', session?.user?.role)
+        
         if (session?.user?.role === "ADMIN") {
+          console.log('🚀 LOGIN DEBUG: Redirecting to /admin')
           router.push("/admin")
         } else if (session?.user?.role === "DISTRIBUTOR") {
+          console.log('🚀 LOGIN DEBUG: Redirecting to /distributor')
           router.push("/distributor")
         } else if (session?.user?.role === "LOCATION") {
+          console.log('🚀 LOGIN DEBUG: Redirecting to /location')
           router.push("/location")
         } else if (session?.user?.role === "SELLER") {
+          console.log('🚀 LOGIN DEBUG: Redirecting to /seller')
           router.push("/seller")
+        } else if (session?.user?.role === "INDEPENDENT_SELLER") {
+          console.log('🚀 LOGIN DEBUG: Redirecting to /independent-seller')
+          router.push("/independent-seller")
+        } else {
+          console.log('❓ LOGIN DEBUG: Unknown role or no role found:', session?.user?.role)
         }
       }
     } catch (error) {
+      console.error('💥 LOGIN DEBUG: Catch block error:', error)
       setError("An error occurred. Please try again.")
     } finally {
       setLoading(false)
