@@ -461,13 +461,13 @@ export async function POST(request: NextRequest) {
         // Fallback to stored template if fresh HTML generation failed
         if (emailTemplates?.rebuyEmail?.customHTML && emailTemplates.rebuyEmail.customHTML !== 'USE_DEFAULT_TEMPLATE') {
           console.log(`📧 REBUY EMAIL: Using stored custom template as fallback`)
-          
-          let processedTemplate = emailTemplates.rebuyEmail.customHTML
-            .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
-            .replace(/\{qrCode\}/g, qrCode.code)
-            .replace(/\{guests\}/g, qrCode.guests.toString())
-            .replace(/\{days\}/g, qrCode.days.toString())
-            .replace(/\{hoursLeft\}/g, hoursLeft.toString())
+      
+      let processedTemplate = emailTemplates.rebuyEmail.customHTML
+        .replace(/\{customerName\}/g, qrCode.customerName || 'Valued Customer')
+        .replace(/\{qrCode\}/g, qrCode.code)
+        .replace(/\{guests\}/g, qrCode.guests.toString())
+        .replace(/\{days\}/g, qrCode.days.toString())
+        .replace(/\{hoursLeft\}/g, hoursLeft.toString())
             .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
             .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
             .replace(/\{rebuyUrl\}/g, rebuyUrl)
@@ -545,7 +545,7 @@ export async function POST(request: NextRequest) {
                   .replace(/\{days\}/g, qrCode.days.toString())
                   .replace(/\{hoursLeft\}/g, hoursLeft.toString())
                   .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
-                  .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
+        .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
                   .replace(/\{rebuyUrl\}/g, rebuyUrl)
                 
                 emailHtml = processedTemplate
@@ -705,16 +705,16 @@ export async function POST(request: NextRequest) {
           .replace(/\{qrExpirationTimestamp\}/g, qrCode.expiresAt.toISOString())
           .replace(/\{customerPortalUrl\}/g, customerPortalUrl)
           .replace(/\{rebuyUrl\}/g, rebuyUrl)
-        
-        emailHtml = processedTemplate
+      
+      emailHtml = processedTemplate
 
-        // Get subject from rebuy config if available
-        if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
-          const originalSubject = emailTemplates.rebuyEmail.rebuyConfig.emailSubject
-          emailSubject = await translateSubject(originalSubject, customerLanguage)
-        } else {
-          const originalSubject = `Your ELocalPass expires in ${hoursLeft} hours - Renew now!`
-          emailSubject = await translateSubject(originalSubject, customerLanguage)
+      // Get subject from rebuy config if available
+      if (emailTemplates.rebuyEmail.rebuyConfig?.emailSubject) {
+        const originalSubject = emailTemplates.rebuyEmail.rebuyConfig.emailSubject
+        emailSubject = await translateSubject(originalSubject, customerLanguage)
+      } else {
+        const originalSubject = `Your ELocalPass expires in ${hoursLeft} hours - Renew now!`
+        emailSubject = await translateSubject(originalSubject, customerLanguage)
         }
       }
       

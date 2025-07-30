@@ -45,11 +45,14 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Find seller by email
+    // Find seller by email (including independent sellers)
     const seller = await prisma.user.findFirst({
       where: {
         email: sellerEmail,
-        role: 'SELLER'
+        OR: [
+          { role: 'SELLER' },
+          { role: 'INDEPENDENT_SELLER' }
+        ]
       }
     })
     

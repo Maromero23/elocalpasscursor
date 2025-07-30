@@ -272,8 +272,8 @@ export async function POST(request: NextRequest) {
       if (!customHTML) {
         console.log('⚠️ No generatedHTML provided, falling back to API generation')
         // Fallback to API generation if no HTML provided
-        const generateRebuyHtml = (config: any) => {
-          return `<!DOCTYPE html>
+      const generateRebuyHtml = (config: any) => {
+        return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -335,7 +335,7 @@ export async function POST(request: NextRequest) {
                     <div style="color: #6b7280;">
                         🎥 Promotional Video<br>
                         <span style="font-size: 12px;">Click to watch</span>
-                    </div>
+                </div>
                 </div>
                 <p style="font-size: 14px; color: #6b7280; margin: 0;">Watch this special message about your renewal!</p>
                 <a href="${config.videoUrl}" style="color: #3b82f6; text-decoration: none; font-size: 14px;">▶ Watch Video</a>
@@ -477,7 +477,7 @@ export async function POST(request: NextRequest) {
     </div>
 </body>
 </html>`
-        }
+      }
 
         customHTML = generateRebuyHtml(rebuyConfig)
       } else {
@@ -593,20 +593,20 @@ export async function GET(request: NextRequest) {
       })
     } else {
       // Default behavior - load only default template
-      const defaultTemplate = await prisma.rebuyEmailTemplate.findFirst({
-        where: { isDefault: true }
-      })
+    const defaultTemplate = await prisma.rebuyEmailTemplate.findFirst({
+      where: { isDefault: true }
+    })
 
-      if (!defaultTemplate) {
-        return NextResponse.json({ 
-          error: 'No default rebuy template found' 
-        }, { status: 404 })
-      }
+    if (!defaultTemplate) {
+      return NextResponse.json({ 
+        error: 'No default rebuy template found' 
+      }, { status: 404 })
+    }
 
-      return NextResponse.json({
-        success: true,
-        template: defaultTemplate
-      })
+    return NextResponse.json({
+      success: true,
+      template: defaultTemplate
+    })
     }
 
   } catch (error) {
@@ -615,7 +615,7 @@ export async function GET(request: NextRequest) {
       error: 'Failed to load rebuy template(s)' 
     }, { status: 500 })
   }
-}
+} 
 
 // DELETE: Delete a rebuy template
 export async function DELETE(request: NextRequest) {
