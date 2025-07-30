@@ -757,17 +757,25 @@ export default function DistributorsPage() {
   const handleCreateIndependentSeller = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    console.log('🔍 CLIENT: Form data before sending:', independentSellerFormData)
+    
+    const dataToSend = {
+      ...independentSellerFormData,
+      location: independentSellerFormData.address // Map address to location for API
+    }
+    
+    console.log('🔍 CLIENT: Data being sent to API:', dataToSend)
+
     setIsCreatingIndependentSeller(true)
     try {
       const response = await fetch("/api/admin/independent-sellers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...independentSellerFormData,
-          location: independentSellerFormData.address // Map address to location for API
-        })
+        body: JSON.stringify(dataToSend)
       })
 
+      console.log('🔍 CLIENT: Response status:', response.status)
+      
       if (response.ok) {
         const result = await response.json()
         
@@ -794,6 +802,7 @@ export default function DistributorsPage() {
         await fetchDistributors()
       } else {
         const errorData = await response.json()
+        console.log('🔍 CLIENT: Error response:', errorData)
         showError('Creation Failed', errorData.error || "Failed to create independent seller")
       }
     } catch (error) {
