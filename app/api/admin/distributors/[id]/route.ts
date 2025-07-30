@@ -93,7 +93,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       LEFT JOIN saved_qr_configurations sc ON s."savedConfigId" = sc.id
       WHERE s."locationId" IN (
         SELECT l.id FROM "Location" l WHERE l."distributorId" = ${id}
-      ) AND s.role = 'SELLER'
+      ) AND (s.role = 'SELLER' OR s.role = 'INDEPENDENT_SELLER')
       ORDER BY s."createdAt" DESC
     `
 

@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Create everything in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create the main user account with INDEPENDENT_SELLER role
+      // 1. Create the main user account with INDEPENDENT_SELLER role for dual dashboard access
       const mainUser = await tx.user.create({
         data: {
           name: contactPerson,
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
           role: "INDEPENDENT_SELLER", // Special role for dual dashboard access
           telephone,
           whatsapp,
-          notes: `Independent seller: ${businessName}`,
+          notes: `Independent seller: ${businessName} (dual access)`,
           isActive: true
         }
       })
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       data: {
         distributorId: result.distributor.id,
         locationId: result.location.id,
-        sellerId: result.user.id,
+        userId: result.user.id,
         businessName,
         contactPerson,
         email
