@@ -14,10 +14,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Find seller with this discount code
-    const seller = await prisma.user.findUnique({
+    const seller = await prisma.user.findFirst({
       where: { 
         discountCode: code,
-        role: 'SELLER'
+        OR: [
+          { role: 'SELLER' },
+          { role: 'INDEPENDENT_SELLER' }
+        ]
       },
       select: {
         id: true,

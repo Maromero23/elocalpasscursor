@@ -13,7 +13,12 @@ export async function GET(request: NextRequest) {
     }
 
     const sellers = await prisma.user.findMany({
-      where: { role: 'SELLER' },
+      where: { 
+        OR: [
+          { role: 'SELLER' },
+          { role: 'INDEPENDENT_SELLER' }
+        ]
+      },
       select: {
         id: true,
         name: true,

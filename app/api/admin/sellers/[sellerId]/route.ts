@@ -83,7 +83,7 @@ export async function PUT(
       include: { sellerConfigs: true }
     })
 
-    if (!existingSeller || existingSeller.role !== "SELLER") {
+    if (!existingSeller || (existingSeller.role !== "SELLER" && existingSeller.role !== "INDEPENDENT_SELLER")) {
       return NextResponse.json({ 
         error: "Seller not found" 
       }, { status: 404 })

@@ -59,7 +59,7 @@ export async function PATCH(
 
       // Get all sellers for this location and update them using PostgreSQL syntax
       const sellers = await tx.$queryRaw`
-        SELECT id FROM users WHERE "locationId" = ${id} AND role = 'SELLER'
+        SELECT id FROM users WHERE "locationId" = ${id} AND (role = 'SELLER' OR role = 'INDEPENDENT_SELLER')
       `
       
       console.log("📋 Found", (sellers as any[]).length, "sellers to update")

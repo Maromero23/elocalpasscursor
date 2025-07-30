@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ SELLER CONFIG: Session found for user:', session.user.email)
 
-    if (session.user.role !== 'SELLER') {
+    if (session.user.role !== 'SELLER' && session.user.role !== 'INDEPENDENT_SELLER') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
     

@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    if (session.user.role !== 'SELLER') {
+    if (session.user.role !== 'SELLER' && session.user.role !== 'INDEPENDENT_SELLER') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
     
