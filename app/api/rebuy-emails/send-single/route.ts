@@ -44,8 +44,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'QR Code not active' }, { status: 400 })
     }
 
-    // Check if rebuy email already sent (using rebuyEmailScheduled field for tracking)
-    if (qrCode.analytics && !qrCode.analytics.rebuyEmailScheduled) {
+    // Check if rebuy email already sent
+    if (qrCode.analytics && qrCode.analytics.rebuyEmailSent) {
       console.log(`✅ Rebuy email already processed for QR: ${qrCodeId}`)
       return NextResponse.json({
         success: true,
