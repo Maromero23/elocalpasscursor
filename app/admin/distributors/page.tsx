@@ -1426,20 +1426,26 @@ export default function DistributorsPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {sortedDistributors.filter(distributor => {
+                      // Apply status filter
                       if (statusFilter === 'all') return true
                       if (statusFilter === 'active') return distributor.isActive
                       if (statusFilter === 'inactive') return !distributor.isActive
                       return true
+                    }).filter(distributor => {
+                      // Apply entity filter - for hierarchical view, always show distributors as containers
+                      // For flat view, only show if distributors are selected or all entities
+                      if (viewMode === 'hierarchical') return true
+                      return entityFilter === 'all' || entityFilter === 'distributors'
                     }).map((distributor, index) => (
                       <React.Fragment key={distributor.id}>
                         <tr 
                           key={distributor.id} 
-                          className={`hover:bg-gray-50 cursor-pointer ${
+                          className={`hover:bg-gray-50 ${viewMode === 'hierarchical' ? 'cursor-pointer' : ''} ${
                             expandedDistributor === distributor.id 
                               ? 'bg-blue-50' 
                               : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                           }`}
-                          onClick={() => handleDistributorClick(distributor.id)}
+                          onClick={viewMode === 'hierarchical' ? () => handleDistributorClick(distributor.id) : undefined}
                         >
                           <td className="px-4 py-4 whitespace-nowrap">
                             <input
@@ -1476,13 +1482,15 @@ export default function DistributorsPage() {
                               <span className="text-sm font-medium text-gray-900">
                                 {distributorDetails[distributor.id]?._count?.locations}
                               </span>
-                              <div className="text-blue-600 hover:text-blue-800">
-                                {expandedDistributor === distributor.id ? (
-                                  <ChevronDown className="h-5 w-5" />
-                                ) : (
-                                  <ChevronRight className="h-5 w-5" />
-                                )}
-                              </div>
+                              {viewMode === 'hierarchical' && (
+                                <div className="text-blue-600 hover:text-blue-800">
+                                  {expandedDistributor === distributor.id ? (
+                                    <ChevronDown className="h-5 w-5" />
+                                  ) : (
+                                    <ChevronRight className="h-5 w-5" />
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap">
@@ -1669,7 +1677,7 @@ export default function DistributorsPage() {
                         )}
 
                         {/* Locations Dropdown */}
-                        {expandedDistributor === distributor.id && (
+                        {viewMode === 'hierarchical' && expandedDistributor === distributor.id && (
                           <tr>
                             <td colSpan={8} className="bg-blue-50 border-t">
                               <div className="px-4 py-3">
