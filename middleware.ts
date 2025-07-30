@@ -44,9 +44,9 @@ export default withAuth(
       return NextResponse.next()
     }
 
-    // Admin routes - only admins can access
+    // Admin routes - only admins and independent sellers can access
     if (pathname.startsWith("/admin")) {
-      if (token?.role !== "ADMIN") {
+      if (token?.role !== "ADMIN" && token?.role !== "INDEPENDENT_SELLER") {
         return NextResponse.redirect(new URL("/auth/login", req.url))
       }
     }
@@ -65,9 +65,9 @@ export default withAuth(
       }
     }
 
-    // Seller routes - only sellers can access
+    // Seller routes - only sellers and independent sellers can access
     if (pathname.startsWith("/seller")) {
-      if (token?.role !== "SELLER") {
+      if (token?.role !== "SELLER" && token?.role !== "INDEPENDENT_SELLER") {
         return NextResponse.redirect(new URL("/auth/login", req.url))
       }
     }

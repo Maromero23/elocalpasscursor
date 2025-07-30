@@ -762,7 +762,10 @@ export default function DistributorsPage() {
       const response = await fetch("/api/admin/independent-sellers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(independentSellerFormData)
+        body: JSON.stringify({
+          ...independentSellerFormData,
+          location: independentSellerFormData.address // Map address to location for API
+        })
       })
 
       if (response.ok) {
@@ -784,7 +787,7 @@ export default function DistributorsPage() {
         // Show success message
         showSuccess(
           'Independent Seller Created', 
-          `${independentSellerFormData.businessName} has been successfully created as an independent seller with admin access.`
+          `${independentSellerFormData.businessName} has been successfully created as an independent seller with dual dashboard access.`
         )
         
         // Refresh the distributors list to show the new "Independent Sellers" distributor

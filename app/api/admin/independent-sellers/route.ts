@@ -1,11 +1,10 @@
+import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { authOptions } from "../../auth/[...nextauth]/route"
+import { prisma } from "../../../../lib/prisma"
 import bcrypt from "bcryptjs"
 
-// POST /api/admin/independent-sellers - Create independent seller with virtual distributor/location
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
@@ -21,24 +20,14 @@ export async function POST(request: Request) {
       password, 
       telephone, 
       whatsapp, 
-      notes,
-      address 
+      location,
+      notes 
     } = body
 
+    // Validate required fields
     if (!businessName || !contactPerson || !email || !password) {
       return NextResponse.json({ 
-        error: "Business name, contact person, email, and password are required" 
-      }, { status: 400 })
-    }
-
-    // Check if user with this email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
-
-    if (existingUser) {
-      return NextResponse.json({ 
-        error: "A user with this email already exists" 
+        error: "Missing required fields: businessName, contactPerson, email, password" 
       }, { status: 400 })
     }
 
@@ -76,13 +65,13 @@ export async function POST(request: Request) {
         })
       }
 
-      // 2. Create the independent seller's user account with ADMIN role for analytics access
+      // 2. Create the independent seller's user account with INDEPENDENT_SELLER role
       const sellerUser = await tx.user.create({
         data: {
           name: contactPerson,
           email,
           password: hashedPassword,
-          role: "ADMIN", // Give admin access for analytics
+          role: "INDEPENDENT_SELLER", // New role with dual access
           telephone,
           whatsapp,
           notes,
@@ -94,27 +83,29 @@ export async function POST(request: Request) {
       const virtualLocation = await tx.location.create({
         data: {
           name: businessName,
+          address: location || "",
           contactPerson,
           email,
           telephone,
           whatsapp,
-          notes: `Independent business location for ${businessName}. ${notes || ''}`.trim(),
+          notes: `Virtual location for independent seller: ${contactPerson}`,
           distributorId: independentDistributor.id,
-          userId: sellerUser.id, // The seller manages their own location
+          userId: sellerUser.id, // Link the user as the location manager
           isActive: true
         }
       })
 
-      // 4. Update the user to be associated with this location as a seller
+      // 4. Update the user to be linked to this location
       await tx.user.update({
         where: { id: sellerUser.id },
-        data: {
-          locationId: virtualLocation.id
+        data: { 
+          locationId: virtualLocation.id,
+          distributorId: independentDistributor.id
         }
       })
 
       return {
-        seller: sellerUser,
+        user: sellerUser,
         location: virtualLocation,
         distributor: independentDistributor
       }
@@ -122,20 +113,28 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Independent seller created successfully",
+      message: `Independent seller "${contactPerson}" created successfully`,
       data: {
-        sellerId: result.seller.id,
-        sellerEmail: result.seller.email,
-        businessName: result.location.name,
+        userId: result.user.id,
+        email: result.user.email,
+        role: result.user.role,
+        businessName,
         locationId: result.location.id,
         distributorId: result.distributor.id
       }
-    }, { status: 201 })
+    })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating independent seller:", error)
+    
+    if (error.code === 'P2002') {
+      return NextResponse.json({ 
+        error: "Email already exists" 
+      }, { status: 400 })
+    }
+    
     return NextResponse.json({ 
-      error: "Internal server error" 
+      error: "Failed to create independent seller" 
     }, { status: 500 })
   }
 } 

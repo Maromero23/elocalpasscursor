@@ -34,6 +34,8 @@ export function ProtectedRoute({
         router.push("/admin")
       } else if (session.user.role === "SELLER") {
         router.push("/seller")
+      } else if (session.user.role === "INDEPENDENT_SELLER") {
+        router.push("/independent-seller")
       }
       return
     }

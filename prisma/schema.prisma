@@ -15,7 +15,7 @@ model User {
   telephone          String?
   whatsapp           String?
   notes              String?
-  role               String                 @default("SELLER")
+  role               String                   @default("SELLER")
   isActive           Boolean                @default(true)
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt

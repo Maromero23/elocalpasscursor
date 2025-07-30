@@ -5,6 +5,8 @@ import { ProtectedRoute } from "@/components/auth/protected-route"
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { ToastNotifications } from "@/components/toast-notification"
+import Link from "next/link"
+import { BarChart3 } from "lucide-react"
 
 interface QRConfig {
   // Configuration info
@@ -272,6 +274,18 @@ export default function SellerDashboard() {
                 <span className="text-sm text-orange-100">
                   Welcome, {session?.user?.name}
                 </span>
+                
+                {/* Analytics Navigation for Independent Sellers */}
+                {session?.user?.role === "INDEPENDENT_SELLER" && (
+                  <Link
+                    href="/admin/analytics"
+                    className="inline-flex items-center px-4 py-2 border border-orange-300 rounded-md shadow-sm text-sm font-medium text-orange-100 hover:text-white hover:bg-orange-600 transition-colors"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Analytics
+                  </Link>
+                )}
+                
                 <button
                   onClick={() => signOut()}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
