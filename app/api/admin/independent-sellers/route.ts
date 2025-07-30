@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "../../auth/[...nextauth]/route"
-import { prisma } from "../../../../lib/prisma"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
 export async function POST(request: NextRequest) {
@@ -83,7 +83,6 @@ export async function POST(request: NextRequest) {
       const virtualLocation = await tx.location.create({
         data: {
           name: businessName,
-          address: location || "",
           contactPerson,
           email,
           telephone,
