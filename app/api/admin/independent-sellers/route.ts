@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('🔍 Independent Seller API - Received data:', body)
+    
     const { 
       businessName, 
       contactPerson, 
@@ -24,12 +26,20 @@ export async function POST(request: NextRequest) {
       notes
     } = body
 
+    console.log('🔍 Extracted fields:', {
+      businessName, contactPerson, email, password: password ? '[PROVIDED]' : '[MISSING]',
+      telephone, whatsapp, location, notes
+    })
+
     // Validate required fields
     if (!businessName || !contactPerson || !email || !password) {
+      console.log('❌ Validation failed - missing required fields')
       return NextResponse.json({ 
         error: "Missing required fields: businessName, contactPerson, email, password" 
       }, { status: 400 })
     }
+
+    console.log('✅ Validation passed, creating independent seller...')
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -131,7 +141,8 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error("Error creating independent seller:", error)
+    console.error("❌ Error creating independent seller:", error)
+    console.error("❌ Error details:", error.message, error.code)
     
     if (error.code === 'P2002') {
       return NextResponse.json({ 
@@ -140,7 +151,7 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json({ 
-      error: "Failed to create independent seller" 
+      error: "Failed to create independent seller: " + error.message 
     }, { status: 500 })
   }
 } 
