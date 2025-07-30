@@ -111,6 +111,8 @@ export default function DistributorsPage() {
   const [loadingDetails, setLoadingDetails] = useState<{ [key: string]: boolean }>({})
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc') // Default A to Z
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all') // Default show all
+  const [viewMode, setViewMode] = useState<'hierarchical' | 'flat'>('hierarchical') // View mode filter
+  const [entityFilter, setEntityFilter] = useState<'all' | 'distributors' | 'locations' | 'sellers'>('all') // Entity filter
   
   // Edit mode states
   const [editingDistributor, setEditingDistributor] = useState<string | null>(null)
@@ -1220,18 +1222,18 @@ export default function DistributorsPage() {
 
               {/* Filters */}
               <div className="mb-6 bg-white p-4 rounded-lg shadow">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
                     <button 
                       onClick={handleSort}
-                      className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50"
+                      className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50 text-gray-900"
                     >
-                      <span>Distributor Name</span>
+                      <span className="text-gray-900">Distributor Name</span>
                       {sortOrder === 'asc' ? (
-                        <ArrowUp className="h-4 w-4" />
+                        <ArrowUp className="h-4 w-4 text-gray-600" />
                       ) : (
-                        <ArrowDown className="h-4 w-4" />
+                        <ArrowDown className="h-4 w-4 text-gray-600" />
                       )}
                     </button>
                   </div>
@@ -1240,13 +1242,13 @@ export default function DistributorsPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Status Filter</label>
                     <button 
                       onClick={handleStatusFilter}
-                      className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50"
+                      className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50 text-gray-900"
                     >
-                      <span>
+                      <span className="text-gray-900">
                         {statusFilter === 'all' ? 'All Status' : statusFilter === 'active' ? 'Active Only' : 'Inactive Only'}
                       </span>
                       {statusFilter === 'all' ? (
-                        <Filter className="h-4 w-4" />
+                        <Filter className="h-4 w-4 text-gray-600" />
                       ) : statusFilter === 'active' ? (
                         <Eye className="h-4 w-4 text-green-600" />
                       ) : (
@@ -1258,11 +1260,26 @@ export default function DistributorsPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">View Mode</label>
                     <select
-                      value="hierarchical"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
-                      disabled
+                      value={viewMode}
+                      onChange={(e) => setViewMode(e.target.value as 'hierarchical' | 'flat')}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
                     >
                       <option value="hierarchical">Hierarchical View</option>
+                      <option value="flat">Flat View</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Show Only</label>
+                    <select
+                      value={entityFilter}
+                      onChange={(e) => setEntityFilter(e.target.value as 'all' | 'distributors' | 'locations' | 'sellers')}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
+                    >
+                      <option value="all">All Entities</option>
+                      <option value="distributors">Distributors Only</option>
+                      <option value="locations">Locations Only</option>
+                      <option value="sellers">Sellers Only</option>
                     </select>
                   </div>
 
