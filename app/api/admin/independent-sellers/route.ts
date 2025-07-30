@@ -45,21 +45,21 @@ export async function POST(request: NextRequest) {
 
     // Create everything in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create the distributor user (using distributor email or fallback to main email)
-      const distributorUser = await tx.user.create({
+      // 1. Create the main user account with INDEPENDENT_SELLER role
+      const mainUser = await tx.user.create({
         data: {
-          name: contactPerson, // Same person managing everything
-          email: email, // Use separate distributor email if provided
+          name: contactPerson,
+          email: email,
           password: hashedPassword,
-          role: "DISTRIBUTOR", // This user acts as distributor
-          telephone: telephone,
+          role: "INDEPENDENT_SELLER", // Special role for dual dashboard access
+          telephone,
           whatsapp,
-          notes: `Independent seller distributor: ${businessName}`,
+          notes: `Independent seller: ${businessName}`,
           isActive: true
         }
       })
 
-      // 2. Create the distributor (using business name)
+      // 2. Create the distributor (using the main user)
       const distributor = await tx.distributor.create({
         data: {
           name: businessName, // Business name becomes distributor name
@@ -68,26 +68,12 @@ export async function POST(request: NextRequest) {
           telephone: telephone,
           whatsapp,
           notes: `Independent seller: ${contactPerson}`,
-          userId: distributorUser.id,
+          userId: mainUser.id, // Link to the main user
           isActive: true
         }
       })
 
-      // 3. Create the location user (same person, different email if needed)
-      const locationUser = await tx.user.create({
-        data: {
-          name: contactPerson,
-          email: email, // Main email for location
-          password: hashedPassword,
-          role: "LOCATION",
-          telephone,
-          whatsapp,
-          notes: `Location manager for independent seller: ${businessName}`,
-          isActive: true
-        }
-      })
-
-      // 4. Create the location
+      // 3. Create the location (using the main user)
       const locationRecord = await tx.location.create({
         data: {
           name: location || businessName, // Use location/address as location name
@@ -97,33 +83,24 @@ export async function POST(request: NextRequest) {
           whatsapp,
           notes: `Independent seller location: ${businessName}${notes ? '\nAdditional notes: ' + notes : ''}`,
           distributorId: distributor.id,
-          userId: locationUser.id,
+          userId: mainUser.id, // Link to the main user
           isActive: true
         }
       })
 
-      // 5. Create the seller user (same person with INDEPENDENT_SELLER role for dual access)
-      const sellerUser = await tx.user.create({
-        data: {
-          name: contactPerson,
-          email: email, // Same email as location
-          password: hashedPassword,
-          role: "INDEPENDENT_SELLER", // Special role for dual dashboard access
-          telephone,
-          whatsapp,
-          notes: `Independent seller: ${businessName}`,
+      // 4. Update the main user to be linked to the location and distributor
+      await tx.user.update({
+        where: { id: mainUser.id },
+        data: { 
           locationId: locationRecord.id,
-          distributorId: distributor.id,
-          isActive: true
+          distributorId: distributor.id
         }
       })
 
       return {
         distributor,
         location: locationRecord,
-        seller: sellerUser,
-        distributorUser,
-        locationUser
+        user: mainUser
       }
     })
 
@@ -133,7 +110,7 @@ export async function POST(request: NextRequest) {
       data: {
         distributorId: result.distributor.id,
         locationId: result.location.id,
-        sellerId: result.seller.id,
+        sellerId: result.user.id,
         businessName,
         contactPerson,
         email
