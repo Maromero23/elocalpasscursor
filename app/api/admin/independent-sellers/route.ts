@@ -82,12 +82,12 @@ export async function POST(request: NextRequest) {
       // 3. Create a virtual location for this independent seller
       const virtualLocation = await tx.location.create({
         data: {
-          name: businessName,
+          name: location || businessName, // Use location/address as the location name
           contactPerson,
           email,
           telephone,
           whatsapp,
-          notes: `Virtual location for independent seller: ${contactPerson}`,
+          notes: `Independent seller business: ${businessName}${notes ? '\nAdditional notes: ' + notes : ''}`,
           distributorId: independentDistributor.id,
           userId: sellerUser.id, // Link the user as the location manager
           isActive: true
