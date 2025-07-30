@@ -187,11 +187,7 @@ export default function DistributorsPage() {
     telephone: "",
     whatsapp: "",
     notes: "",
-    address: "",
-    // Additional distributor fields
-    distributorEmail: "",
-    distributorPhone: "",
-    distributorNotes: ""
+    address: ""
   })
   
   const [isCreatingLocation, setIsCreatingLocation] = useState(false)
@@ -784,10 +780,7 @@ export default function DistributorsPage() {
           telephone: "",
           whatsapp: "",
           notes: "",
-          address: "",
-          distributorEmail: "",
-          distributorPhone: "",
-          distributorNotes: ""
+          address: ""
         })
         setShowIndependentSellerModal(false)
         
@@ -3413,53 +3406,7 @@ export default function DistributorsPage() {
                       />
                     </div>
 
-                    {/* Additional Distributor Information */}
-                    <div className="border-t pt-4">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                        📊 Distributor Management Information (Optional)
-                      </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Distributor Email
-                          </label>
-                          <input
-                            type="email"
-                            value={independentSellerFormData.distributorEmail}
-                            onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, distributorEmail: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            placeholder="Separate email for distributor role"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Distributor Phone
-                          </label>
-                          <input
-                            type="tel"
-                            value={independentSellerFormData.distributorPhone}
-                            onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, distributorPhone: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            placeholder="Separate phone for distributor"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Distributor Notes
-                        </label>
-                        <textarea
-                          value={independentSellerFormData.distributorNotes}
-                          onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, distributorNotes: e.target.value }))}
-                          rows={2}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                          placeholder="Additional notes for distributor management..."
-                        />
-                      </div>
-                    </div>
+
 
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <div className="flex items-start">
@@ -3513,10 +3460,7 @@ export default function DistributorsPage() {
                         telephone: "",
                         whatsapp: "",
                         notes: "",
-                        address: "",
-                        distributorEmail: "",
-                        distributorPhone: "",
-                        distributorNotes: ""
+                        address: ""
                       })
                     }}
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"

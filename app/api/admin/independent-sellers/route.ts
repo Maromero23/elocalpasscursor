@@ -21,11 +21,7 @@ export async function POST(request: NextRequest) {
       telephone, 
       whatsapp, 
       location,
-      notes,
-      // Additional fields for complete distributor info
-      distributorEmail,
-      distributorPhone,
-      distributorNotes
+      notes
     } = body
 
     // Validate required fields
@@ -43,12 +39,12 @@ export async function POST(request: NextRequest) {
       const distributorUser = await tx.user.create({
         data: {
           name: contactPerson, // Same person managing everything
-          email: distributorEmail || email, // Use separate distributor email if provided
+          email: email, // Use separate distributor email if provided
           password: hashedPassword,
           role: "DISTRIBUTOR", // This user acts as distributor
-          telephone: distributorPhone || telephone,
+          telephone: telephone,
           whatsapp,
-          notes: distributorNotes || `Independent seller distributor: ${businessName}`,
+          notes: `Independent seller distributor: ${businessName}`,
           isActive: true
         }
       })
@@ -58,10 +54,10 @@ export async function POST(request: NextRequest) {
         data: {
           name: businessName, // Business name becomes distributor name
           contactPerson,
-          email: distributorEmail || email,
-          telephone: distributorPhone || telephone,
+          email: email,
+          telephone: telephone,
           whatsapp,
-          notes: distributorNotes || `Independent seller: ${contactPerson}`,
+          notes: `Independent seller: ${contactPerson}`,
           userId: distributorUser.id,
           isActive: true
         }
