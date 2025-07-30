@@ -148,9 +148,10 @@ export default function DistributorsPage() {
     })
   const [isUpdating, setIsUpdating] = useState(false)
 
-  // Modal states for adding locations and sellers
+  // Modal states for adding locations, sellers, and independent sellers
   const [showLocationModal, setShowLocationModal] = useState(false)
   const [showSellerModal, setShowSellerModal] = useState(false)
+  const [showIndependentSellerModal, setShowIndependentSellerModal] = useState(false)
   const [selectedDistributorId, setSelectedDistributorId] = useState<string | null>(null)
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   
@@ -174,9 +175,22 @@ export default function DistributorsPage() {
     whatsapp: "",
     notes: ""
   })
+
+  // Independent seller form data
+  const [independentSellerFormData, setIndependentSellerFormData] = useState({
+    businessName: "",
+    contactPerson: "",
+    email: "",
+    password: "",
+    telephone: "",
+    whatsapp: "",
+    notes: "",
+    address: ""
+  })
   
   const [isCreatingLocation, setIsCreatingLocation] = useState(false)
   const [isCreatingSeller, setIsCreatingSeller] = useState(false)
+  const [isCreatingIndependentSeller, setIsCreatingIndependentSeller] = useState(false)
 
   // QR Configuration pairing states
   const [showQRPairingModal, setShowQRPairingModal] = useState(false)
@@ -700,6 +714,52 @@ export default function DistributorsPage() {
     }
   }
 
+  const handleCreateIndependentSeller = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    setIsCreatingIndependentSeller(true)
+    try {
+      const response = await fetch("/api/admin/independent-sellers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(independentSellerFormData)
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        
+        // Reset form and close modal
+        setIndependentSellerFormData({
+          businessName: "",
+          contactPerson: "",
+          email: "",
+          password: "",
+          telephone: "",
+          whatsapp: "",
+          notes: "",
+          address: ""
+        })
+        setShowIndependentSellerModal(false)
+        
+        // Show success message
+        showSuccess(
+          'Independent Seller Created', 
+          `${independentSellerFormData.businessName} has been successfully created as an independent seller with admin access.`
+        )
+        
+        // Refresh the distributors list to show the new "Independent Sellers" distributor
+        await fetchDistributors()
+      } else {
+        const errorData = await response.json()
+        showError('Creation Failed', errorData.error || "Failed to create independent seller")
+      }
+    } catch (error) {
+      showError('Network Error', "Network error occurred while creating independent seller")
+    } finally {
+      setIsCreatingIndependentSeller(false)
+    }
+  }
+
   // Status toggle handlers
   const toggleDistributorStatus = async (distributorId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -1082,12 +1142,21 @@ export default function DistributorsPage() {
             <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Distributor Management</h2>
-                <Link
-                  href="/admin/distributors/create"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  Add New Distributor
-                </Link>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setShowIndependentSellerModal(true)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center space-x-2"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>Add Independent Seller</span>
+                  </button>
+                  <Link
+                    href="/admin/distributors/create"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    Add New Distributor
+                  </Link>
+                </div>
               </div>
 
               {error && (
@@ -2940,6 +3009,197 @@ export default function DistributorsPage() {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Independent Seller Modal */}
+      {showIndependentSellerModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <form onSubmit={handleCreateIndependentSeller}>
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="flex items-center mb-4">
+                    <User className="w-6 h-6 text-green-600 mr-3" />
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Add Independent Seller</h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Business Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={independentSellerFormData.businessName}
+                        onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, businessName: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
+                        placeholder="e.g., John's Coffee Shop"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Contact Person *
+                      </label>
+                      <input
+                        type="text"
+                        value={independentSellerFormData.contactPerson}
+                        onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
+                        placeholder="Owner/Manager name"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        value={independentSellerFormData.email}
+                        onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
+                        placeholder="Login email address"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Password *
+                      </label>
+                      <input
+                        type="password"
+                        value={independentSellerFormData.password}
+                        onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, password: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required
+                        placeholder="Login password"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Telephone
+                        </label>
+                        <input
+                          type="tel"
+                          value={independentSellerFormData.telephone}
+                          onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, telephone: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                          placeholder="Phone number"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          WhatsApp
+                        </label>
+                        <input
+                          type="tel"
+                          value={independentSellerFormData.whatsapp}
+                          onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                          placeholder="If different from phone"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Business Address
+                      </label>
+                      <input
+                        type="text"
+                        value={independentSellerFormData.address}
+                        onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, address: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Business location address"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Notes
+                      </label>
+                      <textarea
+                        value={independentSellerFormData.notes}
+                        onChange={(e) => setIndependentSellerFormData(prev => ({ ...prev, notes: e.target.value }))}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Additional business information..."
+                      />
+                    </div>
+
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-green-800">
+                            Independent Seller Benefits
+                          </h3>
+                          <div className="mt-2 text-sm text-green-700">
+                            <ul className="list-disc list-inside space-y-1">
+                              <li>Full admin access to analytics and QR management</li>
+                              <li>No distributor or location manager needed</li>
+                              <li>Direct access to all system features</li>
+                              <li>Automatically organized under "Independent Sellers"</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="submit"
+                    disabled={isCreatingIndependentSeller}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isCreatingIndependentSeller ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Creating...
+                      </>
+                    ) : (
+                      'Create Independent Seller'
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowIndependentSellerModal(false)
+                      setIndependentSellerFormData({
+                        businessName: "",
+                        contactPerson: "",
+                        email: "",
+                        password: "",
+                        telephone: "",
+                        whatsapp: "",
+                        notes: "",
+                        address: ""
+                      })
+                    }}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
