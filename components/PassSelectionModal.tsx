@@ -175,22 +175,38 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
 
   // Validate discount code function
   const validateDiscountCode = async (code: string) => {
-    if (!code || code.length !== 5) return false
+    if (!code) return false
     
     try {
       const response = await fetch(`/api/validate-discount-code?code=${code}`)
       if (response.ok) {
         const result = await response.json()
         if (result.valid) {
-          // Store seller info for commission tracking
-          localStorage.setItem('elocalpass-seller-tracking', result.sellerId)
-          console.log(`✅ PASS MODAL: Valid discount code ${code} for seller ${result.sellerId}`)
+          console.log(`✅ PASS MODAL: Valid discount code ${code} (type: ${result.codeType})`)
+          
+          // 🐛 BUG FIX: Handle seller tracking based on code type
+          if (result.codeType === 'seller' && result.sellerId) {
+            // Regular seller discount codes - use seller from validation
+            localStorage.setItem('elocalpass-seller-tracking', result.sellerId)
+            console.log(`🔗 PASS MODAL: Seller tracking from discount code: ${result.sellerId}`)
+          } else if (result.codeType === 'rebuy' || result.codeType === 'seller_default') {
+            // Rebuy/seller default codes - seller should already be in localStorage from URL parameter
+            const existingSeller = localStorage.getItem('elocalpass-seller-tracking')
+            console.log(`🔗 PASS MODAL: Using existing seller tracking for ${result.codeType} code: ${existingSeller}`)
+          }
           
           // Calculate discount amount
-          const discountPercent = result.discountValue || 0
-          const discountAmount = (originalPrice * discountPercent) / 100
+          let discountAmount = 0
+          if (result.discountType === 'percentage') {
+            discountAmount = (originalPrice * result.discountValue) / 100
+          } else if (result.discountType === 'fixed') {
+            discountAmount = result.discountValue
+          }
+          
           setDiscountAmount(discountAmount)
-          setCalculatedPrice(originalPrice - discountAmount)
+          setCalculatedPrice(Math.max(0, originalPrice - discountAmount))
+          
+          console.log(`💰 PASS MODAL: Applied ${result.discountType} discount of ${result.discountValue}${result.discountType === 'percentage' ? '%' : ' USD'} = $${discountAmount.toFixed(2)}`)
           
           return true
         }
