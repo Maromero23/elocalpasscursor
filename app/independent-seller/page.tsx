@@ -16,7 +16,7 @@ export default function IndependentSellerDashboard() {
 
   const handleQRGeneratorClick = () => {
     console.log('QR Generator button clicked - navigating to /seller')
-    router.push('/seller')
+    window.location.href = '/seller'
   }
 
   return (
