@@ -58,6 +58,7 @@ interface WebsiteSale {
   deliveryType: 'immediate' | 'scheduled'
   scheduledFor?: string
   isProcessed?: boolean
+  locationDisplay?: string
   seller: {
     id: string
     name: string
@@ -400,6 +401,9 @@ export default function WebsiteSalesPage() {
                           Seller
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Location
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Status
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -413,13 +417,13 @@ export default function WebsiteSalesPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {loading ? (
                         <tr>
-                          <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                          <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                             Loading sales data...
                           </td>
                         </tr>
                       ) : sales.length === 0 ? (
                         <tr>
-                          <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                          <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                             No sales found
                           </td>
                         </tr>
@@ -442,6 +446,9 @@ export default function WebsiteSalesPage() {
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900">{sale.seller.name}</div>
                               <div className="text-sm text-gray-500">{sale.seller.email}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{sale.locationDisplay || 'Unknown'}</div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

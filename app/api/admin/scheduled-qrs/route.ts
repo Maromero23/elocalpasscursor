@@ -159,13 +159,29 @@ export async function GET(request: NextRequest) {
           const isPayPalQR = qr.configurationId === 'default' || qr.sellerId === 'cmc4ha7l000086a96ef0e06qq'
           
           if (isPayPalQR) {
-            // PayPal QR - show consistent seller information
-            return {
-              id: qr.sellerId,
-              name: 'Online',
-              email: 'direct@elocalpass.com',
-              locationName: 'Online',
-              distributorName: 'Elocalpass'
+            // Determine if this is a direct sale or seller-referred sale
+            const seller = sellerMap.get(qr.sellerId)
+            const isDirectSale = qr.sellerId === 'cmc4ha7l000086a96ef0e06qq' || 
+                                (seller?.email === 'direct@elocalpass.com' && seller?.name === 'Online')
+            
+            if (isDirectSale) {
+              // Direct online sale (no discount code/rebuy link)
+              return {
+                id: qr.sellerId,
+                name: 'Online Sales',
+                email: 'direct@elocalpass.com',
+                locationName: 'Website',
+                distributorName: 'Elocalpass'
+              }
+            } else {
+              // Seller-referred sale (discount code or rebuy link used)
+              return {
+                id: qr.sellerId,
+                name: seller?.name || 'Unknown Seller',
+                email: seller?.email || 'unknown@elocalpass.com',
+                locationName: seller?.location?.name ? `Online via ${seller.location.name}` : 'Online',
+                distributorName: seller?.location?.distributor?.name || 'Elocalpass'
+              }
             }
           } else {
             // Seller dashboard QR - show actual seller information

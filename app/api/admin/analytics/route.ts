@@ -101,25 +101,55 @@ export async function GET(request: NextRequest) {
     })
 
          // Transform data for response
-     const analytics: QRAnalytics[] = filteredQRCodes.map((qr: any) => ({
-       id: qr.id,
-       qrCode: qr.code,
-       customerName: qr.customerName || '',
-       customerEmail: qr.customerEmail || '',
-       guests: qr.guests,
-       days: qr.days,
-       cost: qr.cost,
-       discountAmount: qr.analytics?.discountAmount || 0,
-       sellerName: qr.analytics?.sellerName || qr.seller?.name || '',
-       sellerEmail: qr.analytics?.sellerEmail || qr.seller?.email || '',
-       locationName: qr.analytics?.locationName || qr.seller?.location?.name || '',
-       distributorName: qr.analytics?.distributorName || qr.seller?.location?.distributor?.name || '',
-       deliveryMethod: qr.analytics?.deliveryMethod || 'DIRECT',
-       language: qr.analytics?.language || 'en',
-       createdAt: qr.createdAt,
-       expiresAt: qr.expiresAt,
-       isActive: qr.isActive
-     }))
+     const analytics: QRAnalytics[] = filteredQRCodes.map((qr: any) => {
+       // Determine if this is a direct sale or seller-referred sale
+       const isDirectSale = qr.sellerId === 'cmc4ha7l000086a96ef0e06qq' || 
+                           (qr.seller?.email === 'direct@elocalpass.com' && qr.seller?.name === 'Online')
+       
+       let sellerName, sellerEmail, locationName, distributorName
+       
+       if (isDirectSale) {
+         // Direct online sale (no discount code/rebuy link)
+         sellerName = 'Online Sales'
+         sellerEmail = 'direct@elocalpass.com'
+         locationName = 'Website'
+         distributorName = 'Elocalpass'
+       } else {
+         // Seller-referred sale (discount code or rebuy link used) or regular seller QR
+         sellerName = qr.analytics?.sellerName || qr.seller?.name || 'Unknown Seller'
+         sellerEmail = qr.analytics?.sellerEmail || qr.seller?.email || 'unknown@elocalpass.com'
+         
+         // For seller-referred PayPal sales, show "Online via [Location]"
+         const isPayPalCode = qr.code.startsWith('PASS_')
+         if (isPayPalCode && qr.seller?.location?.name) {
+           locationName = `Online via ${qr.seller.location.name}`
+         } else {
+           locationName = qr.analytics?.locationName || qr.seller?.location?.name || (isPayPalCode ? 'Online' : '')
+         }
+         
+         distributorName = qr.analytics?.distributorName || qr.seller?.location?.distributor?.name || ''
+       }
+       
+       return {
+         id: qr.id,
+         qrCode: qr.code,
+         customerName: qr.customerName || '',
+         customerEmail: qr.customerEmail || '',
+         guests: qr.guests,
+         days: qr.days,
+         cost: qr.cost,
+         discountAmount: qr.analytics?.discountAmount || 0,
+         sellerName,
+         sellerEmail,
+         locationName,
+         distributorName,
+         deliveryMethod: qr.analytics?.deliveryMethod || 'DIRECT',
+         language: qr.analytics?.language || 'en',
+         createdAt: qr.createdAt,
+         expiresAt: qr.expiresAt,
+         isActive: qr.isActive
+       }
+     })
 
     // Calculate summary statistics
     const totalQRCodes = analytics.length

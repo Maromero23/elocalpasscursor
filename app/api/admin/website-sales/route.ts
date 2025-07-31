@@ -188,6 +188,32 @@ export async function GET(request: NextRequest) {
     qrCodes.forEach((qr, index) => {
       try {
         if (delivery === 'all' || delivery === 'immediate') {
+          // Determine if this is a direct sale or seller-referred sale
+          const isDirectSale = qr.sellerId === 'cmc4ha7l000086a96ef0e06qq' || 
+                              (qr.seller?.email === 'direct@elocalpass.com' && qr.seller?.name === 'Online')
+          
+          let sellerInfo, locationInfo
+          
+          if (isDirectSale) {
+            // Direct online sale (no discount code/rebuy link)
+            sellerInfo = {
+              id: 'cmc4ha7l000086a96ef0e06qq',
+              name: 'Online Sales',
+              email: 'direct@elocalpass.com',
+              location: null
+            }
+            locationInfo = 'Website'
+          } else {
+            // Seller-referred sale (discount code or rebuy link used)
+            sellerInfo = {
+              id: qr.seller?.id || qr.sellerId || 'unknown',
+              name: qr.seller?.name || 'Unknown Seller',
+              email: qr.seller?.email || 'unknown@elocalpass.com',
+              location: qr.seller?.location || null
+            }
+            locationInfo = qr.seller?.location?.name ? `Online via ${qr.seller.location.name}` : 'Online'
+          }
+          
           sales.push({
             id: qr.id,
             qrCode: qr.code,
@@ -200,12 +226,8 @@ export async function GET(request: NextRequest) {
             createdAt: qr.createdAt,
             isActive: qr.isActive,
             deliveryType: 'immediate',
-            seller: {
-              id: qr.seller?.id || qr.sellerId || 'unknown',
-              name: qr.seller?.name || 'Online',
-              email: qr.seller?.email || 'direct@elocalpass.com',
-              location: qr.seller?.location || null
-            }
+            seller: sellerInfo,
+            locationDisplay: locationInfo // Add location display for frontend
           })
         }
       } catch (processingError) {
@@ -221,6 +243,33 @@ export async function GET(request: NextRequest) {
       try {
         if (delivery === 'all' || delivery === 'scheduled') {
           const seller = sellerMap.get(scheduled.sellerId)
+          
+          // Determine if this is a direct sale or seller-referred sale
+          const isDirectSale = scheduled.sellerId === 'cmc4ha7l000086a96ef0e06qq' || 
+                              (seller?.email === 'direct@elocalpass.com' && seller?.name === 'Online')
+          
+          let sellerInfo, locationInfo
+          
+          if (isDirectSale) {
+            // Direct online sale (no discount code/rebuy link)
+            sellerInfo = {
+              id: 'cmc4ha7l000086a96ef0e06qq',
+              name: 'Online Sales',
+              email: 'direct@elocalpass.com',
+              location: null
+            }
+            locationInfo = 'Website'
+          } else {
+            // Seller-referred sale (discount code or rebuy link used)
+            sellerInfo = {
+              id: seller?.id || scheduled.sellerId,
+              name: seller?.name || 'Unknown Seller',
+              email: seller?.email || 'unknown@elocalpass.com',
+              location: seller?.location || null
+            }
+            locationInfo = seller?.location?.name ? `Online via ${seller.location.name}` : 'Online'
+          }
+          
           sales.push({
             id: scheduled.id,
             qrCode: scheduled.isProcessed ? scheduled.createdQRCodeId : 'Scheduled',
@@ -235,12 +284,8 @@ export async function GET(request: NextRequest) {
             deliveryType: 'scheduled',
             scheduledFor: scheduled.scheduledFor,
             isProcessed: scheduled.isProcessed,
-            seller: {
-              id: seller?.id || scheduled.sellerId,
-              name: seller?.name || 'Unknown',
-              email: seller?.email || 'Unknown',
-              location: seller?.location
-            }
+            seller: sellerInfo,
+            locationDisplay: locationInfo // Add location display for frontend
           })
         }
       } catch (processingError) {
