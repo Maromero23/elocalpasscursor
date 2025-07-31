@@ -105,6 +105,11 @@ async function createQRCode(orderRecord: any) {
     let sellerEmail = 'direct@elocalpass.com'
     let sellerDetails = null // Declare outside the block
     
+    console.log('🔍 PayPal webhook: Determining seller for order:', orderRecord.id)
+    console.log('🔍 PayPal webhook: orderRecord.sellerId:', orderRecord.sellerId)
+    console.log('🔍 PayPal webhook: orderRecord.sellerId type:', typeof orderRecord.sellerId)
+    console.log('🔍 PayPal webhook: orderRecord.sellerId truthy:', !!orderRecord.sellerId)
+    
     // Check if customer came from a specific seller (rebuy email or discount code)
     if (orderRecord.sellerId) {
       console.log('🔍 PayPal webhook: Customer came from seller:', orderRecord.sellerId)
@@ -121,11 +126,16 @@ async function createQRCode(orderRecord: any) {
         }
       })
       
+      console.log('🔍 PayPal webhook: Seller lookup result:', !!sellerDetails)
+      if (sellerDetails) {
+        console.log('🔍 PayPal webhook: Found seller:', sellerDetails.name, sellerDetails.email)
+      }
+      
       if (sellerDetails) {
         sellerId = sellerDetails.id
         sellerName = sellerDetails.name || 'Unknown Seller'
         sellerEmail = sellerDetails.email || 'unknown@elocalpass.com'
-        console.log('✅ PayPal webhook: Using seller details:', { sellerName, sellerEmail })
+        console.log('✅ PayPal webhook: Using seller details:', { sellerId, sellerName, sellerEmail })
       } else {
         console.log('⚠️ PayPal webhook: Seller not found, using direct purchase')
         // Reset to defaults if seller not found
@@ -135,13 +145,15 @@ async function createQRCode(orderRecord: any) {
         sellerDetails = null
       }
     } else {
-      console.log('📋 PayPal webhook: Direct purchase from passes page')
+      console.log('📋 PayPal webhook: Direct purchase from passes page - no sellerId in order record')
       // Explicitly reset all seller information for direct sales
       sellerId = 'cmc4ha7l000086a96ef0e06qq'
       sellerName = 'Online'
       sellerEmail = 'direct@elocalpass.com'
       sellerDetails = null
     }
+    
+    console.log('🎯 PayPal webhook: Final seller determination:', { sellerId, sellerName, sellerEmail })
     
     // Create QR code record with correct seller ID
     const qrCode = await prisma.qRCode.create({
