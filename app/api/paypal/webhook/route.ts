@@ -42,6 +42,10 @@ export async function POST(request: NextRequest) {
         })
         
         // Create order record
+        console.log('🐛 DEBUG: About to create order record with sellerId:', customData.sellerId)
+        console.log('🐛 DEBUG: customData.sellerId type:', typeof customData.sellerId)
+        console.log('🐛 DEBUG: customData.sellerId truthy:', !!customData.sellerId)
+        
         const orderRecord = await prisma.order.create({
           data: {
             paymentId: paymentData.id,
@@ -62,6 +66,8 @@ export async function POST(request: NextRequest) {
         })
         
         console.log('📝 ORDER CREATED:', orderRecord.id)
+        console.log('🐛 DEBUG: Order record sellerId after creation:', orderRecord.sellerId)
+        console.log('🐛 DEBUG: Order record sellerId type after creation:', typeof orderRecord.sellerId)
         
         // Handle QR code creation based on delivery type
         if (customData.deliveryType === 'now') {
@@ -109,6 +115,7 @@ async function createQRCode(orderRecord: any) {
     console.log('🔍 PayPal webhook: orderRecord.sellerId:', orderRecord.sellerId)
     console.log('🔍 PayPal webhook: orderRecord.sellerId type:', typeof orderRecord.sellerId)
     console.log('🔍 PayPal webhook: orderRecord.sellerId truthy:', !!orderRecord.sellerId)
+    console.log('🔍 PayPal webhook: Full orderRecord:', JSON.stringify(orderRecord, null, 2))
     
     // Check if customer came from a specific seller (rebuy email or discount code)
     if (orderRecord.sellerId) {
@@ -154,6 +161,10 @@ async function createQRCode(orderRecord: any) {
     }
     
     console.log('🎯 PayPal webhook: Final seller determination:', { sellerId, sellerName, sellerEmail })
+    console.log('🐛 CRITICAL DEBUG: About to create QR code with sellerId:', sellerId)
+    console.log('🐛 CRITICAL DEBUG: sellerId type:', typeof sellerId)
+    console.log('🐛 CRITICAL DEBUG: Expected seller ID (rob lets):', 'cmdpozypm0001xxhfcw5snmh2')
+    console.log('🐛 CRITICAL DEBUG: Does sellerId match expected?:', sellerId === 'cmdpozypm0001xxhfcw5snmh2')
     
     // Create QR code record with correct seller ID
     const qrCode = await prisma.qRCode.create({
@@ -172,6 +183,9 @@ async function createQRCode(orderRecord: any) {
     })
     
     console.log('✅ QR CODE CREATED:', qrCode.id, 'for seller:', sellerId)
+    console.log('🐛 CRITICAL DEBUG: QR code actually created with sellerId:', qrCode.sellerId)
+    console.log('🐛 CRITICAL DEBUG: QR code sellerId type:', typeof qrCode.sellerId)
+    console.log('🐛 CRITICAL DEBUG: QR code sellerId matches expected?:', qrCode.sellerId === 'cmdpozypm0001xxhfcw5snmh2')
     
     // Generate magic link token
     const accessToken = crypto.default.randomBytes(32).toString('hex')

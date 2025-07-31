@@ -295,11 +295,13 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
       // Get seller tracking from localStorage if available
       const sellerTracking = localStorage.getItem('elocalpass-seller-tracking')
       
-      // Clear seller tracking if no discount code is being used (direct purchase)
-      if (!discountCode || !discountCode.trim()) {
-        localStorage.removeItem('elocalpass-seller-tracking')
-        console.log('🧹 PASS MODAL: Cleared seller tracking for direct purchase')
-      }
+      // 🐛 BUG FIX: Don't clear seller tracking just because there's no discount code
+      // Customers from rebuy emails might have seller tracking WITHOUT discount codes
+      console.log('🔍 PASS MODAL: Seller tracking status:', {
+        sellerTracking,
+        discountCode: discountCode || 'none',
+        shouldKeepSeller: !!sellerTracking
+      })
       
       console.log('💳 PAYMENT SUBMIT:', {
         calculatedPrice,
@@ -311,7 +313,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         customerEmail,
         customerName,
         discountCode,
-        sellerTracking: discountCode ? sellerTracking : 'CLEARED'
+        sellerTracking: sellerTracking || 'none'
       })
 
       // Create the pass order
@@ -326,7 +328,7 @@ export default function PassSelectionModal({ passType, isOpen, onClose }: PassSe
         originalPrice,
         discountAmount,
         calculatedPrice,
-        sellerId: discountCode ? sellerTracking : null, // Only use seller tracking if discount code is provided
+        sellerId: sellerTracking || null, // 🐛 BUG FIX: Use seller tracking even without discount code (rebuy emails)
         customerEmail: customerEmail, // Use form email
         customerName: customerName // Use form name
       }
