@@ -99,41 +99,7 @@ async function createQRCode(orderRecord: any) {
     const qrCodeId = `PASS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const expiresAt = new Date(Date.now() + (orderRecord.days * 24 * 60 * 60 * 1000))
     
-    // Create QR code record
-    const qrCode = await prisma.qRCode.create({
-      data: {
-        code: qrCodeId,
-        sellerId: 'cmc4ha7l000086a96ef0e06qq', // Use existing seller for PayPal orders
-        customerName: orderRecord.customerName,
-        customerEmail: orderRecord.customerEmail,
-        guests: orderRecord.guests,
-        days: orderRecord.days,
-        cost: orderRecord.amount,
-        expiresAt: expiresAt,
-        isActive: true,
-        landingUrl: null
-      }
-    })
-    
-    console.log('✅ QR CODE CREATED:', qrCode.id)
-    
-    // Generate magic link token
-    const accessToken = crypto.default.randomBytes(32).toString('hex')
-    const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
-    
-    await prisma.customerAccessToken.create({
-      data: {
-        token: accessToken,
-        qrCodeId: qrCode.id,
-        customerEmail: orderRecord.customerEmail,
-        customerName: orderRecord.customerName,
-        expiresAt: tokenExpiresAt
-      }
-    })
-
-    const magicLinkUrl = `${process.env.NEXTAUTH_URL}/customer/access?token=${accessToken}`
-    
-    // Determine seller information for PayPal orders
+    // Determine seller information for PayPal orders BEFORE creating QR code
     let sellerId = 'cmc4ha7l000086a96ef0e06qq' // Default system seller ID
     let sellerName = 'Online'
     let sellerEmail = 'direct@elocalpass.com'
@@ -176,6 +142,40 @@ async function createQRCode(orderRecord: any) {
       sellerEmail = 'direct@elocalpass.com'
       sellerDetails = null
     }
+    
+    // Create QR code record with correct seller ID
+    const qrCode = await prisma.qRCode.create({
+      data: {
+        code: qrCodeId,
+        sellerId: sellerId, // Use determined seller ID (not hardcoded)
+        customerName: orderRecord.customerName,
+        customerEmail: orderRecord.customerEmail,
+        guests: orderRecord.guests,
+        days: orderRecord.days,
+        cost: orderRecord.amount,
+        expiresAt: expiresAt,
+        isActive: true,
+        landingUrl: null
+      }
+    })
+    
+    console.log('✅ QR CODE CREATED:', qrCode.id, 'for seller:', sellerId)
+    
+    // Generate magic link token
+    const accessToken = crypto.default.randomBytes(32).toString('hex')
+    const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    
+    await prisma.customerAccessToken.create({
+      data: {
+        token: accessToken,
+        qrCodeId: qrCode.id,
+        customerEmail: orderRecord.customerEmail,
+        customerName: orderRecord.customerName,
+        expiresAt: tokenExpiresAt
+      }
+    })
+
+    const magicLinkUrl = `${process.env.NEXTAUTH_URL}/customer/access?token=${accessToken}`
     
     // Create analytics record with proper seller information and Cancun timezone
     const now = new Date()
@@ -252,7 +252,7 @@ async function createQRCode(orderRecord: any) {
     const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
       where: { 
         name: {
-          contains: 'Paypal welcome email template'
+          contains: 'Paypal welcome email template (DO NOT ERASE)'
         }
       },
       orderBy: { createdAt: 'desc' } // Always get the latest copy
