@@ -38,6 +38,14 @@ export const authOptions: NextAuthOptions = {
 
           console.log('✅ AUTH DEBUG: User found:', user.email, 'Role:', user.role)
 
+          // Check if user is active
+          if (!user.isActive) {
+            console.log('❌ AUTH DEBUG: User is inactive, blocking login')
+            return null
+          }
+
+          console.log('✅ AUTH DEBUG: User is active, proceeding with password check')
+
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             user.password
