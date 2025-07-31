@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { ProtectedRoute } from '../../../components/auth/protected-route'
 import Link from 'next/link'
@@ -20,7 +20,11 @@ import {
   XCircleIcon,
   FilterIcon,
   SearchIcon,
-  DownloadIcon
+  DownloadIcon,
+  ArrowUp,
+  ArrowDown,
+  Filter,
+  EyeOff
 } from 'lucide-react'
 
 const getNavItems = (userRole: string) => {
@@ -96,12 +100,38 @@ export default function WebsiteSalesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [sellers, setSellers] = useState<Array<{id: string, name: string}>>([])
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+
+  // Scroll synchronization refs (same as distributors page)
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const tableScrollRef = useRef<HTMLDivElement>(null)
+  const fixedScrollRef = useRef<HTMLDivElement>(null)
+
+  // Scroll synchronization functions (same as distributors page)
+  const syncScrollFromTop = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollLeft = e.currentTarget.scrollLeft
+    if (tableScrollRef.current) tableScrollRef.current.scrollLeft = scrollLeft
+    if (fixedScrollRef.current) fixedScrollRef.current.scrollLeft = scrollLeft
+  }
+
+  const syncScrollFromTable = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollLeft = e.currentTarget.scrollLeft
+    if (topScrollRef.current) topScrollRef.current.scrollLeft = scrollLeft
+    if (fixedScrollRef.current) fixedScrollRef.current.scrollLeft = scrollLeft
+  }
+
+  const syncScrollFromFixed = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollLeft = e.currentTarget.scrollLeft
+    if (topScrollRef.current) topScrollRef.current.scrollLeft = scrollLeft
+    if (tableScrollRef.current) tableScrollRef.current.scrollLeft = scrollLeft
+  }
 
   const fetchSales = async () => {
+    console.log('🔄 Fetching sales...')
+    setLoading(true)
+    
     try {
-      console.log('🔄 Fetching sales...')
-      setLoading(true)
-      const params = new URLSearchParams({
+      const queryParams = new URLSearchParams({
         page: currentPage.toString(),
         limit: '50',
         search: searchTerm,
@@ -109,47 +139,52 @@ export default function WebsiteSalesPage() {
         seller: sellerFilter,
         delivery: deliveryFilter
       })
-
-      console.log('📡 API URL:', `/api/admin/website-sales?${params}`)
-      const response = await fetch(`/api/admin/website-sales?${params}`)
+      
+      const apiUrl = `/api/admin/website-sales?${queryParams}`
+      console.log('📡 API URL:', apiUrl)
+      
+      const response = await fetch(apiUrl)
       console.log('📊 Response status:', response.status)
       
-      if (response.ok) {
-        const data = await response.json()
-        console.log('✅ API Response:', data)
-        setSales(data.sales)
-        setSummary(data.summary)
-        setTotalPages(data.totalPages)
-      } else {
-        const errorData = await response.json()
-        console.error('❌ API Error:', errorData)
+      const data = await response.json()
+      console.log('✅ API Response:', data)
+      
+      if (data.success) {
+        setSales(data.sales || [])
+        setSummary(data.summary || {
+          totalSales: 0,
+          totalRevenue: 0,
+          immediateDeliveries: 0,
+          scheduledDeliveries: 0,
+          activeQRCodes: 0,
+          expiredQRCodes: 0
+        })
+        setTotalPages(data.totalPages || 1)
+        setSellers(data.sellers || [])
       }
     } catch (error) {
-      console.error('❌ Error fetching sales:', error)
+      console.error('Error fetching sales:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchSellers = async () => {
-    try {
-      const response = await fetch('/api/admin/sellers')
-      if (response.ok) {
-        const data = await response.json()
-        setSellers(data.sellers)
-      }
-    } catch (error) {
-      console.error('Error fetching sellers:', error)
-    }
-  }
-
-  useEffect(() => {
-    fetchSellers()
-  }, [])
-
   useEffect(() => {
     fetchSales()
   }, [currentPage, searchTerm, statusFilter, sellerFilter, deliveryFilter])
+
+  const handleSort = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+  }
+
+  const handleStatusFilter = () => {
+    setStatusFilter(prev => {
+      if (prev === 'all') return 'active'
+      if (prev === 'active') return 'inactive'
+      return 'all'
+    })
+    setCurrentPage(1)
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -168,34 +203,14 @@ export default function WebsiteSalesPage() {
     })
   }
 
-  const getStatusBadge = (sale: WebsiteSale) => {
-    const now = new Date()
-    const expiresAt = new Date(sale.expiresAt)
-    const isExpired = now > expiresAt
-
-    if (!sale.isActive) {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Inactive</span>
-    }
-    if (isExpired) {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Expired</span>
-    }
-    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
-  }
-
-  const getDeliveryTypeBadge = (sale: WebsiteSale) => {
-    if (sale.deliveryType === 'scheduled') {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Scheduled</span>
-    }
-    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Immediate</span>
-  }
-
   const exportSales = async () => {
     try {
-      const response = await fetch('/api/admin/website-sales/export')
+      const response = await fetch('/api/admin/website-sales?export=true')
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
+        a.style.display = 'none'
         a.href = url
         a.download = `website-sales-${new Date().toISOString().split('T')[0]}.csv`
         document.body.appendChild(a)
@@ -211,7 +226,7 @@ export default function WebsiteSalesPage() {
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
       <div className="min-h-screen bg-gray-100">
-        {/* Navigation */}
+        {/* Navigation - Same as distributors page */}
         <nav className="bg-orange-400 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
@@ -234,16 +249,11 @@ export default function WebsiteSalesPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <button
-                  onClick={exportSales}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2"
-                >
-                  <DownloadIcon className="h-4 w-4" />
-                  Export CSV
-                </button>
+                <span className="text-xs text-orange-200">1:50 PM</span>
+                <span className="text-sm text-orange-100">Welcome, {session?.user?.name}</span>
                 <button
                   onClick={() => signOut()}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                 >
                   Sign Out
                 </button>
@@ -252,151 +262,83 @@ export default function WebsiteSalesPage() {
           </div>
         </nav>
 
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">Website Sales</h2>
-              <p className="text-gray-600 mt-2">
-                Track all PayPal purchases from the website with detailed seller information
-              </p>
-            </div>
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <DollarSign className="h-8 w-8 text-blue-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Total Sales
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {summary.totalSales}
-                      </dd>
-                    </dl>
-                  </div>
+        {/* Main Content - Full Width - Same structure as distributors page */}
+        <div className="px-4 sm:px-6 lg:px-8 py-6">
+          <div className="w-full">
+            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 w-full">
+              <div className="mb-8 flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Website Sales</h2>
+                  <p className="text-gray-600">Track all PayPal purchases from the website with detailed seller information</p>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={exportSales}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    <DownloadIcon className="w-4 h-4 mr-2" />
+                    <span>Export CSV</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <DollarSign className="h-8 w-8 text-green-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Total Revenue
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {formatCurrency(summary.totalRevenue)}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <CheckCircleIcon className="h-8 w-8 text-green-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Active QR Codes
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {summary.activeQRCodes}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Clock className="h-8 w-8 text-purple-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Scheduled Deliveries
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {summary.scheduledDeliveries}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Filters */}
-            <div className="bg-white rounded-lg shadow mb-8">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                  <FilterIcon className="h-5 w-5" />
-                  Filters
-                </h3>
-              </div>
-              <div className="px-6 py-4">
+              {/* Filters - Same structure as distributors page */}
+              <div className="mb-6 bg-white p-4 rounded-lg shadow">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-                    <div className="relative">
-                      <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Customer, email, QR code..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                    <button 
+                      onClick={handleSort}
+                      className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50 text-gray-900"
                     >
-                      <option value="all">All Status</option>
-                      <option value="active">Active</option>
-                      <option value="expired">Expired</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
+                      <span className="text-gray-900">Date Created</span>
+                      {sortOrder === 'asc' ? (
+                        <ArrowUp className="h-4 w-4 text-gray-600" />
+                      ) : (
+                        <ArrowDown className="h-4 w-4 text-gray-600" />
+                      )}
+                    </button>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Seller</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status Filter</label>
+                    <button 
+                      onClick={handleStatusFilter}
+                      className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50 text-gray-900"
+                    >
+                      <span className="text-gray-900">
+                        {statusFilter === 'all' ? 'All Status' : statusFilter === 'active' ? 'Active Only' : 'Inactive Only'}
+                      </span>
+                      {statusFilter === 'all' ? (
+                        <Filter className="h-4 w-4 text-gray-600" />
+                      ) : statusFilter === 'active' ? (
+                        <Eye className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-red-600" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Seller Filter</label>
                     <select
                       value={sellerFilter}
-                      onChange={(e) => setSellerFilter(e.target.value)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      onChange={(e) => { setSellerFilter(e.target.value); setCurrentPage(1) }}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
                     >
                       <option value="all">All Sellers</option>
-                      {sellers.map((seller) => (
-                        <option key={seller.id} value={seller.id}>
-                          {seller.name}
-                        </option>
+                      {sellers.map(seller => (
+                        <option key={seller.id} value={seller.id}>{seller.name}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Type</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Type</label>
                     <select
                       value={deliveryFilter}
-                      onChange={(e) => setDeliveryFilter(e.target.value)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      onChange={(e) => { setDeliveryFilter(e.target.value); setCurrentPage(1) }}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
                     >
                       <option value="all">All Types</option>
                       <option value="immediate">Immediate</option>
@@ -405,126 +347,189 @@ export default function WebsiteSalesPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Actions</label>
-                    <button
-                      onClick={() => {
-                        setSearchTerm('')
-                        setStatusFilter('all')
-                        setSellerFilter('all')
-                        setDeliveryFilter('all')
-                      }}
-                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
-                    >
-                      Clear Filters
-                    </button>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input
+                      type="text"
+                      placeholder="Search sales..."
+                      value={searchTerm}
+                      onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1) }}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900"
+                    />
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Sales Table */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Sales Details</h3>
+              {/* Top scroll bar - Same as distributors page */}
+              <div className="mb-4">
+                <div
+                  ref={topScrollRef}
+                  className="overflow-x-auto overflow-y-hidden"
+                  style={{
+                    scrollbarWidth: 'auto',
+                    msOverflowStyle: 'scrollbar',
+                  }}
+                  onScroll={syncScrollFromTop}
+                >
+                  <div style={{ width: '1500px', height: '1px' }} />
+                </div>
               </div>
-              <div className="overflow-x-auto">
-                {loading ? (
-                  <div className="flex justify-center items-center h-32">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                  </div>
-                ) : (
-                  <table className="min-w-full divide-y divide-gray-200">
+
+              {/* Main table container - Same structure as distributors page */}
+              <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                <div
+                  ref={tableScrollRef}
+                  className="overflow-x-auto"
+                  onScroll={syncScrollFromTable}
+                >
+                  <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1500px' }}>
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QR Code</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seller</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          QR Code
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Customer
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Details
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Seller
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Created
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Expires
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {sales.map((sale) => (
-                        <tr key={sale.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{sale.customerName}</div>
-                              <div className="text-sm text-gray-500">{sale.customerEmail}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <code className="text-sm font-mono font-semibold bg-blue-50 text-blue-900 px-3 py-2 rounded border border-blue-200">
-                              {sale.qrCode}
-                            </code>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{formatCurrency(sale.amount)}</div>
-                            <div className="text-sm text-gray-500">
-                              {sale.guests} guests, {sale.days} days
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{sale.seller.name}</div>
-                              <div className="text-sm text-gray-500">{sale.seller.email}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{sale.seller.location?.name || 'N/A'}</div>
-                              <div className="text-sm text-gray-500">
-                                {sale.seller.location?.distributor?.name || 'N/A'}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getDeliveryTypeBadge(sale)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(sale)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(sale.createdAt)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(sale.expiresAt)}
+                      {loading ? (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                            Loading sales data...
                           </td>
                         </tr>
-                      ))}
+                      ) : sales.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                            No sales found
+                          </td>
+                        </tr>
+                      ) : (
+                        sales.map((sale) => (
+                          <tr key={sale.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {sale.qrCode}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{sale.customerName}</div>
+                              <div className="text-sm text-gray-500">{sale.customerEmail}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {formatCurrency(sale.amount)}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {sale.guests} guests, {sale.days} days
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{sale.seller.name}</div>
+                              <div className="text-sm text-gray-500">{sale.seller.email}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                sale.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {sale.isActive ? 'Active' : 'Expired'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {formatDate(sale.createdAt)}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {formatDate(sale.expiresAt)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
-                )}
+                </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
-                    <div className="text-sm text-gray-500">
-                      Page {currentPage} of {totalPages}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                        disabled={currentPage === 1}
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                        disabled={currentPage === totalPages}
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </div>
+                {/* Bottom table scroll bar - Same as distributors page */}
+                <div className="border-t border-gray-200">
+                  <div
+                    className="overflow-x-auto overflow-y-hidden"
+                    style={{
+                      scrollbarWidth: 'auto',
+                      msOverflowStyle: 'scrollbar',
+                    }}
+                    onScroll={syncScrollFromTable}
+                  >
+                    <div style={{ width: '1500px', height: '1px' }} />
                   </div>
-                )}
+                </div>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-6">
+                  <div className="flex space-x-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-2 text-sm font-medium rounded-md ${
+                          currentPage === page
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
+        </div>
+
+        {/* Fixed bottom scroll bar - Same as distributors page */}
+        <div 
+          className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-40"
+          style={{ height: '12px' }}
+        >
+          <div
+            ref={fixedScrollRef}
+            className="w-full h-full overflow-x-auto overflow-y-hidden table-scroll-container"
+            style={{
+              scrollbarWidth: 'auto',
+              msOverflowStyle: 'scrollbar',
+            }}
+            onScroll={syncScrollFromFixed}
+            onWheel={(e) => {
+              if (e.deltaY !== 0) {
+                e.preventDefault()
+                if (fixedScrollRef.current) {
+                  fixedScrollRef.current.scrollLeft += e.deltaY
+                }
+              }
+            }}
+          >
+            <div 
+              style={{ 
+                width: '1500px', // Same width as table
+                height: '1px'
+              }}
+            />
           </div>
         </div>
       </div>
