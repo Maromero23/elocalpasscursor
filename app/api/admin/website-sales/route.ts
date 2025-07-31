@@ -32,22 +32,27 @@ export async function GET(request: NextRequest) {
 
     // Get all QR codes first, then filter in JavaScript (avoiding Prisma issues)
     console.log('📊 Fetching all QR codes...')
-    const allQRCodes = await prisma.qRCode.findMany({
-      include: {
-        seller: {
-          include: {
-            location: {
-              include: {
-                distributor: true
+    let allQRCodes
+    try {
+      allQRCodes = await prisma.qRCode.findMany({
+        include: {
+          seller: {
+            include: {
+              location: {
+                include: {
+                  distributor: true
+                }
               }
             }
           }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-
-    console.log(`📊 Found ${allQRCodes.length} total QR codes`)
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      console.log(`📊 Found ${allQRCodes.length} total QR codes`)
+    } catch (dbError) {
+      console.error('❌ Database error fetching QR codes:', dbError)
+      throw dbError
+    }
 
     // Debug: Log first few QR codes to see what we have
     console.log('🔍 First 5 QR codes for debugging:')
@@ -114,11 +119,16 @@ export async function GET(request: NextRequest) {
 
     // Get all scheduled QR codes
     console.log('📅 Fetching all scheduled QR codes...')
-    const allScheduledQRCodes = await prisma.scheduledQRCode.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
-
-    console.log(`📅 Found ${allScheduledQRCodes.length} total scheduled QR codes`)
+    let allScheduledQRCodes
+    try {
+      allScheduledQRCodes = await prisma.scheduledQRCode.findMany({
+        orderBy: { createdAt: 'desc' }
+      })
+      console.log(`📅 Found ${allScheduledQRCodes.length} total scheduled QR codes`)
+    } catch (dbError) {
+      console.error('❌ Database error fetching scheduled QR codes:', dbError)
+      throw dbError
+    }
 
     // Filter for PayPal scheduled purchases only (clientEmail and clientName)
     let paypalScheduledQRCodes = allScheduledQRCodes.filter(sqr => 
@@ -152,74 +162,95 @@ export async function GET(request: NextRequest) {
 
     // Get seller information for scheduled QRs
     const sellerIds = Array.from(new Set(scheduledQRCodes.map(qr => qr.sellerId)))
-    const sellers = await prisma.user.findMany({
-      where: { id: { in: sellerIds } },
-      include: {
-        location: {
-          include: {
-            distributor: true
+    let sellers = []
+    try {
+      sellers = await prisma.user.findMany({
+        where: { id: { in: sellerIds } },
+        include: {
+          location: {
+            include: {
+              distributor: true
+            }
           }
         }
-      }
-    })
+      })
+    } catch (dbError) {
+      console.error('❌ Database error fetching sellers:', dbError)
+      throw dbError
+    }
     const sellerMap = new Map(sellers.map(seller => [seller.id, seller]))
 
     // Combine and format the data
     const sales: any[] = []
 
+    console.log('🔄 Processing immediate deliveries...')
     // Add immediate deliveries
-    qrCodes.forEach(qr => {
-      if (delivery === 'all' || delivery === 'immediate') {
-        sales.push({
-          id: qr.id,
-          qrCode: qr.code,
-          customerName: qr.customerName,
-          customerEmail: qr.customerEmail,
-          amount: qr.cost,
-          guests: qr.guests,
-          days: qr.days,
-          expiresAt: qr.expiresAt,
-          createdAt: qr.createdAt,
-          isActive: qr.isActive,
-          deliveryType: 'immediate',
-          seller: {
-            id: qr.seller?.id || qr.sellerId || 'unknown',
-            name: qr.seller?.name || 'Online',
-            email: qr.seller?.email || 'direct@elocalpass.com',
-            location: qr.seller?.location || null
-          }
-        })
+    qrCodes.forEach((qr, index) => {
+      try {
+        if (delivery === 'all' || delivery === 'immediate') {
+          sales.push({
+            id: qr.id,
+            qrCode: qr.code,
+            customerName: qr.customerName,
+            customerEmail: qr.customerEmail,
+            amount: qr.cost,
+            guests: qr.guests,
+            days: qr.days,
+            expiresAt: qr.expiresAt,
+            createdAt: qr.createdAt,
+            isActive: qr.isActive,
+            deliveryType: 'immediate',
+            seller: {
+              id: qr.seller?.id || qr.sellerId || 'unknown',
+              name: qr.seller?.name || 'Online',
+              email: qr.seller?.email || 'direct@elocalpass.com',
+              location: qr.seller?.location || null
+            }
+          })
+        }
+      } catch (processingError) {
+        console.error(`❌ Error processing QR code ${index}:`, processingError)
+        console.error('QR code data:', qr)
+        throw processingError
       }
     })
 
+    console.log('🔄 Processing scheduled deliveries...')
     // Add scheduled deliveries
-    scheduledQRCodes.forEach(scheduled => {
-      if (delivery === 'all' || delivery === 'scheduled') {
-        const seller = sellerMap.get(scheduled.sellerId)
-        sales.push({
-          id: scheduled.id,
-          qrCode: scheduled.isProcessed ? scheduled.createdQRCodeId : 'Scheduled',
-          customerName: scheduled.clientName,
-          customerEmail: scheduled.clientEmail,
-          amount: 0, // Scheduled QRs don't have cost yet
-          guests: scheduled.guests,
-          days: scheduled.days,
-          expiresAt: scheduled.scheduledFor, // Will be set when processed
-          createdAt: scheduled.createdAt,
-          isActive: !scheduled.isProcessed,
-          deliveryType: 'scheduled',
-          scheduledFor: scheduled.scheduledFor,
-          isProcessed: scheduled.isProcessed,
-          seller: {
-            id: seller?.id || scheduled.sellerId,
-            name: seller?.name || 'Unknown',
-            email: seller?.email || 'Unknown',
-            location: seller?.location
-          }
-        })
+    scheduledQRCodes.forEach((scheduled, index) => {
+      try {
+        if (delivery === 'all' || delivery === 'scheduled') {
+          const seller = sellerMap.get(scheduled.sellerId)
+          sales.push({
+            id: scheduled.id,
+            qrCode: scheduled.isProcessed ? scheduled.createdQRCodeId : 'Scheduled',
+            customerName: scheduled.clientName,
+            customerEmail: scheduled.clientEmail,
+            amount: 0, // Scheduled QRs don't have cost yet
+            guests: scheduled.guests,
+            days: scheduled.days,
+            expiresAt: scheduled.scheduledFor, // Will be set when processed
+            createdAt: scheduled.createdAt,
+            isActive: !scheduled.isProcessed,
+            deliveryType: 'scheduled',
+            scheduledFor: scheduled.scheduledFor,
+            isProcessed: scheduled.isProcessed,
+            seller: {
+              id: seller?.id || scheduled.sellerId,
+              name: seller?.name || 'Unknown',
+              email: seller?.email || 'Unknown',
+              location: seller?.location
+            }
+          })
+        }
+      } catch (processingError) {
+        console.error(`❌ Error processing scheduled QR code ${index}:`, processingError)
+        console.error('Scheduled QR code data:', scheduled)
+        throw processingError
       }
     })
 
+    console.log('🔄 Sorting sales...')
     // Sort by creation date
     sales.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
@@ -271,6 +302,11 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Error fetching website sales:', error)
+    if (error instanceof Error) {
+      console.error('❌ Error stack:', error.stack)
+      console.error('❌ Error name:', error.name)
+      console.error('❌ Error message:', error.message)
+    }
     return NextResponse.json(
       { error: 'Failed to fetch website sales' },
       { status: 500 }
