@@ -198,6 +198,27 @@ async function createQRCode(orderRecord: any) {
       locationName = 'Online'
     }
     
+    // Determine if rebuy emails should be scheduled based on seller configuration
+    let shouldScheduleRebuyEmail = false
+    
+    if (orderRecord.sellerId && sellerDetails && sellerDetails.savedConfigId) {
+      try {
+        // Get seller's saved configuration to check rebuy email settings
+        const savedConfig = await prisma.savedQRConfiguration.findUnique({
+          where: { id: sellerDetails.savedConfigId },
+          select: { config: true }
+        })
+        
+        if (savedConfig?.config) {
+          const configData = JSON.parse(savedConfig.config)
+          shouldScheduleRebuyEmail = configData.button5SendRebuyEmail === true
+          console.log(`📧 PayPal webhook: Seller rebuy emails ${shouldScheduleRebuyEmail ? 'ENABLED' : 'DISABLED'} for seller ${sellerDetails.name}`)
+        }
+      } catch (error) {
+        console.error('⚠️ PayPal webhook: Error checking seller rebuy email config:', error)
+      }
+    }
+    
     await prisma.qRCodeAnalytics.create({
       data: {
         qrCodeId: qrCode.id,
@@ -237,85 +258,121 @@ async function createQRCode(orderRecord: any) {
         landingUrl: null,
         magicLinkUrl: magicLinkUrl,
         welcomeEmailSent: false,
-        rebuyEmailScheduled: false,
+        rebuyEmailScheduled: shouldScheduleRebuyEmail, // Enable rebuy emails for seller-referred sales
         createdAt: cancunTime, // Use Cancun timezone
         updatedAt: cancunTime
       }
     })
     
-    // Send welcome email using the proper email service with PayPal-specific template
+    // Send welcome email using the proper email service with seller-specific or PayPal template
     const { sendEmail, createWelcomeEmailHtml } = await import('@/lib/email-service')
     
     const customerLanguage = 'en' // Default language for PayPal orders
     
-    // Get the PayPal-specific template (NEWEST one if multiple exist)
-    const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
-      where: { 
-        name: {
-          contains: 'Paypal welcome email template (DO NOT ERASE)'
-        }
-      },
-      orderBy: { createdAt: 'desc' } // Always get the latest copy
-    })
+    let emailHtml: string = ''
+    let emailSubject: string = ''
+    let emailSent: boolean = false
     
-    console.log('📧 PayPal webhook template search result:', {
-      found: !!paypalTemplate,
-      name: paypalTemplate?.name,
-      id: paypalTemplate?.id,
-      createdAt: paypalTemplate?.createdAt,
-      hasCustomHTML: !!paypalTemplate?.customHTML
-    })
-    
-    if (paypalTemplate && paypalTemplate.customHTML) {
-      console.log('📧 Using PayPal-specific branded template')
+    // Check if this is a seller-referred sale and seller has custom templates
+    if (orderRecord.sellerId && sellerDetails && sellerDetails.savedConfigId) {
+      console.log('🎨 PayPal webhook: Seller-referred sale - checking for custom email templates')
       
-      const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
-      
-      // Replace variables in template
-      const emailHtml = paypalTemplate.customHTML
-        .replace(/\{customerName\}/g, orderRecord.customerName)
-        .replace(/\{qrCode\}/g, qrCodeId)
-        .replace(/\{guests\}/g, orderRecord.guests.toString())
-        .replace(/\{days\}/g, orderRecord.days.toString())
-        .replace(/\{expirationDate\}/g, formattedExpirationDate)
-        .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
-        .replace(/\{magicLink\}/g, magicLinkUrl)
-      
-      const emailSubject = paypalTemplate.subject
-        .replace(/\{customerName\}/g, orderRecord.customerName)
-        .replace(/\{qrCode\}/g, qrCodeId)
-      
-      // Send email
-      const emailSent = await sendEmail({
-        to: orderRecord.customerEmail,
-        subject: emailSubject,
-        html: emailHtml
-      })
-      
-      console.log(`📧 PayPal welcome email sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
-      
-      if (emailSent) {
-        await prisma.qRCodeAnalytics.updateMany({
-          where: { qrCodeId: qrCode.id },
-          data: { welcomeEmailSent: true }
+      try {
+        // Get seller's saved configuration with email templates
+        const savedConfig = await prisma.savedQRConfiguration.findUnique({
+          where: { id: sellerDetails.savedConfigId },
+          select: { emailTemplates: true }
         })
-        console.log('📊 Analytics updated - email marked as sent')
+        
+        let emailTemplates = null
+        if (savedConfig?.emailTemplates) {
+          try {
+            emailTemplates = typeof savedConfig.emailTemplates === 'string' 
+              ? JSON.parse(savedConfig.emailTemplates) 
+              : savedConfig.emailTemplates
+          } catch (error) {
+            console.log('⚠️ PayPal webhook: Error parsing seller email templates:', error)
+          }
+        }
+        
+        // Use seller's custom welcome email template if available
+        if (emailTemplates?.welcomeEmail?.customHTML && emailTemplates.welcomeEmail.customHTML !== 'USE_DEFAULT_TEMPLATE') {
+          console.log('📧 PayPal webhook: Using seller\'s custom welcome email template')
+          
+          const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
+          
+          // Use seller's custom template
+          emailHtml = emailTemplates.welcomeEmail.customHTML
+            .replace(/\{customerName\}/g, orderRecord.customerName)
+            .replace(/\{qrCode\}/g, qrCodeId)
+            .replace(/\{guests\}/g, orderRecord.guests.toString())
+            .replace(/\{days\}/g, orderRecord.days.toString())
+            .replace(/\{expirationDate\}/g, formattedExpirationDate)
+            .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
+            .replace(/\{magicLink\}/g, magicLinkUrl)
+          
+          // Use seller's custom subject if available
+          if (emailTemplates.welcomeEmail.subject) {
+            emailSubject = emailTemplates.welcomeEmail.subject
+              .replace(/\{customerName\}/g, orderRecord.customerName)
+              .replace(/\{qrCode\}/g, qrCodeId)
+          } else {
+            emailSubject = `Welcome to ELocalPass - ${orderRecord.customerName}!`
+          }
+          
+          emailSent = await sendEmail({
+            to: orderRecord.customerEmail,
+            subject: emailSubject,
+            html: emailHtml
+          })
+          
+          console.log(`📧 PayPal webhook: Seller custom email sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
+          
+          if (emailSent) {
+            await prisma.qRCodeAnalytics.updateMany({
+              where: { qrCodeId: qrCode.id },
+              data: { welcomeEmailSent: true }
+            })
+            console.log('📊 Analytics updated - seller custom email marked as sent')
+          }
+        } else {
+          console.log('📧 PayPal webhook: Seller has no custom template - falling back to PayPal template')
+        }
+      } catch (error) {
+        console.error('⚠️ PayPal webhook: Error processing seller templates:', error)
+        console.log('📧 PayPal webhook: Falling back to PayPal template due to error')
       }
-    } else {
-      console.log('⚠️ No PayPal template found - falling back to default template')
+    }
+    
+    // If no custom email was sent (direct sale or seller has no custom template), use PayPal template
+    if (!emailSent) {
+      console.log('📧 PayPal webhook: Using PayPal-specific template (direct sale or no custom template)')
       
-      // Fallback to default template
-      const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
-        where: { isDefault: true },
-        orderBy: { createdAt: 'desc' }
+      // Get the PayPal-specific template (NEWEST one if multiple exist)
+      const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
+        where: { 
+          name: {
+            contains: 'Paypal welcome email template (DO NOT ERASE)'
+          }
+        },
+        orderBy: { createdAt: 'desc' } // Always get the latest copy
       })
       
-      if (defaultTemplate && defaultTemplate.customHTML) {
-        console.log('📧 Using default branded template as fallback')
+      console.log('📧 PayPal webhook template search result:', {
+        found: !!paypalTemplate,
+        name: paypalTemplate?.name,
+        id: paypalTemplate?.id,
+        createdAt: paypalTemplate?.createdAt,
+        hasCustomHTML: !!paypalTemplate?.customHTML
+      })
+      
+      if (paypalTemplate && paypalTemplate.customHTML) {
+        console.log('📧 Using PayPal-specific branded template')
         
         const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
         
-        const emailHtml = defaultTemplate.customHTML
+        // Replace variables in template
+        emailHtml = paypalTemplate.customHTML
           .replace(/\{customerName\}/g, orderRecord.customerName)
           .replace(/\{qrCode\}/g, qrCodeId)
           .replace(/\{guests\}/g, orderRecord.guests.toString())
@@ -324,55 +381,98 @@ async function createQRCode(orderRecord: any) {
           .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
           .replace(/\{magicLink\}/g, magicLinkUrl)
         
-        const emailSubject = defaultTemplate.subject
+        emailSubject = paypalTemplate.subject
           .replace(/\{customerName\}/g, orderRecord.customerName)
           .replace(/\{qrCode\}/g, qrCodeId)
         
-        const emailSent = await sendEmail({
+        emailSent = await sendEmail({
           to: orderRecord.customerEmail,
           subject: emailSubject,
           html: emailHtml
         })
         
-        console.log(`📧 PayPal fallback email sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
+        console.log(`📧 PayPal email sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
         
         if (emailSent) {
           await prisma.qRCodeAnalytics.updateMany({
             where: { qrCodeId: qrCode.id },
             data: { welcomeEmailSent: true }
           })
-          console.log('📊 Analytics updated - fallback email marked as sent')
+          console.log('📊 Analytics updated - email marked as sent')
         }
       } else {
-        console.log('⚠️ No default template found - using generic template')
+        console.log('⚠️ No PayPal template found - falling back to default template')
         
-        const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
-        
-        const emailHtml = createWelcomeEmailHtml({
-          customerName: orderRecord.customerName,
-          qrCode: qrCodeId,
-          guests: orderRecord.guests,
-          days: orderRecord.days,
-          expiresAt: formattedExpirationDate,
-          customerPortalUrl: magicLinkUrl,
-          language: customerLanguage,
-          deliveryMethod: 'DIRECT'
+        // Fallback to default template
+        const defaultTemplate = await prisma.welcomeEmailTemplate.findFirst({
+          where: { isDefault: true },
+          orderBy: { createdAt: 'desc' }
         })
         
-        const emailSent = await sendEmail({
-          to: orderRecord.customerEmail,
-          subject: 'Your ELocalPass is Ready - Immediate Access',
-          html: emailHtml
-        })
-        
-        console.log(`📧 PayPal generic email sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
-        
-        if (emailSent) {
-          await prisma.qRCodeAnalytics.updateMany({
-            where: { qrCodeId: qrCode.id },
-            data: { welcomeEmailSent: true }
+        if (defaultTemplate && defaultTemplate.customHTML) {
+          console.log('📧 Using default branded template as fallback')
+          
+          const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
+          
+          const emailHtml = defaultTemplate.customHTML
+            .replace(/\{customerName\}/g, orderRecord.customerName)
+            .replace(/\{qrCode\}/g, qrCodeId)
+            .replace(/\{guests\}/g, orderRecord.guests.toString())
+            .replace(/\{days\}/g, orderRecord.days.toString())
+            .replace(/\{expirationDate\}/g, formattedExpirationDate)
+            .replace(/\{customerPortalUrl\}/g, magicLinkUrl)
+            .replace(/\{magicLink\}/g, magicLinkUrl)
+          
+          const emailSubject = defaultTemplate.subject
+            .replace(/\{customerName\}/g, orderRecord.customerName)
+            .replace(/\{qrCode\}/g, qrCodeId)
+          
+          const emailSent = await sendEmail({
+            to: orderRecord.customerEmail,
+            subject: emailSubject,
+            html: emailHtml
           })
-          console.log('📊 Analytics updated - generic email marked as sent')
+          
+          console.log(`📧 PayPal fallback email sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
+          
+          if (emailSent) {
+            await prisma.qRCodeAnalytics.updateMany({
+              where: { qrCodeId: qrCode.id },
+              data: { welcomeEmailSent: true }
+            })
+            console.log('📊 Analytics updated - fallback email marked as sent')
+          }
+        } else {
+          console.log('⚠️ No default template found - using generic template')
+          
+          const formattedExpirationDate = formatDate(expiresAt, customerLanguage)
+          
+          const emailHtml = createWelcomeEmailHtml({
+            customerName: orderRecord.customerName,
+            qrCode: qrCodeId,
+            guests: orderRecord.guests,
+            days: orderRecord.days,
+            expiresAt: formattedExpirationDate,
+            customerPortalUrl: magicLinkUrl,
+            language: customerLanguage,
+            deliveryMethod: 'DIRECT'
+          })
+          
+          const emailSent = await sendEmail({
+            to: orderRecord.customerEmail,
+            subject: 'Your ELocalPass is Ready - Immediate Access',
+            html: emailHtml
+          })
+          
+          console.log(`📧 PayPal generic email sent: ${emailSent ? '✅ SUCCESS' : '❌ FAILED'}`)
+          
+          if (emailSent) {
+            await prisma.qRCodeAnalytics.updateMany({
+              where: { qrCodeId: qrCode.id },
+              data: { welcomeEmailSent: true }
+            })
+            console.log('📊 Analytics updated - generic email marked as sent')
+          }
         }
       }
     }
