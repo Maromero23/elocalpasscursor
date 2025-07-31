@@ -243,6 +243,10 @@ async function createQRCode(orderRecord: any) {
       } catch (error) {
         console.error('⚠️ PayPal webhook: Error checking seller rebuy email config:', error)
       }
+    } else {
+      // 🐛 CRITICAL FIX: Direct purchases should also get rebuy emails using MASTER PAYPAL DEFAULT REBUY EMAIL template
+      shouldScheduleRebuyEmail = true
+      console.log('📧 PayPal webhook: Direct purchase - enabling rebuy emails with MASTER PAYPAL DEFAULT template')
     }
     
     await prisma.qRCodeAnalytics.create({
