@@ -1498,7 +1498,14 @@ export default function DistributorsPage() {
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap">
                             <div className="flex items-center justify-between w-full">
-                              <div className="text-sm font-medium text-gray-900">{distributor.name}</div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {distributor.name}
+                                {(distributor.user?.role === 'INDEPENDENT_SELLER' || 
+                                  (distributorDetails[distributor.id]?.notes && 
+                                   distributorDetails[distributor.id]?.notes.includes('Independent seller:'))) && 
+                                  <span className="ml-2 text-xs font-semibold text-orange-600 bg-orange-100 px-2 py-1 rounded">(IND)</span>
+                                }
+                              </div>
                               <div className="text-sm text-gray-500">ID: {distributor.id.slice(-8)}</div>
                             </div>
                           </td>
