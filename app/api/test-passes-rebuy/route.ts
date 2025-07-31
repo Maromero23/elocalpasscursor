@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     const paypalRebuyTemplate = await prisma.rebuyEmailTemplate.findFirst({
       where: { 
         OR: [
+          { name: { contains: "MASTER PAYPAL DEFAULT REBUY EMAIL (DO NOT DELETE)", mode: 'insensitive' } },
           { name: { contains: "MASTER PAYPAL DEFAULT REBUY EMAIL", mode: 'insensitive' } },
           { name: { contains: "Paypal Rebuy Email 2", mode: 'insensitive' } },
           { name: { contains: "Paypal Rebuy Email", mode: 'insensitive' } },

@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
           const paypalTemplate = await prisma.welcomeEmailTemplate.findFirst({
             where: { 
               name: {
-                contains: 'Paypal welcome email template'
+                contains: 'Paypal welcome email template (DO NOT ERASE)'
               }
             },
             orderBy: { createdAt: 'desc' } // Get the newest one
