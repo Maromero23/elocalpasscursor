@@ -302,6 +302,11 @@ async function createQRCode(orderRecord: any) {
     // Check if this is a seller-referred sale and seller has custom templates
     if (orderRecord.sellerId && sellerDetails && sellerDetails.savedConfigId) {
       console.log('🎨 PayPal webhook: Seller-referred sale - checking for custom email templates')
+      console.log('🔍 PayPal webhook: Seller details:', {
+        sellerId: sellerDetails.id,
+        sellerName: sellerDetails.name,
+        savedConfigId: sellerDetails.savedConfigId
+      })
       
       try {
         // Get seller's saved configuration with email templates
@@ -310,12 +315,26 @@ async function createQRCode(orderRecord: any) {
           select: { emailTemplates: true }
         })
         
+        console.log('🔍 PayPal webhook: Saved config lookup result:', {
+          found: !!savedConfig,
+          hasEmailTemplates: !!savedConfig?.emailTemplates,
+          emailTemplatesType: typeof savedConfig?.emailTemplates
+        })
+        
         let emailTemplates = null
         if (savedConfig?.emailTemplates) {
           try {
             emailTemplates = typeof savedConfig.emailTemplates === 'string' 
               ? JSON.parse(savedConfig.emailTemplates) 
               : savedConfig.emailTemplates
+            
+            console.log('🔍 PayPal webhook: Parsed email templates:', {
+              hasWelcomeEmail: !!emailTemplates.welcomeEmail,
+              hasRebuyEmail: !!emailTemplates.rebuyEmail,
+              welcomeEmailHasCustomHTML: !!emailTemplates.welcomeEmail?.customHTML,
+              welcomeEmailCustomHTMLLength: emailTemplates.welcomeEmail?.customHTML?.length || 0,
+              welcomeEmailCustomHTMLPreview: (emailTemplates.welcomeEmail?.customHTML || '').substring(0, 100)
+            })
           } catch (error) {
             console.log('⚠️ PayPal webhook: Error parsing seller email templates:', error)
           }
@@ -363,6 +382,13 @@ async function createQRCode(orderRecord: any) {
           }
         } else {
           console.log('📧 PayPal webhook: Seller has no custom template - falling back to PayPal template')
+          console.log('🔍 PayPal webhook: Template check details:', {
+            hasEmailTemplates: !!emailTemplates,
+            hasWelcomeEmail: !!emailTemplates?.welcomeEmail,
+            hasCustomHTML: !!emailTemplates?.welcomeEmail?.customHTML,
+            customHTMLValue: emailTemplates?.welcomeEmail?.customHTML,
+            isUseDefaultTemplate: emailTemplates?.welcomeEmail?.customHTML === 'USE_DEFAULT_TEMPLATE'
+          })
         }
       } catch (error) {
         console.error('⚠️ PayPal webhook: Error processing seller templates:', error)
