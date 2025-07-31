@@ -160,10 +160,10 @@ export async function GET(request: NextRequest) {
           isActive: qr.isActive,
           deliveryType: 'immediate',
           seller: {
-            id: qr.seller.id,
-            name: qr.seller.name,
-            email: qr.seller.email,
-            location: qr.seller.location
+            id: qr.seller?.id || qr.sellerId || 'unknown',
+            name: qr.seller?.name || 'Online',
+            email: qr.seller?.email || 'direct@elocalpass.com',
+            location: qr.seller?.location || null
           }
         })
       }
