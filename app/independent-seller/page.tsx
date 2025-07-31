@@ -13,7 +13,7 @@ export default function IndependentSellerDashboard() {
   const { data: session } = useSession()
 
   return (
-    <ProtectedRoute allowedRoles={["INDEPENDENT_SELLER"]}>
+    <ProtectedRoute allowedRoles={["INDEPENDENT_SELLER" as any]}>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         {/* Navigation Header */}
         <nav className="bg-white shadow-sm border-b">
@@ -130,7 +130,7 @@ export default function IndependentSellerDashboard() {
                   </div>
                   
                   <div className="inline-flex items-center px-6 py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors">
-                    Generate QRs
+                    Generate ElocalPass
                     <ArrowRight className="h-5 w-5 ml-2" />
                   </div>
                 </div>
