@@ -942,12 +942,102 @@ function RebuyEmailConfigPageContent() {
 </html>`
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
     
-    // Generate the actual HTML template from the rebuy configuration
-    const customHTML = generateCustomRebuyEmailHtml(rebuyConfig)
+    try {
+      // CRITICAL FIX: Generate HTML with CURRENT colors every time we save
+      const customHTML = generateCustomRebuyEmailHtml(rebuyConfig)
+      
+      if (!customHTML) {
+        toast.error('Cannot Save Configuration', 'Rebuy email is disabled or HTML generation failed')
+        setIsSubmitting(false)
+        return
+      }
+
+      // Create the configuration object to save
+      const rebuyEmailConfig = {
+        id: qrId || Date.now().toString(),
+        rebuyConfig: rebuyConfig,
+        generatedHTML: customHTML,
+        createdAt: new Date()
+      }
+
+      if (qrId) {
+        // If we have a qrId, save to database
+        try {
+          console.log('✅ REBUY SAVE DEBUG: Saving to database for qrId:', qrId)
+          
+          // Load existing config first
+          const response = await fetch(`/api/admin/qr-config/${qrId}`)
+          if (response.ok) {
+            const existingConfig = await response.json()
+            
+            // Update the rebuy email configuration
+            const updatedConfig = {
+              ...existingConfig,
+              button5SendRebuyEmail: true,
+              button5RebuyEmailConfig: rebuyEmailConfig
+            }
+            
+            const updateResponse = await fetch(`/api/admin/qr-config/${qrId}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify(updatedConfig)
+            })
+            
+            if (updateResponse.ok) {
+              console.log('✅ REBUY SAVE DEBUG: Successfully saved to database')
+              setGeneratedConfig(rebuyEmailConfig.id)
+              
+              toast.success('Rebuy Email Template Saved', `Rebuy email template saved to database successfully! Returning to QR Config...`)
+              
+              // Redirect back to QR config after 2 seconds
+              setTimeout(() => {
+                router.push(`/admin/qr-config?expand=${qrId}`)
+              }, 2000)
+              
+              return // Successfully saved to database
+            } else {
+              const errorText = await updateResponse.text()
+              console.error('❌ REBUY SAVE DEBUG: Failed to update config in database. Status:', updateResponse.status, 'Error:', errorText)
+              throw new Error(`Database update failed: ${updateResponse.status} - ${errorText}`)
+            }
+          } else {
+            console.error('❌ REBUY SAVE DEBUG: Failed to load existing config from database. Status:', response.status)
+            throw new Error(`Failed to load existing config: ${response.status}`)
+          }
+        } catch (error) {
+          console.error('❌ REBUY SAVE DEBUG: Error saving to database:', error)
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+          toast.error('Database Save Failed', `Failed to save rebuy email to database: ${errorMessage}`)
+          setIsSubmitting(false)
+          return // Stop here - don't fall back to localStorage
+        }
+      } else {
+        // No qrId provided - save as standalone template to localStorage for later use
+        console.log('✅ REBUY SAVE DEBUG: No qrId provided, saving as standalone template')
+        localStorage.setItem('elocalpass-rebuy-email-config', JSON.stringify(rebuyEmailConfig))
+        
+        setGeneratedConfig(rebuyEmailConfig.id)
+        toast.success('Rebuy Email Template Saved', `Rebuy Email Template saved successfully! This template will be used for new QR configurations.`)
+        
+        // Redirect back to QR config after 2 seconds
+        setTimeout(() => {
+          router.push('/admin/qr-config')
+        }, 2000)
+      }
+      
+    } catch (error) {
+      console.error('Error creating rebuy email configuration:', error)
+      toast.error('Error Creating Rebuy Email Configuration', 'Error creating rebuy email configuration')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
