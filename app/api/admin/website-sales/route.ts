@@ -49,6 +49,19 @@ export async function GET(request: NextRequest) {
 
     console.log(`📊 Found ${allQRCodes.length} total QR codes`)
 
+    // Debug: Log first few QR codes to see what we have
+    console.log('🔍 First 5 QR codes for debugging:')
+    allQRCodes.slice(0, 5).forEach((qr, index) => {
+      console.log(`${index + 1}. ${qr.code}`)
+      console.log(`   customerEmail: ${qr.customerEmail || 'NULL'}`)
+      console.log(`   customerName: ${qr.customerName || 'NULL'}`)
+      console.log(`   cost: ${qr.cost}`)
+      console.log(`   sellerId: ${qr.sellerId || 'NULL'}`)
+      console.log(`   seller exists: ${!!qr.seller}`)
+      console.log(`   passes filter: ${!!(qr.customerEmail && qr.customerName && qr.cost > 0 && qr.code.startsWith('PASS_'))}`)
+      console.log('')
+    })
+
     // Filter for PayPal purchases only (customerEmail, customerName, cost > 0, and PASS_ prefix)
     let paypalQRCodes = allQRCodes.filter(qr => 
       qr.customerEmail && 
@@ -58,6 +71,16 @@ export async function GET(request: NextRequest) {
     )
 
     console.log(`💰 Found ${paypalQRCodes.length} PayPal-purchased QR codes`)
+
+    // Debug: Log the PayPal QR codes that passed the filter
+    if (paypalQRCodes.length > 0) {
+      console.log('✅ PayPal QR codes that passed filter:')
+      paypalQRCodes.forEach((qr, index) => {
+        console.log(`${index + 1}. ${qr.code} - ${qr.customerName} ($${qr.cost})`)
+      })
+    } else {
+      console.log('❌ No PayPal QR codes passed the initial filter!')
+    }
 
     // Apply additional filters
     if (search) {
@@ -226,14 +249,24 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(totalItems / limit)
 
     const response = {
+      success: true,
       sales,
       summary,
       totalPages,
       currentPage: page,
-      totalItems
+      totalItems,
+      sellers: [] // Add empty sellers array for compatibility
     }
 
     console.log('✅ Returning response with', sales.length, 'sales')
+    console.log('📊 Response summary:', summary)
+    console.log('📄 Response structure:', {
+      success: response.success,
+      salesCount: sales.length,
+      totalPages: response.totalPages,
+      currentPage: response.currentPage,
+      totalItems: response.totalItems
+    })
     return NextResponse.json(response)
 
   } catch (error) {
