@@ -245,7 +245,7 @@ export default function SellerDashboard() {
 
   if (loading) {
     return (
-      <ProtectedRoute allowedRoles={["SELLER"]}>
+      <ProtectedRoute allowedRoles={["SELLER", "INDEPENDENT_SELLER"]}>
         <div className="min-h-screen bg-gray-100 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
@@ -258,7 +258,7 @@ export default function SellerDashboard() {
   }
 
   return (
-    <ProtectedRoute allowedRoles={["SELLER"]}>
+    <ProtectedRoute allowedRoles={["SELLER", "INDEPENDENT_SELLER"]}>
       <div className="min-h-screen bg-gray-100">
         {/* Navigation */}
         <nav className="bg-orange-400 shadow-sm">

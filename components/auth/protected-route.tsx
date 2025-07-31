@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
-type UserRole = "ADMIN" | "SELLER"
+type UserRole = "ADMIN" | "SELLER" | "INDEPENDENT_SELLER"
 
 interface ProtectedRouteProps {
   children: React.ReactNode
