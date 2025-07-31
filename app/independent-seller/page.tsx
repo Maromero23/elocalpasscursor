@@ -106,44 +106,46 @@ export default function IndependentSellerDashboard() {
             </Link>
 
             {/* QR Generator Dashboard Option */}
-            <div 
-              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-8 cursor-pointer border-2 border-transparent hover:border-orange-200"
-              onClick={handleQRGeneratorClick}
-            >
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-6">
-                  <QrCode className="h-8 w-8 text-orange-600" />
-                </div>
-                
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  🎯 QR Generator
-                </h3>
-                
-                <div className="space-y-3 text-left mb-6">
-                  <div className="flex items-center text-gray-600">
-                    <QrCode className="h-5 w-5 text-orange-500 mr-3" />
-                    <span>Create QR Codes</span>
+            <Link href="/seller" className="block">
+              <div 
+                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-8 cursor-pointer border-2 border-transparent hover:border-orange-200"
+                onClick={handleQRGeneratorClick}
+              >
+                <div className="text-center">
+                  <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-6">
+                    <QrCode className="h-8 w-8 text-orange-600" />
                   </div>
-                  <div className="flex items-center text-gray-600">
-                    <Users className="h-5 w-5 text-green-500 mr-3" />
-                    <span>Send to Customers</span>
+                  
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                    🎯 QR Generator
+                  </h3>
+                  
+                  <div className="space-y-3 text-left mb-6">
+                    <div className="flex items-center text-gray-600">
+                      <QrCode className="h-5 w-5 text-orange-500 mr-3" />
+                      <span>Create QR Codes</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <Users className="h-5 w-5 text-green-500 mr-3" />
+                      <span>Send to Customers</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <Building2 className="h-5 w-5 text-blue-500 mr-3" />
+                      <span>Manage Orders</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <TrendingUp className="h-5 w-5 text-purple-500 mr-3" />
+                      <span>Track Sales</span>
+                    </div>
                   </div>
-                  <div className="flex items-center text-gray-600">
-                    <Building2 className="h-5 w-5 text-blue-500 mr-3" />
-                    <span>Manage Orders</span>
+                  
+                  <div className="inline-flex items-center px-6 py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors">
+                    Generate ElocalPass
+                    <ArrowRight className="h-5 w-5 ml-2" />
                   </div>
-                  <div className="flex items-center text-gray-600">
-                    <TrendingUp className="h-5 w-5 text-purple-500 mr-3" />
-                    <span>Track Sales</span>
-                  </div>
-                </div>
-                
-                <div className="inline-flex items-center px-6 py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors">
-                  Generate ElocalPass
-                  <ArrowRight className="h-5 w-5 ml-2" />
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Help Section */}
