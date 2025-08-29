@@ -146,7 +146,7 @@ export default function Navigation() {
           {/* Right side actions */}
           <div className="hidden sm:flex space-x-4 items-center">
             <Link 
-              href="/login"
+              href="/auth/login"
               className="relative flex bg-oranges-200 cursor-pointer hover:bg-oranges-500 border-2 border-orange-400 text-white px-4 py-1 rounded-md text-sm mx-2"
             >
               {t.navigation.login}
@@ -231,7 +231,7 @@ export default function Navigation() {
               {t.navigation.contact}
             </Link>
             <Link 
-              href="/login"
+              href="/auth/login"
               className="block px-3 py-2 text-base font-medium bg-oranges-200 text-white rounded-md"
             >
               {t.navigation.login}
