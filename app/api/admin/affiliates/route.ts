@@ -398,7 +398,7 @@ async function handleCSVImport(csvData: string) {
 
       const affiliateData = {
         affiliateNum: cleanTextField(values[0], 50),
-        isActive: values[1]?.toLowerCase() === 'true' || values[1] === '1',
+        isActive: !values[1] || values[1].trim() === '' || values[1]?.toLowerCase() !== 'inactive',
         name: cleanTextField(values[2], 200) || `Unnamed-${i}`, // Ensure every affiliate has a name
         firstName: cleanTextField(values[3], 100),
         lastName: cleanTextField(values[4], 100),
