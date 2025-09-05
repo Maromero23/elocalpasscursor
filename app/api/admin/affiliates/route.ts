@@ -64,11 +64,10 @@ export async function GET(request: NextRequest) {
     let needsCustomSorting = false
     
     if (sortField && sortField !== '') {
-      // Special handling for affiliateNum - it needs numerical sorting
+      // Use database sorting for all fields (including affiliate numbers via affiliateNumInt)
       if (sortField === 'affiliateNum') {
-        // We'll sort this manually after fetching the data
-        needsCustomSorting = true
-        // Don't add to orderBy - we'll handle this in JavaScript
+        // Sort by the integer version for proper numerical ordering
+        orderBy = [{ affiliateNumInt: sortDirection as any }]
       } else {
         // Standard field sorting
         orderBy = [{ [sortField]: sortDirection as any }]
@@ -85,42 +84,13 @@ export async function GET(request: NextRequest) {
     // Get affiliates with pagination
     let affiliates
     
-    if (needsCustomSorting && sortField === 'affiliateNum') {
-      // For affiliate number sorting, we need to fetch all data first, sort it, then paginate
-      // This is necessary because affiliateNum is stored as string but needs numerical sorting
-      const allAffiliates = await (prisma as any).affiliate.findMany({
-        where: whereClause,
-        // Don't add orderBy here, we'll sort manually
-      })
-      
-      // Sort numerically
-      allAffiliates.sort((a: any, b: any) => {
-        const aNum = a.affiliateNum ? parseInt(a.affiliateNum) : 0
-        const bNum = b.affiliateNum ? parseInt(b.affiliateNum) : 0
-        
-        // Handle null/invalid numbers by putting them at the end
-        if (isNaN(aNum) && isNaN(bNum)) return 0
-        if (isNaN(aNum)) return 1
-        if (isNaN(bNum)) return -1
-        
-        if (sortDirection === 'asc') {
-          return aNum - bNum
-        } else {
-          return bNum - aNum
-        }
-      })
-      
-      // Apply pagination after sorting
-      affiliates = allAffiliates.slice(offset, offset + limit)
-    } else {
-      // Normal database sorting for other fields
-      affiliates = await (prisma as any).affiliate.findMany({
-        where: whereClause,
-        orderBy: orderBy,
-        skip: offset,
-        take: limit
-      })
-    }
+    // Use database sorting for ALL fields (including affiliate numbers after DB fix)
+    affiliates = await (prisma as any).affiliate.findMany({
+      where: whereClause,
+      orderBy: orderBy,
+      skip: offset,
+      take: limit
+    })
 
     // Get total count
     const totalCount = await (prisma as any).affiliate.count({
@@ -398,7 +368,7 @@ async function handleCSVImport(csvData: string) {
 
       const affiliateData = {
         affiliateNum: cleanTextField(values[0], 50),
-        isActive: !values[1] || values[1].trim() === '' || values[1]?.toLowerCase() !== 'inactive',
+        isActive: values[1]?.toLowerCase() === 'true' || values[1] === '1',
         name: cleanTextField(values[2], 200) || `Unnamed-${i}`, // Ensure every affiliate has a name
         firstName: cleanTextField(values[3], 100),
         lastName: cleanTextField(values[4], 100),
