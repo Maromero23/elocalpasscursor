@@ -113,5 +113,7 @@ export async function GET() {
       qrCodesIssued: 0,
       monthlyRevenue: 0
     })
+  } finally {
+    await prisma.$disconnect()
   }
 } 
