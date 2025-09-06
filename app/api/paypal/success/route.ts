@@ -274,6 +274,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ PayPal success POST error:', error)
     return NextResponse.redirect(new URL('/payment-success', request.url))
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
