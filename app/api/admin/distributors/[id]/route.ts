@@ -191,6 +191,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   } catch (error) {
     console.error("Error fetching distributor details:", error)
     return NextResponse.json({ error: "Failed to fetch distributor details" }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
@@ -280,6 +282,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   } catch (error) {
     console.error("Error updating distributor:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
@@ -340,5 +344,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   } catch (error) {
     console.error("Error deleting distributor:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
   }
 }
