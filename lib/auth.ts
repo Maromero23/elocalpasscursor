@@ -68,6 +68,8 @@ export const authOptions: NextAuthOptions = {
         } catch (error) {
           console.error('💥 AUTH DEBUG: Error during authorization:', error)
           return null
+        } finally {
+          await prisma.$disconnect()
         }
       }
     })
