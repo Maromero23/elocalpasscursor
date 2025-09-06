@@ -1699,7 +1699,24 @@ export default function DistributorsPage() {
                         if (statusFilter === 'inactive') return !distributor.isActive
                         return true
                       }).filter(distributor => {
-                        // Apply entity filter - for hierarchical view, always show distributors as containers
+                        // Apply entity filter for hierarchical view
+                        if (entityFilter === 'all') return true
+                        if (entityFilter === 'distributors') return true
+                        
+                        // For locations/sellers only, show distributors that have the requested entities
+                        const details = distributorDetails[distributor.id]
+                        if (!details) return true // Show distributors without details loaded yet
+                        
+                        if (entityFilter === 'locations') {
+                          return details.locations && details.locations.length > 0
+                        }
+                        
+                        if (entityFilter === 'sellers') {
+                          return details.locations && details.locations.some(location => 
+                            location.sellers && location.sellers.length > 0
+                          )
+                        }
+                        
                         return true
                       }).map((distributor, index) => (
                       <React.Fragment key={distributor.id}>
@@ -1963,7 +1980,13 @@ export default function DistributorsPage() {
                                     <div className="flex items-center justify-between mb-3">
                                       <h4 className="text-sm font-semibold text-gray-900 flex items-center">
                                         <Building2 className="w-4 h-4 text-blue-600 mr-2" />
-                                        Locations ({distributorDetails[distributor.id]?._count?.locations || 0})
+                                        Locations ({distributorDetails[distributor.id]?.locations?.filter(location => {
+                                          if (entityFilter === 'all') return true
+                                          if (entityFilter === 'distributors') return false
+                                          if (entityFilter === 'locations') return true
+                                          if (entityFilter === 'sellers') return location.sellers && location.sellers.length > 0
+                                          return true
+                                        }).length || 0})
                                       </h4>
                                       <button
                                         onClick={(e) => {
@@ -1995,7 +2018,14 @@ export default function DistributorsPage() {
                                             </tr>
                                           </thead>
                                           <tbody className="divide-y divide-gray-200">
-                                            {distributorDetails[distributor.id].locations.map((location) => (
+                                            {distributorDetails[distributor.id].locations.filter(location => {
+                                              // Apply entity filter to locations in hierarchical view
+                                              if (entityFilter === 'all') return true
+                                              if (entityFilter === 'distributors') return false // Hide locations when showing distributors only
+                                              if (entityFilter === 'locations') return true
+                                              if (entityFilter === 'sellers') return location.sellers && location.sellers.length > 0 // Show only locations with sellers
+                                              return true
+                                            }).map((location) => (
                                               <React.Fragment key={location.id}>
                                                 <tr 
                                                   className="hover:bg-orange-50 cursor-pointer"
@@ -2021,7 +2051,7 @@ export default function DistributorsPage() {
                                                   <td className="px-4 py-3 whitespace-nowrap">
                                                     <div className="flex items-center space-x-2">
                                                       <span className="text-sm font-medium text-gray-900">
-                                                        {location._count.sellers} seller{location._count.sellers !== 1 ? 's' : ''}
+                                                        {entityFilter === 'all' || entityFilter === 'sellers' ? location._count.sellers : 0} seller{(entityFilter === 'all' || entityFilter === 'sellers' ? location._count.sellers : 0) !== 1 ? 's' : ''}
                                                       </span>
                                                       <button
                                                         onClick={(e) => {
@@ -2207,7 +2237,13 @@ export default function DistributorsPage() {
                                                         <div className="flex items-center justify-between mb-3">
                                                           <h5 className="text-sm font-semibold text-gray-900 flex items-center">
                                                             <Users className="w-4 h-4 text-green-600 mr-2" />
-                                                            Sellers ({location.sellers.length})
+                                                            Sellers ({location.sellers.filter(seller => {
+                                                              if (entityFilter === 'all') return true
+                                                              if (entityFilter === 'distributors') return false
+                                                              if (entityFilter === 'locations') return false
+                                                              if (entityFilter === 'sellers') return true
+                                                              return true
+                                                            }).length})
                                                           </h5>
                                                           <button
                                                             onClick={(e) => {
@@ -2237,7 +2273,14 @@ export default function DistributorsPage() {
                                                                 </tr>
                                                               </thead>
                                                               <tbody className="divide-y divide-gray-200">
-                                                                {location.sellers.map((seller) => (
+                                                                {location.sellers.filter(seller => {
+                                                                  // Apply entity filter to sellers in hierarchical view
+                                                                  if (entityFilter === 'all') return true
+                                                                  if (entityFilter === 'distributors') return false // Hide sellers when showing distributors only
+                                                                  if (entityFilter === 'locations') return false // Hide sellers when showing locations only
+                                                                  if (entityFilter === 'sellers') return true
+                                                                  return true
+                                                                }).map((seller) => (
                                                                   <React.Fragment key={seller.id}>
                                                                     <tr className="hover:bg-green-50">
                                                                       <td className="px-4 py-3 whitespace-nowrap">
