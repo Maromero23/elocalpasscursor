@@ -161,5 +161,7 @@ export async function POST(request: NextRequest) {
       { error: 'Session recovery failed' },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 } 

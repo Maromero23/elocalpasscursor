@@ -78,5 +78,7 @@ export async function POST(request: NextRequest) {
       { error: 'Login failed' },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 } 

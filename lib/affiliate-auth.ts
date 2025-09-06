@@ -68,6 +68,8 @@ export async function validateAffiliateSession(request: NextRequest): Promise<Af
   } catch (error) {
     console.error('❌ AFFILIATE SESSION VALIDATION ERROR:', error)
     return null
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
