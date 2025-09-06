@@ -113,6 +113,7 @@ export default function DistributorsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all') // Default show all
   const [viewMode, setViewMode] = useState<'hierarchical' | 'flat'>('hierarchical') // View mode filter
   const [entityFilter, setEntityFilter] = useState<'all' | 'distributors' | 'locations' | 'sellers'>('all') // Entity filter
+  const [searchQuery, setSearchQuery] = useState('') // Search functionality
   
   // Edit mode states
   const [editingDistributor, setEditingDistributor] = useState<string | null>(null)
@@ -995,13 +996,59 @@ export default function DistributorsPage() {
     }
   }
 
-  const sortedDistributors = [...distributors].sort((a, b) => {
-    if (sortOrder === 'asc') {
-      return a.name.localeCompare(b.name)
-    } else {
-      return b.name.localeCompare(a.name)
+  // Helper function to check if distributor matches search
+  const matchesSearch = (distributor: Distributor, details?: DistributorDetails) => {
+    if (searchQuery === '') return true
+    const query = searchQuery.toLowerCase()
+    
+    // Search in distributor fields
+    const distributorMatch = (
+      distributor.name.toLowerCase().includes(query) ||
+      distributor.contactPerson?.toLowerCase().includes(query) ||
+      distributor.email?.toLowerCase().includes(query) ||
+      distributor.telephone?.toLowerCase().includes(query) ||
+      distributor.notes?.toLowerCase().includes(query)
+    )
+    
+    // If we have details, also search in locations and sellers
+    if (details) {
+      const locationMatch = details.locations.some(location => 
+        location.name.toLowerCase().includes(query) ||
+        location.contactPerson?.toLowerCase().includes(query) ||
+        location.email?.toLowerCase().includes(query) ||
+        location.telephone?.toLowerCase().includes(query) ||
+        location.notes?.toLowerCase().includes(query)
+      )
+      
+      const sellerMatch = details.locations.some(location =>
+        location.sellers.some(seller =>
+          seller.name?.toLowerCase().includes(query) ||
+          seller.email?.toLowerCase().includes(query) ||
+          seller.telephone?.toLowerCase().includes(query) ||
+          seller.notes?.toLowerCase().includes(query) ||
+          seller.discountCode?.toLowerCase().includes(query)
+        )
+      )
+      
+      return distributorMatch || locationMatch || sellerMatch
     }
-  })
+    
+    return distributorMatch
+  }
+
+  const sortedDistributors = [...distributors]
+    .filter(distributor => {
+      // Apply search filter
+      const details = distributorDetails[distributor.id]
+      return matchesSearch(distributor, details)
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'asc') {
+        return a.name.localeCompare(b.name)
+      } else {
+        return b.name.localeCompare(a.name)
+      }
+    })
 
   // QR Configuration pairing functions
   const fetchQRConfigurations = async () => {
@@ -1323,6 +1370,8 @@ export default function DistributorsPage() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input
                       type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search distributors, locations, or sellers..."
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm"
                     />
