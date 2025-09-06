@@ -80,6 +80,8 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching locations:", error)
     return NextResponse.json({ error: "Failed to fetch locations" }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
