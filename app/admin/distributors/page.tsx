@@ -1002,13 +1002,11 @@ export default function DistributorsPage() {
     const query = searchQuery.toLowerCase()
     
     // Search in distributor fields
-    const distributorMatch = (
-      distributor.name.toLowerCase().includes(query) ||
-      distributor.contactPerson?.toLowerCase().includes(query) ||
-      distributor.email?.toLowerCase().includes(query) ||
-      distributor.telephone?.toLowerCase().includes(query) ||
-      distributor.notes?.toLowerCase().includes(query)
-    )
+        const distributorMatch = (
+          distributor.name.toLowerCase().includes(query) ||
+          distributor.user.name.toLowerCase().includes(query) ||
+          distributor.user.email.toLowerCase().includes(query)
+        )
     
     // If we have details, also search in locations and sellers
     if (details) {
@@ -1059,9 +1057,9 @@ export default function DistributorsPage() {
           id: distributor.id,
           type: 'distributor',
           name: distributor.name,
-          contactPerson: distributor.contactPerson || '',
-          email: distributor.email || '',
-          telephone: distributor.telephone || '',
+          contactPerson: details?.contactPerson || distributor.user.name || '',
+          email: details?.email || distributor.user.email || '',
+          telephone: details?.telephone || '',
           isActive: distributor.isActive,
           entityData: distributor
         })
@@ -1726,7 +1724,7 @@ export default function DistributorsPage() {
                                 {distributor.name}
                                 {(distributor.user?.role === 'INDEPENDENT_SELLER' || 
                                   (distributorDetails[distributor.id]?.notes && 
-                                   distributorDetails[distributor.id]?.notes.includes('Independent seller:'))) && 
+                                   distributorDetails[distributor.id]?.notes?.includes('Independent seller:'))) && 
                                   <span className="ml-2 text-xs font-semibold text-orange-600 bg-orange-100 px-2 py-1 rounded">(IND)</span>
                                 }
                               </div>
@@ -2750,7 +2748,8 @@ export default function DistributorsPage() {
                           </tr>
                         )}
                       </React.Fragment>
-                    ))}
+                    ))
+                    )}
                   </tbody>
                 </table>
               </div>
