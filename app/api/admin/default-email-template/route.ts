@@ -136,8 +136,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       error: 'Failed to save default template',
       details: error instanceof Error ? error.message : 'Unknown error'
-    } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    }, { status: 500 })
   }
 } 

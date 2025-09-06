@@ -50,9 +50,7 @@ export async function GET(
   } catch (error) {
     console.error('❌ ADMIN: Error fetching affiliate:', error)
     return NextResponse.json(
-      { error: 'Internal server error' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -120,9 +118,7 @@ export async function PUT(
   } catch (error) {
     console.error('❌ ADMIN: Error updating affiliate:', error)
     return NextResponse.json(
-      { error: 'Internal server error' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -175,9 +171,7 @@ export async function DELETE(
   } catch (error) {
     console.error('❌ ADMIN: Error deleting affiliate:', error)
     return NextResponse.json(
-      { error: 'Internal server error' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

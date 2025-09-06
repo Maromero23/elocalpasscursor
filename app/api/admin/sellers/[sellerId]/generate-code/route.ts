@@ -46,8 +46,6 @@ export async function POST(
     console.error('Error generating preview discount code:', error)
     return NextResponse.json({
       error: 'Failed to generate discount code'
-    } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    }, { status: 500 })
   }
 } 

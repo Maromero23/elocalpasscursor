@@ -101,8 +101,6 @@ export async function PATCH(
 
   } catch (error) {
     console.error("💥 Toggle distributor status error:", error)
-    return NextResponse.json({ error: "Internal server error" } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -255,9 +255,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching distributor analytics:', error)
     return NextResponse.json(
-      { error: 'Internal server error' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

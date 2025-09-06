@@ -73,9 +73,7 @@ export async function DELETE(
     if (error.code === 'P2025') {
       return NextResponse.json({ 
         error: 'No QR configuration found for this seller' 
-      } finally {
-    await prisma.$disconnect()
-  }, { status: 404 })
+      }, { status: 404 })
     }
 
     return NextResponse.json({ 

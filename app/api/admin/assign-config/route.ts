@@ -151,9 +151,7 @@ export async function POST(request: NextRequest) {
     console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

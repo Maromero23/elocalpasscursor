@@ -550,9 +550,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       error: 'Failed to save rebuy template',
       details: error instanceof Error ? error.message : 'Unknown error'
-    } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    }, { status: 500 })
   }
 }
 
@@ -615,9 +613,7 @@ export async function GET(request: NextRequest) {
     console.error('❌ REBUY TEMPLATE API Error:', error)
     return NextResponse.json({ 
       error: 'Failed to load rebuy template(s)' 
-    } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    }, { status: 500 })
   }
 } 
 
@@ -665,9 +661,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error deleting rebuy template:', error)
     return NextResponse.json(
-      { error: 'Failed to delete template' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Failed to delete template' },
       { status: 500 }
     )
   }

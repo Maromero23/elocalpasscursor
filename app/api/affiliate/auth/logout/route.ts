@@ -27,9 +27,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('💥 AFFILIATE LOGOUT ERROR:', error)
     return NextResponse.json(
-      { error: 'Logout failed' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Logout failed' },
       { status: 500 }
     )
   }

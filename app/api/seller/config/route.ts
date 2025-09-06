@@ -242,8 +242,6 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('💥 SELLER CONFIG: Error:', error)
-    return NextResponse.json({ error: 'Internal server error' } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

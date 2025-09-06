@@ -70,9 +70,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching location dashboard:", error)
     return NextResponse.json(
-      { error: "Failed to fetch location data" } finally {
-    await prisma.$disconnect()
-  },
+      { error: "Failed to fetch location data" },
       { status: 500 }
     )
   }

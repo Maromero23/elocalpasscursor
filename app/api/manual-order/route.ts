@@ -146,9 +146,7 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('❌ MANUAL ORDER ERROR:', error)
-    return NextResponse.json({ error: 'Failed to create manual order' } finally {
-    await prisma.$disconnect()
-  }, { 
+    return NextResponse.json({ error: 'Failed to create manual order' }, { 
       status: 500, 
       headers: corsHeaders 
     })

@@ -158,9 +158,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('💥 SESSION RECOVERY ERROR:', error)
     return NextResponse.json(
-      { error: 'Session recovery failed' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Session recovery failed' },
       { status: 500 }
     )
   }

@@ -41,9 +41,7 @@ export async function POST(request: NextRequest) {
         success: false, 
         error: 'Failed to save template to database',
         details: error instanceof Error ? error.message : 'Unknown error'
-      } finally {
-    await prisma.$disconnect()
-  },
+      },
       { status: 500 }
     )
   }
@@ -133,9 +131,7 @@ export async function GET(request: NextRequest) {
         success: false, 
         error: 'Failed to load templates from database',
         details: error instanceof Error ? error.message : 'Unknown error'
-      } finally {
-    await prisma.$disconnect()
-  },
+      },
       { status: 500 }
     )
   }

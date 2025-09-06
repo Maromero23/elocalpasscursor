@@ -56,9 +56,7 @@ export async function GET(
   } catch (error) {
     console.error('[PUBLIC API] Error fetching configuration:', error)
     return NextResponse.json(
-      { error: 'Internal server error' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

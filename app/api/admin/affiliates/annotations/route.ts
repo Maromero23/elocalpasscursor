@@ -50,9 +50,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error loading annotations:', error)
-    return NextResponse.json({ error: 'Failed to load annotations' } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to load annotations' }, { status: 500 })
   }
 }
 
@@ -117,9 +115,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error saving annotation:', error)
-    return NextResponse.json({ error: 'Failed to save annotation' } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to save annotation' }, { status: 500 })
   }
 }
 
@@ -151,8 +147,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting annotation:', error)
-    return NextResponse.json({ error: 'Failed to delete annotation' } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete annotation' }, { status: 500 })
   }
 } 

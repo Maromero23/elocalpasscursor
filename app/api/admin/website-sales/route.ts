@@ -351,9 +351,7 @@ export async function GET(request: NextRequest) {
       console.error('❌ Error stack:', error.stack)
       console.error('❌ Error name:', error.name)
       console.error('❌ Error message:', error.message)
-    } finally {
-    await prisma.$disconnect()
-  }
+    }
     return NextResponse.json(
       { error: 'Failed to fetch website sales' },
       { status: 500 }

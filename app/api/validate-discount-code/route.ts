@@ -114,8 +114,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       valid: false,
       message: 'Server error'
-    } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    }, { status: 500 })
   }
 } 

@@ -279,9 +279,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Customer access error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

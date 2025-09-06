@@ -89,9 +89,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('❌ PAYPAL WEBHOOK ERROR:', error)
-    return NextResponse.json({ error: 'Webhook processing failed' } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
 }
 

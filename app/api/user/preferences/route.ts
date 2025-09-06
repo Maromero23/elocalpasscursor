@@ -26,9 +26,7 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Error loading user preferences:', error)
-    return NextResponse.json({ error: 'Failed to load preferences' } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to load preferences' }, { status: 500 })
   }
 }
 
@@ -68,8 +66,6 @@ export async function PUT(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error updating user preferences:', error)
-    return NextResponse.json({ error: 'Failed to update preferences' } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update preferences' }, { status: 500 })
   }
 } 

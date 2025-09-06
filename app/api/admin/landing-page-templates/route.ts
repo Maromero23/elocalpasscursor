@@ -45,9 +45,7 @@ export async function GET(request: NextRequest) {
         success: false, 
         error: 'Failed to fetch templates',
         details: error instanceof Error ? error.message : 'Unknown error'
-      } finally {
-    await prisma.$disconnect()
-  },
+      },
       { status: 500 }
     )
   }
@@ -225,9 +223,7 @@ export async function POST(request: NextRequest) {
         success: false, 
         error: 'Failed to save template to database',
         details: error instanceof Error ? error.message : 'Unknown error'
-      } finally {
-    await prisma.$disconnect()
-  },
+      },
       { status: 500 }
     )
   }
@@ -286,9 +282,7 @@ export async function DELETE(request: NextRequest) {
         success: false, 
         error: 'Failed to delete template',
         details: error instanceof Error ? error.message : 'Unknown error'
-      } finally {
-    await prisma.$disconnect()
-  },
+      },
       { status: 500 }
     )
   }

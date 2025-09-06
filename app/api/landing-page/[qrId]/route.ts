@@ -105,8 +105,6 @@ export async function GET(
 
   } catch (error) {
     console.error('Error fetching landing page data:', error)
-    return NextResponse.json({ error: 'Internal server error' } finally {
-    await prisma.$disconnect()
-  }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

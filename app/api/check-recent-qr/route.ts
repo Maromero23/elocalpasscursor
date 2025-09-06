@@ -65,9 +65,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error checking recent QR:', error)
     return NextResponse.json(
-      { error: 'Failed to check recent QR', details: error } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Failed to check recent QR', details: error },
       { status: 500 }
     )
   }

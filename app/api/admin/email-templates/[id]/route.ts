@@ -35,9 +35,7 @@ export async function DELETE(
         success: false, 
         error: 'Failed to delete template from database',
         details: error instanceof Error ? error.message : 'Unknown error'
-      } finally {
-    await prisma.$disconnect()
-  },
+      },
       { status: 500 }
     )
   }

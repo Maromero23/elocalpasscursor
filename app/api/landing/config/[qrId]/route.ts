@@ -41,9 +41,7 @@ export async function GET(
       { 
         error: 'Failed to fetch configuration',
         details: error instanceof Error ? error.message : 'Unknown error'
-      } finally {
-    await prisma.$disconnect()
-  },
+      },
       { status: 500 }
     )
   }

@@ -36,9 +36,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       error: 'Database connection failed',
       details: error instanceof Error ? error.message : 'Unknown error'
-    } finally {
-    await prisma.$disconnect()
-  }, { 
+    }, { 
       status: 500, 
       headers: corsHeaders 
     })

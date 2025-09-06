@@ -124,9 +124,7 @@ export async function POST(request: NextRequest) {
     if (error.code === 'P2002') {
       return NextResponse.json({ 
         error: "Email already exists" 
-      } finally {
-    await prisma.$disconnect()
-  }, { status: 400 })
+      }, { status: 400 })
     }
     
     return NextResponse.json({ 

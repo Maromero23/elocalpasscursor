@@ -56,9 +56,7 @@ export async function GET(
   } catch (error) {
     console.error('❌ Error fetching order by payment ID:', error)
     return NextResponse.json(
-      { error: 'Internal server error' } finally {
-    await prisma.$disconnect()
-  },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
