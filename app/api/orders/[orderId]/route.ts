@@ -42,7 +42,9 @@ export async function GET(
   } catch (error) {
     console.error('❌ Error fetching order:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch order' },
+      { error: 'Failed to fetch order' } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

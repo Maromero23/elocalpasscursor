@@ -675,7 +675,9 @@ export async function POST(request: NextRequest) {
       success: false,
       error: 'Rebuy email service failed',
       details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    } finally {
+    await prisma.$disconnect()
+  }, { status: 500 })
   }
 }
 

@@ -42,6 +42,8 @@ export async function GET() {
     return NextResponse.json({ 
       error: "Test failed", 
       details: error.message 
-    }, { status: 500 })
+    } finally {
+    await prisma.$disconnect()
+  }, { status: 500 })
   }
 }

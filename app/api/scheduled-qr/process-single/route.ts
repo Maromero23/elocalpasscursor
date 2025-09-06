@@ -530,7 +530,9 @@ export async function POST(request: NextRequest) {
         }
       } catch (updateError) {
         console.error('❌ Failed to update retry count:', updateError)
-      }
+      } finally {
+    await prisma.$disconnect()
+  }
     }
     
     return NextResponse.json(

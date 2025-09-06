@@ -75,7 +75,9 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('❌ PAYMENT VERIFICATION ERROR:', error)
-    return NextResponse.json({ error: 'Payment verification failed' }, { status: 500 })
+    return NextResponse.json({ error: 'Payment verification failed' } finally {
+    await prisma.$disconnect()
+  }, { status: 500 })
   }
 }
 

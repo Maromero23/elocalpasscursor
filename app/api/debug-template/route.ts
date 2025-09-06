@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error debugging template:', error)
     return NextResponse.json(
-      { error: 'Failed to debug template', details: error },
+      { error: 'Failed to debug template', details: error } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

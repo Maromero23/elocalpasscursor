@@ -82,7 +82,9 @@ export async function PATCH(
   } catch (error) {
     console.error("💥 Toggle location status error:", error)
     return NextResponse.json(
-      { error: "Failed to toggle location status" },
+      { error: "Failed to toggle location status" } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

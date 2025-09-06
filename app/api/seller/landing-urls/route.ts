@@ -44,7 +44,9 @@ export async function GET(request: NextRequest) {
     console.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-    })
+    } finally {
+    await prisma.$disconnect()
+  })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -96,7 +98,9 @@ export async function POST(request: NextRequest) {
     console.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
-    })
+    } finally {
+    await prisma.$disconnect()
+  })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

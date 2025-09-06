@@ -92,7 +92,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ LOCATIONS STATS: Error fetching affiliate statistics:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error' } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

@@ -108,7 +108,9 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     if (error instanceof Error && error.message === 'Authentication required') {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+      return NextResponse.json({ error: 'Authentication required' } finally {
+    await prisma.$disconnect()
+  }, { status: 401 })
     }
     
     console.error('💥 AFFILIATE PROFILE ERROR:', error)

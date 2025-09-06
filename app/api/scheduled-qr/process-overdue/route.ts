@@ -283,7 +283,9 @@ export async function POST(request: NextRequest) {
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error',
         fallbackMode: true
-      },
+      } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

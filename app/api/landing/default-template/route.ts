@@ -42,7 +42,9 @@ export async function GET(request: NextRequest) {
         success: false, 
         error: 'Failed to fetch default template',
         details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

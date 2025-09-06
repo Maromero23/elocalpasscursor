@@ -141,7 +141,9 @@ export async function PUT(
   } catch (error) {
     console.error("Error updating seller:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error" } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }
@@ -192,7 +194,9 @@ export async function DELETE(
   } catch (error) {
     console.error("Error deleting seller:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error" } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

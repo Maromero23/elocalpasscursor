@@ -75,7 +75,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('💥 AFFILIATE LOGIN ERROR:', error)
     return NextResponse.json(
-      { error: 'Login failed' },
+      { error: 'Login failed' } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

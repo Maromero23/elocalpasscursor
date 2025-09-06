@@ -92,7 +92,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       error: 'Failed to create manual order with SQL',
       details: error instanceof Error ? error.message : 'Unknown error'
-    }, { 
+    } finally {
+    await prisma.$disconnect()
+  }, { 
       status: 500, 
       headers: corsHeaders 
     })

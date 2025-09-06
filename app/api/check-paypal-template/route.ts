@@ -68,7 +68,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error checking PayPal template:', error)
     return NextResponse.json(
-      { error: 'Failed to check PayPal template', details: error },
+      { error: 'Failed to check PayPal template', details: error } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

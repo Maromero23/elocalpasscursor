@@ -90,7 +90,9 @@ export async function PATCH(
   } catch (error) {
     console.error("💥 Toggle seller status error:", error)
     return NextResponse.json(
-      { error: "Failed to toggle seller status" },
+      { error: "Failed to toggle seller status" } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

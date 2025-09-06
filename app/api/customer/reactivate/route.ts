@@ -101,7 +101,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Customer reactivation error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error' } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     );
   }

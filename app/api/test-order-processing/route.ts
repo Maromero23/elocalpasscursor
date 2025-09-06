@@ -107,7 +107,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ Test order processing error:', error)
     return NextResponse.json(
-      { error: 'Test failed', details: error },
+      { error: 'Test failed', details: error } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

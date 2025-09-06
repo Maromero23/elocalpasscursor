@@ -52,7 +52,9 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching saved configuration:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error' } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }
@@ -160,7 +162,9 @@ export async function PUT(
   } catch (error) {
     console.error('Error updating saved configuration:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error' } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }
@@ -203,7 +207,9 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting saved configuration:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error' } finally {
+    await prisma.$disconnect()
+  },
       { status: 500 }
     )
   }

@@ -55,7 +55,9 @@ export async function PUT(
     return NextResponse.json(updatedConfig)
   } catch (error) {
     console.error("Error updating QR config:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" } finally {
+    await prisma.$disconnect()
+  }, { status: 500 })
   }
 }
 
@@ -90,6 +92,8 @@ export async function DELETE(
     return NextResponse.json({ message: "Configuration deleted successfully" })
   } catch (error) {
     console.error("Error deleting QR config:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" } finally {
+    await prisma.$disconnect()
+  }, { status: 500 })
   }
 }
