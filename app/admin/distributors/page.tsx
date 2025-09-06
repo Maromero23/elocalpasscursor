@@ -1036,6 +1036,83 @@ export default function DistributorsPage() {
     return distributorMatch
   }
 
+  // Generate flat view data
+  const generateFlatViewData = () => {
+    const flatData: Array<{
+      id: string
+      type: 'distributor' | 'location' | 'seller'
+      name: string
+      parentName?: string
+      contactPerson?: string
+      email?: string
+      telephone?: string
+      isActive: boolean
+      entityData: any
+    }> = []
+
+    sortedDistributors.forEach(distributor => {
+      const details = distributorDetails[distributor.id]
+      
+      // Add distributor if filter allows
+      if (entityFilter === 'all' || entityFilter === 'distributors') {
+        flatData.push({
+          id: distributor.id,
+          type: 'distributor',
+          name: distributor.name,
+          contactPerson: distributor.contactPerson || '',
+          email: distributor.email || '',
+          telephone: distributor.telephone || '',
+          isActive: distributor.isActive,
+          entityData: distributor
+        })
+      }
+
+      // Add locations if filter allows and we have details
+      if (details && (entityFilter === 'all' || entityFilter === 'locations')) {
+        details.locations.forEach(location => {
+          flatData.push({
+            id: `location-${location.id}`,
+            type: 'location',
+            name: location.name,
+            parentName: distributor.name,
+            contactPerson: location.contactPerson || '',
+            email: location.email || '',
+            telephone: location.telephone || '',
+            isActive: location.isActive,
+            entityData: location
+          })
+        })
+      }
+
+      // Add sellers if filter allows and we have details
+      if (details && (entityFilter === 'all' || entityFilter === 'sellers')) {
+        details.locations.forEach(location => {
+          location.sellers.forEach(seller => {
+            flatData.push({
+              id: `seller-${seller.id}`,
+              type: 'seller',
+              name: seller.name || 'Unnamed Seller',
+              parentName: `${distributor.name} → ${location.name}`,
+              contactPerson: seller.name || '',
+              email: seller.email || '',
+              telephone: seller.telephone || '',
+              isActive: seller.isActive,
+              entityData: seller
+            })
+          })
+        })
+      }
+    })
+
+    // Apply status filter to flat data
+    return flatData.filter(item => {
+      if (statusFilter === 'all') return true
+      if (statusFilter === 'active') return item.isActive
+      if (statusFilter === 'inactive') return !item.isActive
+      return true
+    })
+  }
+
   const sortedDistributors = [...distributors]
     .filter(distributor => {
       // Apply search filter
@@ -1049,6 +1126,8 @@ export default function DistributorsPage() {
         return b.name.localeCompare(a.name)
       }
     })
+
+  const flatViewData = viewMode === 'flat' ? generateFlatViewData() : []
 
   // QR Configuration pairing functions
   const fetchQRConfigurations = async () => {
@@ -1382,19 +1461,14 @@ export default function DistributorsPage() {
           </div>
         </div>
 
-        {/* Show message for location/seller filters in flat view */}
-        {viewMode === 'flat' && (entityFilter === 'locations' || entityFilter === 'sellers') && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-md">
-            <div className="flex items-center">
-              <div className="text-sm">
-                {entityFilter === 'locations' && (
-                  <>📍 <strong>Locations Only</strong> filter is active. Loading location data...</>
-                )}
-                {entityFilter === 'sellers' && (
-                  <>👤 <strong>Sellers Only</strong> filter is active. Loading seller data...</>
-                )}
-                <div className="mt-1 text-xs text-blue-600">
-                  Enhanced flat view with {entityFilter} display is coming in the next update.
+        {/* Flat View Implementation */}
+        {viewMode === 'flat' && (
+          <div className="mb-6">
+            <div className="bg-indigo-50 border border-indigo-200 text-indigo-700 px-4 py-3 rounded-md mb-4">
+              <div className="flex items-center">
+                <div className="text-sm">
+                  📊 <strong>Flat View Active</strong> - Showing {entityFilter === 'all' ? 'all entities' : entityFilter} in a single table
+                  {searchQuery && <span className="ml-2">| 🔍 Filtered by: "{searchQuery}"</span>}
                 </div>
               </div>
             </div>
@@ -1468,31 +1542,66 @@ export default function DistributorsPage() {
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                       </th>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <button 
-                          onClick={handleSort}
-                          className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
-                        >
-                          <span>Distributor Name</span>
-                          {sortOrder === 'asc' ? (
-                            <ArrowUp className="h-3 w-3" />
-                          ) : (
-                            <ArrowDown className="h-3 w-3" />
-                          )}
-                        </button>
-                      </th>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Contact Person
-                      </th>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Sellers
-                      </th>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Locations
-                      </th>
+                        {viewMode === 'hierarchical' ? (
+                          <>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <button 
+                                onClick={handleSort}
+                                className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
+                              >
+                                <span>Distributor Name</span>
+                                {sortOrder === 'asc' ? (
+                                  <ArrowUp className="h-3 w-3" />
+                                ) : (
+                                  <ArrowDown className="h-3 w-3" />
+                                )}
+                              </button>
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Contact Person
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Email
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Sellers
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Locations
+                            </th>
+                          </>
+                        ) : (
+                          <>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <button 
+                                onClick={handleSort}
+                                className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
+                              >
+                                <span>Entity Name</span>
+                                {sortOrder === 'asc' ? (
+                                  <ArrowUp className="h-3 w-3" />
+                                ) : (
+                                  <ArrowDown className="h-3 w-3" />
+                                )}
+                              </button>
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Type
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Parent
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Contact Person
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Email
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Phone
+                            </th>
+                          </>
+                        )}
                       <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         <button 
                           onClick={handleStatusFilter}
@@ -1517,18 +1626,84 @@ export default function DistributorsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {sortedDistributors.filter(distributor => {
-                      // Apply status filter
-                      if (statusFilter === 'all') return true
-                      if (statusFilter === 'active') return distributor.isActive
-                      if (statusFilter === 'inactive') return !distributor.isActive
-                      return true
-                    }).filter(distributor => {
-                      // Apply entity filter - for hierarchical view, always show distributors as containers
-                      // For flat view, only show if distributors are selected or all entities
-                      if (viewMode === 'hierarchical') return true
-                      return entityFilter === 'all' || entityFilter === 'distributors'
-                    }).map((distributor, index) => (
+                    {viewMode === 'flat' ? (
+                      // Flat View Rendering
+                      flatViewData.map((item, index) => (
+                        <tr 
+                          key={item.id}
+                          className={`hover:bg-gray-50 ${
+                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                          }`}
+                        >
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-8 w-8">
+                                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-medium ${
+                                  item.type === 'distributor' ? 'bg-blue-500' :
+                                  item.type === 'location' ? 'bg-green-500' : 'bg-purple-500'
+                                }`}>
+                                  {item.type === 'distributor' ? 'D' : item.type === 'location' ? 'L' : 'S'}
+                                </div>
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              item.type === 'distributor' ? 'bg-blue-100 text-blue-800' :
+                              item.type === 'location' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.parentName || '-'}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.contactPerson || '-'}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.email || '-'}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.telephone || '-'}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              item.isActive 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {item.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                            <button className="text-indigo-600 hover:text-indigo-900">
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      // Hierarchical View Rendering (existing)
+                      sortedDistributors.filter(distributor => {
+                        // Apply status filter
+                        if (statusFilter === 'all') return true
+                        if (statusFilter === 'active') return distributor.isActive
+                        if (statusFilter === 'inactive') return !distributor.isActive
+                        return true
+                      }).filter(distributor => {
+                        // Apply entity filter - for hierarchical view, always show distributors as containers
+                        return true
+                      }).map((distributor, index) => (
                       <React.Fragment key={distributor.id}>
                         <tr 
                           key={distributor.id} 
