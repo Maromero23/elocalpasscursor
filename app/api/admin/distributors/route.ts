@@ -70,6 +70,8 @@ export async function GET() {
       { error: "Failed to fetch distributors" },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
@@ -114,5 +116,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating distributor:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
   }
 }
